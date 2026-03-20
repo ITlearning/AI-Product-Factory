@@ -15,7 +15,7 @@ const SYSTEM_PROMPT = [
 ].join(" ");
 
 /**
- * @param {Request | { method?: string, json?: () => Promise<unknown> }} request
+ * @param {Request | { method?: string, json?: () => Promise<unknown>, body?: unknown }} request
  * @param {{ fetchImpl?: typeof fetch, apiKey?: string, model?: string }} [options]
  * @returns {Promise<Response>}
  */
@@ -24,7 +24,7 @@ export async function handleTranslateRequest(request, options = {}) {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  const body = await request.json().catch(() => null);
+  const body = await readRequestBody(request);
   const input = normalizeInput(typeof body?.input === "string" ? body.input : "");
 
   if (!input) {
@@ -149,6 +149,48 @@ function jsonResponse(payload, status) {
   });
 }
 
-export default async function handler(request) {
-  return handleTranslateRequest(request);
+export default async function handler(request, responseStream) {
+  const response = await handleTranslateRequest(request);
+  const payload = await response.text();
+
+  if (
+    responseStream &&
+    typeof responseStream.status === "function" &&
+    typeof responseStream.setHeader === "function"
+  ) {
+    responseStream.status(response.status);
+
+    for (const [key, value] of response.headers.entries()) {
+      responseStream.setHeader(key, value);
+    }
+
+    responseStream.send(payload);
+    return;
+  }
+
+  return response;
+}
+
+/**
+ * @param {Request | { json?: () => Promise<unknown>, body?: unknown }} request
+ * @returns {Promise<unknown>}
+ */
+async function readRequestBody(request) {
+  if (typeof request.json === "function") {
+    return request.json().catch(() => null);
+  }
+
+  if (typeof request.body === "string") {
+    try {
+      return JSON.parse(request.body);
+    } catch {
+      return null;
+    }
+  }
+
+  if (request.body && typeof request.body === "object") {
+    return request.body;
+  }
+
+  return null;
 }
