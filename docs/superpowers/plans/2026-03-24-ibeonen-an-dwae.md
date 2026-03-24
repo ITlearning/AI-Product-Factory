@@ -40,6 +40,8 @@
   - 마크업 렌더
 - `IBAD/app/src/domain/schema.js`
   - 서버 응답 스키마 정규화
+- `IBAD/app/src/domain/options.js`
+  - 관계 타입, 상황 타입, 강도 옵션 계약
 - `IBAD/app/src/domain/safety.js`
   - 지원 범위, 여지 남김, 장문/사과 패턴 검사
 - `IBAD/app/src/domain/examples.js`
@@ -71,9 +73,12 @@
 - Create: `IBAD/app/src/styles.css`
 - Create: `IBAD/app/src/ui/state.js`
 - Create: `IBAD/app/src/ui/templates.js`
+- Create: `IBAD/app/src/domain/options.js`
 - Create: `IBAD/app/tests/ui/app.test.js`
 
-- [ ] **Step 1: Write the failing smoke test**
+- [ ] **Step 1: Create `package.json` and the failing smoke test**
+
+`IBAD/app/package.json` must include `"type": "module"` before the first test run.
 
 ```js
 import test from "node:test";
@@ -86,6 +91,7 @@ test("renders the IBAD app shell", () => {
   assert.match(markup, /이번엔 안 돼/);
   assert.match(markup, /관계 타입/);
   assert.match(markup, /답장 만들기/);
+  assert.match(markup, /예의 있게 확실하게/);
 });
 ```
 
@@ -94,15 +100,43 @@ test("renders the IBAD app shell", () => {
 Run: `cd IBAD/app && node --test tests/ui/app.test.js`
 Expected: FAIL because app files do not exist yet
 
-- [ ] **Step 3: Create the minimal app shell state**
+- [ ] **Step 3: Create the shared option contract**
 
 ```js
+export const RELATIONSHIP_OPTIONS = [
+  { value: "close-friend", label: "친한 친구" },
+  { value: "just-friend", label: "그냥 친구" },
+  { value: "ambiguous", label: "애매한 사이" },
+  { value: "barely-close", label: "거의 안 친함" }
+];
+
+export const SITUATION_OPTIONS = [
+  { value: "promise", label: "약속 거절" },
+  { value: "favor", label: "부탁 거절" }
+];
+
+export const STRENGTH_OPTIONS = [
+  { value: "soft", label: "부드럽게" },
+  { value: "polite-firm", label: "예의 있게 확실하게" },
+  { value: "firm", label: "단호하게" }
+];
+```
+
+- [ ] **Step 4: Create the minimal app shell state**
+
+```js
+import {
+  RELATIONSHIP_OPTIONS,
+  SITUATION_OPTIONS,
+  STRENGTH_OPTIONS
+} from "../domain/options.js";
+
 export function createInitialState() {
   return {
     input: "",
-    relationshipType: "just-friend",
-    situationType: "promise",
-    rejectionStrength: "polite-firm",
+    relationshipType: RELATIONSHIP_OPTIONS[1].value,
+    situationType: SITUATION_OPTIONS[0].value,
+    rejectionStrength: STRENGTH_OPTIONS[1].value,
     includeAlternative: false,
     result: null,
     feedback: null,
@@ -111,14 +145,17 @@ export function createInitialState() {
 }
 ```
 
-- [ ] **Step 4: Add `renderAppMarkup()`, entry HTML, shared config, and a syntax-check script**
+- [ ] **Step 5: Add `renderAppMarkup()`, entry HTML, shared config, and a syntax-check script**
 
 ```js
+import { STRENGTH_OPTIONS } from "../domain/options.js";
+
 export function renderAppMarkup(state, { examples }) {
   return `
     <main>
       <h1>이번엔 안 돼</h1>
       <label>관계 타입</label>
+      <span>${STRENGTH_OPTIONS[1].label}</span>
       <button type="submit">답장 만들기</button>
     </main>
   `;
@@ -128,7 +165,7 @@ export const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 export const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 ```
 
-- [ ] **Step 5: Wire `src/app.js` and `src/main.js` to render the shell**
+- [ ] **Step 6: Wire `src/app.js` and `src/main.js` to render the shell**
 
 ```js
 import { createInitialState } from "./ui/state.js";
@@ -139,12 +176,12 @@ export function createApp(root) {
 }
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [ ] **Step 7: Run test to verify it passes**
 
 Run: `cd IBAD/app && node --test tests/ui/app.test.js`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add IBAD/app
@@ -156,6 +193,7 @@ git commit -m "feat: bootstrap ibad app shell"
 **Files:**
 - Create: `IBAD/app/src/domain/schema.js`
 - Create: `IBAD/app/src/domain/examples.js`
+- Create: `IBAD/app/tests/domain/schema.test.js`
 - Test: `IBAD/app/tests/domain/schema.test.js`
 
 - [ ] **Step 1: Write the failing schema test**
@@ -174,6 +212,11 @@ test("normalizes a valid reply payload", () => {
   });
 
   assert.equal(result.replyOptions.length, 3);
+  assert.equal(result.replyOptions[0].toneLabel, "정중한 버전");
+  assert.equal(result.replyOptions[0].whyItWorks, "짧고 분명함");
+  assert.equal(result.avoidPhrases[0], "다음에 보자");
+  assert.equal(result.openDoorRisk, "low");
+  assert.match(result.alternativeDifference, /대안을 넣으면/);
 });
 ```
 
@@ -251,7 +294,18 @@ test("flags open-door language when alternatives are disabled", () => {
     includeAlternative: false
   });
 
-  assert.match(issues[0], /다음에/);
+  assert.equal(issues[0].code, "OPEN_DOOR_PHRASE");
+  assert.match(issues[0].phrase, /다음에/);
+});
+
+test("flags follow-up reply requests as unsupported", () => {
+  const verdict = detectUnsupportedScope({
+    relationshipType: "just-friend",
+    situationType: "favor",
+    input: "내가 이미 한번 거절했는데 다시 뭐라고 답해야 할지 모르겠어."
+  });
+
+  assert.equal(verdict.supported, false);
 });
 ```
 
@@ -264,7 +318,17 @@ Expected: FAIL because safety helpers do not exist yet
 
 ```js
 export function detectUnsupportedScope(input) {
-  const blockedWords = ["팀장", "회사", "상사", "남자친구", "여자친구", "엄마", "아빠"];
+  const blockedWords = [
+    "팀장",
+    "회사",
+    "상사",
+    "남자친구",
+    "여자친구",
+    "엄마",
+    "아빠",
+    "다시 뭐라고",
+    "한번 거절했는데"
+  ];
   const source = `${input.relationshipType} ${input.input}`;
 
   if (blockedWords.some((word) => source.includes(word))) {
@@ -285,15 +349,18 @@ export function findReplySafetyIssues(text, options) {
   const issues = [];
 
   if (!options.includeAlternative && /다음에|나중에|시간 되면|기회 되면/.test(text)) {
-    issues.push("여지를 남기는 표현이 포함되어 있습니다.");
+    issues.push({
+      code: "OPEN_DOOR_PHRASE",
+      phrase: text.match(/다음에|나중에|시간 되면|기회 되면/)[0]
+    });
   }
 
   if ((text.match(/미안/g) ?? []).length >= 2) {
-    issues.push("사과 표현이 과합니다.");
+    issues.push({ code: "TOO_APOLOGETIC", phrase: "미안" });
   }
 
   if (text.length > 120) {
-    issues.push("답장이 너무 깁니다.");
+    issues.push({ code: "TOO_LONG", phrase: text.slice(0, 20) });
   }
 
   return issues;
@@ -317,6 +384,7 @@ git commit -m "feat: add ibad safety and scope guards"
 **Files:**
 - Create: `IBAD/app/api/generate-reply.js`
 - Modify: `IBAD/app/src/config.js`
+- Modify: `IBAD/app/src/domain/schema.js`
 - Create: `IBAD/app/tests/api/generate-reply.test.js`
 - Test: `IBAD/app/tests/api/generate-reply.test.js`
 
@@ -396,6 +464,77 @@ test("returns normalized AI output for supported input", async () => {
 
   assert.equal(response.status, 200);
 });
+
+test("returns typed unsafe-result errors", async () => {
+  const response = await handleGenerateReplyRequest(
+    {
+      method: "POST",
+      json: async () => ({
+        input: "친구가 오늘 보자고 했는데 가기 싫다.",
+        relationshipType: "just-friend",
+        situationType: "promise",
+        rejectionStrength: "polite-firm",
+        includeAlternative: false
+      })
+    },
+    {
+      apiKey: "test-key",
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            output: [
+              {
+                content: [
+                  {
+                    json: {
+                      replyOptions: [
+                        { text: "이번엔 어렵고 다음에 시간 되면 보자.", toneLabel: "정중한 버전", whyItWorks: "부드럽다." },
+                        { text: "이번엔 안 될 것 같아.", toneLabel: "자연스러운 버전", whyItWorks: "짧다." },
+                        { text: "오늘은 안 될 것 같아.", toneLabel: "단호한 버전", whyItWorks: "분명하다." }
+                      ],
+                      avoidPhrases: ["다음에 보자"],
+                      openDoorRisk: "high",
+                      alternativeDifference: "대안이 있으면 더 열려 보인다."
+                    }
+                  }
+                ]
+              }
+            ]
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+    }
+  );
+
+  assert.equal(response.status, 502);
+});
+
+test("returns invalid-schema errors when AI output is malformed", async () => {
+  const response = await handleGenerateReplyRequest(
+    {
+      method: "POST",
+      json: async () => ({
+        input: "친구 부탁을 거절하고 싶다.",
+        relationshipType: "just-friend",
+        situationType: "favor",
+        rejectionStrength: "polite-firm",
+        includeAlternative: false
+      })
+    },
+    {
+      apiKey: "test-key",
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            output: [{ content: [{ json: { replyOptions: [{ text: "하나만 있음" }] } }] }]
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+    }
+  );
+
+  assert.equal(response.status, 502);
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -403,7 +542,11 @@ test("returns normalized AI output for supported input", async () => {
 Run: `cd IBAD/app && node --test tests/api/generate-reply.test.js`
 Expected: FAIL because the API route does not exist yet
 
-- [ ] **Step 3: Implement request parsing and OpenAI call**
+- [ ] **Step 3: Export `REPLY_JSON_SCHEMA` and implement `buildUserPrompt()`**
+
+`IBAD/app/src/domain/schema.js` must export the structured output schema, and `IBAD/app/api/generate-reply.js` must define `buildUserPrompt(payload)` locally so executors do not guess where prompt composition lives.
+
+- [ ] **Step 4: Implement request parsing and OpenAI call**
 
 ```js
 const upstreamResponse = await fetchImpl(OPENAI_RESPONSES_URL, {
@@ -430,13 +573,13 @@ const upstreamResponse = await fetchImpl(OPENAI_RESPONSES_URL, {
 });
 ```
 
-- [ ] **Step 4: Normalize and reject unsafe results**
+- [ ] **Step 5: Normalize and reject unsafe results**
 
 ```js
 const normalized = normalizeReplyResult(candidate);
 
 if (!normalized) {
-  return jsonResponse({ error: "AI returned an invalid result." }, 502);
+  return jsonResponse({ error: "AI returned an invalid result.", code: "INVALID_AI_SCHEMA" }, 502);
 }
 
 for (const option of normalized.replyOptions) {
@@ -445,12 +588,12 @@ for (const option of normalized.replyOptions) {
   });
 
   if (issues.length > 0) {
-    return jsonResponse({ error: "AI returned an unsafe result." }, 502);
+    return jsonResponse({ error: "AI returned an unsafe result.", code: "UNSAFE_RESULT" }, 502);
   }
 }
 ```
 
-- [ ] **Step 5: Return typed responses for supported, unsupported, and unsafe cases**
+- [ ] **Step 6: Return typed responses for supported, unsupported, and unsafe cases**
 
 ```js
 if (!scopeVerdict.supported) {
@@ -466,12 +609,12 @@ if (!scopeVerdict.supported) {
 return jsonResponse({ result: normalized, source: "ai" }, 200);
 ```
 
-- [ ] **Step 6: Run API tests**
+- [ ] **Step 7: Run API tests**
 
 Run: `cd IBAD/app && node --test tests/api/generate-reply.test.js`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add IBAD/app/api/generate-reply.js IBAD/app/src/config.js IBAD/app/tests/api/generate-reply.test.js
@@ -518,6 +661,8 @@ test("renders generated reply cards", async () => {
   const markup = renderAppMarkup(state, { examples: [] });
   assert.match(markup, /정중한 버전/);
   assert.match(markup, /피해야 할 표현/);
+  assert.match(markup, /여지 남김 여부/);
+  assert.match(markup, /대안을 넣었을 때/);
 });
 
 test("renders unsupported-scope feedback", async () => {
@@ -536,6 +681,11 @@ test("renders unsupported-scope feedback", async () => {
   );
 
   assert.equal(state.feedback?.type, "warning");
+});
+
+test("updates form fields in state", () => {
+  const state = updateField(createInitialState(), "relationshipType", "ambiguous");
+  assert.equal(state.relationshipType, "ambiguous");
 });
 ```
 
@@ -588,7 +738,19 @@ export async function submitReplyRequest(state, { requestReplySet }) {
 }
 ```
 
-- [ ] **Step 4: Render input controls and result cards**
+- [ ] **Step 4: Bind textarea, selects, and checkbox events in `src/app.js`**
+
+```js
+textarea.addEventListener("input", (event) => {
+  state = updateField(state, "input", event.currentTarget.value);
+});
+
+relationshipSelect.addEventListener("change", (event) => {
+  state = updateField(state, "relationshipType", event.currentTarget.value);
+});
+```
+
+- [ ] **Step 5: Render input controls, copy actions, and result cards**
 
 ```js
 ${state.result.replyOptions
@@ -598,18 +760,28 @@ ${state.result.replyOptions
         <h3>${option.toneLabel}</h3>
         <p>${option.text}</p>
         <small>${option.whyItWorks}</small>
+        <button type="button" data-copy-reply="${option.text}">복사</button>
       </article>
     `
   )
   .join("")}
+
+<section>
+  <h3>여지 남김 여부</h3>
+  <p>${state.result.openDoorRisk}</p>
+</section>
+<section>
+  <h3>대안을 넣었을 때 / 안 넣었을 때</h3>
+  <p>${state.result.alternativeDifference}</p>
+</section>
 ```
 
-- [ ] **Step 5: Run UI tests**
+- [ ] **Step 6: Run UI tests**
 
 Run: `cd IBAD/app && node --test tests/ui/app.test.js`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add IBAD/app/src/api/generate-reply.js IBAD/app/src/ui/state.js IBAD/app/src/ui/templates.js IBAD/app/src/app.js IBAD/app/tests/ui/app.test.js
@@ -640,14 +812,19 @@ git commit -m "feat: add ibad ui flow and results"
 Run: `cd IBAD/app && npm run verify`
 Expected: all checks pass and `dist/` is generated
 
-- [ ] **Step 3: Document environment variables**
+- [ ] **Step 3: Re-run UI tests for failure-path rendering**
+
+Run: `cd IBAD/app && node --test tests/ui/app.test.js`
+Expected: PASS for success, unsupported-scope, and failure rendering flows
+
+- [ ] **Step 4: Document environment variables**
 
 ```md
 - `OPENAI_API_KEY`
 - optional `OPENAI_MODEL`
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add IBAD/app/package.json IBAD/README.md
