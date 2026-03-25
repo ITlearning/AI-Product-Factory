@@ -1,6 +1,6 @@
 import { normalizeInput } from "./text.js";
 
-const RECOMMENDED_MAX_LENGTH = 280;
+const RECOMMENDED_MAX_LENGTH = 1200;
 
 /**
  * @param {string} input
@@ -23,7 +23,8 @@ export function validateInput(input) {
       ok: true,
       normalized,
       level: "warning",
-      reason: "짧은 메시지에 가장 잘 맞습니다. 가능하면 1~5문장 안으로 줄여 주세요."
+      reason:
+        "맥락을 함께 넣는 건 좋지만, 너무 길면 핵심이 흐려질 수 있어요. 관련 있는 앞뒤 대화만 남기면 더 정확하게 풀어드릴 수 있어요."
     };
   }
 

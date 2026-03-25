@@ -1,18 +1,11 @@
 import { DEFAULT_OPENAI_MODEL, OPENAI_RESPONSES_URL } from "../src/config.js";
+import { buildSystemPrompt, buildUserPrompt } from "../src/ai/prompt.js";
+import { normalizeAudience } from "../src/data/audiences.js";
 import {
   normalizeTranslationResult,
   TRANSLATION_JSON_SCHEMA
 } from "../src/engine/schema.js";
 import { normalizeInput } from "../src/utils/text.js";
-
-const SYSTEM_PROMPT = [
-  "당신은 개발자 설명을 비전공자가 이해할 수 있는 한국어로 바꾸는 번역기다.",
-  "사실을 추가로 지어내지 말고 입력에 있는 내용만 바탕으로 설명한다.",
-  "기술 용어는 무조건 지우지 말고, 꼭 필요한 경우 쉬운 말로 풀어쓴다.",
-  "summary, easyExplanation, importantNow, actionForReader는 각각 역할이 겹치지 않게 작성한다.",
-  "termPairs에는 원문 기술 표현과 쉬운 표현만 넣는다.",
-  "응답은 반드시 주어진 JSON 스키마만 따른다."
-].join(" ");
 
 /**
  * @param {Request | { method?: string, json?: () => Promise<unknown>, body?: unknown }} request
@@ -26,6 +19,7 @@ export async function handleTranslateRequest(request, options = {}) {
 
   const body = await readRequestBody(request);
   const input = normalizeInput(typeof body?.input === "string" ? body.input : "");
+  const audience = normalizeAudience(body?.audience);
 
   if (!input) {
     return jsonResponse({ error: "입력 메시지가 필요합니다." }, 400);
@@ -52,14 +46,14 @@ export async function handleTranslateRequest(request, options = {}) {
         input: [
           {
             role: "system",
-            content: [{ type: "input_text", text: SYSTEM_PROMPT }]
+            content: [{ type: "input_text", text: buildSystemPrompt(audience) }]
           },
           {
             role: "user",
             content: [
               {
                 type: "input_text",
-                text: `다음 개발자 메시지를 번역해 주세요.\n\n${input}`
+                text: buildUserPrompt(input)
               }
             ]
           }

@@ -4,6 +4,7 @@ import {
   createInitialState,
   startTranslation,
   submitTranslationAsync,
+  updateAudience,
   updateInput
 } from "./ui/state.js";
 import { renderAppMarkup } from "./ui/templates.js";
@@ -12,7 +13,7 @@ import { renderAppMarkup } from "./ui/templates.js";
  * @param {HTMLElement} root
  * @param {{
  *   requestTranslation?: typeof import("./api/translate.js").requestAiTranslation,
- *   fallbackEngine?: (input: string) => import("./engine/types.js").TranslationResult
+ *   fallbackEngine?: (input: string, audience: import("./engine/types.js").AudienceId) => import("./engine/types.js").TranslationResult
  * }} [options]
  */
 export function createApp(root, options = {}) {
@@ -24,6 +25,7 @@ export function createApp(root, options = {}) {
     const textarea = root.querySelector("#developer-message");
     const exampleButton = root.querySelector('[data-action="example"]');
     const exampleChips = root.querySelectorAll("[data-example-index]");
+    const audienceButtons = root.querySelectorAll("[data-audience]");
 
     if (!(form instanceof HTMLFormElement) || !(textarea instanceof HTMLTextAreaElement)) {
       return;
@@ -45,6 +47,17 @@ export function createApp(root, options = {}) {
         const message = EXAMPLE_MESSAGES[index] ?? DEFAULT_EXAMPLE;
         state = applyExample(state, message);
         render();
+      });
+    }
+
+    for (const button of audienceButtons) {
+      button.addEventListener("click", () => {
+        const audience = button.getAttribute("data-audience");
+
+        if (audience) {
+          state = updateAudience(state, audience);
+          render();
+        }
       });
     }
 

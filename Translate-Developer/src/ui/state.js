@@ -1,5 +1,6 @@
 import { translateWithFallback } from "../engine/index.js";
 import { requestAiTranslation } from "../api/translate.js";
+import { DEFAULT_AUDIENCE, normalizeAudience } from "../data/audiences.js";
 import { validateInput } from "../utils/validation.js";
 
 /**
@@ -9,6 +10,7 @@ import { validateInput } from "../utils/validation.js";
 /**
  * @typedef {{
  *   input: string,
+ *   audience: import("../engine/types.js").AudienceId,
  *   feedback: Feedback,
  *   result: import("../engine/types.js").TranslationResult | null,
  *   engineSource: "ai" | "fallback" | null,
@@ -22,6 +24,7 @@ import { validateInput } from "../utils/validation.js";
 export function createInitialState() {
   return {
     input: "",
+    audience: DEFAULT_AUDIENCE,
     feedback: null,
     result: null,
     engineSource: null,
@@ -38,6 +41,18 @@ export function updateInput(state, input) {
   return {
     ...state,
     input
+  };
+}
+
+/**
+ * @param {AppState} state
+ * @param {import("../engine/types.js").AudienceId} audience
+ * @returns {AppState}
+ */
+export function updateAudience(state, audience) {
+  return {
+    ...state,
+    audience: normalizeAudience(audience)
   };
 }
 
@@ -70,7 +85,7 @@ export function startTranslation(state) {
  * @param {AppState} state
  * @param {{
  *   requestTranslation?: typeof requestAiTranslation,
- *   fallbackEngine?: (input: string) => import("../engine/types.js").TranslationResult
+ *   fallbackEngine?: (input: string, audience: import("../engine/types.js").AudienceId) => import("../engine/types.js").TranslationResult
  * }} [options]
  * @returns {Promise<AppState>}
  */
@@ -102,7 +117,7 @@ export async function submitTranslationAsync(
     isLoading: false
   };
 
-  const aiResponse = await requestTranslation(validation.normalized);
+  const aiResponse = await requestTranslation(validation.normalized, state.audience);
 
   if (aiResponse.ok) {
     return {
@@ -122,14 +137,14 @@ export async function submitTranslationAsync(
   try {
     return {
       ...baseState,
-      result: fallbackEngine(validation.normalized),
+      result: fallbackEngine(validation.normalized, state.audience),
       engineSource: "fallback",
       feedback: {
         type: "warning",
         message:
           validation.level === "warning"
-            ? `${validation.reason} AI 응답이 불안정해 기본 번역 모드로 전환했습니다.`
-            : "AI 응답이 불안정해 기본 번역 모드로 전환했습니다."
+            ? `${validation.reason} AI 응답이 불안정해 기본 설명 모드로 전환했습니다.`
+            : "AI 응답이 불안정해 기본 설명 모드로 전환했습니다."
       }
     };
   } catch {

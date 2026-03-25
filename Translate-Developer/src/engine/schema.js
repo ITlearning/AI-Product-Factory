@@ -1,19 +1,19 @@
-const REQUIRED_STRING_FIELDS = ["summary", "easyExplanation", "importantNow", "actionForReader"];
+const REQUIRED_STRING_FIELDS = ["rewrittenMessage", "confirmedImpact", "needsMoreContext"];
 
 /**
  * @param {unknown} value
- * @returns {value is { original: string, simplified: string }}
+ * @returns {value is { term: string, explanation: string }}
  */
-export function isValidTermPair(value) {
+export function isValidTermExplanation(value) {
   if (!value || typeof value !== "object") {
     return false;
   }
 
   return (
-    typeof value.original === "string" &&
-    typeof value.simplified === "string" &&
-    value.original.trim().length > 0 &&
-    value.simplified.trim().length > 0
+    typeof value.term === "string" &&
+    typeof value.explanation === "string" &&
+    value.term.trim().length > 0 &&
+    value.explanation.trim().length > 0
   );
 }
 
@@ -32,7 +32,7 @@ export function isValidTranslationResult(value) {
     }
   }
 
-  return Array.isArray(value.termPairs) && value.termPairs.every(isValidTermPair);
+  return Array.isArray(value.termExplanations) && value.termExplanations.every(isValidTermExplanation);
 }
 
 /**
@@ -45,13 +45,12 @@ export function normalizeTranslationResult(value) {
   }
 
   return {
-    summary: value.summary.trim(),
-    easyExplanation: value.easyExplanation.trim(),
-    importantNow: value.importantNow.trim(),
-    actionForReader: value.actionForReader.trim(),
-    termPairs: value.termPairs.map((pair) => ({
-      original: pair.original.trim(),
-      simplified: pair.simplified.trim()
+    rewrittenMessage: value.rewrittenMessage.trim(),
+    confirmedImpact: value.confirmedImpact.trim(),
+    needsMoreContext: value.needsMoreContext.trim(),
+    termExplanations: value.termExplanations.map((item) => ({
+      term: item.term.trim(),
+      explanation: item.explanation.trim()
     }))
   };
 }
@@ -61,21 +60,20 @@ export const TRANSLATION_JSON_SCHEMA = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["summary", "easyExplanation", "importantNow", "actionForReader", "termPairs"],
+    required: ["rewrittenMessage", "confirmedImpact", "needsMoreContext", "termExplanations"],
     properties: {
-      summary: { type: "string" },
-      easyExplanation: { type: "string" },
-      importantNow: { type: "string" },
-      actionForReader: { type: "string" },
-      termPairs: {
+      rewrittenMessage: { type: "string" },
+      confirmedImpact: { type: "string" },
+      needsMoreContext: { type: "string" },
+      termExplanations: {
         type: "array",
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["original", "simplified"],
+          required: ["term", "explanation"],
           properties: {
-            original: { type: "string" },
-            simplified: { type: "string" }
+            term: { type: "string" },
+            explanation: { type: "string" }
           }
         }
       }

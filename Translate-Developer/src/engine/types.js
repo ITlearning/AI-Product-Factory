@@ -1,14 +1,17 @@
 /**
- * @typedef {{ original: string, simplified: string }} TermPair
+ * @typedef {"pm-planner" | "designer" | "non-developer"} AudienceId
+ */
+
+/**
+ * @typedef {{ term: string, explanation: string }} TermExplanation
  */
 
 /**
  * @typedef {{
- *   summary: string,
- *   easyExplanation: string,
- *   importantNow: string,
- *   actionForReader: string,
- *   termPairs: TermPair[]
+ *   rewrittenMessage: string,
+ *   confirmedImpact: string,
+ *   needsMoreContext: string,
+ *   termExplanations: TermExplanation[]
  * }} TranslationResult
  */
 
@@ -23,10 +26,9 @@
  */
 export function createEmptyTranslationResult() {
   return {
-    summary: "",
-    easyExplanation: "",
-    importantNow: "",
-    actionForReader: "",
-    termPairs: []
+    rewrittenMessage: "",
+    confirmedImpact: "",
+    needsMoreContext: "",
+    termExplanations: []
   };
 }

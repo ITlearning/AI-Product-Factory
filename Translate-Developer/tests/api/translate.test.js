@@ -11,23 +11,22 @@ import {
 } from "../../src/engine/schema.js";
 
 const validPayload = {
-  summary: "결제 기능에 문제가 있어 확인 중입니다.",
-  easyExplanation: "결제 관련 연결 문제 때문에 정상 처리되지 않을 수 있습니다.",
-  importantNow: "지금은 결제가 늦어지거나 실패할 수 있습니다.",
-  actionForReader: "급한 결제는 잠시 뒤 다시 시도하도록 안내하면 됩니다.",
-  termPairs: [{ original: "API", simplified: "시스템 연결" }]
+  rewrittenMessage: "배포 뒤 결제 연결이 자주 늦어지거나 끊겨서, 지금 원인을 확인하고 있어요.",
+  confirmedImpact: "이 메시지에는 실제 사용자 결제 실패가 직접적으로 적혀 있지 않아요.",
+  needsMoreContext: "실제 결제 실패가 얼마나 발생하는지는 앞뒤 대화가 더 있으면 명확해져요.",
+  termExplanations: [{ term: "API", explanation: "시스템끼리 정보를 주고받는 연결" }]
 };
 
-function fakeRequest(input) {
+function fakeRequest(input, audience = "pm-planner") {
   return {
     method: "POST",
     async json() {
-      return { input };
+      return { input, audience };
     }
   };
 }
 
-test("accepts a valid AI translation payload", () => {
+test("accepts a valid role-aware translation payload", () => {
   assert.equal(isValidTranslationResult(validPayload), true);
   assert.deepEqual(normalizeTranslationResult(validPayload), validPayload);
 });
@@ -83,4 +82,21 @@ test("extracts structured result from json payload content", () => {
   });
 
   assert.deepEqual(result, validPayload);
+});
+
+test("builds a PM/planner prompt that forbids guessing", async () => {
+  let capturedBody = "";
+  await handleTranslateRequest(fakeRequest("배포 후 결제 API에서 타임아웃이 반복돼서 확인 중입니다."), {
+    apiKey: "test-key",
+    fetchImpl: async (_url, init) => {
+      capturedBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({ output: [{ content: [{ json: validPayload }] }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  });
+
+  assert.match(capturedBody, /PM\/기획자/);
+  assert.match(capturedBody, /추정하지 마라/);
 });

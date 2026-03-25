@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { DEFAULT_EXAMPLE } from "../../src/data/examples.js";
+import { DEFAULT_AUDIENCE } from "../../src/data/audiences.js";
 import {
   applyExample,
   createInitialState,
@@ -16,15 +17,21 @@ test("renders the translator shell", () => {
     examples: [DEFAULT_EXAMPLE]
   });
 
-  assert.match(markup, /개발자 설명을 비전공자 언어로 바꿉니다/);
-  assert.match(markup, /개발자 메시지/);
-  assert.match(markup, /번역하기/);
+  assert.match(markup, /개발자 설명을 함께 일하는 비개발자가 이해하게 풀어줍니다/);
+  assert.match(markup, /PM\/기획자/);
+  assert.match(markup, /쉽게 풀어보기/);
 });
 
 test("loads an example message into state", () => {
   const state = applyExample(createInitialState(), DEFAULT_EXAMPLE);
 
   assert.equal(state.input, DEFAULT_EXAMPLE);
+});
+
+test("defaults the selected audience to PM/기획자", () => {
+  const state = createInitialState();
+
+  assert.equal(state.audience, DEFAULT_AUDIENCE);
 });
 
 test("renders translated output after submit", async () => {
@@ -34,11 +41,10 @@ test("renders translated output after submit", async () => {
       requestTranslation: async () => ({
         ok: true,
         result: {
-          summary: "결제 기능에 문제가 있어 확인 중입니다.",
-          easyExplanation: "시스템 연결 문제로 결제가 불안정할 수 있습니다.",
-          importantNow: "지금은 결제가 늦어지거나 실패할 수 있습니다.",
-          actionForReader: "급한 결제는 잠시 뒤 다시 시도하도록 안내하면 됩니다.",
-          termPairs: [{ original: "API", simplified: "시스템 연결" }]
+          rewrittenMessage: "배포 뒤 결제 연결이 자주 늦어지거나 끊겨서, 지금 원인을 확인하고 있어요.",
+          confirmedImpact: "이 메시지에는 실제 사용자 결제 실패가 직접적으로 적혀 있지 않아요.",
+          needsMoreContext: "실제 결제 실패가 얼마나 발생하는지는 앞뒤 대화가 더 있으면 명확해져요.",
+          termExplanations: [{ term: "API", explanation: "시스템끼리 정보를 주고받는 연결" }]
         }
       })
     }
@@ -48,10 +54,10 @@ test("renders translated output after submit", async () => {
     examples: [DEFAULT_EXAMPLE]
   });
 
-  assert.match(markup, /한 줄 요약/);
-  assert.match(markup, /쉬운 설명/);
-  assert.match(markup, /원문 대비/);
-  assert.match(markup, /AI 번역/);
+  assert.match(markup, /쉽게 다시 쓴 내용/);
+  assert.match(markup, /전문 용어 풀이/);
+  assert.match(markup, /더 알려주면 정확해지는 부분/);
+  assert.match(markup, /AI 설명/);
 });
 
 test("uses fallback mode when the API request fails", async () => {
@@ -64,6 +70,27 @@ test("uses fallback mode when the API request fails", async () => {
 
   assert.equal(state.engineSource, "fallback");
   assert.equal(state.feedback?.type, "warning");
+});
+
+test("passes the selected audience into the async translation request", async () => {
+  let capturedAudience = "";
+  const state = await submitTranslationAsync(applyExample(createInitialState(), DEFAULT_EXAMPLE), {
+    requestTranslation: async (_input, audience) => {
+      capturedAudience = audience;
+      return {
+        ok: true,
+        result: {
+          rewrittenMessage: "쉽게 풀어쓴 내용",
+          confirmedImpact: "확인된 영향이 아직 명확하지 않아요.",
+          needsMoreContext: "앞뒤 대화가 더 있으면 정확해져요.",
+          termExplanations: []
+        }
+      };
+    }
+  });
+
+  assert.equal(capturedAudience, DEFAULT_AUDIENCE);
+  assert.equal(state.engineSource, "ai");
 });
 
 test("marks state as loading before async translation completes", () => {

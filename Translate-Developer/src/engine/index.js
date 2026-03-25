@@ -1,14 +1,14 @@
 import { translateWithFallback } from "./fallback-engine.js";
 import { translateWithRules } from "./rule-engine.js";
 import {
-  isValidTermPair,
+  isValidTermExplanation,
   isValidTranslationResult,
   normalizeTranslationResult,
   TRANSLATION_JSON_SCHEMA
 } from "./schema.js";
 
 export {
-  isValidTermPair,
+  isValidTermExplanation,
   isValidTranslationResult,
   normalizeTranslationResult,
   TRANSLATION_JSON_SCHEMA,
