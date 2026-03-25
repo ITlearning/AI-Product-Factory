@@ -11,6 +11,7 @@ const SYSTEM_PROMPT = [
   "장황한 변명은 줄이고 바로 보낼 수 있는 길이로 작성한다.",
   "반드시 지정된 JSON 스키마만 반환한다."
 ].join(" ");
+const MAX_GENERATION_ATTEMPTS = 2;
 
 /**
  * @param {Request | { method?: string, json?: () => Promise<unknown>, body?: unknown }} request
@@ -52,69 +53,54 @@ export async function handleGenerateReplyRequest(request, options = {}) {
   const model = options.model ?? process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL;
 
   try {
-    const upstreamResponse = await fetchImpl(OPENAI_RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
+    /** @type {null | { previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }} */
+    let revisionContext = null;
+
+    for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt += 1) {
+      const upstreamResponse = await requestStructuredReplySet({
+        apiKey,
+        fetchImpl,
         model,
-        input: [
-          {
-            role: "system",
-            content: [{ type: "input_text", text: SYSTEM_PROMPT }]
-          },
-          {
-            role: "user",
-            content: [{ type: "input_text", text: buildUserPrompt(payload) }]
-          }
-        ],
-        text: {
-          format: {
-            type: "json_schema",
-            name: REPLY_JSON_SCHEMA.name,
-            schema: REPLY_JSON_SCHEMA.schema,
-            strict: true
-          }
-        }
-      })
-    });
-
-    if (!upstreamResponse.ok) {
-      return jsonResponse({ error: "AI upstream request failed." }, 502);
-    }
-
-    const upstreamPayload = await upstreamResponse.json();
-    const normalized = extractStructuredResult(upstreamPayload);
-
-    if (!normalized) {
-      return jsonResponse(
-        {
-          error: "AI returned an invalid result.",
-          code: "INVALID_AI_SCHEMA"
-        },
-        502
-      );
-    }
-
-    for (const option of normalized.replyOptions) {
-      const issues = findReplySafetyIssues(option.text, {
-        includeAlternative: payload.includeAlternative
+        payload,
+        revisionContext
       });
 
-      if (issues.length > 0) {
+      if (!upstreamResponse.ok) {
+        return jsonResponse({ error: "AI upstream request failed." }, 502);
+      }
+
+      const upstreamPayload = await upstreamResponse.json();
+      const normalized = extractStructuredResult(upstreamPayload);
+
+      if (!normalized) {
         return jsonResponse(
           {
-            error: "AI returned an unsafe result.",
-            code: "UNSAFE_RESULT"
+            error: "AI returned an invalid result.",
+            code: "INVALID_AI_SCHEMA"
           },
           502
         );
       }
+
+      const safetyIssues = collectReplySafetyIssues(normalized, payload);
+
+      if (safetyIssues.length === 0) {
+        return jsonResponse({ result: normalized, source: "ai" }, 200);
+      }
+
+      revisionContext = {
+        previousResult: normalized,
+        safetyIssues
+      };
     }
 
-    return jsonResponse({ result: normalized, source: "ai" }, 200);
+    return jsonResponse(
+      {
+        error: "AI returned an unsafe result.",
+        code: "UNSAFE_RESULT"
+      },
+      502
+    );
   } catch {
     return jsonResponse({ error: "AI request failed." }, 502);
   }
@@ -143,6 +129,38 @@ export function buildUserPrompt(payload) {
 }
 
 /**
+ * @param {{
+ *   input: string,
+ *   relationshipType: string,
+ *   situationType: string,
+ *   rejectionStrength: string,
+ *   includeAlternative: boolean
+ * }} payload
+ * @param {{ previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }} revisionContext
+ * @returns {string}
+ */
+function buildRevisionPrompt(payload, revisionContext) {
+  return [
+    buildUserPrompt(payload),
+    "",
+    "방금 생성한 답안은 안전가드에 걸렸습니다. 같은 JSON 스키마를 유지하면서 답장을 전부 다시 작성하세요.",
+    "문제 요약:",
+    ...revisionContext.safetyIssues.map((issue) => `- ${describeSafetyIssue(issue)}`),
+    "",
+    "추가 규칙:",
+    payload.includeAlternative
+      ? "- 대안 제시는 가능하지만 다시 만나자는 표현이나 열린 약속처럼 보이는 문장은 피할 것"
+      : "- includeAlternative가 false이므로 다음에, 나중에, 시간 되면, 기회 되면 같은 표현을 절대 쓰지 말 것",
+    "- 각 답장은 120자 이하로 유지할 것",
+    "- 사과 표현은 각 답장당 최대 1회만 허용",
+    "- 이전 답안을 그대로 복사하지 말고, 더 단정하고 바로 보낼 수 있게 고칠 것",
+    "",
+    "이전 답안:",
+    JSON.stringify(revisionContext.previousResult)
+  ].join("\n");
+}
+
+/**
  * @param {unknown} payload
  * @returns {ReturnType<typeof normalizeReplyResult>}
  */
@@ -166,6 +184,90 @@ export function extractStructuredResult(payload) {
   }
 
   return normalizeReplyResult(payload?.output_parsed);
+}
+
+/**
+ * @param {NonNullable<ReturnType<typeof normalizeReplyResult>>} result
+ * @param {{ includeAlternative: boolean }} payload
+ * @returns {{ optionIndex: number, code: "OPEN_DOOR_PHRASE" | "TOO_APOLOGETIC" | "TOO_LONG", phrase: string }[]}
+ */
+function collectReplySafetyIssues(result, payload) {
+  return result.replyOptions.flatMap((option, optionIndex) =>
+    findReplySafetyIssues(option.text, {
+      includeAlternative: payload.includeAlternative
+    }).map((issue) => ({
+      optionIndex,
+      code: issue.code,
+      phrase: issue.phrase
+    }))
+  );
+}
+
+/**
+ * @param {{ optionIndex: number, code: "OPEN_DOOR_PHRASE" | "TOO_APOLOGETIC" | "TOO_LONG", phrase: string }} issue
+ * @returns {string}
+ */
+function describeSafetyIssue(issue) {
+  if (issue.code === "OPEN_DOOR_PHRASE") {
+    return `${issue.optionIndex + 1}번 답장에 '${issue.phrase}' 표현이 있어 다시 잡힐 여지를 남깁니다.`;
+  }
+
+  if (issue.code === "TOO_APOLOGETIC") {
+    return `${issue.optionIndex + 1}번 답장에 사과 표현이 과합니다.`;
+  }
+
+  return `${issue.optionIndex + 1}번 답장이 너무 깁니다.`;
+}
+
+/**
+ * @param {{
+ *   apiKey: string,
+ *   fetchImpl: typeof fetch,
+ *   model: string,
+ *   payload: {
+ *     input: string,
+ *     relationshipType: string,
+ *     situationType: string,
+ *     rejectionStrength: string,
+ *     includeAlternative: boolean
+ *   },
+ *   revisionContext: null | { previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }
+ * }} options
+ * @returns {Promise<Response>}
+ */
+function requestStructuredReplySet({ apiKey, fetchImpl, model, payload, revisionContext }) {
+  const prompt = revisionContext
+    ? buildRevisionPrompt(payload, revisionContext)
+    : buildUserPrompt(payload);
+
+  return fetchImpl(OPENAI_RESPONSES_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      input: [
+        {
+          role: "system",
+          content: [{ type: "input_text", text: SYSTEM_PROMPT }]
+        },
+        {
+          role: "user",
+          content: [{ type: "input_text", text: prompt }]
+        }
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: REPLY_JSON_SCHEMA.name,
+          schema: REPLY_JSON_SCHEMA.schema,
+          strict: true
+        }
+      }
+    })
+  });
 }
 
 function tryParseJson(value) {
