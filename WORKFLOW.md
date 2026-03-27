@@ -89,6 +89,8 @@ Issue handling rules:
 
 GitHub delivery rules:
 
+- Non-code tasks whose primary output is planning, ideation, brainstorming, analysis, or recommendations do not require a branch, push, or PR by default.
+- For those non-code tasks, the default handoff is a detailed Linear comment. Optional docs or plan files are supporting artifacts, not the primary communication surface.
 - For any issue that changes repository files, create or reuse the issue branch before final verification and delivery steps.
 - After verification passes, create a commit with a concise message that matches the work completed.
 - Push the issue branch to `origin` if Git auth is available.
@@ -112,13 +114,29 @@ Comment feedback loop:
 - If comment-reading tools are unavailable, continue with the issue body and current state, but explicitly report that the latest comment feedback could not be checked.
 - After meaningful progress, post a fresh Linear comment if comment-writing tools are available.
 - Every update comment should be concrete, short, and action-oriented.
+- Never leave a comment that only says the work was documented in a file. A doc path may be included, but the important content must be readable from the Linear comment itself.
+- If a supporting doc or plan file was created, summarize the useful parts inline first, then reference the file path as supplemental detail.
+- If the work is too large to describe line by line, provide a short high-signal summary plus the most important concrete points instead of dumping every detail.
+- For planning, ideation, brainstorming, product thinking, or research tasks, the update comment must include:
+  - what the user asked for
+  - the recommendation or current conclusion
+  - key options or tradeoffs considered
+  - why the recommendation was chosen
+  - open questions, risks, or decisions still needed
+  - optional supporting doc path if one was written
 - For code changes, the update comment must include:
+  - why the change was made
   - what changed
   - exact paths touched
+  - the most important code or behavior changes summarized in plain language
+  - user-visible impact or expected product behavior change
   - verification run and result
+  - how a human can check the change
+  - preview URL, deployed URL, or local run instructions when the change affects a testable app or website and that information is available
   - any remaining blocker or decision needed
 - For non-code work, the update comment must include:
   - what changed
+  - the actual substance of the recommendation or artifact, not just its filename
   - which docs, plans, or artifacts were updated
   - what decision or review is needed next
 - If comment-writing tools are unavailable, include the exact comment you would have posted in the final response so a human can paste it.
@@ -126,7 +144,7 @@ Comment feedback loop:
 State routing rules:
 
 - `Todo`: start new work for the routed target path.
-- `In Progress`: continue implementation and validation for the routed target path. If files changed, maintain the issue branch and keep delivery headed toward a pushed branch and PR.
+- `In Progress`: continue implementation and validation for the routed target path. If the task is code-changing, maintain the issue branch and keep delivery headed toward a pushed branch and PR. If the task is planning or ideation, keep the comment thread rich enough that a human can react without opening repository files first.
 - `Rework`: read the latest human comments first, convert them into the current task list, address that feedback, keep scope tight, rerun the relevant verification, and leave a new update comment describing what changed.
 - `Human Review`: do not widen scope or start unrelated work. Review the latest human comments, PR state, and checks if those tools are available. If there is actionable feedback, address it, rerun verification, push updated commits if needed, update the PR if one exists, and leave a new update comment. If there is no actionable feedback, report that the issue is waiting on human review.
 - `Merging`: review the latest human comments and checks before merge work. Only handle merge-ready work. Confirm the latest relevant verification is still green. If the repository has a configured safe merge flow, use it. If merge tooling or permissions are missing, report the exact merge blocker instead of forcing a risky manual sequence.

@@ -128,6 +128,8 @@ Important prerequisites:
 
 If PR creation tooling is missing, the workflow should still push the branch and then report the exact manual follow-up needed.
 
+This PR-oriented flow is for file-changing code work. For planning, ideation, brainstorming, or recommendation-heavy tasks, the default handoff is a detailed Linear comment, not a PR.
+
 ## How Routing Works In Practice
 
 Symphony reads the issue from one Linear project, then the prompt in [`WORKFLOW.md`](WORKFLOW.md) routes the work to the right subtree.
@@ -162,8 +164,26 @@ Expected comment behavior:
 
 - Human-authored comments are treated as new instructions, even if the issue title did not change.
 - Agent-authored or bot-authored status comments should not override newer human feedback.
-- After code changes, the agent should comment with the exact paths touched, the verification it ran, the branch name, and the PR link when available.
-- After non-code changes, the agent should comment with the updated docs/plans/artifacts and the next review decision needed.
+- Comments should be readable on their own. The agent should not force the human to open a repo file just to understand the result.
+- If a doc or plan file was written, the important contents should still be summarized inline in the comment.
+- After code changes, the agent should comment with:
+  - why the change was made
+  - exact paths touched
+  - what changed in plain language
+  - expected user-visible impact
+  - verification run and result
+  - how to check the change
+  - branch name and PR link when available
+- After non-code changes, the agent should comment with:
+  - the actual recommendation, idea, or conclusion
+  - key tradeoffs or alternatives considered
+  - any open question or decision needed next
+  - updated docs/plans/artifacts as supplemental references
+
+Recommended review posture:
+
+- For planning work, respond to the recommendation and tradeoffs in the Linear comment thread.
+- For code work, use the Linear comment plus the PR together: the PR is the diff surface, and the Linear comment is the human-readable summary and test guidance.
 
 ## Service-Specific Verification
 

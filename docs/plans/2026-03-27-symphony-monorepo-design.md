@@ -10,6 +10,7 @@
 - Tracker shape: one Linear project for the full repository
 - Routing: service labels and explicit issue wording
 - Delivery mode: branch, commit, push, and PR for file-changing issues
+- Delivery mode for planning/ideation work: detailed Linear comment first, optional doc artifact second
 - Initial safety posture: `approval_policy: on-request`
 - Initial concurrency: `max_concurrent_agents: 10`
 - Initial dispatch states: `Todo`, `In Progress`, `Rework`, `Human Review`, `Merging`
@@ -43,6 +44,7 @@ If the label is missing, the workflow may fall back to title prefixes such as `[
 - Git operations should use SSH or external credential helpers, never embedded personal access tokens.
 - File-changing issues should not be considered delivered until they are committed and pushed.
 - The default handoff for file-changing work is an open or updated pull request, not an unpushed local branch.
+- The default handoff for planning, ideation, brainstorming, and analysis work is a rich Linear comment, not "see the doc".
 - `Human Review` and `Rework` should be comment-driven states, not passive holding buckets.
 - Latest human comments should be treated as task-shaping input when the tooling can read them.
 - After meaningful progress, the agent should leave a fresh summary comment when the tooling can write it.
@@ -70,8 +72,9 @@ Important behavior:
 
 - Human comments are higher priority than the agent's earlier self-authored comments.
 - Bot noise or stale status updates should not override newer human direction.
-- Code updates should be summarized with exact paths touched, verification run, branch name, and PR link when available.
-- Non-code updates should be summarized with updated artifacts and next review/handoff needs.
+- Comments should contain the useful substance inline; artifact paths are supplemental.
+- Code updates should be summarized with why the change was made, exact paths touched, key behavior changes, verification run, how to check the result, branch name, and PR link when available.
+- Non-code updates should be summarized with the actual recommendation, tradeoffs, and next decision needed, with updated artifacts only as support.
 
 ## GitHub Delivery Design
 
