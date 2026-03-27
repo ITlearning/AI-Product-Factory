@@ -16,14 +16,21 @@ function fakeRequest(body) {
   };
 }
 
+function successfulReplySet() {
+  return {
+    replyOptions: [
+      { text: "오늘은 좀 어려울 것 같아.", toneLabel: "부드럽게", whyItWorks: "부담을 낮춘다." },
+      { text: "이번엔 어려워. 고마운데 패스할게.", toneLabel: "예의 있게 확실하게", whyItWorks: "균형이 좋다." },
+      { text: "이번엔 어려워.", toneLabel: "짧게 끝내기", whyItWorks: "짧게 끝낸다." }
+    ]
+  };
+}
+
 test("returns 400 for empty input", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "",
-      relationshipType: "just-friend",
-      situationType: "promise",
-      rejectionStrength: "polite-firm",
-      includeAlternative: false
+      situationType: "promise"
     }),
     { apiKey: "test-key" }
   );
@@ -34,11 +41,8 @@ test("returns 400 for empty input", async () => {
 test("returns unsupported response for out-of-scope input", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
-      input: "팀장님이 부탁했어요.",
-      relationshipType: "barely-close",
-      situationType: "favor",
-      rejectionStrength: "polite-firm",
-      includeAlternative: false
+      input: "팀장님이 오늘 부탁한 일을 대신해 달라고 했어요.",
+      situationType: "favor"
     }),
     { apiKey: "test-key" }
   );
@@ -52,10 +56,7 @@ test("returns normalized AI output for supported input", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "친구가 오늘 저녁에 만나자고 했는데 쉬고 싶다.",
-      relationshipType: "just-friend",
-      situationType: "promise",
-      rejectionStrength: "polite-firm",
-      includeAlternative: false
+      situationType: "promise"
     }),
     {
       apiKey: "test-key",
@@ -66,16 +67,7 @@ test("returns normalized AI output for supported input", async () => {
               {
                 content: [
                   {
-                    json: {
-                      replyOptions: [
-                        { text: "오늘은 좀 쉬고 싶어서 이번엔 어려울 것 같아.", toneLabel: "정중한 버전", whyItWorks: "부드럽고 분명하다." },
-                        { text: "오늘은 패스할게. 이번엔 안 될 것 같아.", toneLabel: "자연스러운 버전", whyItWorks: "짧고 자연스럽다." },
-                        { text: "오늘은 안 될 것 같아.", toneLabel: "단호한 버전", whyItWorks: "여지를 줄인다." }
-                      ],
-                      avoidPhrases: ["다음에 보자"],
-                      openDoorRisk: "low",
-                      alternativeDifference: "대안을 넣지 않으면 더 깔끔하게 끝난다."
-                    }
+                    json: successfulReplySet()
                   }
                 ]
               }
@@ -91,7 +83,7 @@ test("returns normalized AI output for supported input", async () => {
 
   assert.equal(response.status, 200);
   const body = await response.json();
-  assert.equal(body.result.replyOptions.length, 3);
+  assert.deepEqual(body.result, successfulReplySet());
 });
 
 test("returns typed unsafe-result errors", async () => {
@@ -99,18 +91,14 @@ test("returns typed unsafe-result errors", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "친구가 오늘 보자고 했는데 가기 싫다.",
-      relationshipType: "just-friend",
-      situationType: "promise",
-      rejectionStrength: "polite-firm",
-      includeAlternative: false
+      situationType: "promise"
     }),
     {
       apiKey: "test-key",
       fetchImpl: async () => {
         callCount += 1;
 
-        return (
-        new Response(
+        return new Response(
           JSON.stringify({
             output: [
               {
@@ -118,13 +106,10 @@ test("returns typed unsafe-result errors", async () => {
                   {
                     json: {
                       replyOptions: [
-                        { text: "이번엔 어렵고 다음에 시간 되면 보자.", toneLabel: "정중한 버전", whyItWorks: "부드럽다." },
-                        { text: "이번엔 안 될 것 같아.", toneLabel: "자연스러운 버전", whyItWorks: "짧다." },
-                        { text: "오늘은 안 될 것 같아.", toneLabel: "단호한 버전", whyItWorks: "분명하다." }
-                      ],
-                      avoidPhrases: ["다음에 보자"],
-                      openDoorRisk: "high",
-                      alternativeDifference: "대안이 있으면 더 열려 보인다."
+                        { text: "이번엔 어렵고 다음에 시간 되면 보자.", toneLabel: "부드럽게", whyItWorks: "부드럽다." },
+                        { text: "이번엔 안 될 것 같아.", toneLabel: "예의 있게 확실하게", whyItWorks: "짧다." },
+                        { text: "오늘은 안 될 것 같아.", toneLabel: "짧게 끝내기", whyItWorks: "분명하다." }
+                      ]
                     }
                   }
                 ]
@@ -135,7 +120,6 @@ test("returns typed unsafe-result errors", async () => {
             status: 200,
             headers: { "Content-Type": "application/json" }
           }
-        )
         );
       }
     }
@@ -152,10 +136,7 @@ test("retries once when the first AI result is unsafe", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "친구가 오늘 보자고 했는데 쉬고 싶다.",
-      relationshipType: "just-friend",
-      situationType: "promise",
-      rejectionStrength: "polite-firm",
-      includeAlternative: false
+      situationType: "promise"
     }),
     {
       apiKey: "test-key",
@@ -171,13 +152,10 @@ test("retries once when the first AI result is unsafe", async () => {
                     {
                       json: {
                         replyOptions: [
-                          { text: "이번엔 어렵고 다음에 시간 되면 보자.", toneLabel: "정중한 버전", whyItWorks: "부드럽다." },
-                          { text: "이번엔 안 될 것 같아.", toneLabel: "자연스러운 버전", whyItWorks: "짧다." },
-                          { text: "오늘은 안 될 것 같아.", toneLabel: "단호한 버전", whyItWorks: "분명하다." }
-                        ],
-                        avoidPhrases: ["다음에 보자"],
-                        openDoorRisk: "high",
-                        alternativeDifference: "대안이 있으면 더 열려 보인다."
+                          { text: "이번엔 어렵고 다음에 시간 되면 보자.", toneLabel: "부드럽게", whyItWorks: "부드럽다." },
+                          { text: "이번엔 안 될 것 같아.", toneLabel: "예의 있게 확실하게", whyItWorks: "짧다." },
+                          { text: "오늘은 안 될 것 같아.", toneLabel: "짧게 끝내기", whyItWorks: "분명하다." }
+                        ]
                       }
                     }
                   ]
@@ -197,16 +175,7 @@ test("retries once when the first AI result is unsafe", async () => {
               {
                 content: [
                   {
-                    json: {
-                      replyOptions: [
-                        { text: "오늘은 좀 쉬고 싶어서 이번엔 어려울 것 같아.", toneLabel: "정중한 버전", whyItWorks: "부드럽고 분명하다." },
-                        { text: "오늘은 패스할게. 이번엔 안 될 것 같아.", toneLabel: "자연스러운 버전", whyItWorks: "짧고 자연스럽다." },
-                        { text: "오늘은 안 될 것 같아.", toneLabel: "단호한 버전", whyItWorks: "여지를 줄이지 않고 마무리한다." }
-                      ],
-                      avoidPhrases: ["다음에 보자"],
-                      openDoorRisk: "low",
-                      alternativeDifference: "대안을 빼면 더 깔끔하게 끝난다."
-                    }
+                    json: successfulReplySet()
                   }
                 ]
               }
@@ -231,10 +200,7 @@ test("returns invalid-schema errors when AI output is malformed", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "친구 부탁을 거절하고 싶다.",
-      relationshipType: "just-friend",
-      situationType: "favor",
-      rejectionStrength: "polite-firm",
-      includeAlternative: false
+      situationType: "favor"
     }),
     {
       apiKey: "test-key",
@@ -262,34 +228,24 @@ test("extracts structured result from payload content", () => {
       {
         content: [
           {
-            json: {
-              replyOptions: [
-                { text: "이번엔 어렵겠어.", toneLabel: "정중한 버전", whyItWorks: "짧다." },
-                { text: "이번엔 안 될 것 같아.", toneLabel: "자연스러운 버전", whyItWorks: "자연스럽다." },
-                { text: "이번 요청은 어려워.", toneLabel: "단호한 버전", whyItWorks: "분명하다." }
-              ],
-              avoidPhrases: ["다음에 보자"],
-              openDoorRisk: "low",
-              alternativeDifference: "대안을 빼면 더 깔끔하다."
-            }
+            json: successfulReplySet()
           }
         ]
       }
     ]
   });
 
-  assert.equal(result?.replyOptions[0].toneLabel, "정중한 버전");
+  assert.equal(result?.replyOptions[0].toneLabel, "부드럽게");
 });
 
 test("builds an OpenAI user prompt from the request payload", () => {
   const prompt = buildUserPrompt({
     input: "친구 약속을 거절하고 싶어.",
-    relationshipType: "just-friend",
-    situationType: "promise",
-    rejectionStrength: "polite-firm",
-    includeAlternative: false
+    situationType: "promise"
   });
 
-  assert.match(prompt, /관계 타입: just-friend/);
-  assert.match(prompt, /대안 제시 여부: 안 한다/);
+  assert.match(prompt, /상대 메시지를 받고도 답장을 못 보내는 사람/);
+  assert.match(prompt, /상황 타입: promise/);
+  assert.doesNotMatch(prompt, /관계 타입/);
+  assert.doesNotMatch(prompt, /거절 강도/);
 });

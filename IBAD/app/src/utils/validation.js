@@ -1,9 +1,5 @@
 import { normalizeInput } from "./text.js";
-import {
-  SUPPORTED_RELATIONSHIP_VALUES,
-  SUPPORTED_SITUATION_VALUES,
-  SUPPORTED_STRENGTH_VALUES
-} from "../domain/options.js";
+import { SUPPORTED_SITUATION_VALUES } from "../domain/options.js";
 
 const RECOMMENDED_MAX_LENGTH = 280;
 
@@ -46,10 +42,7 @@ export function validateInput(input) {
  *   ok: true,
  *   value: {
  *     input: string,
- *     relationshipType: string,
- *     situationType: string,
- *     rejectionStrength: string,
- *     includeAlternative: boolean
+ *     situationType: string
  *   }
  * } | { ok: false, message: string }}
  */
@@ -64,34 +57,18 @@ export function validateRequestPayload(payload) {
     return { ok: false, message: inputCheck.reason };
   }
 
-  const relationshipType =
-    typeof payload.relationshipType === "string" ? payload.relationshipType : "";
   const situationType =
     typeof payload.situationType === "string" ? payload.situationType : "";
-  const rejectionStrength =
-    typeof payload.rejectionStrength === "string" ? payload.rejectionStrength : "";
-  const includeAlternative = Boolean(payload.includeAlternative);
-
-  if (!SUPPORTED_RELATIONSHIP_VALUES.has(relationshipType)) {
-    return { ok: false, message: "지원하지 않는 관계 타입입니다." };
-  }
 
   if (!SUPPORTED_SITUATION_VALUES.has(situationType)) {
     return { ok: false, message: "지원하지 않는 상황 타입입니다." };
-  }
-
-  if (!SUPPORTED_STRENGTH_VALUES.has(rejectionStrength)) {
-    return { ok: false, message: "지원하지 않는 거절 강도입니다." };
   }
 
   return {
     ok: true,
     value: {
       input: inputCheck.normalized,
-      relationshipType,
-      situationType,
-      rejectionStrength,
-      includeAlternative
+      situationType
     }
   };
 }

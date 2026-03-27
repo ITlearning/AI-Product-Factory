@@ -4,11 +4,11 @@ import { detectUnsupportedScope, findReplySafetyIssues } from "../src/domain/saf
 import { validateRequestPayload } from "../src/utils/validation.js";
 
 const SYSTEM_PROMPT = [
-  "당신은 한국어 거절 답장을 만들어 주는 어시스턴트다.",
-  "목표는 예의를 지키되 애매한 여지를 남기지 않는 답장 3개를 주는 것이다.",
-  "관계와 상황에 맞게 어조를 조절하되 공격적이거나 비꼬지 않는다.",
-  "대안이 꺼져 있으면 다음에 보자, 나중에 보자, 시간 되면 같은 표현을 쓰지 않는다.",
-  "장황한 변명은 줄이고 바로 보낼 수 있는 길이로 작성한다.",
+  "당신은 상대 메시지를 받고도 답장을 못 보내는 사람을 돕는 한국어 어시스턴트다.",
+  "약속 거절 또는 부탁 거절 상황만 다룬다.",
+  "반드시 바로 보낼 수 있는 답장 3개를 만든다.",
+  "순서는 부드럽게, 예의 있게 확실하게, 짧게 끝내기다.",
+  "각 답장은 짧고, 변명은 줄이고, 다시 잡힐 표현은 피한다.",
   "반드시 지정된 JSON 스키마만 반환한다."
 ].join(" ");
 const MAX_GENERATION_ATTEMPTS = 2;
@@ -82,7 +82,7 @@ export async function handleGenerateReplyRequest(request, options = {}) {
         );
       }
 
-      const safetyIssues = collectReplySafetyIssues(normalized, payload);
+      const safetyIssues = collectReplySafetyIssues(normalized);
 
       if (safetyIssues.length === 0) {
         return jsonResponse({ result: normalized, source: "ai" }, 200);
@@ -109,32 +109,24 @@ export async function handleGenerateReplyRequest(request, options = {}) {
 /**
  * @param {{
  *   input: string,
- *   relationshipType: string,
- *   situationType: string,
- *   rejectionStrength: string,
- *   includeAlternative: boolean
+ *   situationType: string
  * }} payload
  * @returns {string}
  */
 export function buildUserPrompt(payload) {
   return [
-    "다음 정보를 바탕으로 거절 답장 3개를 생성해 주세요.",
+    "상대 메시지를 받고도 답장을 못 보내는 사람을 위한 한국어 답장 3개를 만들어 주세요.",
     `받은 메시지/상황: ${payload.input}`,
-    `관계 타입: ${payload.relationshipType}`,
     `상황 타입: ${payload.situationType}`,
-    `거절 강도: ${payload.rejectionStrength}`,
-    `대안 제시 여부: ${payload.includeAlternative ? "한다" : "안 한다"}`,
-    "replyOptions는 정중한 버전, 자연스러운 버전, 단호한 버전 순서로 작성해 주세요."
+    "replyOptions는 부드럽게, 예의 있게 확실하게, 짧게 끝내기 순서로 작성해 주세요.",
+    "각 답장은 바로 복사해 보낼 수 있게 짧고 분명하게 작성해 주세요."
   ].join("\n");
 }
 
 /**
  * @param {{
  *   input: string,
- *   relationshipType: string,
- *   situationType: string,
- *   rejectionStrength: string,
- *   includeAlternative: boolean
+ *   situationType: string
  * }} payload
  * @param {{ previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }} revisionContext
  * @returns {string}
@@ -148,9 +140,7 @@ function buildRevisionPrompt(payload, revisionContext) {
     ...revisionContext.safetyIssues.map((issue) => `- ${describeSafetyIssue(issue)}`),
     "",
     "추가 규칙:",
-    payload.includeAlternative
-      ? "- 대안 제시는 가능하지만 다시 만나자는 표현이나 열린 약속처럼 보이는 문장은 피할 것"
-      : "- includeAlternative가 false이므로 다음에, 나중에, 시간 되면, 기회 되면 같은 표현을 절대 쓰지 말 것",
+    "- 다음에, 나중에, 시간 되면, 기회 되면 같은 표현을 절대 쓰지 말 것",
     "- 각 답장은 120자 이하로 유지할 것",
     "- 사과 표현은 각 답장당 최대 1회만 허용",
     "- 이전 답안을 그대로 복사하지 말고, 더 단정하고 바로 보낼 수 있게 고칠 것",
@@ -188,13 +178,12 @@ export function extractStructuredResult(payload) {
 
 /**
  * @param {NonNullable<ReturnType<typeof normalizeReplyResult>>} result
- * @param {{ includeAlternative: boolean }} payload
  * @returns {{ optionIndex: number, code: "OPEN_DOOR_PHRASE" | "TOO_APOLOGETIC" | "TOO_LONG", phrase: string }[]}
  */
-function collectReplySafetyIssues(result, payload) {
+function collectReplySafetyIssues(result) {
   return result.replyOptions.flatMap((option, optionIndex) =>
     findReplySafetyIssues(option.text, {
-      includeAlternative: payload.includeAlternative
+      includeAlternative: false
     }).map((issue) => ({
       optionIndex,
       code: issue.code,
@@ -226,10 +215,7 @@ function describeSafetyIssue(issue) {
  *   model: string,
  *   payload: {
  *     input: string,
- *     relationshipType: string,
- *     situationType: string,
- *     rejectionStrength: string,
- *     includeAlternative: boolean
+ *     situationType: string
  *   },
  *   revisionContext: null | { previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }
  * }} options
