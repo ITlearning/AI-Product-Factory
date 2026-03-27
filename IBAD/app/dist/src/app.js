@@ -12,12 +12,14 @@ export function createApp(root, options = {}) {
     const form = root.querySelector('[data-role="composer"]');
     const textarea = root.querySelector("#input-message");
     const situationSelect = root.querySelector("#situation-type");
+    const blockerSelect = root.querySelector("#blocker-type");
     const copyButtons = root.querySelectorAll("[data-copy-reply]");
 
     if (
       !(form instanceof HTMLFormElement) ||
       !(textarea instanceof HTMLTextAreaElement) ||
-      !(situationSelect instanceof HTMLSelectElement)
+      !(situationSelect instanceof HTMLSelectElement) ||
+      !(blockerSelect instanceof HTMLSelectElement)
     ) {
       return;
     }
@@ -30,6 +32,14 @@ export function createApp(root, options = {}) {
       state = updateField(
         state,
         "situationType",
+        /** @type {HTMLSelectElement} */ (event.currentTarget).value
+      );
+    });
+
+    blockerSelect.addEventListener("change", (event) => {
+      state = updateField(
+        state,
+        "blockerType",
         /** @type {HTMLSelectElement} */ (event.currentTarget).value
       );
     });

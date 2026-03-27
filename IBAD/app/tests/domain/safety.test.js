@@ -8,7 +8,6 @@ import {
 
 test("flags unsupported work relationship input", () => {
   const verdict = detectUnsupportedScope({
-    relationshipType: "barely-close",
     situationType: "favor",
     input: "팀장님이 오늘 밤까지 해달라고 했어요."
   });
@@ -27,7 +26,6 @@ test("flags open-door language when alternatives are disabled", () => {
 
 test("flags follow-up reply requests as unsupported", () => {
   const verdict = detectUnsupportedScope({
-    relationshipType: "just-friend",
     situationType: "favor",
     input: "내가 이미 한번 거절했는데 다시 뭐라고 답해야 할지 모르겠어."
   });

@@ -40,6 +40,7 @@ textarea {
 .workspace,
 .results-shell,
 .reply-card,
+.coach-panel,
 .select-card,
 .feedback {
   background: rgba(255, 249, 240, 0.92);
@@ -57,6 +58,7 @@ textarea {
 .composer,
 .composer-actions,
 .results-head,
+.coach-panel,
 .reply-grid {
   display: grid;
   gap: 20px;
@@ -69,7 +71,8 @@ textarea {
 }
 
 .eyebrow,
-.reply-label {
+.reply-label,
+.reply-recommendation {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -129,6 +132,7 @@ textarea {
 
 .select-card,
 .reply-card,
+.coach-panel,
 .results-shell {
   padding: 18px;
 }
@@ -165,6 +169,32 @@ textarea {
 
 .results-shell {
   margin: 0;
+}
+
+.coach-panel {
+  gap: 10px;
+  margin-bottom: 12px;
+  background: rgba(159, 61, 46, 0.07);
+  border-color: rgba(159, 61, 46, 0.18);
+}
+
+.coach-note,
+.avoid-phrase {
+  margin: 0;
+}
+
+.reply-card {
+  position: relative;
+}
+
+.reply-card-recommended {
+  border: 1px solid rgba(159, 61, 46, 0.35);
+  box-shadow: 0 20px 44px rgba(124, 47, 36, 0.12);
+}
+
+.reply-recommendation {
+  margin-bottom: 6px;
+  width: fit-content;
 }
 
 .reply-text {

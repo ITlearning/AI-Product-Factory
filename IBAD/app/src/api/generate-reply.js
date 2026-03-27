@@ -1,7 +1,8 @@
 /**
  * @param {{
  *   input: string,
- *   situationType: string
+ *   situationType: string,
+ *   blockerType: string
  * }} payload
  * @returns {Promise<
  *   | { ok: true, result: import("../domain/schema.js").normalizeReplyResult extends (...args: any[]) => infer R ? NonNullable<R> : never }
@@ -17,7 +18,8 @@ export async function requestReplySet(payload) {
       },
       body: JSON.stringify({
         input: payload.input,
-        situationType: payload.situationType
+        situationType: payload.situationType,
+        blockerType: payload.blockerType
       })
     });
 
