@@ -1,10 +1,12 @@
-# IBAD 경계 코치 구현 계획
+# IBAD 첫 거절문 추천 구현 계획
 
 > **에이전트 작업자용:** 하위 에이전트를 쓸 수 있으면 `superpowers:subagent-driven-development`를, 그렇지 않으면 `superpowers:executing-plans`를 사용해 이 계획을 실행한다. 단계 추적에는 체크박스 문법(`- [ ]`)을 사용한다.
 
-**목표:** `IBAD/app`을 단순한 3개 답장 생성기에서, 지금 바로 보낼 경계 문장 1개를 추천하고 통제된 대안 2개와 짧은 코칭 맥락을 함께 주는 흐름으로 확장한다.
+**목표:** `IBAD/app`을 단순한 3개 답장 생성기에서, 지금 바로 보낼 첫 거절문 1개를 추천하고 통제된 대안 2개와 짧은 가이드 맥락을 함께 주는 흐름으로 확장한다.
 
-**구현 방향:** 기존 단일 페이지 앱과 Vercel 함수를 유지하되, 요청 필드 `blockerType` 하나와 막힘 이유에 따라 추천 톤과 UI 강조를 정하는 얇은 결정론적 코칭 레이어를 추가한다. OpenAI 응답 계약은 `replyOptions`만 반환하던 구조에서 `replyOptions`, `recommendedTone`, `coachNote`, `avoidPhrase`를 포함하는 작은 경계 팩으로 확장하고, 기존 안전성 검사도 그대로 유지해 위험한 답장을 걸러낸다.
+**구현 방향:** 기존 단일 페이지 앱과 Vercel 함수를 유지하되, 요청 필드 `blockerType` 하나와 막힘 이유에 따라 추천 톤과 UI 강조를 정하는 얇은 결정론적 추천 레이어를 추가한다. OpenAI 응답 계약은 `replyOptions`만 반환하던 구조에서 `replyOptions`, `recommendedTone`, `coachNote`, `avoidPhrase`를 포함하는 작은 추천 팩으로 확장하고, 기존 안전성 검사도 그대로 유지해 위험한 답장을 걸러낸다.
+
+**범위 조정 메모:** 이 계획은 초기 `boundary coach` 표현을 1차 제품 기준으로 낮춰 읽는다. 즉 상담형 제품으로 넓히지 않고, `질문 1개 추가 + 첫 답장 1개를 더 선명하게 추천`하는 수준으로 한정한다.
 
 **기술 스택:** 바닐라 JS SPA, Node 테스트 러너, Vercel 서버리스 함수, OpenAI Responses API
 
@@ -15,15 +17,15 @@
 - 수정: `IBAD/app/src/domain/options.js`
   책임: UI, 검증, 프롬프트 빌딩이 함께 쓰는 막힘 이유 옵션과 공용 enum 추가
 - 생성: `IBAD/app/src/domain/coaching.js`
-  책임: 막힘 이유에서 추천 톤과 코치 문구로 이어지는 결정론적 매핑 관리
+  책임: 막힘 이유에서 추천 톤과 짧은 가이드 문구로 이어지는 결정론적 매핑 관리
 - 수정: `IBAD/app/src/ui/state.js`
   책임: `blockerType`을 상태에 들고 다니고, 더 풍부한 결과 계약을 보존하며, 요청에 포함해 전송
 - 수정: `IBAD/app/src/app.js`
   책임: 막힘 이유 필드 변경 이벤트를 바인딩하고 기존 렌더 흐름 유지
 - 수정: `IBAD/app/src/ui/templates.js`
-  책임: 막힘 이유 선택기, 추천 결과 카드, 코치 메모, 피해야 할 표현 영역 렌더링
+  책임: 막힘 이유 선택기, 추천 결과 카드, 가이드 메모, 피해야 할 표현 영역 렌더링
 - 수정: `IBAD/app/src/styles.css`
-  책임: 막힘 이유 칩/카드, 추천 카드 강조, 코칭 패널 스타일 추가
+  책임: 막힘 이유 칩/카드, 추천 카드 강조, 추천 패널 스타일 추가
 - 수정: `IBAD/app/src/utils/validation.js`
   책임: 요청 경계에서 `blockerType` 검증
 - 수정: `IBAD/app/src/api/generate-reply.js`
@@ -37,7 +39,7 @@
 - 생성: `IBAD/app/tests/domain/coaching.test.js`
   책임: 막힘 이유와 추천 결과 매핑 고정
 - 수정: `IBAD/app/tests/domain/schema.test.js`
-  책임: 확장된 경계 팩 스키마 고정
+  책임: 확장된 추천 팩 스키마 고정
 - 수정: `IBAD/app/tests/api/generate-reply.test.js`
   책임: 프롬프트 내용, 요청 페이로드, 정규화된 결과 구조 고정
 - 수정: `IBAD/app/README.md`
@@ -61,7 +63,7 @@ assert.match(markup, /너무 차갑게 보일까 걱정돼요/);
 assert.match(markup, /말이 길어질까 봐 걱정돼요/);
 ```
 
-- [ ] **2단계: 추천 경계 팩 결과 셸에 대한 실패 테스트 추가**
+- [ ] **2단계: 추천 팩 결과 셸에 대한 실패 테스트 추가**
 
 ```js
 assert.match(markup, /추천 시작 문장/);
@@ -108,7 +110,7 @@ export const BLOCKER_OPTIONS = [
 ];
 ```
 
-- [ ] **2단계: UI 곳곳에 문자열을 흩뿌리지 말고 코칭 매핑 파일로 분리**
+- [ ] **2단계: UI 곳곳에 문자열을 흩뿌리지 말고 추천 매핑 파일로 분리**
 
 ```js
 export const BLOCKER_COACHING = {
@@ -161,7 +163,7 @@ blockerSelect?.addEventListener("change", (event) => {
 </section>
 ```
 
-- [ ] **6단계: 추천 카드 강조와 짧은 코칭 카피를 위한 스타일 추가**
+- [ ] **6단계: 추천 카드 강조와 짧은 가이드 카피를 위한 스타일 추가**
 
 실행: `IBAD/app/src/styles.css` 업데이트
 예상: 추천 답장이 기본 선택처럼 읽히고, 나머지 두 카드는 분명한 보조 선택지로 보임
@@ -178,7 +180,7 @@ git add IBAD/app/src/domain/options.js IBAD/app/src/domain/coaching.js IBAD/app/
 git commit -m "feat: add ibad blocker-aware coaching shell"
 ```
 
-## 청크 2: API 계약을 경계 팩으로 확장
+## 청크 2: API 계약을 추천 팩으로 확장
 
 ### 작업 3: 확장된 스키마와 프롬프트 계약을 테스트로 먼저 고정
 
@@ -187,14 +189,14 @@ git commit -m "feat: add ibad blocker-aware coaching shell"
 - 수정: `IBAD/app/tests/domain/schema.test.js`
 - 수정: `IBAD/app/tests/api/generate-reply.test.js`
 
-- [ ] **1단계: 코칭 매핑 회귀 테스트 추가**
+- [ ] **1단계: 추천 매핑 회귀 테스트 추가**
 
 ```js
 assert.equal(BLOCKER_COACHING["tone-anxiety"].recommendedTone, "polite-firm");
 assert.match(BLOCKER_COACHING.overexplaining.coachNote, /한 문장/);
 ```
 
-- [ ] **2단계: 전체 경계 팩 구조를 요구하도록 스키마 테스트 확장**
+- [ ] **2단계: 전체 추천 팩 구조를 요구하도록 스키마 테스트 확장**
 
 ```js
 const result = normalizeReplyResult({
@@ -218,7 +220,7 @@ assert.match(prompt, /막히는 이유: tone-anxiety/);
 assert.match(prompt, /추천 톤을 정할 기준/);
 ```
 
-- [ ] **4단계: 성공 mock payload에 경계 팩 필드 추가**
+- [ ] **4단계: 성공 mock payload에 추천 팩 필드 추가**
 
 ```js
 {
@@ -232,7 +234,7 @@ assert.match(prompt, /추천 톤을 정할 기준/);
 - [ ] **5단계: 구현 전에 계약 테스트를 실행해 실제로 실패하는지 확인**
 
 실행: `cd IBAD/app && node --test tests/domain/coaching.test.js tests/domain/schema.test.js tests/api/generate-reply.test.js`
-예상: 아직 `blockerType`을 받지 않고 경계 팩 메타데이터도 반환하지 않으므로 FAIL
+예상: 아직 `blockerType`을 받지 않고 추천 팩 메타데이터도 반환하지 않으므로 FAIL
 
 - [ ] **6단계: 계약 우선 테스트 커밋**
 
@@ -241,7 +243,7 @@ git add IBAD/app/tests/domain/coaching.test.js IBAD/app/tests/domain/schema.test
 git commit -m "test: lock ibad boundary pack contract"
 ```
 
-### 작업 4: 경계 팩 스키마, 검증, 프롬프트 구현
+### 작업 4: 추천 팩 스키마, 검증, 프롬프트 구현
 
 **대상 파일:**
 - 수정: `IBAD/app/src/utils/validation.js`
@@ -303,7 +305,7 @@ return {
 실행: `cd IBAD/app && node --test tests/domain/coaching.test.js tests/domain/schema.test.js tests/api/generate-reply.test.js`
 예상: PASS
 
-- [ ] **7단계: 경계 팩 구현 커밋**
+- [ ] **7단계: 추천 팩 구현 커밋**
 
 ```bash
 git add IBAD/app/src/utils/validation.js IBAD/app/src/api/generate-reply.js IBAD/app/src/domain/schema.js IBAD/app/api/generate-reply.js IBAD/app/src/domain/coaching.js IBAD/app/tests/domain/coaching.test.js IBAD/app/tests/domain/schema.test.js IBAD/app/tests/api/generate-reply.test.js
@@ -354,11 +356,11 @@ git commit -m "feat: add ibad boundary pack generation contract"
 
 ```bash
 git add IBAD/app/README.md IBAD/ibeonen-an-dwae-feature-definition.md
-git commit -m "docs: describe ibad boundary coach flow"
+git commit -m "docs: describe ibad first-reply recommendation flow"
 ```
 
 - [ ] **6단계: 검증 요약과 함께 인계**
 
 ```text
-`IBAD/app`은 이제 막힘 이유를 입력받고, 추천 경계 문장 1개와 대안 2개를 보여주며, 기존 안전 가드레일도 유지한다. `npm run verify`가 통과했다.
+`IBAD/app`은 이제 막힘 이유를 입력받고, 추천 거절문 1개와 대안 2개를 보여주며, 기존 안전 가드레일도 유지한다. `npm run verify`가 통과했다.
 ```
