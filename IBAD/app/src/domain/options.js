@@ -6,8 +6,8 @@ export const RELATIONSHIP_OPTIONS = [
 ];
 
 export const SITUATION_OPTIONS = [
-  { value: "promise", label: "약속 거절" },
-  { value: "favor", label: "부탁 거절" }
+  { value: "promise", label: "약속" },
+  { value: "favor", label: "부탁" }
 ];
 
 export const STRENGTH_OPTIONS = [

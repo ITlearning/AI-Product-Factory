@@ -11,16 +11,22 @@ import { renderAppMarkup } from "../../src/ui/templates.js";
 test("renders the IBAD app shell", () => {
   const markup = renderAppMarkup(createInitialState());
 
-  assert.match(markup, /이번엔 안 돼/);
-  assert.match(markup, /관계 타입/);
+  assert.match(markup, /답장을 못 보내고 있다면, 여기서 시작하세요/);
+  assert.match(markup, /받은 메시지를 붙여넣어 주세요/);
+  assert.match(markup, /약속/);
+  assert.match(markup, /부탁/);
   assert.match(markup, /답장 만들기/);
-  assert.match(markup, /예의 있게 확실하게/);
+  assert.doesNotMatch(markup, /관계 타입/);
+  assert.doesNotMatch(markup, /거절 강도/);
+  assert.doesNotMatch(markup, /피해야 할 표현/);
+  assert.doesNotMatch(markup, /여지 남김 여부/);
+  assert.match(markup, /복사하기/);
 });
 
 test("updates form fields in state", () => {
-  const state = updateField(createInitialState(), "relationshipType", "ambiguous");
+  const state = updateField(createInitialState(), "situationType", "favor");
 
-  assert.equal(state.relationshipType, "ambiguous");
+  assert.equal(state.situationType, "favor");
 });
 
 test("renders generated reply cards", async () => {
@@ -34,24 +40,22 @@ test("renders generated reply cards", async () => {
         ok: true,
         result: {
           replyOptions: [
-            { text: "오늘은 좀 쉬고 싶어서 이번엔 어려울 것 같아.", toneLabel: "정중한 버전", whyItWorks: "부드럽게 선을 긋는다." },
-            { text: "오늘은 패스할게. 이번엔 안 될 것 같아.", toneLabel: "자연스러운 버전", whyItWorks: "짧고 분명하다." },
-            { text: "오늘은 안 될 것 같아.", toneLabel: "단호한 버전", whyItWorks: "여지를 줄인다." }
-          ],
-          avoidPhrases: ["다음에 보자"],
-          openDoorRisk: "낮음",
-          alternativeDifference: "대안을 넣지 않으면 더 깔끔하게 끝난다."
+            { text: "오늘은 좀 어려울 것 같아.", toneLabel: "부드럽게", whyItWorks: "미안함은 남기고 결론은 분명하게 말한다." },
+            { text: "이번엔 어려워. 고마운데 패스할게.", toneLabel: "예의 있게 확실하게", whyItWorks: "예의는 지키면서 재요청 여지를 줄인다." },
+            { text: "이번엔 어려워.", toneLabel: "짧게 끝내기", whyItWorks: "짧게 마무리해 왕복을 줄인다." }
+          ]
         }
       })
     }
   );
 
   const markup = renderAppMarkup(state);
-  assert.match(markup, /정중한 버전/);
-  assert.match(markup, /피해야 할 표현/);
-  assert.match(markup, /여지 남김 여부/);
-  assert.match(markup, /대안을 넣었을 때 \/ 안 넣었을 때/);
-  assert.match(markup, /복사/);
+  assert.match(markup, /부드럽게/);
+  assert.match(markup, /예의 있게 확실하게/);
+  assert.match(markup, /짧게 끝내기/);
+  assert.doesNotMatch(markup, /피해야 할 표현/);
+  assert.doesNotMatch(markup, /여지 남김 여부/);
+  assert.match(markup, /복사하기/);
 });
 
 test("renders unsupported-scope feedback", async () => {

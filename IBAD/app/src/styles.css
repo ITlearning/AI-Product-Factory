@@ -1,14 +1,12 @@
 :root {
   --bg: #f6efe2;
-  --bg-strong: #f0e3d0;
-  --card: #fff9f0;
-  --card-strong: #fef4df;
+  --bg-strong: #f3e5d2;
+  --card: #fffaf3;
   --ink: #2f241c;
   --muted: #735f51;
   --line: #dcc8b1;
   --accent: #9f3d2e;
   --accent-strong: #7c2f24;
-  --success: #285f4a;
   --warning: #9b5a00;
   --shadow: 0 18px 40px rgba(70, 44, 19, 0.08);
   font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
@@ -34,30 +32,46 @@ textarea {
 }
 
 .page-shell {
-  width: min(1120px, calc(100% - 32px));
+  width: min(980px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 32px 0 56px;
+  padding: 40px 0 56px;
 }
 
-.hero-card,
 .workspace,
-.results-shell {
+.results-shell,
+.reply-card,
+.select-card,
+.feedback,
+.example-chip {
   background: rgba(255, 249, 240, 0.92);
   border: 1px solid var(--line);
-  border-radius: 28px;
+  border-radius: 24px;
   box-shadow: var(--shadow);
 }
 
-.hero-card {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 20px;
+.workspace {
   padding: 28px;
 }
 
+.workspace-head,
+.workspace-grid,
+.composer,
+.composer-actions,
+.results-head,
+.example-list,
+.reply-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.workspace-head {
+  gap: 10px;
+  margin-bottom: 24px;
+  max-width: 680px;
+}
+
 .eyebrow,
-.mono-badge,
-.reply-index {
+.reply-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -71,15 +85,13 @@ textarea {
   text-transform: uppercase;
 }
 
-.hero-copy h1,
-.workspace h2,
+.workspace h1,
 .results-shell h2 {
   margin: 12px 0;
-  font-size: clamp(30px, 4vw, 50px);
-  line-height: 1;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.08;
 }
 
-.hero-copy p,
 .workspace p,
 .results-shell p,
 .reply-why {
@@ -87,74 +99,13 @@ textarea {
   line-height: 1.6;
 }
 
-.hero-pills,
-.workspace-head,
-.results-head,
-.composer-actions,
-.reply-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.hero-pills span,
-.preview-card,
-.select-card,
-.toggle-card,
-.reply-card,
-.guidance-panel,
-.helper-block,
-.feedback {
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--card);
-}
-
-.hero-pills span {
-  padding: 10px 14px;
-}
-
-.hero-preview {
-  display: grid;
-  gap: 12px;
-}
-
-.preview-card {
-  padding: 18px;
-}
-
-.preview-card span {
-  color: var(--muted);
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.workspace,
-.results-shell {
-  margin-top: 24px;
-  padding: 24px;
-}
-
-.workspace-grid,
-.results-grid {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 20px;
-}
-
-.composer,
-.helper-panel,
-.guidance-panel {
-  display: grid;
-  gap: 16px;
+.workspace-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  align-items: start;
 }
 
 .field-label,
-.select-card,
-.toggle-card {
+.select-card {
   display: grid;
   gap: 8px;
 }
@@ -170,27 +121,14 @@ select {
 }
 
 textarea {
-  min-height: 180px;
+  min-height: 220px;
   resize: vertical;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
 .select-card,
-.toggle-card,
-.helper-block,
-.guidance-panel,
-.reply-card {
-  padding: 16px;
-}
-
-.toggle-card input {
-  inline-size: 18px;
-  block-size: 18px;
+.reply-card,
+.results-shell {
+  padding: 18px;
 }
 
 .button {
@@ -205,9 +143,8 @@ textarea {
   color: #fff7f3;
 }
 
-.button-secondary,
 .button-copy {
-  background: var(--bg-strong);
+  background: var(--bg);
   color: var(--ink);
 }
 
@@ -216,26 +153,25 @@ textarea {
   opacity: 0.7;
 }
 
+.composer-actions {
+  gap: 14px;
+}
+
 .example-list,
 .reply-grid {
-  display: grid;
   gap: 12px;
 }
 
 .example-chip {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 16px;
   background: #fffdf8;
   padding: 12px 14px;
   text-align: left;
   cursor: pointer;
 }
 
-.helper-list {
+.results-shell {
   margin: 0;
-  padding-left: 18px;
-  color: var(--muted);
 }
 
 .reply-text {
@@ -258,11 +194,12 @@ textarea {
   color: var(--accent-strong);
 }
 
+.reply-grid-placeholder .reply-card {
+  opacity: 0.9;
+}
+
 @media (max-width: 860px) {
-  .hero-card,
-  .workspace-grid,
-  .results-grid,
-  .form-grid {
+  .workspace-grid {
     grid-template-columns: 1fr;
   }
 }

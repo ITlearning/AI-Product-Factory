@@ -1,9 +1,5 @@
 import { EXAMPLE_CASES } from "../domain/examples.js";
-import {
-  RELATIONSHIP_OPTIONS,
-  SITUATION_OPTIONS,
-  STRENGTH_OPTIONS
-} from "../domain/options.js";
+import { SITUATION_OPTIONS } from "../domain/options.js";
 import { requestReplySet } from "../api/generate-reply.js";
 import { validateInput } from "../utils/validation.js";
 
@@ -14,15 +10,9 @@ import { validateInput } from "../utils/validation.js";
 /**
  * @typedef {{
  *   input: string,
- *   relationshipType: string,
  *   situationType: string,
- *   rejectionStrength: string,
- *   includeAlternative: boolean,
  *   result: {
- *     replyOptions: { text: string, toneLabel: string, whyItWorks: string }[],
- *     avoidPhrases: string[],
- *     openDoorRisk: string,
- *     alternativeDifference: string
+ *     replyOptions: { text: string, toneLabel: string, whyItWorks: string }[]
  *   } | null,
  *   feedback: Feedback,
  *   isLoading: boolean
@@ -35,10 +25,7 @@ import { validateInput } from "../utils/validation.js";
 export function createInitialState() {
   return {
     input: "",
-    relationshipType: RELATIONSHIP_OPTIONS[1].value,
     situationType: SITUATION_OPTIONS[0].value,
-    rejectionStrength: STRENGTH_OPTIONS[1].value,
-    includeAlternative: false,
     result: null,
     feedback: null,
     isLoading: false
@@ -117,10 +104,7 @@ export async function submitReplyRequest(
 
   const response = await requestReplySetImpl({
     input: validation.normalized,
-    relationshipType: state.relationshipType,
-    situationType: state.situationType,
-    rejectionStrength: state.rejectionStrength,
-    includeAlternative: state.includeAlternative
+    situationType: state.situationType
   });
 
   if (response.ok) {
