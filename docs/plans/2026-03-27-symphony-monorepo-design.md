@@ -11,6 +11,7 @@
 - Routing: service labels and explicit issue wording
 - Delivery mode: branch, commit, push, and PR for file-changing issues
 - Delivery mode for planning/ideation work: detailed Linear comment first, optional doc artifact second
+- PR language: Korean by default
 - Initial safety posture: `approval_policy: never` inside headless Symphony workers
 - Initial concurrency: `max_concurrent_agents: 10`
 - Initial dispatch states: `Todo`, `In Progress`, `Rework`, `Human Review`, `Merging`

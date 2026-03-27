@@ -96,6 +96,7 @@ GitHub delivery rules:
 - Push the issue branch to `origin` if Git auth is available.
 - Create or update a GitHub pull request if GitHub tooling is available.
 - A pull request is the default handoff for file-changing work. Do not treat local-only changes as complete delivery unless the issue explicitly says not to push.
+- Pull request titles and bodies should be written in Korean by default unless the issue explicitly asks for English.
 - PR descriptions should include:
   - the Linear issue identifier and title
   - a short summary of what changed

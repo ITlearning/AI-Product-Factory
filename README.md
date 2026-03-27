@@ -132,6 +132,11 @@ If PR creation tooling is missing, the workflow should still push the branch and
 
 This PR-oriented flow is for file-changing code work. For planning, ideation, brainstorming, or recommendation-heavy tasks, the default handoff is a detailed Linear comment, not a PR.
 
+PR language rule:
+
+- PR 제목과 본문은 기본적으로 한국어로 작성합니다.
+- 이슈에서 영어를 명시적으로 요구한 경우에만 영어로 작성합니다.
+
 ## How Routing Works In Practice
 
 Symphony reads the issue from one Linear project, then the prompt in [`WORKFLOW.md`](WORKFLOW.md) routes the work to the right subtree.
