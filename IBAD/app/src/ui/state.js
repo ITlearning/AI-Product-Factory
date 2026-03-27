@@ -1,4 +1,3 @@
-import { EXAMPLE_CASES } from "../domain/examples.js";
 import { SITUATION_OPTIONS } from "../domain/options.js";
 import { requestReplySet } from "../api/generate-reply.js";
 import { validateInput } from "../utils/validation.js";
@@ -43,19 +42,6 @@ export function updateField(state, field, value) {
   return {
     ...state,
     [field]: value
-  };
-}
-
-/**
- * @param {AppState} state
- * @param {number} index
- * @returns {AppState}
- */
-export function applyExample(state, index) {
-  return {
-    ...state,
-    input: EXAMPLE_CASES[index] ?? EXAMPLE_CASES[0] ?? "",
-    feedback: null
   };
 }
 

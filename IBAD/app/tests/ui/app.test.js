@@ -18,9 +18,10 @@ test("renders the IBAD app shell", () => {
   assert.match(markup, /답장 만들기/);
   assert.doesNotMatch(markup, /관계 타입/);
   assert.doesNotMatch(markup, /거절 강도/);
+  assert.doesNotMatch(markup, /바로 시작할 수 있는 답장/);
+  assert.doesNotMatch(markup, /복사하기/);
   assert.doesNotMatch(markup, /피해야 할 표현/);
   assert.doesNotMatch(markup, /여지 남김 여부/);
-  assert.match(markup, /복사하기/);
 });
 
 test("updates form fields in state", () => {
@@ -50,6 +51,7 @@ test("renders generated reply cards", async () => {
   );
 
   const markup = renderAppMarkup(state);
+  assert.match(markup, /바로 시작할 수 있는 답장/);
   assert.match(markup, /부드럽게/);
   assert.match(markup, /예의 있게 확실하게/);
   assert.match(markup, /짧게 끝내기/);

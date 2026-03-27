@@ -1,10 +1,7 @@
 /**
  * @param {{
  *   input: string,
- *   relationshipType: string,
- *   situationType: string,
- *   rejectionStrength: string,
- *   includeAlternative: boolean
+ *   situationType: string
  * }} payload
  * @returns {Promise<
  *   | { ok: true, result: import("../domain/schema.js").normalizeReplyResult extends (...args: any[]) => infer R ? NonNullable<R> : never }
@@ -18,7 +15,10 @@ export async function requestReplySet(payload) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        input: payload.input,
+        situationType: payload.situationType
+      })
     });
 
     const body = await response.json().catch(() => null);

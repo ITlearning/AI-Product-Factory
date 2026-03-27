@@ -1,4 +1,4 @@
-import { applyExample, createInitialState, startRequest, submitReplyRequest, updateField } from "./ui/state.js";
+import { createInitialState, startRequest, submitReplyRequest, updateField } from "./ui/state.js";
 import { renderAppMarkup } from "./ui/templates.js";
 
 /**
@@ -12,7 +12,6 @@ export function createApp(root, options = {}) {
     const form = root.querySelector('[data-role="composer"]');
     const textarea = root.querySelector("#input-message");
     const situationSelect = root.querySelector("#situation-type");
-    const exampleButtons = root.querySelectorAll("[data-example-index]");
     const copyButtons = root.querySelectorAll("[data-copy-reply]");
 
     if (
@@ -34,13 +33,6 @@ export function createApp(root, options = {}) {
         /** @type {HTMLSelectElement} */ (event.currentTarget).value
       );
     });
-
-    for (const button of exampleButtons) {
-      button.addEventListener("click", () => {
-        state = applyExample(state, Number(button.getAttribute("data-example-index")));
-        render();
-      });
-    }
 
     for (const button of copyButtons) {
       button.addEventListener("click", async () => {

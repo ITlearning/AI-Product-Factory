@@ -14,25 +14,14 @@ export const REPLY_JSON_SCHEMA = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: [
-      "replyOptions",
-      "avoidPhrases",
-      "openDoorRisk",
-      "alternativeDifference"
-    ],
+    required: ["replyOptions"],
     properties: {
       replyOptions: {
         type: "array",
         minItems: 3,
         maxItems: 3,
         items: replyOptionSchema
-      },
-      avoidPhrases: {
-        type: "array",
-        items: { type: "string" }
-      },
-      openDoorRisk: { type: "string" },
-      alternativeDifference: { type: "string" }
+      }
     }
   }
 };
@@ -40,10 +29,7 @@ export const REPLY_JSON_SCHEMA = {
 /**
  * @param {unknown} payload
  * @returns {{
- *   replyOptions: { text: string, toneLabel: string, whyItWorks: string }[],
- *   avoidPhrases: string[],
- *   openDoorRisk: string,
- *   alternativeDifference: string
+ *   replyOptions: { text: string, toneLabel: string, whyItWorks: string }[]
  * } | null}
  */
 export function normalizeReplyResult(payload) {
@@ -83,23 +69,10 @@ export function normalizeReplyResult(payload) {
     return null;
   }
 
-  const avoidPhrases = Array.isArray(payload.avoidPhrases)
-    ? payload.avoidPhrases.map(normalizeText).filter(Boolean)
-    : [];
-  const openDoorRisk = normalizeText(payload.openDoorRisk);
-  const alternativeDifference = normalizeText(payload.alternativeDifference);
-
-  if (!openDoorRisk || !alternativeDifference) {
-    return null;
-  }
-
   return {
     replyOptions: /** @type {{ text: string, toneLabel: string, whyItWorks: string }[]} */ (
       normalizedReplyOptions
-    ),
-    avoidPhrases,
-    openDoorRisk,
-    alternativeDifference
+    )
   };
 }
 
