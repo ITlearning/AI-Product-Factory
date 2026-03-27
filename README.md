@@ -105,6 +105,8 @@ This starts the Symphony service against the single Linear project and serves th
 
 The current Symphony Elixir reference implementation requires this explicit acknowledgement flag because it is a low-key engineering preview intended for evaluation only.
 
+The checked-in workflow uses `approval_policy: never` for Codex. In this headless Symphony setup, `on-request` causes agent runs to fail whenever Codex asks for approval for commands like worktree creation, push, or PR creation.
+
 The checked-in workflow will also dispatch `Human Review` and `Merging` issues. Those states should be used only if your PR/review and merge process is already wired well enough for unattended handling.
 
 The current checked-in concurrency is `10` agents. This is still a fairly aggressive setting and assumes your Linear routing, local machine capacity, and Git/PR workflow are stable enough to handle multiple concurrent issue runs.
