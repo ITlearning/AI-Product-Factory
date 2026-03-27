@@ -224,3 +224,21 @@ Current verification commands:
 - [`UGGK`](UGGK): currently docs/spec-first; no standard app verification command yet
 
 If a new service is added, update both [`WORKFLOW.md`](WORKFLOW.md) and this README so the routing and validation rules stay explicit.
+
+## CodeRabbit
+
+This repository is configured for CodeRabbit with a root [`.coderabbit.yaml`](.coderabbit.yaml).
+
+Current intent:
+
+- review every PR automatically
+- review follow-up commits automatically
+- respond in Korean
+- ignore generated `dist/**` output during review
+- keep the initial review profile relatively light (`chill`)
+
+Setup notes:
+
+1. Install the CodeRabbit GitHub App on this repository or organization.
+2. Leave automatic PR review enabled.
+3. The repository-local [`.coderabbit.yaml`](.coderabbit.yaml) will define the default behavior for this repo.
