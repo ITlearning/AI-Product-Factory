@@ -13,6 +13,7 @@
 - Delivery mode for planning/ideation work: detailed Linear comment first, optional doc artifact second
 - PR language: Korean by default
 - Initial safety posture: `approval_policy: never` inside headless Symphony workers
+- Turn sandbox posture: `workspaceWrite` with `networkAccess: true` so unattended GitHub PR lookups/creation can succeed
 - Initial concurrency: `max_concurrent_agents: 10`
 - Initial dispatch states: `Todo`, `In Progress`, `Rework`, `Human Review`, `Merging`
 - Workspace strategy: one isolated workspace per issue under `SYMPHONY_WORKSPACE_ROOT`
@@ -76,6 +77,8 @@ Important behavior:
 - Comments should contain the useful substance inline; artifact paths are supplemental.
 - Code updates should be summarized with why the change was made, exact paths touched, key behavior changes, verification run, how to check the result, branch name, and PR link when available.
 - Non-code updates should be summarized with the actual recommendation, tradeoffs, and next decision needed, with updated artifacts only as support.
+- `Merging` should not be a passive waiting room. If the issue belongs in GitHub handoff and no PR exists yet, opening or updating the PR is the first responsibility of that state.
+- Planning or brainstorming work should normally stop at comment-first handoff states instead of entering `Merging`.
 
 ## GitHub Delivery Design
 

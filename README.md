@@ -112,6 +112,17 @@ The current Symphony Elixir reference implementation requires this explicit ackn
 
 The checked-in workflow uses `approval_policy: never` for Codex. In this headless Symphony setup, `on-request` causes agent runs to fail whenever Codex asks for approval for commands like worktree creation, push, or PR creation.
 
+The checked-in workflow also overrides the default turn sandbox to keep `workspaceWrite` while enabling `networkAccess: true`. This is required for unattended `gh pr view` / `gh pr create` calls inside Symphony workers.
+
+Because the current Symphony implementation accepts the turn sandbox policy map literally, the checked-in `writableRoots` value is currently pinned to this machine's workspace root:
+
+- `/Users/tabber/code/ai-product-factory-workspaces`
+
+If the Symphony workspace root moves to a different path on another machine, update both:
+
+- `workspace.root`
+- `codex.turn_sandbox_policy.writableRoots`
+
 The checked-in workflow will also dispatch `Human Review` and `Merging` issues. Those states should be used only if your PR/review and merge process is already wired well enough for unattended handling.
 
 The current checked-in concurrency is `10` agents. This is still a fairly aggressive setting and assumes your Linear routing, local machine capacity, and Git/PR workflow are stable enough to handle multiple concurrent issue runs.
@@ -136,6 +147,13 @@ Important prerequisites:
 If PR creation tooling is missing, the workflow should still push the branch and then report the exact manual follow-up needed.
 
 This PR-oriented flow is for file-changing code work. For planning, ideation, brainstorming, or recommendation-heavy tasks, the default handoff is a detailed Linear comment, not a PR.
+
+State intent:
+
+- `Human Review` is the default handoff for non-code work and for code work that still needs human feedback.
+- `Merging` is for code-changing work that should land through GitHub.
+- If an issue reaches `Merging` without an open PR, the agent should open or update the PR first instead of idling.
+- Planning or brainstorming issues should not be moved to `Merging` unless a PR-based handoff was explicitly requested.
 
 PR language rule:
 

@@ -35,6 +35,13 @@ codex:
   thread_sandbox: workspace-write
   turn_sandbox_policy:
     type: workspaceWrite
+    writableRoots:
+      - /Users/tabber/code/ai-product-factory-workspaces
+    readOnlyAccess:
+      type: fullAccess
+    networkAccess: true
+    excludeTmpdirEnvVar: false
+    excludeSlashTmp: false
 ---
 You are working in the `AI-Product-Factory` monorepo.
 
@@ -91,6 +98,7 @@ GitHub delivery rules:
 
 - Non-code tasks whose primary output is planning, ideation, brainstorming, analysis, or recommendations do not require a branch, push, or PR by default.
 - For those non-code tasks, the default handoff is a detailed Linear comment. Optional docs or plan files are supporting artifacts, not the primary communication surface.
+- Do not move non-code tasks into `Merging` by default unless the issue explicitly asks for a PR-based handoff.
 - For any issue that changes repository files, create or reuse the issue branch before final verification and delivery steps.
 - After verification passes, create a commit with a concise message that matches the work completed.
 - Push the issue branch to `origin` if Git auth is available.
@@ -148,7 +156,7 @@ State routing rules:
 - `In Progress`: continue implementation and validation for the routed target path. If the task is code-changing, maintain the issue branch and keep delivery headed toward a pushed branch and PR. If the task is planning or ideation, keep the comment thread rich enough that a human can react without opening repository files first.
 - `Rework`: read the latest human comments first, convert them into the current task list, address that feedback, keep scope tight, rerun the relevant verification, and leave a new update comment describing what changed.
 - `Human Review`: do not widen scope or start unrelated work. Review the latest human comments, PR state, and checks if those tools are available. If there is actionable feedback, address it, rerun verification, push updated commits if needed, update the PR if one exists, and leave a new update comment. If there is no actionable feedback, report that the issue is waiting on human review.
-- `Merging`: review the latest human comments and checks before merge work. Only handle merge-ready work. Confirm the latest relevant verification is still green. If the repository has a configured safe merge flow, use it. If merge tooling or permissions are missing, report the exact merge blocker instead of forcing a risky manual sequence.
+- `Merging`: use this state only for code-changing work that should land through GitHub. If no PR exists yet, first confirm the issue branch is pushed and create or update the PR. Do not sit idle waiting for merge readiness when the PR has not been opened. Once a PR exists, review the latest human comments and checks before merge work. Confirm the latest relevant verification is still green. If the repository has a configured safe merge flow, use it. If merge tooling or permissions are missing, report the exact merge blocker instead of forcing a risky manual sequence.
 
 Final response requirements:
 
