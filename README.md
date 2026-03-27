@@ -2,6 +2,11 @@
 
 This repository is a collection of small product and service experiments. The recommended Symphony setup is one Linear project for the whole repository, with service routing handled by labels and issue wording instead of one Linear project per app.
 
+Repository guidance files:
+
+- [`AGENTS.md`](AGENTS.md): repo-level Codex guidance and short map
+- [`WORKFLOW.md`](WORKFLOW.md): Symphony runtime config plus orchestration prompt
+
 ## Recommended Linear Shape
 
 Use one Linear project, for example `AI Product Factory`, and keep one Symphony runner attached to that project slug.
