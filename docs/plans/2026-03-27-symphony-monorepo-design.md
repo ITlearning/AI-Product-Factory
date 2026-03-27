@@ -13,6 +13,7 @@
 - Delivery mode for planning/ideation work: detailed Linear comment first, optional doc artifact second
 - PR language: Korean by default
 - Initial safety posture: `approval_policy: never` inside headless Symphony workers
+- Turn sandbox posture: `workspaceWrite` with `networkAccess: true` so unattended GitHub PR lookups/creation can succeed
 - Initial concurrency: `max_concurrent_agents: 10`
 - Initial dispatch states: `Todo`, `In Progress`, `Rework`, `Human Review`, `Merging`
 - Workspace strategy: one isolated workspace per issue under `SYMPHONY_WORKSPACE_ROOT`

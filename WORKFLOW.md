@@ -35,6 +35,13 @@ codex:
   thread_sandbox: workspace-write
   turn_sandbox_policy:
     type: workspaceWrite
+    writableRoots:
+      - /Users/tabber/code/ai-product-factory-workspaces
+    readOnlyAccess:
+      type: fullAccess
+    networkAccess: true
+    excludeTmpdirEnvVar: false
+    excludeSlashTmp: false
 ---
 You are working in the `AI-Product-Factory` monorepo.
 
