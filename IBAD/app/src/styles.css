@@ -9,7 +9,7 @@
   --accent-strong: #7c2f24;
   --warning: #9b5a00;
   --shadow: 0 18px 40px rgba(70, 44, 19, 0.08);
-  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-family: "NanumSquare", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
 }
 
 * {
