@@ -17,14 +17,14 @@ export function renderAppMarkup(state) {
           <span class="eyebrow">IBAD</span>
           <h1>답장을 못 보내고 있다면, 여기서 시작하세요</h1>
           <p class="intro-copy">
-            받은 메시지를 붙여넣고, 지금 막히는 이유를 고르면 바로 보낼 첫 거절문을 추천해 드려요.
+            받은 메시지나 지금 상황을 적고, 지금 막히는 이유를 고르면 바로 보낼 첫 거절문을 추천해 드려요.
           </p>
         </div>
 
         <div class="workspace-grid${state.result ? " has-result" : ""}">
           <form class="composer" data-role="composer">
             <label class="field-label" for="input-message">
-              받은 메시지를 붙여넣어 주세요
+              받은 메시지나 지금 상황을 적어 주세요
             </label>
             <textarea
               id="input-message"
