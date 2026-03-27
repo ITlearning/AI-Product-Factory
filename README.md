@@ -137,6 +137,13 @@ If PR creation tooling is missing, the workflow should still push the branch and
 
 This PR-oriented flow is for file-changing code work. For planning, ideation, brainstorming, or recommendation-heavy tasks, the default handoff is a detailed Linear comment, not a PR.
 
+State intent:
+
+- `Human Review` is the default handoff for non-code work and for code work that still needs human feedback.
+- `Merging` is for code-changing work that should land through GitHub.
+- If an issue reaches `Merging` without an open PR, the agent should open or update the PR first instead of idling.
+- Planning or brainstorming issues should not be moved to `Merging` unless a PR-based handoff was explicitly requested.
+
 PR language rule:
 
 - PR 제목과 본문은 기본적으로 한국어로 작성합니다.
