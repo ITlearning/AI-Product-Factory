@@ -12,7 +12,7 @@ test("renders the IBAD app shell", () => {
   const markup = renderAppMarkup(createInitialState());
 
   assert.match(markup, /답장을 못 보내고 있다면, 여기서 시작하세요/);
-  assert.match(markup, /받은 메시지를 붙여넣어 주세요/);
+  assert.match(markup, /받은 메시지나 지금 상황을 적어 주세요/);
   assert.match(markup, /약속/);
   assert.match(markup, /부탁/);
   assert.match(markup, /지금 막히는 이유가 뭐예요/);
