@@ -1,4 +1,5 @@
 import { DEFAULT_OPENAI_MODEL, OPENAI_RESPONSES_URL } from "../src/config.js";
+import { getCoachingForBlocker } from "../src/domain/coaching.js";
 import { REPLY_JSON_SCHEMA, normalizeReplyResult } from "../src/domain/schema.js";
 import { detectUnsupportedScope, findReplySafetyIssues } from "../src/domain/safety.js";
 import { validateRequestPayload } from "../src/utils/validation.js";
@@ -82,14 +83,15 @@ export async function handleGenerateReplyRequest(request, options = {}) {
         );
       }
 
-      const safetyIssues = collectReplySafetyIssues(normalized);
+      const resultWithCoaching = applyCoaching(normalized, payload.blockerType);
+      const safetyIssues = collectReplySafetyIssues(resultWithCoaching);
 
       if (safetyIssues.length === 0) {
-        return jsonResponse({ result: normalized, source: "ai" }, 200);
+        return jsonResponse({ result: resultWithCoaching, source: "ai" }, 200);
       }
 
       revisionContext = {
-        previousResult: normalized,
+        previousResult: resultWithCoaching,
         safetyIssues
       };
     }
@@ -109,16 +111,25 @@ export async function handleGenerateReplyRequest(request, options = {}) {
 /**
  * @param {{
  *   input: string,
- *   situationType: string
+ *   situationType: string,
+ *   blockerType: string
  * }} payload
  * @returns {string}
  */
 export function buildUserPrompt(payload) {
+  const coaching = getCoachingForBlocker(payload.blockerType);
+
   return [
-    "상대 메시지를 받고도 답장을 못 보내는 사람을 위한 한국어 답장 3개를 만들어 주세요.",
+    "상대 메시지를 받고도 답장을 못 보내는 사람을 위한 한국어 답장 3개와 추천 정보 1세트를 만들어 주세요.",
     `받은 메시지/상황: ${payload.input}`,
     `상황 타입: ${payload.situationType}`,
+    `막히는 이유: ${payload.blockerType}`,
+    `추천 톤을 정할 기준: ${coaching?.recommendedTone ?? "polite-firm"}`,
+    `coachNote 고정 문장: ${coaching?.coachNote ?? ""}`,
     "replyOptions는 부드럽게, 예의 있게 확실하게, 짧게 끝내기 순서로 작성해 주세요.",
+    "recommendedTone은 soft, polite-firm, short 중 하나만 반환하고 추천 기준과 같아야 합니다.",
+    "coachNote는 제공된 고정 문장을 그대로 반환해 주세요.",
+    "avoidPhrase는 다시 붙잡힐 수 있는 표현 하나만 작성해 주세요.",
     "각 답장은 바로 복사해 보낼 수 있게 짧고 분명하게 작성해 주세요."
   ].join("\n");
 }
@@ -126,7 +137,8 @@ export function buildUserPrompt(payload) {
 /**
  * @param {{
  *   input: string,
- *   situationType: string
+ *   situationType: string,
+ *   blockerType: string
  * }} payload
  * @param {{ previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }} revisionContext
  * @returns {string}
@@ -215,7 +227,8 @@ function describeSafetyIssue(issue) {
  *   model: string,
  *   payload: {
  *     input: string,
- *     situationType: string
+ *     situationType: string,
+ *     blockerType: string
  *   },
  *   revisionContext: null | { previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }
  * }} options
@@ -254,6 +267,25 @@ function requestStructuredReplySet({ apiKey, fetchImpl, model, payload, revision
       }
     })
   });
+}
+
+/**
+ * @param {NonNullable<ReturnType<typeof normalizeReplyResult>>} result
+ * @param {string} blockerType
+ * @returns {NonNullable<ReturnType<typeof normalizeReplyResult>>}
+ */
+function applyCoaching(result, blockerType) {
+  const coaching = getCoachingForBlocker(blockerType);
+
+  if (!coaching) {
+    return result;
+  }
+
+  return {
+    ...result,
+    recommendedTone: coaching.recommendedTone,
+    coachNote: coaching.coachNote
+  };
 }
 
 function tryParseJson(value) {

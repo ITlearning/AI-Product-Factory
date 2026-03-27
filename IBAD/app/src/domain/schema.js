@@ -1,3 +1,5 @@
+import { SUPPORTED_REPLY_TONE_VALUES } from "./options.js";
+
 const replyOptionSchema = {
   type: "object",
   additionalProperties: false,
@@ -14,14 +16,20 @@ export const REPLY_JSON_SCHEMA = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["replyOptions"],
+    required: ["replyOptions", "recommendedTone", "coachNote", "avoidPhrase"],
     properties: {
       replyOptions: {
         type: "array",
         minItems: 3,
         maxItems: 3,
         items: replyOptionSchema
-      }
+      },
+      recommendedTone: {
+        type: "string",
+        enum: ["soft", "polite-firm", "short"]
+      },
+      coachNote: { type: "string" },
+      avoidPhrase: { type: "string" }
     }
   }
 };
@@ -30,6 +38,9 @@ export const REPLY_JSON_SCHEMA = {
  * @param {unknown} payload
  * @returns {{
  *   replyOptions: { text: string, toneLabel: string, whyItWorks: string }[]
+ *   recommendedTone: string,
+ *   coachNote: string,
+ *   avoidPhrase: string
  * } | null}
  */
 export function normalizeReplyResult(payload) {
@@ -38,8 +49,17 @@ export function normalizeReplyResult(payload) {
   }
 
   const replyOptions = Array.isArray(payload.replyOptions) ? payload.replyOptions : null;
+  const recommendedTone = normalizeText(payload.recommendedTone);
+  const coachNote = normalizeText(payload.coachNote);
+  const avoidPhrase = normalizeText(payload.avoidPhrase);
 
-  if (!replyOptions || replyOptions.length !== 3) {
+  if (
+    !replyOptions ||
+    replyOptions.length !== 3 ||
+    !SUPPORTED_REPLY_TONE_VALUES.has(recommendedTone) ||
+    !coachNote ||
+    !avoidPhrase
+  ) {
     return null;
   }
 
@@ -72,7 +92,10 @@ export function normalizeReplyResult(payload) {
   return {
     replyOptions: /** @type {{ text: string, toneLabel: string, whyItWorks: string }[]} */ (
       normalizedReplyOptions
-    )
+    ),
+    recommendedTone,
+    coachNote,
+    avoidPhrase
   };
 }
 

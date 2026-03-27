@@ -1,4 +1,8 @@
-import { SITUATION_OPTIONS } from "../domain/options.js";
+import {
+  BLOCKER_OPTIONS,
+  REPLY_TONE_OPTIONS,
+  SITUATION_OPTIONS
+} from "../domain/options.js";
 import { escapeHtml } from "../utils/text.js";
 
 /**
@@ -13,7 +17,7 @@ export function renderAppMarkup(state) {
           <span class="eyebrow">IBAD</span>
           <h1>답장을 못 보내고 있다면, 여기서 시작하세요</h1>
           <p class="intro-copy">
-            받은 메시지를 붙여넣고, 지금 필요한 시작 문장을 3가지 톤으로 받아보세요.
+            받은 메시지를 붙여넣고, 지금 막히는 이유를 고르면 바로 보낼 첫 거절문을 추천해 드려요.
           </p>
         </div>
 
@@ -35,6 +39,13 @@ export function renderAppMarkup(state) {
               state.situationType
             )}
 
+            ${renderSelect(
+              "blocker-type",
+              "지금 막히는 이유가 뭐예요?",
+              BLOCKER_OPTIONS,
+              state.blockerType
+            )}
+
             <div class="composer-actions">
               <button class="button button-primary" type="submit" ${state.isLoading ? "disabled" : ""}>
                 ${state.isLoading ? "답장 만드는 중..." : "답장 만들기"}
@@ -47,9 +58,10 @@ export function renderAppMarkup(state) {
               ? `
                 <section class="results-shell" id="results">
                   <div class="results-head">
-                    <h2>바로 시작할 수 있는 답장</h2>
-                    <p>길게 고민하기 전에, 지금 보내기 쉬운 문장부터 고르세요.</p>
+                    <h2>추천 시작 문장</h2>
+                    <p>이럴 때는 이렇게 시작하면 돼요.</p>
                   </div>
+                  ${renderCoachPanel(state.result)}
                   ${renderReplyCards(state.result)}
                 </section>
               `
@@ -99,8 +111,15 @@ function renderReplyCards(result) {
     <div class="reply-grid">
       ${result.replyOptions
         .map(
-          (option) => `
-            <article class="reply-card">
+          (option, index) => `
+            <article class="reply-card${
+              REPLY_TONE_OPTIONS[index]?.value === result.recommendedTone ? " reply-card-recommended" : ""
+            }">
+              ${
+                REPLY_TONE_OPTIONS[index]?.value === result.recommendedTone
+                  ? '<span class="reply-recommendation">추천 카드</span>'
+                  : ""
+              }
               <span class="reply-label">${escapeHtml(option.toneLabel)}</span>
               <p class="reply-text">${escapeHtml(option.text)}</p>
               <p class="reply-why">${escapeHtml(option.whyItWorks)}</p>
@@ -115,4 +134,13 @@ function renderReplyCards(result) {
         .join("")}
       </div>
     `;
+}
+
+function renderCoachPanel(result) {
+  return `
+    <section class="coach-panel" aria-label="추천 가이드">
+      <p class="coach-note">${escapeHtml(result.coachNote)}</p>
+      <p class="avoid-phrase">피해야 할 표현: ${escapeHtml(result.avoidPhrase)}</p>
+    </section>
+  `;
 }
