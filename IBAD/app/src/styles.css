@@ -40,6 +40,7 @@ textarea {
 .workspace,
 .results-shell,
 .reply-card,
+.coach-panel,
 .select-card,
 .feedback {
   background: rgba(255, 249, 240, 0.92);
@@ -57,7 +58,9 @@ textarea {
 .composer,
 .composer-actions,
 .results-head,
-.reply-grid {
+.coach-panel,
+.reply-grid,
+.reply-card-head {
   display: grid;
   gap: 20px;
 }
@@ -129,6 +132,7 @@ textarea {
 
 .select-card,
 .reply-card,
+.coach-panel,
 .results-shell {
   padding: 18px;
 }
@@ -163,14 +167,51 @@ textarea {
   gap: 12px;
 }
 
+.coach-panel {
+  gap: 10px;
+  margin-bottom: 16px;
+  background: rgba(159, 61, 46, 0.08);
+}
+
 .results-shell {
   margin: 0;
+}
+
+.reply-card {
+  position: relative;
+}
+
+.reply-card.is-recommended {
+  border-color: rgba(159, 61, 46, 0.4);
+  background: #fff7ef;
+}
+
+.reply-card-head {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.reply-pick {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(159, 61, 46, 0.14);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .reply-text {
   font-size: 19px;
   line-height: 1.5;
   margin: 10px 0 14px;
+}
+
+.coach-note,
+.avoid-phrase {
+  margin: 0;
 }
 
 .feedback {

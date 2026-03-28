@@ -1,4 +1,4 @@
-import { SITUATION_OPTIONS } from "../domain/options.js";
+import { BLOCKER_OPTIONS, SITUATION_OPTIONS } from "../domain/options.js";
 import { requestReplySet } from "../api/generate-reply.js";
 import { validateInput } from "../utils/validation.js";
 
@@ -10,8 +10,12 @@ import { validateInput } from "../utils/validation.js";
  * @typedef {{
  *   input: string,
  *   situationType: string,
+ *   blockerType: string,
  *   result: {
- *     replyOptions: { text: string, toneLabel: string, whyItWorks: string }[]
+ *     replyOptions: { text: string, toneLabel: string, whyItWorks: string }[],
+ *     recommendedTone: "soft" | "polite-firm" | "short",
+ *     coachNote: string,
+ *     avoidPhrase: string
  *   } | null,
  *   feedback: Feedback,
  *   isLoading: boolean
@@ -25,6 +29,7 @@ export function createInitialState() {
   return {
     input: "",
     situationType: SITUATION_OPTIONS[0].value,
+    blockerType: BLOCKER_OPTIONS[1].value,
     result: null,
     feedback: null,
     isLoading: false
@@ -90,7 +95,8 @@ export async function submitReplyRequest(
 
   const response = await requestReplySetImpl({
     input: validation.normalized,
-    situationType: state.situationType
+    situationType: state.situationType,
+    blockerType: state.blockerType
   });
 
   if (response.ok) {

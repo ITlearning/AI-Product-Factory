@@ -1,14 +1,21 @@
 import { DEFAULT_OPENAI_MODEL, OPENAI_RESPONSES_URL } from "../src/config.js";
-import { REPLY_JSON_SCHEMA, normalizeReplyResult } from "../src/domain/schema.js";
+import { getCoachingForBlocker } from "../src/domain/coaching.js";
+import { BLOCKER_OPTIONS } from "../src/domain/options.js";
+import {
+  buildReplyResult,
+  normalizeAiReplyDraft,
+  REPLY_JSON_SCHEMA
+} from "../src/domain/schema.js";
 import { detectUnsupportedScope, findReplySafetyIssues } from "../src/domain/safety.js";
 import { validateRequestPayload } from "../src/utils/validation.js";
 
 const SYSTEM_PROMPT = [
-  "당신은 상대 메시지를 받고도 답장을 못 보내는 사람을 돕는 한국어 어시스턴트다.",
+  "당신은 상대 메시지를 받고도 답장을 못 보내는 사람에게 지금 보낼 첫 거절문 후보를 정리해 주는 한국어 어시스턴트다.",
   "약속 거절 또는 부탁 거절 상황만 다룬다.",
   "반드시 바로 보낼 수 있는 답장 3개를 만든다.",
   "순서는 부드럽게, 예의 있게 확실하게, 짧게 끝내기다.",
   "각 답장은 짧고, 변명은 줄이고, 다시 잡힐 표현은 피한다.",
+  "avoidPhrase에는 지금 상황에서 피해야 할 여지 남김 표현 하나만 적는다.",
   "반드시 지정된 JSON 스키마만 반환한다."
 ].join(" ");
 const MAX_GENERATION_ATTEMPTS = 2;
@@ -53,7 +60,7 @@ export async function handleGenerateReplyRequest(request, options = {}) {
   const model = options.model ?? process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL;
 
   try {
-    /** @type {null | { previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }} */
+    /** @type {null | { previousResult: NonNullable<ReturnType<typeof normalizeAiReplyDraft>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }} */
     let revisionContext = null;
 
     for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt += 1) {
@@ -70,9 +77,9 @@ export async function handleGenerateReplyRequest(request, options = {}) {
       }
 
       const upstreamPayload = await upstreamResponse.json();
-      const normalized = extractStructuredResult(upstreamPayload);
+      const normalizedDraft = extractStructuredResult(upstreamPayload);
 
-      if (!normalized) {
+      if (!normalizedDraft) {
         return jsonResponse(
           {
             error: "AI returned an invalid result.",
@@ -82,14 +89,20 @@ export async function handleGenerateReplyRequest(request, options = {}) {
         );
       }
 
-      const safetyIssues = collectReplySafetyIssues(normalized);
+      const safetyIssues = collectReplySafetyIssues(normalizedDraft);
 
       if (safetyIssues.length === 0) {
-        return jsonResponse({ result: normalized, source: "ai" }, 200);
+        return jsonResponse(
+          {
+            result: buildReplyResult(normalizedDraft, getCoachingForBlocker(payload.blockerType)),
+            source: "ai"
+          },
+          200
+        );
       }
 
       revisionContext = {
-        previousResult: normalized,
+        previousResult: normalizedDraft,
         safetyIssues
       };
     }
@@ -109,7 +122,8 @@ export async function handleGenerateReplyRequest(request, options = {}) {
 /**
  * @param {{
  *   input: string,
- *   situationType: string
+ *   situationType: string,
+ *   blockerType: string
  * }} payload
  * @returns {string}
  */
@@ -118,17 +132,20 @@ export function buildUserPrompt(payload) {
     "상대 메시지를 받고도 답장을 못 보내는 사람을 위한 한국어 답장 3개를 만들어 주세요.",
     `받은 메시지/상황: ${payload.input}`,
     `상황 타입: ${payload.situationType}`,
+    `지금 막히는 이유: ${describeBlockerType(payload.blockerType)}`,
     "replyOptions는 부드럽게, 예의 있게 확실하게, 짧게 끝내기 순서로 작성해 주세요.",
-    "각 답장은 바로 복사해 보낼 수 있게 짧고 분명하게 작성해 주세요."
+    "각 답장은 바로 복사해 보낼 수 있는 첫 거절문처럼 짧고 분명하게 작성해 주세요.",
+    "avoidPhrase에는 지금 상황에서 피해야 할 여지 남김 표현 하나만 적어 주세요."
   ].join("\n");
 }
 
 /**
  * @param {{
  *   input: string,
- *   situationType: string
+ *   situationType: string,
+ *   blockerType: string
  * }} payload
- * @param {{ previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }} revisionContext
+ * @param {{ previousResult: NonNullable<ReturnType<typeof normalizeAiReplyDraft>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }} revisionContext
  * @returns {string}
  */
 function buildRevisionPrompt(payload, revisionContext) {
@@ -152,7 +169,7 @@ function buildRevisionPrompt(payload, revisionContext) {
 
 /**
  * @param {unknown} payload
- * @returns {ReturnType<typeof normalizeReplyResult>}
+ * @returns {ReturnType<typeof normalizeAiReplyDraft>}
  */
 export function extractStructuredResult(payload) {
   const output = Array.isArray(payload?.output) ? payload.output : [];
@@ -165,7 +182,7 @@ export function extractStructuredResult(payload) {
         typeof content?.json === "object" && content.json
           ? content.json
           : tryParseJson(content?.text);
-      const normalized = normalizeReplyResult(candidate);
+      const normalized = normalizeAiReplyDraft(candidate);
 
       if (normalized) {
         return normalized;
@@ -173,11 +190,11 @@ export function extractStructuredResult(payload) {
     }
   }
 
-  return normalizeReplyResult(payload?.output_parsed);
+  return normalizeAiReplyDraft(payload?.output_parsed);
 }
 
 /**
- * @param {NonNullable<ReturnType<typeof normalizeReplyResult>>} result
+ * @param {NonNullable<ReturnType<typeof normalizeAiReplyDraft>>} result
  * @returns {{ optionIndex: number, code: "OPEN_DOOR_PHRASE" | "TOO_APOLOGETIC" | "TOO_LONG", phrase: string }[]}
  */
 function collectReplySafetyIssues(result) {
@@ -215,9 +232,10 @@ function describeSafetyIssue(issue) {
  *   model: string,
  *   payload: {
  *     input: string,
- *     situationType: string
+ *     situationType: string,
+ *     blockerType: string
  *   },
- *   revisionContext: null | { previousResult: NonNullable<ReturnType<typeof normalizeReplyResult>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }
+ *   revisionContext: null | { previousResult: NonNullable<ReturnType<typeof normalizeAiReplyDraft>>, safetyIssues: ReturnType<typeof collectReplySafetyIssues> }
  * }} options
  * @returns {Promise<Response>}
  */
@@ -266,6 +284,10 @@ function tryParseJson(value) {
   } catch {
     return null;
   }
+}
+
+function describeBlockerType(blockerType) {
+  return BLOCKER_OPTIONS.find((option) => option.value === blockerType)?.label ?? blockerType;
 }
 
 function jsonResponse(payload, status) {

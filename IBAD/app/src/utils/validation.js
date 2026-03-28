@@ -1,5 +1,8 @@
 import { normalizeInput } from "./text.js";
-import { SUPPORTED_SITUATION_VALUES } from "../domain/options.js";
+import {
+  SUPPORTED_BLOCKER_VALUES,
+  SUPPORTED_SITUATION_VALUES
+} from "../domain/options.js";
 
 const RECOMMENDED_MAX_LENGTH = 280;
 
@@ -42,7 +45,8 @@ export function validateInput(input) {
  *   ok: true,
  *   value: {
  *     input: string,
- *     situationType: string
+ *     situationType: string,
+ *     blockerType: string
  *   }
  * } | { ok: false, message: string }}
  */
@@ -64,11 +68,18 @@ export function validateRequestPayload(payload) {
     return { ok: false, message: "지원하지 않는 상황 타입입니다." };
   }
 
+  const blockerType = typeof payload.blockerType === "string" ? payload.blockerType : "";
+
+  if (!SUPPORTED_BLOCKER_VALUES.has(blockerType)) {
+    return { ok: false, message: "지원하지 않는 막힘 이유입니다." };
+  }
+
   return {
     ok: true,
     value: {
       input: inputCheck.normalized,
-      situationType
+      situationType,
+      blockerType
     }
   };
 }

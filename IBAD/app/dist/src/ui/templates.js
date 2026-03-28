@@ -1,4 +1,5 @@
-import { SITUATION_OPTIONS } from "../domain/options.js";
+import { getRecommendedOptionIndex, getReplyToneByIndex } from "../domain/coaching.js";
+import { BLOCKER_OPTIONS, SITUATION_OPTIONS } from "../domain/options.js";
 import { escapeHtml } from "../utils/text.js";
 
 /**
@@ -13,7 +14,7 @@ export function renderAppMarkup(state) {
           <span class="eyebrow">IBAD</span>
           <h1>답장을 못 보내고 있다면, 여기서 시작하세요</h1>
           <p class="intro-copy">
-            받은 메시지를 붙여넣고, 지금 필요한 시작 문장을 3가지 톤으로 받아보세요.
+            받은 메시지와 지금 막히는 이유를 고르면, 바로 보낼 첫 거절문을 추천해 드려요.
           </p>
         </div>
 
@@ -35,6 +36,13 @@ export function renderAppMarkup(state) {
               state.situationType
             )}
 
+            ${renderSelect(
+              "blocker-type",
+              "지금 막히는 이유가 뭐예요?",
+              BLOCKER_OPTIONS,
+              state.blockerType
+            )}
+
             <div class="composer-actions">
               <button class="button button-primary" type="submit" ${state.isLoading ? "disabled" : ""}>
                 ${state.isLoading ? "답장 만드는 중..." : "답장 만들기"}
@@ -47,8 +55,12 @@ export function renderAppMarkup(state) {
               ? `
                 <section class="results-shell" id="results">
                   <div class="results-head">
-                    <h2>바로 시작할 수 있는 답장</h2>
-                    <p>길게 고민하기 전에, 지금 보내기 쉬운 문장부터 고르세요.</p>
+                    <h2>추천 시작 문장</h2>
+                    <p>이럴 때는 이렇게 시작하면 돼요.</p>
+                  </div>
+                  <div class="coach-panel">
+                    <p class="coach-note">${escapeHtml(state.result.coachNote)}</p>
+                    <p class="avoid-phrase">피해야 할 표현: ${escapeHtml(state.result.avoidPhrase)}</p>
                   </div>
                   ${renderReplyCards(state.result)}
                 </section>
@@ -95,13 +107,27 @@ function renderFeedback(feedback) {
 }
 
 function renderReplyCards(result) {
+  const recommendedIndex = getRecommendedOptionIndex(result.recommendedTone);
+  const displayOptions = result.replyOptions
+    .map((option, optionIndex) => ({
+      ...option,
+      isRecommended: optionIndex === recommendedIndex,
+      toneId: getReplyToneByIndex(optionIndex)
+    }))
+    .sort((left, right) => Number(right.isRecommended) - Number(left.isRecommended));
+
   return `
     <div class="reply-grid">
-      ${result.replyOptions
+      ${displayOptions
         .map(
           (option) => `
-            <article class="reply-card">
-              <span class="reply-label">${escapeHtml(option.toneLabel)}</span>
+            <article class="reply-card${option.isRecommended ? " is-recommended" : ""}" data-tone-id="${escapeHtml(
+              option.toneId ?? ""
+            )}">
+              <div class="reply-card-head">
+                <span class="reply-label">${escapeHtml(option.toneLabel)}</span>
+                ${option.isRecommended ? '<span class="reply-pick">추천</span>' : ""}
+              </div>
               <p class="reply-text">${escapeHtml(option.text)}</p>
               <p class="reply-why">${escapeHtml(option.whyItWorks)}</p>
               <button class="button button-copy" type="button" data-copy-reply="${escapeHtml(

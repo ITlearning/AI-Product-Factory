@@ -16,13 +16,14 @@ function fakeRequest(body) {
   };
 }
 
-function successfulReplySet() {
+function successfulReplyDraft() {
   return {
     replyOptions: [
       { text: "오늘은 좀 어려울 것 같아.", toneLabel: "부드럽게", whyItWorks: "부담을 낮춘다." },
       { text: "이번엔 어려워. 고마운데 패스할게.", toneLabel: "예의 있게 확실하게", whyItWorks: "균형이 좋다." },
       { text: "이번엔 어려워.", toneLabel: "짧게 끝내기", whyItWorks: "짧게 끝낸다." }
-    ]
+    ],
+    avoidPhrase: "나중에 보자"
   };
 }
 
@@ -30,7 +31,21 @@ test("returns 400 for empty input", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "",
-      situationType: "promise"
+      situationType: "promise",
+      blockerType: "tone-anxiety"
+    }),
+    { apiKey: "test-key" }
+  );
+
+  assert.equal(response.status, 400);
+});
+
+test("returns 400 for invalid blocker type", async () => {
+  const response = await handleGenerateReplyRequest(
+    fakeRequest({
+      input: "친구가 오늘 보자고 했는데 쉬고 싶다.",
+      situationType: "promise",
+      blockerType: "unknown"
     }),
     { apiKey: "test-key" }
   );
@@ -42,7 +57,8 @@ test("returns unsupported response for out-of-scope input", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "팀장님이 오늘 부탁한 일을 대신해 달라고 했어요.",
-      situationType: "favor"
+      situationType: "favor",
+      blockerType: "tone-anxiety"
     }),
     { apiKey: "test-key" }
   );
@@ -56,7 +72,8 @@ test("returns normalized AI output for supported input", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "친구가 오늘 저녁에 만나자고 했는데 쉬고 싶다.",
-      situationType: "promise"
+      situationType: "promise",
+      blockerType: "tone-anxiety"
     }),
     {
       apiKey: "test-key",
@@ -67,7 +84,7 @@ test("returns normalized AI output for supported input", async () => {
               {
                 content: [
                   {
-                    json: successfulReplySet()
+                    json: successfulReplyDraft()
                   }
                 ]
               }
@@ -83,7 +100,11 @@ test("returns normalized AI output for supported input", async () => {
 
   assert.equal(response.status, 200);
   const body = await response.json();
-  assert.deepEqual(body.result, successfulReplySet());
+  assert.deepEqual(body.result, {
+    ...successfulReplyDraft(),
+    recommendedTone: "polite-firm",
+    coachNote: "예의는 남기고 결론을 먼저 두면 차갑기보다 분명하게 읽혀요."
+  });
 });
 
 test("returns typed unsafe-result errors", async () => {
@@ -91,7 +112,8 @@ test("returns typed unsafe-result errors", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "친구가 오늘 보자고 했는데 가기 싫다.",
-      situationType: "promise"
+      situationType: "promise",
+      blockerType: "tone-anxiety"
     }),
     {
       apiKey: "test-key",
@@ -109,7 +131,8 @@ test("returns typed unsafe-result errors", async () => {
                         { text: "이번엔 어렵고 다음에 시간 되면 보자.", toneLabel: "부드럽게", whyItWorks: "부드럽다." },
                         { text: "이번엔 안 될 것 같아.", toneLabel: "예의 있게 확실하게", whyItWorks: "짧다." },
                         { text: "오늘은 안 될 것 같아.", toneLabel: "짧게 끝내기", whyItWorks: "분명하다." }
-                      ]
+                      ],
+                      avoidPhrase: "다음에 시간 되면 보자"
                     }
                   }
                 ]
@@ -136,7 +159,8 @@ test("retries once when the first AI result is unsafe", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "친구가 오늘 보자고 했는데 쉬고 싶다.",
-      situationType: "promise"
+      situationType: "promise",
+      blockerType: "guilt"
     }),
     {
       apiKey: "test-key",
@@ -155,7 +179,8 @@ test("retries once when the first AI result is unsafe", async () => {
                           { text: "이번엔 어렵고 다음에 시간 되면 보자.", toneLabel: "부드럽게", whyItWorks: "부드럽다." },
                           { text: "이번엔 안 될 것 같아.", toneLabel: "예의 있게 확실하게", whyItWorks: "짧다." },
                           { text: "오늘은 안 될 것 같아.", toneLabel: "짧게 끝내기", whyItWorks: "분명하다." }
-                        ]
+                        ],
+                        avoidPhrase: "다음에 시간 되면 보자"
                       }
                     }
                   ]
@@ -175,7 +200,7 @@ test("retries once when the first AI result is unsafe", async () => {
               {
                 content: [
                   {
-                    json: successfulReplySet()
+                    json: successfulReplyDraft()
                   }
                 ]
               }
@@ -193,6 +218,7 @@ test("retries once when the first AI result is unsafe", async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.result.replyOptions.length, 3);
+  assert.equal(body.result.recommendedTone, "soft");
   assert.equal(callCount, 2);
 });
 
@@ -200,7 +226,8 @@ test("returns invalid-schema errors when AI output is malformed", async () => {
   const response = await handleGenerateReplyRequest(
     fakeRequest({
       input: "친구 부탁을 거절하고 싶다.",
-      situationType: "favor"
+      situationType: "favor",
+      blockerType: "tone-anxiety"
     }),
     {
       apiKey: "test-key",
@@ -228,7 +255,7 @@ test("extracts structured result from payload content", () => {
       {
         content: [
           {
-            json: successfulReplySet()
+            json: successfulReplyDraft()
           }
         ]
       }
@@ -236,16 +263,19 @@ test("extracts structured result from payload content", () => {
   });
 
   assert.equal(result?.replyOptions[0].toneLabel, "부드럽게");
+  assert.equal(result?.avoidPhrase, "나중에 보자");
 });
 
 test("builds an OpenAI user prompt from the request payload", () => {
   const prompt = buildUserPrompt({
     input: "친구 약속을 거절하고 싶어.",
-    situationType: "promise"
+    situationType: "promise",
+    blockerType: "tone-anxiety"
   });
 
   assert.match(prompt, /상대 메시지를 받고도 답장을 못 보내는 사람/);
   assert.match(prompt, /상황 타입: promise/);
+  assert.match(prompt, /지금 막히는 이유: 너무 차갑게 보일까 걱정돼요/);
   assert.doesNotMatch(prompt, /관계 타입/);
   assert.doesNotMatch(prompt, /거절 강도/);
 });
