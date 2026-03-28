@@ -1,11 +1,11 @@
 import {
   HERO_POINTS,
+  PREVIEW_CASES,
   SAMPLE_NOTE,
-  SAMPLE_TRANSACTIONS,
-  SHELL_MILESTONES
+  SAMPLE_TRANSACTIONS
 } from "./content.js";
 import { CHARACTER_RESULT_STATUS } from "./character-contract.js";
-import { generateCharacterResult } from "./character-engine.js";
+import { formatCurrency, generateCharacterResult, parseTransactions } from "./character-engine.js";
 
 /**
  * @param {string} value
@@ -24,73 +24,85 @@ export function escapeHtml(value) {
  * @param {HTMLElement} root
  */
 export function createApp(root) {
-  root.innerHTML = renderAppMarkup();
+  const state = { scenarioIndex: 0 };
+
+  const render = () => {
+    root.innerHTML = renderAppMarkup({ scenarioIndex: state.scenarioIndex });
+  };
+
+  render();
+  root.addEventListener("click", (event) => {
+    const trigger =
+      event.target && typeof event.target.closest === "function"
+        ? event.target.closest("[data-action]")
+        : null;
+
+    if (!trigger || trigger.dataset.action !== "reroll") {
+      return;
+    }
+
+    state.scenarioIndex = (state.scenarioIndex + 1) % PREVIEW_CASES.length;
+    render();
+  });
 }
 
-export function renderAppMarkup() {
-  const previewResult = getPreviewResult();
+/**
+ * @param {{ scenarioIndex?: number }} [options]
+ */
+export function renderAppMarkup(options = {}) {
+  const preview = getPreviewModel(options.scenarioIndex ?? 0);
 
   return `
     <main class="page-shell">
       <section class="hero-card">
         <div class="hero-copy">
-          <span class="eyebrow">Spending-Personality MVP shell</span>
-          <h1>오늘의 소비를 캐릭터처럼 읽어보는 첫 화면</h1>
+          <span class="eyebrow">오늘의 소비 캐릭터</span>
+          <h1>오늘 나는 어떤 소비 캐릭터였는지 10초 안에 이해하는 결과 화면</h1>
           <p>
-            소비 내역을 숫자 표가 아니라 별명, 태그, 한 줄 해석으로 읽어주는 서비스를 위한
-            실행 가능한 앱 셸입니다. 지금 단계에서는 이후 task 들이 바로 얹힐 수 있도록
-            스택, 레이아웃, 검증 경로를 먼저 고정합니다.
+            캐릭터명과 한 줄 요약을 먼저 보여주고, 왜 이런 해석이 나왔는지와 내일의 한 수를
+            바로 이어서 읽게 만드는 결과 우선 화면입니다. 저장이나 공유를 염두에 둔 카드는
+            본문과 분리해 시선 흐름을 더 단순하게 잡았습니다.
           </p>
           <ul class="hero-points">
             ${HERO_POINTS.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
           </ul>
+          <div class="meta-pills">
+            <span class="meta-pill">${escapeHtml(preview.previewCase.label)}</span>
+            <span class="meta-pill">${escapeHtml(preview.transactionSummary)}</span>
+            <span class="meta-pill">${escapeHtml(preview.totalAmountText)}</span>
+          </div>
         </div>
 
         <aside class="hero-preview" aria-label="결과 예시">
-          <span class="preview-label">Preview</span>
-          <strong class="preview-title">${escapeHtml(previewResult.characterName)}</strong>
-          <p class="preview-summary">${escapeHtml(previewResult.summary)}</p>
+          <span class="preview-label">이번 미리보기</span>
+          <p class="preview-context">${escapeHtml(preview.previewCase.title)}</p>
+          <strong class="preview-title">${escapeHtml(preview.result.characterName)}</strong>
+          <p class="preview-summary">${escapeHtml(preview.result.summary)}</p>
           <div class="tag-list">
-            ${previewResult.tags
+            ${preview.result.tags
               .map((tag) => `<span class="tag-pill">${escapeHtml(tag)}</span>`)
               .join("")}
+          </div>
+          <div class="hero-actions">
+            <button type="button" class="reroll-button" data-action="reroll">다른 하루로 다시 생성</button>
+            <p class="action-note" aria-live="polite">
+              다음 미리보기: ${escapeHtml(preview.nextPreviewLabel)}
+            </p>
           </div>
         </aside>
       </section>
 
       <section class="workspace-grid">
-        <section class="panel composer-panel" aria-labelledby="composer-title">
-          <div class="panel-head">
-            <p class="panel-kicker">Input shell</p>
-            <h2 id="composer-title">붙여넣기 중심 입력 구역</h2>
-          </div>
-
-          <label class="field">
-            <span>하루 소비 내역</span>
-            <textarea readonly>${escapeHtml(SAMPLE_TRANSACTIONS.join("\n"))}</textarea>
-          </label>
-
-          <label class="field">
-            <span>선택 메모</span>
-            <input value="${escapeHtml(SAMPLE_NOTE)}" readonly />
-          </label>
-
-          <div class="composer-footer">
-            <button type="button" disabled>캐릭터 만들기 준비 중</button>
-            <p>생성 엔진 계약은 준비됐고, 다음 child task 에서 입력 상태와 버튼 동작을 연결합니다.</p>
-          </div>
-        </section>
-
         <section class="panel insight-panel" aria-labelledby="insight-title">
           <div class="panel-head">
-            <p class="panel-kicker">Result contract</p>
-            <h2 id="insight-title">해석 엔진 샘플 결과</h2>
+            <p class="panel-kicker">Evidence card</p>
+            <h2 id="insight-title">왜 이런 캐릭터로 읽혔는지</h2>
           </div>
 
-          <p class="pattern-note">${escapeHtml(previewResult.patternObservation)}</p>
+          <p class="pattern-note">${escapeHtml(preview.result.patternObservation)}</p>
 
           <ul class="evidence-grid">
-            ${previewResult.evidence
+            ${preview.result.evidence
               .map(
                 (evidence) => `
                   <li class="evidence-card">
@@ -99,49 +111,119 @@ export function renderAppMarkup() {
                       <span>${escapeHtml(evidence.amountText)}</span>
                     </div>
                     <p>${escapeHtml(evidence.reason)}</p>
+                    <small>${escapeHtml(evidence.rawText)}</small>
                   </li>
                 `
               )
               .join("")}
           </ul>
-
-          <div class="next-move">
-            <span>내일의 한 수</span>
-            <strong>${escapeHtml(previewResult.nextMove)}</strong>
-          </div>
-
-          <p class="result-disclaimer">${escapeHtml(previewResult.disclaimer)}</p>
         </section>
+
+        <div class="side-stack">
+          <section class="panel action-panel" aria-labelledby="action-title">
+            <div class="panel-head">
+              <p class="panel-kicker">Action hint</p>
+              <h2 id="action-title">내일의 한 수</h2>
+            </div>
+
+            <div class="next-move">
+              <span>짧고 바로 실행 가능한 한 가지</span>
+              <strong>${escapeHtml(preview.result.nextMove)}</strong>
+            </div>
+
+            <p class="result-disclaimer">${escapeHtml(preview.result.disclaimer)}</p>
+          </section>
+
+          <section class="panel share-panel" aria-labelledby="share-title">
+            <div class="panel-head">
+              <p class="panel-kicker">Share card</p>
+              <h2 id="share-title">저장/공유 카드</h2>
+            </div>
+
+            <article class="share-card" aria-label="공유 카드 미리보기">
+              <span class="share-card-badge">${escapeHtml(preview.previewCase.label)}</span>
+              <p class="share-card-title">${escapeHtml(preview.previewCase.title)}</p>
+              <strong class="share-card-character">${escapeHtml(preview.result.characterName)}</strong>
+              <p class="share-card-summary">${escapeHtml(preview.result.summary)}</p>
+              <div class="tag-list share-tag-list">
+                ${preview.result.tags
+                  .map((tag) => `<span class="tag-pill">${escapeHtml(tag)}</span>`)
+                  .join("")}
+              </div>
+              <div class="share-card-rule"></div>
+              <p class="share-card-caption">내일의 한 수</p>
+              <p class="share-card-move">${escapeHtml(preview.result.nextMove)}</p>
+            </article>
+          </section>
+        </div>
       </section>
 
-      <section class="panel roadmap-panel" aria-labelledby="roadmap-title">
+      <section class="panel source-panel" aria-labelledby="source-title">
         <div class="panel-head">
-          <p class="panel-kicker">Delivery path</p>
-          <h2 id="roadmap-title">이 셸 위에 붙을 다음 작업</h2>
+          <p class="panel-kicker">Source snapshot</p>
+          <h2 id="source-title">해석에 쓰인 소비 로그</h2>
         </div>
 
-        <div class="milestone-grid">
-          ${SHELL_MILESTONES.map(
-            (item) => `
-              <article class="milestone-card">
-                <span>${escapeHtml(item.label)}</span>
-                <strong>${escapeHtml(item.title)}</strong>
-                <p>${escapeHtml(item.copy)}</p>
-              </article>
-            `
-          ).join("")}
+        <p class="source-intro">
+          이 결과 화면은 아래 샘플 하루를 읽어 생성됩니다. 현재 <code>다시 생성</code> 버튼은 준비된
+          다른 샘플 하루를 순환하고, 실제 붙여넣기 상호작용은 별도 입력 화면 task 에서
+          이어서 연결됩니다.
+        </p>
+
+        <div class="source-grid">
+          <ol class="source-list">
+            ${preview.previewCase.transactions
+              .map(
+                (transaction, index) => `
+                  <li class="source-item">
+                    <span class="source-index">${String(index + 1).padStart(2, "0")}</span>
+                    <span class="source-text">${escapeHtml(transaction)}</span>
+                  </li>
+                `
+              )
+              .join("")}
+          </ol>
+
+          <aside class="source-note-card">
+            <span>선택 메모</span>
+            <strong>${escapeHtml(preview.previewCase.note || SAMPLE_NOTE)}</strong>
+            <p>${escapeHtml(preview.noteSummary)}</p>
+          </aside>
         </div>
       </section>
     </main>
   `;
 }
 
-function getPreviewResult() {
-  const result = generateCharacterResult(SAMPLE_TRANSACTIONS.join("\n"), { note: SAMPLE_NOTE });
+/**
+ * @param {number} [scenarioIndex]
+ */
+export function getPreviewModel(scenarioIndex = 0) {
+  const normalizedIndex = ((scenarioIndex % PREVIEW_CASES.length) + PREVIEW_CASES.length) % PREVIEW_CASES.length;
+  const previewCase = PREVIEW_CASES[normalizedIndex] ?? {
+    label: "기본 미리보기",
+    title: "샘플 하루",
+    note: SAMPLE_NOTE,
+    transactions: SAMPLE_TRANSACTIONS
+  };
+  const result = generateCharacterResult(previewCase.transactions.join("\n"), {
+    note: previewCase.note
+  });
+  const parsedTransactions = parseTransactions(previewCase.transactions.join("\n"));
+  const totalAmount = parsedTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
 
   if (result.status !== CHARACTER_RESULT_STATUS.SUCCESS) {
     throw new Error("Sample preview must generate a success result");
   }
 
-  return result;
+  return {
+    previewCase,
+    result,
+    totalAmountText: formatCurrency(totalAmount),
+    transactionSummary: `${result.parsedTransactionCount}건 분석`,
+    nextPreviewLabel: PREVIEW_CASES[(normalizedIndex + 1) % PREVIEW_CASES.length].label,
+    noteSummary: previewCase.note
+      ? "메모 문장도 함께 읽어 말투와 하루의 맥락을 조금 더 부드럽게 보정합니다."
+      : "메모 없이도 소비 패턴만으로 요약을 만들 수 있습니다."
+  };
 }
