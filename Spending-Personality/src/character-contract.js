@@ -91,6 +91,16 @@ export function assertCharacterResult(result) {
     throw new Error("Character result must include an ignoredLineCount");
   }
 
+  if (result.disclaimer !== OBSERVATIONAL_DISCLAIMER) {
+    throw new Error("Character result disclaimer must match the observational disclaimer");
+  }
+
+  if (result.rawLineCount !== result.parsedTransactionCount + result.ignoredLineCount) {
+    throw new Error(
+      "Character result counts inconsistent: rawLineCount must equal parsedTransactionCount + ignoredLineCount"
+    );
+  }
+
   if (result.status === CHARACTER_RESULT_STATUS.SUCCESS) {
     if (!isNonEmptyString(result.characterName)) {
       throw new Error("Success results must include a characterName");

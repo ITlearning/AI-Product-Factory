@@ -138,7 +138,18 @@ function parseTransactionLine(rawText) {
   }
 
   const timeMatch = rawText.match(/(^|\s)(\d{1,2})[:.](\d{2})(?=\s|$)/u);
-  const hour = timeMatch ? Number(timeMatch[2]) : null;
+  const parsedHour = timeMatch ? Number(timeMatch[2]) : null;
+  const parsedMinute = timeMatch ? Number(timeMatch[3]) : null;
+  const hour =
+    parsedHour !== null &&
+    Number.isInteger(parsedHour) &&
+    Number.isInteger(parsedMinute) &&
+    parsedHour >= 0 &&
+    parsedHour <= 23 &&
+    parsedMinute >= 0 &&
+    parsedMinute <= 59
+      ? parsedHour
+      : null;
   const label = extractLabel(rawText, amountMatch).trim();
 
   if (!label) {

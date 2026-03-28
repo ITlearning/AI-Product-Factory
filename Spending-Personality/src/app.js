@@ -8,6 +8,19 @@ import { CHARACTER_RESULT_STATUS } from "./character-contract.js";
 import { generateCharacterResult } from "./character-engine.js";
 
 /**
+ * @param {string} value
+ * @returns {string}
+ */
+export function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+/**
  * @param {HTMLElement} root
  */
 export function createApp(root) {
@@ -29,16 +42,18 @@ export function renderAppMarkup() {
             스택, 레이아웃, 검증 경로를 먼저 고정합니다.
           </p>
           <ul class="hero-points">
-            ${HERO_POINTS.map((point) => `<li>${point}</li>`).join("")}
+            ${HERO_POINTS.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
           </ul>
         </div>
 
         <aside class="hero-preview" aria-label="결과 예시">
           <span class="preview-label">Preview</span>
-          <strong class="preview-title">${previewResult.characterName}</strong>
-          <p class="preview-summary">${previewResult.summary}</p>
+          <strong class="preview-title">${escapeHtml(previewResult.characterName)}</strong>
+          <p class="preview-summary">${escapeHtml(previewResult.summary)}</p>
           <div class="tag-list">
-            ${previewResult.tags.map((tag) => `<span class="tag-pill">${tag}</span>`).join("")}
+            ${previewResult.tags
+              .map((tag) => `<span class="tag-pill">${escapeHtml(tag)}</span>`)
+              .join("")}
           </div>
         </aside>
       </section>
@@ -52,12 +67,12 @@ export function renderAppMarkup() {
 
           <label class="field">
             <span>하루 소비 내역</span>
-            <textarea readonly>${SAMPLE_TRANSACTIONS.join("\n")}</textarea>
+            <textarea readonly>${escapeHtml(SAMPLE_TRANSACTIONS.join("\n"))}</textarea>
           </label>
 
           <label class="field">
             <span>선택 메모</span>
-            <input value="${SAMPLE_NOTE}" readonly />
+            <input value="${escapeHtml(SAMPLE_NOTE)}" readonly />
           </label>
 
           <div class="composer-footer">
@@ -72,7 +87,7 @@ export function renderAppMarkup() {
             <h2 id="insight-title">해석 엔진 샘플 결과</h2>
           </div>
 
-          <p class="pattern-note">${previewResult.patternObservation}</p>
+          <p class="pattern-note">${escapeHtml(previewResult.patternObservation)}</p>
 
           <ul class="evidence-grid">
             ${previewResult.evidence
@@ -80,10 +95,10 @@ export function renderAppMarkup() {
                 (evidence) => `
                   <li class="evidence-card">
                     <div class="evidence-head">
-                      <strong>${evidence.label}</strong>
-                      <span>${evidence.amountText}</span>
+                      <strong>${escapeHtml(evidence.label)}</strong>
+                      <span>${escapeHtml(evidence.amountText)}</span>
                     </div>
-                    <p>${evidence.reason}</p>
+                    <p>${escapeHtml(evidence.reason)}</p>
                   </li>
                 `
               )
@@ -92,10 +107,10 @@ export function renderAppMarkup() {
 
           <div class="next-move">
             <span>내일의 한 수</span>
-            <strong>${previewResult.nextMove}</strong>
+            <strong>${escapeHtml(previewResult.nextMove)}</strong>
           </div>
 
-          <p class="result-disclaimer">${previewResult.disclaimer}</p>
+          <p class="result-disclaimer">${escapeHtml(previewResult.disclaimer)}</p>
         </section>
       </section>
 
@@ -109,9 +124,9 @@ export function renderAppMarkup() {
           ${SHELL_MILESTONES.map(
             (item) => `
               <article class="milestone-card">
-                <span>${item.label}</span>
-                <strong>${item.title}</strong>
-                <p>${item.copy}</p>
+                <span>${escapeHtml(item.label)}</span>
+                <strong>${escapeHtml(item.title)}</strong>
+                <p>${escapeHtml(item.copy)}</p>
               </article>
             `
           ).join("")}

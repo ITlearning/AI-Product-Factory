@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { generateCharacterResult } from "../../src/character-engine.js";
 import { SAMPLE_NOTE, SAMPLE_TRANSACTIONS, SHELL_MILESTONES } from "../../src/content.js";
-import { renderAppMarkup } from "../../src/app.js";
+import { escapeHtml, renderAppMarkup } from "../../src/app.js";
 
 test("renders the spending personality shell", () => {
   const markup = renderAppMarkup();
@@ -18,7 +18,7 @@ test("shows seeded sample transactions in the input shell", () => {
   const markup = renderAppMarkup();
 
   for (const transaction of SAMPLE_TRANSACTIONS) {
-    assert.match(markup, new RegExp(transaction.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(markup, new RegExp(escapeRegExp(transaction)));
   }
 });
 
@@ -31,8 +31,15 @@ test("includes the preview result and next milestones", () => {
   assert.match(markup, new RegExp(escapeRegExp(previewResult.nextMove)));
 
   for (const milestone of SHELL_MILESTONES) {
-    assert.match(markup, new RegExp(milestone.title));
+    assert.match(markup, new RegExp(escapeRegExp(milestone.title)));
   }
+});
+
+test("escapes interpolated strings before they enter markup", () => {
+  assert.equal(
+    escapeHtml(`<&>"'`),
+    "&lt;&amp;&gt;&quot;&#39;"
+  );
 });
 
 function escapeRegExp(value) {
