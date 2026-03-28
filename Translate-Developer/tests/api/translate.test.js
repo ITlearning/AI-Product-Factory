@@ -115,6 +115,8 @@ test("builds a PM/planner prompt that forbids guessing", async () => {
 
   assert.match(capturedBody, /PM\/기획자/);
   assert.match(capturedBody, /추정하지 마라/);
+  assert.match(capturedBody, /짧은 문단과 줄바꿈/);
+  assert.match(capturedBody, /불릿/);
 });
 
 test("preserves OpenAI rate limit status for the browser client", async () => {

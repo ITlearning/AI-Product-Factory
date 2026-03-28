@@ -218,7 +218,7 @@ function renderResultPanel(label, value, extraClass = "") {
   return `
     <article class="result-panel ${extraClass}">
       <h3>${escapeHtml(label)}</h3>
-      <p>${escapeHtml(value)}</p>
+      ${renderRichText(value, extraClass === "result-panel-primary" ? "primary" : "default")}
     </article>
   `;
 }
@@ -233,9 +233,138 @@ function renderPlaceholderPanel(label, value, extraClass = "") {
   return `
     <article class="result-panel result-panel-placeholder ${extraClass}">
       <h3>${escapeHtml(label)}</h3>
-      <p>${escapeHtml(value)}</p>
+      ${renderRichText(value, extraClass === "result-panel-primary" ? "primary" : "default")}
     </article>
   `;
+}
+
+/**
+ * @param {string} value
+ * @param {"primary" | "default"} variant
+ * @returns {string}
+ */
+function renderRichText(value, variant) {
+  const blocks = parseRichTextBlocks(value);
+
+  return `
+    <div class="result-content result-content-${variant}">
+      ${blocks.map(renderRichTextBlock).join("")}
+    </div>
+  `;
+}
+
+/**
+ * @param {string} value
+ * @returns {Array<
+ *   | { type: "paragraph", lines: string[] }
+ *   | { type: "ul" | "ol", items: string[] }
+ * >}
+ */
+function parseRichTextBlocks(value) {
+  const blocks = [];
+  const lines = value.replace(/\r\n?/g, "\n").split("\n");
+  let paragraphLines = [];
+  let listBlock = null;
+
+  function flushParagraph() {
+    if (paragraphLines.length === 0) {
+      return;
+    }
+
+    blocks.push({ type: "paragraph", lines: paragraphLines });
+    paragraphLines = [];
+  }
+
+  function flushList() {
+    if (!listBlock || listBlock.items.length === 0) {
+      listBlock = null;
+      return;
+    }
+
+    blocks.push(listBlock);
+    listBlock = null;
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (!line) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const unorderedMatch = rawLine.match(/^\s*[-*]\s+(.+)$/);
+    const orderedMatch = rawLine.match(/^\s*\d+\.\s+(.+)$/);
+
+    if (unorderedMatch) {
+      flushParagraph();
+
+      if (!listBlock || listBlock.type !== "ul") {
+        flushList();
+        listBlock = { type: "ul", items: [] };
+      }
+
+      listBlock.items.push(unorderedMatch[1].trim());
+      continue;
+    }
+
+    if (orderedMatch) {
+      flushParagraph();
+
+      if (!listBlock || listBlock.type !== "ol") {
+        flushList();
+        listBlock = { type: "ol", items: [] };
+      }
+
+      listBlock.items.push(orderedMatch[1].trim());
+      continue;
+    }
+
+    flushList();
+    paragraphLines.push(line);
+  }
+
+  flushParagraph();
+  flushList();
+
+  return blocks.length > 0 ? blocks : [{ type: "paragraph", lines: [value] }];
+}
+
+/**
+ * @param {{ type: "paragraph", lines: string[] } | { type: "ul" | "ol", items: string[] }} block
+ * @returns {string}
+ */
+function renderRichTextBlock(block) {
+  if (block.type === "paragraph") {
+    const paragraphHtml = block.lines.map(renderInlineRichText).join("<br>");
+    const isLabel = block.lines.length === 1 && /[:：]$/.test(block.lines[0]);
+
+    if (isLabel) {
+      return `<p class="result-paragraph result-paragraph-label"><strong>${paragraphHtml}</strong></p>`;
+    }
+
+    return `<p class="result-paragraph">${paragraphHtml}</p>`;
+  }
+
+  const tagName = block.type === "ol" ? "ol" : "ul";
+  const listClass = block.type === "ol" ? "result-list result-list-ordered" : "result-list";
+
+  return `
+    <${tagName} class="${listClass}">
+      ${block.items.map((item) => `<li>${renderInlineRichText(item)}</li>`).join("")}
+    </${tagName}>
+  `;
+}
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+function renderInlineRichText(value) {
+  return escapeHtml(value)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
 }
 
 /**
