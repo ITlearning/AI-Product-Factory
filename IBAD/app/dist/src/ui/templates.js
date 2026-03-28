@@ -1,8 +1,5 @@
-import {
-  BLOCKER_OPTIONS,
-  REPLY_TONE_OPTIONS,
-  SITUATION_OPTIONS
-} from "../domain/options.js";
+import { getRecommendedOptionIndex, getReplyToneByIndex } from "../domain/coaching.js";
+import { BLOCKER_OPTIONS, SITUATION_OPTIONS } from "../domain/options.js";
 import { escapeHtml } from "../utils/text.js";
 
 /**
@@ -61,7 +58,10 @@ export function renderAppMarkup(state) {
                     <h2>추천 시작 문장</h2>
                     <p>이럴 때는 이렇게 시작하면 돼요.</p>
                   </div>
-                  ${renderCoachPanel(state.result)}
+                  <div class="coach-panel">
+                    <p class="coach-note">${escapeHtml(state.result.coachNote)}</p>
+                    <p class="avoid-phrase">피해야 할 표현: ${escapeHtml(state.result.avoidPhrase)}</p>
+                  </div>
                   ${renderReplyCards(state.result)}
                 </section>
               `
@@ -107,20 +107,27 @@ function renderFeedback(feedback) {
 }
 
 function renderReplyCards(result) {
+  const recommendedIndex = getRecommendedOptionIndex(result.recommendedTone);
+  const displayOptions = result.replyOptions
+    .map((option, optionIndex) => ({
+      ...option,
+      isRecommended: optionIndex === recommendedIndex,
+      toneId: getReplyToneByIndex(optionIndex)
+    }))
+    .sort((left, right) => Number(right.isRecommended) - Number(left.isRecommended));
+
   return `
     <div class="reply-grid">
-      ${result.replyOptions
+      ${displayOptions
         .map(
-          (option, index) => `
-            <article class="reply-card${
-              REPLY_TONE_OPTIONS[index]?.value === result.recommendedTone ? " reply-card-recommended" : ""
-            }">
-              ${
-                REPLY_TONE_OPTIONS[index]?.value === result.recommendedTone
-                  ? '<span class="reply-recommendation">추천 카드</span>'
-                  : ""
-              }
-              <span class="reply-label">${escapeHtml(option.toneLabel)}</span>
+          (option) => `
+            <article class="reply-card${option.isRecommended ? " is-recommended" : ""}" data-tone-id="${escapeHtml(
+              option.toneId ?? ""
+            )}">
+              <div class="reply-card-head">
+                <span class="reply-label">${escapeHtml(option.toneLabel)}</span>
+                ${option.isRecommended ? '<span class="reply-pick">추천</span>' : ""}
+              </div>
               <p class="reply-text">${escapeHtml(option.text)}</p>
               <p class="reply-why">${escapeHtml(option.whyItWorks)}</p>
               <button class="button button-copy" type="button" data-copy-reply="${escapeHtml(
@@ -134,13 +141,4 @@ function renderReplyCards(result) {
         .join("")}
       </div>
     `;
-}
-
-function renderCoachPanel(result) {
-  return `
-    <section class="coach-panel" aria-label="추천 가이드">
-      <p class="coach-note">${escapeHtml(result.coachNote)}</p>
-      <p class="avoid-phrase">피해야 할 표현: ${escapeHtml(result.avoidPhrase)}</p>
-    </section>
-  `;
 }

@@ -59,7 +59,8 @@ textarea {
 .composer-actions,
 .results-head,
 .coach-panel,
-.reply-grid {
+.reply-grid,
+.reply-card-head {
   display: grid;
   gap: 20px;
 }
@@ -71,8 +72,7 @@ textarea {
 }
 
 .eyebrow,
-.reply-label,
-.reply-recommendation {
+.reply-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -167,19 +167,13 @@ textarea {
   gap: 12px;
 }
 
-.results-shell {
-  margin: 0;
-}
-
 .coach-panel {
   gap: 10px;
-  margin-bottom: 12px;
-  background: rgba(159, 61, 46, 0.07);
-  border-color: rgba(159, 61, 46, 0.18);
+  margin-bottom: 16px;
+  background: rgba(159, 61, 46, 0.08);
 }
 
-.coach-note,
-.avoid-phrase {
+.results-shell {
   margin: 0;
 }
 
@@ -187,20 +181,37 @@ textarea {
   position: relative;
 }
 
-.reply-card-recommended {
-  border: 1px solid rgba(159, 61, 46, 0.35);
-  box-shadow: 0 20px 44px rgba(124, 47, 36, 0.12);
+.reply-card.is-recommended {
+  border-color: rgba(159, 61, 46, 0.4);
+  background: #fff7ef;
 }
 
-.reply-recommendation {
-  margin-bottom: 6px;
-  width: fit-content;
+.reply-card-head {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.reply-pick {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(159, 61, 46, 0.14);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .reply-text {
   font-size: 19px;
   line-height: 1.5;
   margin: 10px 0 14px;
+}
+
+.coach-note,
+.avoid-phrase {
+  margin: 0;
 }
 
 .feedback {

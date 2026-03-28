@@ -12,8 +12,8 @@ import { validateInput } from "../utils/validation.js";
  *   situationType: string,
  *   blockerType: string,
  *   result: {
- *     replyOptions: { text: string, toneLabel: string, whyItWorks: string }[]
- *     recommendedTone: string,
+ *     replyOptions: { text: string, toneLabel: string, whyItWorks: string }[],
+ *     recommendedTone: "soft" | "polite-firm" | "short",
  *     coachNote: string,
  *     avoidPhrase: string
  *   } | null,

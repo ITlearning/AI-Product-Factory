@@ -1,3 +1,5 @@
+/** @typedef {"soft" | "polite-firm" | "short"} ReplyTone */
+
 export const BLOCKER_COACHING = {
   guilt: {
     recommendedTone: "soft",
@@ -13,10 +15,29 @@ export const BLOCKER_COACHING = {
   }
 };
 
+const DEFAULT_BLOCKER_TYPE = "tone-anxiety";
+const REPLY_TONE_ORDER = ["soft", "polite-firm", "short"];
+
 /**
  * @param {string} blockerType
- * @returns {{ recommendedTone: string, coachNote: string } | null}
+ * @returns {{ recommendedTone: ReplyTone, coachNote: string }}
  */
 export function getCoachingForBlocker(blockerType) {
-  return BLOCKER_COACHING[blockerType] ?? null;
+  return BLOCKER_COACHING[blockerType] ?? BLOCKER_COACHING[DEFAULT_BLOCKER_TYPE];
+}
+
+/**
+ * @param {ReplyTone} recommendedTone
+ * @returns {number}
+ */
+export function getRecommendedOptionIndex(recommendedTone) {
+  return REPLY_TONE_ORDER.indexOf(recommendedTone);
+}
+
+/**
+ * @param {number} optionIndex
+ * @returns {ReplyTone | null}
+ */
+export function getReplyToneByIndex(optionIndex) {
+  return REPLY_TONE_ORDER[optionIndex] ?? null;
 }

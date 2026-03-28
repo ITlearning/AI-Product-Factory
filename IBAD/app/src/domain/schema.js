@@ -1,5 +1,3 @@
-import { SUPPORTED_REPLY_TONE_VALUES } from "./options.js";
-
 const replyOptionSchema = {
   type: "object",
   additionalProperties: false,
@@ -11,12 +9,14 @@ const replyOptionSchema = {
   }
 };
 
+const RESULT_TONE_VALUES = new Set(["soft", "polite-firm", "short"]);
+
 export const REPLY_JSON_SCHEMA = {
   name: "ibad_reply_set",
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["replyOptions", "recommendedTone", "coachNote", "avoidPhrase"],
+    required: ["replyOptions", "avoidPhrase"],
     properties: {
       replyOptions: {
         type: "array",
@@ -24,11 +24,6 @@ export const REPLY_JSON_SCHEMA = {
         maxItems: 3,
         items: replyOptionSchema
       },
-      recommendedTone: {
-        type: "string",
-        enum: ["soft", "polite-firm", "short"]
-      },
-      coachNote: { type: "string" },
       avoidPhrase: { type: "string" }
     }
   }
@@ -38,7 +33,32 @@ export const REPLY_JSON_SCHEMA = {
  * @param {unknown} payload
  * @returns {{
  *   replyOptions: { text: string, toneLabel: string, whyItWorks: string }[]
- *   recommendedTone: string,
+ *   avoidPhrase: string
+ * } | null}
+ */
+export function normalizeAiReplyDraft(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const normalizedReplyOptions = normalizeReplyOptions(payload.replyOptions);
+  const avoidPhrase = normalizeText(payload.avoidPhrase);
+
+  if (!normalizedReplyOptions || !avoidPhrase) {
+    return null;
+  }
+
+  return {
+    replyOptions: normalizedReplyOptions,
+    avoidPhrase
+  };
+}
+
+/**
+ * @param {unknown} payload
+ * @returns {{
+ *   replyOptions: { text: string, toneLabel: string, whyItWorks: string }[],
+ *   recommendedTone: "soft" | "polite-firm" | "short",
  *   coachNote: string,
  *   avoidPhrase: string
  * } | null}
@@ -48,18 +68,49 @@ export function normalizeReplyResult(payload) {
     return null;
   }
 
-  const replyOptions = Array.isArray(payload.replyOptions) ? payload.replyOptions : null;
-  const recommendedTone = normalizeText(payload.recommendedTone);
+  const draft = normalizeAiReplyDraft(payload);
+  const recommendedTone = normalizeTone(payload.recommendedTone);
   const coachNote = normalizeText(payload.coachNote);
-  const avoidPhrase = normalizeText(payload.avoidPhrase);
 
-  if (
-    !replyOptions ||
-    replyOptions.length !== 3 ||
-    !SUPPORTED_REPLY_TONE_VALUES.has(recommendedTone) ||
-    !coachNote ||
-    !avoidPhrase
-  ) {
+  if (!draft || !recommendedTone || !coachNote) {
+    return null;
+  }
+
+  return {
+    ...draft,
+    recommendedTone,
+    coachNote
+  };
+}
+
+/**
+ * @param {{
+ *   replyOptions: { text: string, toneLabel: string, whyItWorks: string }[],
+ *   avoidPhrase: string
+ * }} draft
+ * @param {{ recommendedTone: "soft" | "polite-firm" | "short", coachNote: string }} coaching
+ * @returns {{
+ *   replyOptions: { text: string, toneLabel: string, whyItWorks: string }[],
+ *   recommendedTone: "soft" | "polite-firm" | "short",
+ *   coachNote: string,
+ *   avoidPhrase: string
+ * }}
+ */
+export function buildReplyResult(draft, coaching) {
+  return {
+    replyOptions: draft.replyOptions,
+    recommendedTone: coaching.recommendedTone,
+    coachNote: coaching.coachNote,
+    avoidPhrase: draft.avoidPhrase
+  };
+}
+
+/**
+ * @param {unknown} replyOptions
+ * @returns {{ text: string, toneLabel: string, whyItWorks: string }[] | null}
+ */
+function normalizeReplyOptions(replyOptions) {
+  if (!Array.isArray(replyOptions) || replyOptions.length !== 3) {
     return null;
   }
 
@@ -83,20 +134,24 @@ export function normalizeReplyResult(payload) {
     return null;
   }
 
-  const texts = new Set(normalizedReplyOptions.map((option) => option.text));
+  const normalized = /** @type {{ text: string, toneLabel: string, whyItWorks: string }[]} */ (
+    normalizedReplyOptions
+  );
+  const texts = new Set(normalized.map((option) => option.text));
 
   if (texts.size !== 3) {
     return null;
   }
 
-  return {
-    replyOptions: /** @type {{ text: string, toneLabel: string, whyItWorks: string }[]} */ (
-      normalizedReplyOptions
-    ),
-    recommendedTone,
-    coachNote,
-    avoidPhrase
-  };
+  return normalized;
+}
+
+/**
+ * @param {unknown} value
+ * @returns {"soft" | "polite-firm" | "short" | ""}
+ */
+function normalizeTone(value) {
+  return typeof value === "string" && RESULT_TONE_VALUES.has(value) ? value : "";
 }
 
 /**

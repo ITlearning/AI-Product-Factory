@@ -13,16 +13,16 @@ test("renders the IBAD app shell", () => {
 
   assert.match(markup, /답장을 못 보내고 있다면, 여기서 시작하세요/);
   assert.match(markup, /받은 메시지나 지금 상황을 적어 주세요/);
-  assert.match(markup, /약속/);
-  assert.match(markup, /부탁/);
   assert.match(markup, /지금 막히는 이유가 뭐예요/);
   assert.match(markup, /미안해서 시작이 안 돼요/);
   assert.match(markup, /너무 차갑게 보일까 걱정돼요/);
   assert.match(markup, /말이 길어질까 봐 걱정돼요/);
+  assert.match(markup, /약속/);
+  assert.match(markup, /부탁/);
   assert.match(markup, /답장 만들기/);
   assert.doesNotMatch(markup, /관계 타입/);
   assert.doesNotMatch(markup, /거절 강도/);
-  assert.doesNotMatch(markup, /바로 시작할 수 있는 답장/);
+  assert.doesNotMatch(markup, /추천 시작 문장/);
   assert.doesNotMatch(markup, /복사하기/);
   assert.doesNotMatch(markup, /피해야 할 표현/);
   assert.doesNotMatch(markup, /여지 남김 여부/);
@@ -60,8 +60,8 @@ test("renders generated reply cards", async () => {
   const markup = renderAppMarkup(state);
   assert.match(markup, /추천 시작 문장/);
   assert.match(markup, /이럴 때는 이렇게 시작하면 돼요/);
-  assert.match(markup, /피해야 할 표현/);
-  assert.match(markup, /추천 카드/);
+  assert.match(markup, /피해야 할 표현: 나중에 보자/);
+  assert.match(markup, /추천/);
   assert.match(markup, /부드럽게/);
   assert.match(markup, /예의 있게 확실하게/);
   assert.match(markup, /짧게 끝내기/);
