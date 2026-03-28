@@ -56,6 +56,7 @@ async function main() {
   }
 
   const projectJson = JSON.parse(fs.readFileSync(projectJsonPath, "utf8"));
+  ensureRepoRootLink(projectJson);
 
   console.log("");
   console.log("Bootstrap complete.");
@@ -73,6 +74,8 @@ async function main() {
   if (desiredSettings.outputDirectory) {
     console.log(`Output directory: ${desiredSettings.outputDirectory}`);
   }
+
+  console.log(`Production deploy cwd: ${path.relative(repoRoot, repoRoot) || "."}`);
 }
 
 function ensureVercelAuth() {
@@ -238,6 +241,28 @@ function readVercelToken() {
   }
 
   fail("Could not find a Vercel API token. Set VERCEL_TOKEN or log in with the Vercel CLI.");
+}
+
+function ensureRepoRootLink(projectJson) {
+  const rootProjectJsonPath = path.join(repoRoot, ".vercel", "project.json");
+  const rootVercelDir = path.dirname(rootProjectJsonPath);
+
+  if (fs.existsSync(rootProjectJsonPath)) {
+    const currentRootLink = JSON.parse(fs.readFileSync(rootProjectJsonPath, "utf8"));
+
+    if (
+      currentRootLink.projectId !== projectJson.projectId ||
+      currentRootLink.orgId !== projectJson.orgId
+    ) {
+      log(
+        "Skipped repo-root .vercel/project.json update because it is linked to a different project.",
+      );
+      return;
+    }
+  }
+
+  fs.mkdirSync(rootVercelDir, { recursive: true });
+  fs.writeFileSync(rootProjectJsonPath, `${JSON.stringify(projectJson, null, 2)}\n`);
 }
 
 function parseTeamScopes(output) {
