@@ -50,7 +50,7 @@ export function applyPhraseReplacements(input) {
  * }}
  */
 export function detectSignals(input) {
-  const issueLike = /(에러|오류|실패|장애|불안정|타임아웃|문제)/.test(input);
+  const issueLike = /(에러|오류|실패|장애|불안정|타임아웃|문제|retain cycle|메모리|누수|deinit|참조)/i.test(input);
 
   return {
     issueLike,
