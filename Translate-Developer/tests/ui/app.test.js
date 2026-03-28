@@ -64,12 +64,43 @@ test("uses fallback mode when the API request fails", async () => {
   const state = await submitTranslationAsync(applyExample(createInitialState(), DEFAULT_EXAMPLE), {
     requestTranslation: async () => ({
       ok: false,
-      message: "failed"
+      message: "failed",
+      reason: "upstream_failure"
     })
   });
 
   assert.equal(state.engineSource, "fallback");
   assert.equal(state.feedback?.type, "warning");
+  assert.match(state.feedback?.message ?? "", /AI 응답이 불안정해 기본 설명 모드로 전환했습니다/);
+});
+
+test("explains when the local preview is missing the translate api route", async () => {
+  const state = await submitTranslationAsync(applyExample(createInitialState(), DEFAULT_EXAMPLE), {
+    requestTranslation: async () => ({
+      ok: false,
+      message: "AI 설명 요청에 실패했습니다.",
+      reason: "missing_api_route",
+      status: 404
+    })
+  });
+
+  assert.equal(state.engineSource, "fallback");
+  assert.match(state.feedback?.message ?? "", /AI 서버 경로\(\/api\/translate\)/);
+  assert.match(state.feedback?.message ?? "", /vercel dev/);
+});
+
+test("explains when the OpenAI API key is missing", async () => {
+  const state = await submitTranslationAsync(applyExample(createInitialState(), DEFAULT_EXAMPLE), {
+    requestTranslation: async () => ({
+      ok: false,
+      message: "OPENAI_API_KEY is not configured.",
+      reason: "missing_api_key",
+      status: 500
+    })
+  });
+
+  assert.equal(state.engineSource, "fallback");
+  assert.match(state.feedback?.message ?? "", /OpenAI API 키가 설정되지 않아/);
 });
 
 test("passes the selected audience into the async translation request", async () => {

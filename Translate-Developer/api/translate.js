@@ -70,7 +70,16 @@ export async function handleTranslateRequest(request, options = {}) {
     });
 
     if (!upstreamResponse.ok) {
-      return jsonResponse({ error: "AI upstream request failed." }, 502);
+      const upstreamStatus = upstreamResponse.status;
+      const upstreamError = await readUpstreamError(upstreamResponse);
+
+      return jsonResponse(
+        {
+          error: upstreamError,
+          upstreamStatus
+        },
+        mapUpstreamStatus(upstreamStatus)
+      );
     }
 
     const upstreamPayload = await upstreamResponse.json();
@@ -98,9 +107,11 @@ export function extractStructuredResult(payload) {
 
     for (const content of contents) {
       const candidate =
-        typeof content?.json === "object" && content.json
-          ? content.json
-          : tryParseJson(content?.text);
+        typeof content?.parsed === "object" && content.parsed
+          ? content.parsed
+          : typeof content?.json === "object" && content.json
+            ? content.json
+            : tryParseJson(content?.text);
       const normalized = normalizeTranslationResult(candidate);
 
       if (normalized) {
@@ -187,4 +198,85 @@ async function readRequestBody(request) {
   }
 
   return null;
+}
+
+/**
+ * @param {Response} response
+ * @returns {Promise<string>}
+ */
+async function readUpstreamError(response) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    const payload = await response.json().catch(() => null);
+    const message = normalizeUpstreamErrorMessage(payload);
+
+    if (message) {
+      return message;
+    }
+  } else {
+    const text = await response.text().catch(() => "");
+    const normalizedText = normalizeErrorText(text);
+
+    if (normalizedText) {
+      return normalizedText;
+    }
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    return "OpenAI authentication failed.";
+  }
+
+  if (response.status === 429) {
+    return "OpenAI rate limit exceeded.";
+  }
+
+  return "AI upstream request failed.";
+}
+
+/**
+ * @param {number} status
+ * @returns {number}
+ */
+function mapUpstreamStatus(status) {
+  if (status === 401 || status === 403 || status === 429) {
+    return status;
+  }
+
+  return 502;
+}
+
+/**
+ * @param {unknown} payload
+ * @returns {string | null}
+ */
+function normalizeUpstreamErrorMessage(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const directMessage = normalizeErrorText(payload?.error);
+
+  if (directMessage) {
+    return directMessage;
+  }
+
+  if (payload.error && typeof payload.error === "object") {
+    return normalizeErrorText(payload.error.message);
+  }
+
+  return null;
+}
+
+/**
+ * @param {unknown} value
+ * @returns {string | null}
+ */
+function normalizeErrorText(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }

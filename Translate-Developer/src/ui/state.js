@@ -141,10 +141,7 @@ export async function submitTranslationAsync(
       engineSource: "fallback",
       feedback: {
         type: "warning",
-        message:
-          validation.level === "warning"
-            ? `${validation.reason} AI 응답이 불안정해 기본 설명 모드로 전환했습니다.`
-            : "AI 응답이 불안정해 기본 설명 모드로 전환했습니다."
+        message: buildFallbackFeedbackMessage(validation, aiResponse)
       }
     };
   } catch {
@@ -158,4 +155,37 @@ export async function submitTranslationAsync(
       }
     };
   };
+}
+
+/**
+ * @param {{ level: "warning" | null, reason: string }} validation
+ * @param {{ ok: false, message: string, reason?: string }} aiResponse
+ * @returns {string}
+ */
+function buildFallbackFeedbackMessage(validation, aiResponse) {
+  const prefix = validation.level === "warning" ? `${validation.reason} ` : "";
+  return `${prefix}${getFallbackReasonMessage(aiResponse)}`;
+}
+
+/**
+ * @param {{ ok: false, message: string, reason?: string }} aiResponse
+ * @returns {string}
+ */
+function getFallbackReasonMessage(aiResponse) {
+  switch (aiResponse.reason) {
+    case "missing_api_route":
+      return "AI 서버 경로(/api/translate)를 찾지 못해 기본 설명 모드로 전환했습니다. 로컬에서는 vercel dev나 Vercel 배포에서 AI 설명이 동작합니다.";
+    case "missing_api_key":
+      return "OpenAI API 키가 설정되지 않아 기본 설명 모드로 전환했습니다.";
+    case "auth_failed":
+      return "OpenAI 인증에 실패해 기본 설명 모드로 전환했습니다.";
+    case "rate_limited":
+      return "OpenAI 요청 한도에 도달해 기본 설명 모드로 전환했습니다.";
+    case "invalid_result":
+      return "AI 응답 형식을 확인하지 못해 기본 설명 모드로 전환했습니다.";
+    case "network_error":
+      return "AI 서버에 연결하지 못해 기본 설명 모드로 전환했습니다.";
+    default:
+      return "AI 응답이 불안정해 기본 설명 모드로 전환했습니다.";
+  }
 }
