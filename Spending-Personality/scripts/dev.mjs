@@ -5,11 +5,10 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, "..");
+const defaultProjectRoot = path.resolve(__dirname, "..");
 
-const DEFAULT_PORT = 4173;
-const host = "127.0.0.1";
-const port = readPortFromArgs(process.argv.slice(2));
+export const DEFAULT_PORT = 4173;
+export const DEFAULT_HOST = "127.0.0.1";
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -20,59 +19,88 @@ const mimeTypes = {
   ".txt": "text/plain; charset=utf-8"
 };
 
-const server = http.createServer((request, response) => {
-  const method = request.method ?? "GET";
+if (isDirectRun()) {
+  const port = readPortFromArgs(process.argv.slice(2));
+  const server = createDevServer({ host: DEFAULT_HOST, port, projectRoot: defaultProjectRoot });
 
-  if (method !== "GET" && method !== "HEAD") {
-    response.writeHead(405, { "Content-Type": "text/plain; charset=utf-8" });
-    response.end("Method Not Allowed");
-    return;
-  }
-
-  const filePath = resolveRequestPath(request.url ?? "/");
-
-  if (!filePath) {
-    response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
-    response.end("Forbidden");
-    return;
-  }
-
-  fs.readFile(filePath, (error, content) => {
-    if (error) {
-      const statusCode = error.code === "ENOENT" ? 404 : 500;
-      response.writeHead(statusCode, { "Content-Type": "text/plain; charset=utf-8" });
-      response.end(statusCode === 404 ? "Not Found" : "Internal Server Error");
-      return;
-    }
-
-    response.writeHead(200, {
-      "Content-Type": mimeTypes[path.extname(filePath)] ?? "application/octet-stream",
-      "Cache-Control": "no-store"
-    });
-
-    if (method === "HEAD") {
-      response.end();
-      return;
-    }
-
-    response.end(content);
+  server.listen(port, DEFAULT_HOST, () => {
+    console.log(`Spending-Personality dev server running at http://${DEFAULT_HOST}:${port}`);
   });
-});
 
-server.listen(port, host, () => {
-  console.log(`Spending-Personality dev server running at http://${host}:${port}`);
-});
+  server.on("error", (error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+}
 
-server.on("error", (error) => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+/**
+ * @param {{ host?: string, port?: number, projectRoot?: string }} [options]
+ */
+export function createDevServer(options = {}) {
+  return http.createServer(createRequestHandler(options));
+}
+
+/**
+ * @param {{ host?: string, port?: number, projectRoot?: string }} [options]
+ */
+export function createRequestHandler(options = {}) {
+  const host = options.host ?? DEFAULT_HOST;
+  const port = options.port ?? DEFAULT_PORT;
+  const projectRoot = path.resolve(options.projectRoot ?? defaultProjectRoot);
+
+  return (request, response) => {
+    const method = request.method ?? "GET";
+
+    if (method !== "GET" && method !== "HEAD") {
+      response.writeHead(405, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Method Not Allowed");
+      return;
+    }
+
+    let filePath;
+
+    try {
+      filePath = resolveRequestPath(request.url ?? "/", { host, port, projectRoot });
+    } catch {
+      response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Bad Request");
+      return;
+    }
+
+    if (!filePath) {
+      response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Forbidden");
+      return;
+    }
+
+    fs.readFile(filePath, (error, content) => {
+      if (error) {
+        const statusCode = error.code === "ENOENT" ? 404 : 500;
+        response.writeHead(statusCode, { "Content-Type": "text/plain; charset=utf-8" });
+        response.end(statusCode === 404 ? "Not Found" : "Internal Server Error");
+        return;
+      }
+
+      response.writeHead(200, {
+        "Content-Type": mimeTypes[path.extname(filePath)] ?? "application/octet-stream",
+        "Cache-Control": "no-store"
+      });
+
+      if (method === "HEAD") {
+        response.end();
+        return;
+      }
+
+      response.end(content);
+    });
+  };
+}
 
 /**
  * @param {string[]} args
  * @returns {number}
  */
-function readPortFromArgs(args) {
+export function readPortFromArgs(args) {
   const portFlagIndex = args.findIndex((value) => value === "--port");
   const rawPort = portFlagIndex >= 0 ? args[portFlagIndex + 1] : process.env.PORT;
   const parsedPort = Number(rawPort ?? DEFAULT_PORT);
@@ -86,16 +114,29 @@ function readPortFromArgs(args) {
 
 /**
  * @param {string} requestUrl
+ * @param {{ host?: string, port?: number, projectRoot?: string }} [options]
  * @returns {string | null}
  */
-function resolveRequestPath(requestUrl) {
+export function resolveRequestPath(requestUrl, options = {}) {
+  const host = options.host ?? DEFAULT_HOST;
+  const port = options.port ?? DEFAULT_PORT;
+  const projectRoot = path.resolve(options.projectRoot ?? defaultProjectRoot);
   const url = new URL(requestUrl, `http://${host}:${port}`);
   const relativePath = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
   const filePath = path.resolve(projectRoot, `.${relativePath}`);
+  const relativeToRoot = path.relative(projectRoot, filePath);
 
-  if (!filePath.startsWith(projectRoot)) {
+  if (
+    relativeToRoot === ".." ||
+    relativeToRoot.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativeToRoot)
+  ) {
     return null;
   }
 
   return filePath;
+}
+
+function isDirectRun() {
+  return Boolean(process.argv[1] && path.resolve(process.argv[1]) === __filename);
 }
