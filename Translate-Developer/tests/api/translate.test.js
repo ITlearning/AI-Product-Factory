@@ -117,6 +117,41 @@ test("builds a PM/planner prompt that forbids guessing", async () => {
   assert.match(capturedBody, /추정하지 마라/);
   assert.match(capturedBody, /짧은 문단과 줄바꿈/);
   assert.match(capturedBody, /불릿/);
+  assert.match(capturedBody, /확정된 내용, 아직 확인 중인 내용/);
+});
+
+test("builds a designer prompt that prioritizes screen and flow impact", async () => {
+  let capturedBody = "";
+  await handleTranslateRequest(fakeRequest("로그인 흐름이 불안정합니다.", "designer"), {
+    apiKey: "test-key",
+    fetchImpl: async (_url, init) => {
+      capturedBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({ output: [{ content: [{ json: validPayload }] }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  });
+
+  assert.match(capturedBody, /디자이너/);
+  assert.match(capturedBody, /화면, 플로우, 작업 영향/);
+});
+
+test("builds a non-developer prompt that prioritizes service-level explanation", async () => {
+  let capturedBody = "";
+  await handleTranslateRequest(fakeRequest("배포 후 결제 API에서 타임아웃이 반복돼서 확인 중입니다.", "non-developer"), {
+    apiKey: "test-key",
+    fetchImpl: async (_url, init) => {
+      capturedBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({ output: [{ content: [{ json: validPayload }] }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  });
+
+  assert.match(capturedBody, /비개발자/);
+  assert.match(capturedBody, /서비스에서 실제로 무슨 일이 일어나고 있는지 먼저 설명/);
 });
 
 test("preserves OpenAI rate limit status for the browser client", async () => {
