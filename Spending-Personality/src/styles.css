@@ -153,7 +153,8 @@ button:focus-visible {
 .format-card span,
 .milestone-card span,
 .meta-pill,
-.share-card-badge {
+.share-card-badge,
+.history-rank {
   color: var(--accent-deep);
   background: rgba(198, 93, 46, 0.1);
 }
@@ -326,7 +327,10 @@ button:focus-visible {
 .inline-hint,
 .source-intro,
 .share-card-summary,
-.share-card-move {
+.share-card-move,
+.history-intro,
+.history-item p,
+.history-item small {
   color: var(--ink-soft);
   line-height: 1.7;
 }
@@ -335,7 +339,8 @@ button:focus-visible {
 .preview-caption,
 .pattern-note,
 .result-disclaimer,
-.source-intro {
+.source-intro,
+.history-intro {
   margin: 0;
 }
 
@@ -441,7 +446,8 @@ input {
 }
 
 .ghost-button:not(:disabled):hover,
-.primary-button:not(:disabled):hover {
+.primary-button:not(:disabled):hover,
+.history-item:not(:disabled):hover {
   transform: translateY(-1px);
 }
 
@@ -473,9 +479,19 @@ input {
 .side-stack,
 .source-grid,
 .source-copy,
-.source-note-card {
+.source-note-card,
+.support-sections {
   display: grid;
   gap: 16px;
+}
+
+.support-sections {
+  gap: 28px;
+}
+
+.support-section + .support-section {
+  padding-top: 28px;
+  border-top: 1px solid rgba(74, 57, 35, 0.1);
 }
 
 .status-banner {
@@ -521,7 +537,8 @@ input {
 
 .parsed-list,
 .evidence-grid,
-.source-list {
+.source-list,
+.history-list {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -709,6 +726,48 @@ input {
   margin: 0;
 }
 
+.history-item {
+  width: 100%;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(74, 57, 35, 0.1);
+  background: rgba(255, 247, 235, 0.88);
+  color: var(--ink);
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.history-item.is-selected {
+  border-color: rgba(47, 125, 106, 0.28);
+  background: rgba(247, 252, 250, 0.95);
+  box-shadow: 0 18px 32px rgba(47, 125, 106, 0.08);
+}
+
+.history-item strong {
+  font-size: 1rem;
+}
+
+.history-item p,
+.history-item small {
+  margin: 0;
+}
+
+.history-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--accent-deep);
+  font-size: 0.86rem;
+}
+
+.history-rank {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
 .milestone-grid {
   display: grid;
   gap: 16px;
@@ -781,7 +840,8 @@ input {
 
   .parsed-card,
   .evidence-head,
-  .source-item {
+  .source-item,
+  .history-meta {
     grid-template-columns: 1fr;
     flex-direction: column;
     align-items: flex-start;
