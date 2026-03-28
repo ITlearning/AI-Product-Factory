@@ -8,10 +8,11 @@
 
 - 정적 웹앱 셸
 - 소비 문장 파싱 및 캐릭터 결과 계약
-- 샘플 입력 기반 캐릭터 미리보기 렌더링
+- 붙여넣기 중심 입력 화면과 선택 메모 입력
+- 샘플 입력 기반 캐릭터 미리보기 및 생성 전 기대감 프리뷰
 - Vercel 기준 로컬 개발/배포 구조
 - 기본 `verify` 스크립트
-- 후속 task 를 위한 입력/결과 화면 자리잡기
+- 후속 task 를 위한 결과/공유 흐름 자리잡기
 
 ## 로컬 실행
 
@@ -48,9 +49,29 @@ Vercel 프로젝트 설정:
 - Build Command: `npm run build`
 - Output Directory: `dist`
 
+Vercel bootstrap:
+
+```bash
+cd /path/to/AI-Product-Factory
+node scripts/bootstrap-vercel-project.mjs --service-dir Spending-Personality
+```
+
+이 명령은 Vercel 프로젝트 생성/재사용, `Spending-Personality` 루트 디렉터리 설정, `npm run build` / `dist` 설정 동기화, 로컬 link 와 development settings pull 을 함께 처리합니다.
+
+Production deploy:
+
+```bash
+cd /path/to/AI-Product-Factory
+vercel deploy --prod --yes --scope itlearnings-projects
+```
+
+현재 기본 프로덕션 도메인 alias 는 `https://spending-personality.vercel.app` 입니다. 커스텀 도메인은 별도 설정이 필요합니다.
+
 ## 현재 셸 상태
 
-- 소비 내역 입력 영역은 시각적 셸까지만 제공됩니다
+- 소비 내역과 선택 메모를 실제로 입력하거나 샘플로 채워 바로 미리보기 상태를 확인할 수 있습니다
+- 금액이 있는 줄만 읽고, 설명이나 메모 줄은 건너뛰면서 기본 흐름을 유지합니다
+- 생성 버튼은 입력 유무에 따라 활성/비활성 되며, 생성 전에도 기대감 프리뷰를 보여줍니다
 - 샘플 소비 내역과 메모는 실제 캐릭터 생성 엔진에 연결되어 결과 카드를 렌더링합니다
 - 결과 계약은 `success / needs-more-data / parse-failed` 상태를 검증합니다
-- 다음 task 에서 실제 입력 상태와 버튼 동작을 이 계약에 연결하면 됩니다
+- 다음 task 에서 결과 저장/공유와 최근 캐릭터 흐름을 붙이면 됩니다
