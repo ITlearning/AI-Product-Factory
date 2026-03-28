@@ -1,9 +1,24 @@
 import {
   HERO_POINTS,
-  PREVIEW_RESULT,
+  SAMPLE_NOTE,
   SAMPLE_TRANSACTIONS,
   SHELL_MILESTONES
 } from "./content.js";
+import { CHARACTER_RESULT_STATUS } from "./character-contract.js";
+import { generateCharacterResult } from "./character-engine.js";
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+export function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
 /**
  * @param {HTMLElement} root
@@ -13,6 +28,8 @@ export function createApp(root) {
 }
 
 export function renderAppMarkup() {
+  const previewResult = getPreviewResult();
+
   return `
     <main class="page-shell">
       <section class="hero-card">
@@ -25,16 +42,18 @@ export function renderAppMarkup() {
             스택, 레이아웃, 검증 경로를 먼저 고정합니다.
           </p>
           <ul class="hero-points">
-            ${HERO_POINTS.map((point) => `<li>${point}</li>`).join("")}
+            ${HERO_POINTS.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
           </ul>
         </div>
 
         <aside class="hero-preview" aria-label="결과 예시">
           <span class="preview-label">Preview</span>
-          <strong class="preview-title">${PREVIEW_RESULT.title}</strong>
-          <p class="preview-summary">${PREVIEW_RESULT.summary}</p>
+          <strong class="preview-title">${escapeHtml(previewResult.characterName)}</strong>
+          <p class="preview-summary">${escapeHtml(previewResult.summary)}</p>
           <div class="tag-list">
-            ${PREVIEW_RESULT.tags.map((tag) => `<span class="tag-pill">${tag}</span>`).join("")}
+            ${previewResult.tags
+              .map((tag) => `<span class="tag-pill">${escapeHtml(tag)}</span>`)
+              .join("")}
           </div>
         </aside>
       </section>
@@ -48,34 +67,50 @@ export function renderAppMarkup() {
 
           <label class="field">
             <span>하루 소비 내역</span>
-            <textarea readonly>${SAMPLE_TRANSACTIONS.join("\n")}</textarea>
+            <textarea readonly>${escapeHtml(SAMPLE_TRANSACTIONS.join("\n"))}</textarea>
           </label>
 
           <label class="field">
             <span>선택 메모</span>
-            <input value="야근하고 돌아오는 길, 오늘은 조금 지친 날" readonly />
+            <input value="${escapeHtml(SAMPLE_NOTE)}" readonly />
           </label>
 
           <div class="composer-footer">
             <button type="button" disabled>캐릭터 만들기 준비 중</button>
-            <p>다음 child task 에서 입력 검증, 예시 주입, 버튼 상태를 연결합니다.</p>
+            <p>생성 엔진 계약은 준비됐고, 다음 child task 에서 입력 상태와 버튼 동작을 연결합니다.</p>
           </div>
         </section>
 
         <section class="panel insight-panel" aria-labelledby="insight-title">
           <div class="panel-head">
-            <p class="panel-kicker">Result shell</p>
-            <h2 id="insight-title">결과 카드 구조 미리보기</h2>
+            <p class="panel-kicker">Result contract</p>
+            <h2 id="insight-title">해석 엔진 샘플 결과</h2>
           </div>
 
-          <ol class="reason-list">
-            ${PREVIEW_RESULT.reasons.map((reason) => `<li>${reason}</li>`).join("")}
-          </ol>
+          <p class="pattern-note">${escapeHtml(previewResult.patternObservation)}</p>
+
+          <ul class="evidence-grid">
+            ${previewResult.evidence
+              .map(
+                (evidence) => `
+                  <li class="evidence-card">
+                    <div class="evidence-head">
+                      <strong>${escapeHtml(evidence.label)}</strong>
+                      <span>${escapeHtml(evidence.amountText)}</span>
+                    </div>
+                    <p>${escapeHtml(evidence.reason)}</p>
+                  </li>
+                `
+              )
+              .join("")}
+          </ul>
 
           <div class="next-move">
             <span>내일의 한 수</span>
-            <strong>${PREVIEW_RESULT.nextMove}</strong>
+            <strong>${escapeHtml(previewResult.nextMove)}</strong>
           </div>
+
+          <p class="result-disclaimer">${escapeHtml(previewResult.disclaimer)}</p>
         </section>
       </section>
 
@@ -89,9 +124,9 @@ export function renderAppMarkup() {
           ${SHELL_MILESTONES.map(
             (item) => `
               <article class="milestone-card">
-                <span>${item.label}</span>
-                <strong>${item.title}</strong>
-                <p>${item.copy}</p>
+                <span>${escapeHtml(item.label)}</span>
+                <strong>${escapeHtml(item.title)}</strong>
+                <p>${escapeHtml(item.copy)}</p>
               </article>
             `
           ).join("")}
@@ -99,4 +134,14 @@ export function renderAppMarkup() {
       </section>
     </main>
   `;
+}
+
+function getPreviewResult() {
+  const result = generateCharacterResult(SAMPLE_TRANSACTIONS.join("\n"), { note: SAMPLE_NOTE });
+
+  if (result.status !== CHARACTER_RESULT_STATUS.SUCCESS) {
+    throw new Error("Sample preview must generate a success result");
+  }
+
+  return result;
 }
