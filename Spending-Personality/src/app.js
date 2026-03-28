@@ -1,9 +1,11 @@
 import {
   HERO_POINTS,
-  PREVIEW_RESULT,
+  SAMPLE_NOTE,
   SAMPLE_TRANSACTIONS,
   SHELL_MILESTONES
 } from "./content.js";
+import { CHARACTER_RESULT_STATUS } from "./character-contract.js";
+import { generateCharacterResult } from "./character-engine.js";
 
 /**
  * @param {HTMLElement} root
@@ -13,6 +15,8 @@ export function createApp(root) {
 }
 
 export function renderAppMarkup() {
+  const previewResult = getPreviewResult();
+
   return `
     <main class="page-shell">
       <section class="hero-card">
@@ -31,10 +35,10 @@ export function renderAppMarkup() {
 
         <aside class="hero-preview" aria-label="결과 예시">
           <span class="preview-label">Preview</span>
-          <strong class="preview-title">${PREVIEW_RESULT.title}</strong>
-          <p class="preview-summary">${PREVIEW_RESULT.summary}</p>
+          <strong class="preview-title">${previewResult.characterName}</strong>
+          <p class="preview-summary">${previewResult.summary}</p>
           <div class="tag-list">
-            ${PREVIEW_RESULT.tags.map((tag) => `<span class="tag-pill">${tag}</span>`).join("")}
+            ${previewResult.tags.map((tag) => `<span class="tag-pill">${tag}</span>`).join("")}
           </div>
         </aside>
       </section>
@@ -53,29 +57,45 @@ export function renderAppMarkup() {
 
           <label class="field">
             <span>선택 메모</span>
-            <input value="야근하고 돌아오는 길, 오늘은 조금 지친 날" readonly />
+            <input value="${SAMPLE_NOTE}" readonly />
           </label>
 
           <div class="composer-footer">
             <button type="button" disabled>캐릭터 만들기 준비 중</button>
-            <p>다음 child task 에서 입력 검증, 예시 주입, 버튼 상태를 연결합니다.</p>
+            <p>생성 엔진 계약은 준비됐고, 다음 child task 에서 입력 상태와 버튼 동작을 연결합니다.</p>
           </div>
         </section>
 
         <section class="panel insight-panel" aria-labelledby="insight-title">
           <div class="panel-head">
-            <p class="panel-kicker">Result shell</p>
-            <h2 id="insight-title">결과 카드 구조 미리보기</h2>
+            <p class="panel-kicker">Result contract</p>
+            <h2 id="insight-title">해석 엔진 샘플 결과</h2>
           </div>
 
-          <ol class="reason-list">
-            ${PREVIEW_RESULT.reasons.map((reason) => `<li>${reason}</li>`).join("")}
-          </ol>
+          <p class="pattern-note">${previewResult.patternObservation}</p>
+
+          <ul class="evidence-grid">
+            ${previewResult.evidence
+              .map(
+                (evidence) => `
+                  <li class="evidence-card">
+                    <div class="evidence-head">
+                      <strong>${evidence.label}</strong>
+                      <span>${evidence.amountText}</span>
+                    </div>
+                    <p>${evidence.reason}</p>
+                  </li>
+                `
+              )
+              .join("")}
+          </ul>
 
           <div class="next-move">
             <span>내일의 한 수</span>
-            <strong>${PREVIEW_RESULT.nextMove}</strong>
+            <strong>${previewResult.nextMove}</strong>
           </div>
+
+          <p class="result-disclaimer">${previewResult.disclaimer}</p>
         </section>
       </section>
 
@@ -99,4 +119,14 @@ export function renderAppMarkup() {
       </section>
     </main>
   `;
+}
+
+function getPreviewResult() {
+  const result = generateCharacterResult(SAMPLE_TRANSACTIONS.join("\n"), { note: SAMPLE_NOTE });
+
+  if (result.status !== CHARACTER_RESULT_STATUS.SUCCESS) {
+    throw new Error("Sample preview must generate a success result");
+  }
+
+  return result;
 }

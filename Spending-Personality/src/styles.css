@@ -288,16 +288,51 @@ input {
 
 .composer-footer p,
 .milestone-card p,
-.reason-list li {
+.evidence-card p,
+.pattern-note,
+.result-disclaimer {
   color: var(--ink-soft);
   line-height: 1.65;
 }
 
-.reason-list {
+.pattern-note {
+  margin: 0 0 18px;
+}
+
+.evidence-grid {
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
   display: grid;
   gap: 12px;
+}
+
+.evidence-card {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(74, 57, 35, 0.1);
+  background: rgba(255, 247, 235, 0.9);
+}
+
+.evidence-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.evidence-head strong {
+  font-size: 1rem;
+}
+
+.evidence-head span {
+  color: var(--accent-deep);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.evidence-card p {
+  margin: 10px 0 0;
 }
 
 .next-move {
@@ -318,6 +353,11 @@ input {
 .next-move strong {
   font-size: 1.05rem;
   line-height: 1.6;
+}
+
+.result-disclaimer {
+  margin: 16px 0 0;
+  font-size: 0.92rem;
 }
 
 .milestone-grid {

@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { PREVIEW_RESULT, SAMPLE_TRANSACTIONS, SHELL_MILESTONES } from "../../src/content.js";
+import { generateCharacterResult } from "../../src/character-engine.js";
+import { SAMPLE_NOTE, SAMPLE_TRANSACTIONS, SHELL_MILESTONES } from "../../src/content.js";
 import { renderAppMarkup } from "../../src/app.js";
 
 test("renders the spending personality shell", () => {
@@ -10,6 +11,7 @@ test("renders the spending personality shell", () => {
   assert.match(markup, /오늘의 소비를 캐릭터처럼 읽어보는 첫 화면/);
   assert.match(markup, /캐릭터 만들기 준비 중/);
   assert.match(markup, /Delivery path/);
+  assert.match(markup, /입력된 소비 문장을 바탕으로 한 가벼운 해석/);
 });
 
 test("shows seeded sample transactions in the input shell", () => {
@@ -22,10 +24,17 @@ test("shows seeded sample transactions in the input shell", () => {
 
 test("includes the preview result and next milestones", () => {
   const markup = renderAppMarkup();
+  const previewResult = generateCharacterResult(SAMPLE_TRANSACTIONS.join("\n"), { note: SAMPLE_NOTE });
 
-  assert.match(markup, new RegExp(PREVIEW_RESULT.title));
+  assert.equal(previewResult.status, "success");
+  assert.match(markup, new RegExp(escapeRegExp(previewResult.characterName)));
+  assert.match(markup, new RegExp(escapeRegExp(previewResult.nextMove)));
 
   for (const milestone of SHELL_MILESTONES) {
     assert.match(markup, new RegExp(milestone.title));
   }
 });
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

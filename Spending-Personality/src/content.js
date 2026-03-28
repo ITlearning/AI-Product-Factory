@@ -5,10 +5,12 @@ export const SAMPLE_TRANSACTIONS = [
   "21:08 배달 디저트 9,500원"
 ];
 
+export const SAMPLE_NOTE = "야근하고 돌아오는 길, 오늘은 조금 지친 날";
+
 export const HERO_POINTS = [
   "붙여넣기 한 번으로 하루 소비 흐름을 읽는 MVP",
   "숫자보다 기억에 남는 캐릭터 언어를 우선",
-  "후속 task 가 입력/해석/히스토리를 순차적으로 붙일 수 있는 서비스 셸"
+  "입력 흐름 위에 해석 엔진 계약을 차례로 연결할 수 있는 서비스 셸"
 ];
 
 export const SHELL_MILESTONES = [
@@ -25,14 +27,6 @@ export const SHELL_MILESTONES = [
   {
     label: "후속 task",
     title: "캐릭터 생성 엔진",
-    copy: "소비 해석 계약, 결과 톤, 근거 카드 구성을 앱 흐름에 결합합니다."
+    copy: "소비 해석 계약, 결과 톤, 근거 카드 구성을 실제 생성 로직에 결합합니다."
   }
 ];
-
-export const PREVIEW_RESULT = {
-  title: "퇴근 후 숨 돌리는 셀프 포상러",
-  summary: "오늘 소비는 생존보다 회복에 가까웠어요. 빠른 이동과 작은 보상이 하루 끝에 몰린 패턴입니다.",
-  tags: ["보상형", "소액반복형", "편의우선형"],
-  reasons: ["택시로 시간을 샀어요", "디저트가 하루 마무리를 차지했어요", "잔지출이 한 방향으로 모였어요"],
-  nextMove: "내일은 보상 소비 하나만 남기고 나머지는 미리 정한 한도 안에서 고르기"
-};
