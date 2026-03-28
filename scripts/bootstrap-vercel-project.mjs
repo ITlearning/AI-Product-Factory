@@ -9,55 +9,71 @@ const args = parseArgs(process.argv.slice(2));
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), "..");
 
-if (!args.serviceDir) {
-  fail("Missing required --service-dir <path> argument.");
-}
+await main();
 
-const serviceDir = path.resolve(repoRoot, args.serviceDir);
+async function main() {
+  if (!args.serviceDir) {
+    fail("Missing required --service-dir <path> argument.");
+  }
 
-if (!fs.existsSync(serviceDir) || !fs.statSync(serviceDir).isDirectory()) {
-  fail(`Service directory not found: ${serviceDir}`);
-}
+  const serviceDir = path.resolve(repoRoot, args.serviceDir);
 
-const projectName = args.projectName ?? slugify(path.basename(serviceDir));
-const scope = args.scope ?? detectDefaultScope();
+  if (!fs.existsSync(serviceDir) || !fs.statSync(serviceDir).isDirectory()) {
+    fail(`Service directory not found: ${serviceDir}`);
+  }
 
-ensureVercelAuth();
+  const projectName = args.projectName ?? slugify(path.basename(serviceDir));
+  const scope = args.scope ?? detectDefaultScope();
 
-if (projectExists(projectName, scope)) {
-  log(`Project already exists: ${projectName} (${scope})`);
-} else {
-  runVercel(["project", "add", projectName, "--scope", scope], {
-    cwd: repoRoot,
+  ensureVercelAuth();
+
+  if (projectExists(projectName, scope)) {
+    log(`Project already exists: ${projectName} (${scope})`);
+  } else {
+    runVercel(["project", "add", projectName, "--scope", scope], {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
+  }
+
+  const desiredSettings = getDesiredSettings(serviceDir);
+  await syncProjectSettings({ projectName, scope, desiredSettings });
+
+  runVercel(["link", "--yes", "--scope", scope, "--project", projectName], {
+    cwd: serviceDir,
     stdio: "inherit",
   });
+
+  runVercel(["pull", "--yes", "--environment", "development", "--scope", scope], {
+    cwd: serviceDir,
+    stdio: "inherit",
+  });
+
+  const projectJsonPath = path.join(serviceDir, ".vercel", "project.json");
+
+  if (!fs.existsSync(projectJsonPath)) {
+    fail(`Expected Vercel metadata at ${projectJsonPath}`);
+  }
+
+  const projectJson = JSON.parse(fs.readFileSync(projectJsonPath, "utf8"));
+
+  console.log("");
+  console.log("Bootstrap complete.");
+  console.log(`Service directory: ${path.relative(repoRoot, serviceDir)}`);
+  console.log(`Scope: ${scope}`);
+  console.log(`Project name: ${projectName}`);
+  console.log(`Linked project id: ${projectJson.projectId}`);
+  console.log(`Linked org id: ${projectJson.orgId}`);
+  console.log(`Root directory: ${desiredSettings.rootDirectory}`);
+
+  if (desiredSettings.buildCommand) {
+    console.log(`Build command: ${desiredSettings.buildCommand}`);
+  }
+
+  if (desiredSettings.outputDirectory) {
+    console.log(`Output directory: ${desiredSettings.outputDirectory}`);
+  }
 }
-
-runVercel(["link", "--yes", "--scope", scope, "--project", projectName], {
-  cwd: serviceDir,
-  stdio: "inherit",
-});
-
-runVercel(["pull", "--yes", "--environment", "development", "--scope", scope], {
-  cwd: serviceDir,
-  stdio: "inherit",
-});
-
-const projectJsonPath = path.join(serviceDir, ".vercel", "project.json");
-
-if (!fs.existsSync(projectJsonPath)) {
-  fail(`Expected Vercel metadata at ${projectJsonPath}`);
-}
-
-const projectJson = JSON.parse(fs.readFileSync(projectJsonPath, "utf8"));
-
-console.log("");
-console.log("Bootstrap complete.");
-console.log(`Service directory: ${path.relative(repoRoot, serviceDir)}`);
-console.log(`Scope: ${scope}`);
-console.log(`Project name: ${projectName}`);
-console.log(`Linked project id: ${projectJson.projectId}`);
-console.log(`Linked org id: ${projectJson.orgId}`);
 
 function ensureVercelAuth() {
   runVercel(["whoami", "--no-color"], { cwd: repoRoot, stdio: "pipe" });
@@ -110,6 +126,118 @@ function projectExists(projectName, scope) {
   } catch {
     return false;
   }
+}
+
+function getDesiredSettings(serviceDir) {
+  const relativeServiceDir = path.relative(repoRoot, serviceDir).split(path.sep).join("/");
+  const desiredSettings = {
+    rootDirectory: relativeServiceDir,
+  };
+
+  const packageJsonPath = path.join(serviceDir, "package.json");
+
+  if (fs.existsSync(packageJsonPath)) {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+
+    if (packageJson.scripts?.build) {
+      desiredSettings.buildCommand = "npm run build";
+    }
+  }
+
+  const vercelJsonPath = path.join(serviceDir, "vercel.json");
+
+  if (fs.existsSync(vercelJsonPath)) {
+    const vercelJson = JSON.parse(fs.readFileSync(vercelJsonPath, "utf8"));
+
+    if (typeof vercelJson.outputDirectory === "string" && vercelJson.outputDirectory) {
+      desiredSettings.outputDirectory = vercelJson.outputDirectory;
+    }
+  }
+
+  return desiredSettings;
+}
+
+async function syncProjectSettings({ projectName, scope, desiredSettings }) {
+  const authToken = readVercelToken();
+  const currentProject = await requestVercelProject({
+    authToken,
+    projectName,
+    scope,
+    method: "GET",
+  });
+
+  const updates = Object.fromEntries(
+    Object.entries(desiredSettings).filter(([key, value]) => currentProject[key] !== value),
+  );
+
+  if (Object.keys(updates).length === 0) {
+    log("Project settings already match the service directory.");
+    return;
+  }
+
+  const updatedProject = await requestVercelProject({
+    authToken,
+    projectName,
+    scope,
+    method: "PATCH",
+    body: updates,
+  });
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (updatedProject[key] !== value) {
+      fail(`Failed to persist project setting ${key}=${value}`);
+    }
+  }
+
+  log(`Updated project settings: ${Object.keys(updates).join(", ")}`);
+}
+
+async function requestVercelProject({ authToken, projectName, scope, method, body }) {
+  const query = new URLSearchParams({ slug: scope });
+  const response = await fetch(
+    `https://api.vercel.com/v9/projects/${encodeURIComponent(projectName)}?${query.toString()}`,
+    {
+      method,
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    },
+  );
+
+  const payload = await response.json();
+
+  if (!response.ok) {
+    fail(payload.error?.message ?? `Vercel API request failed with status ${response.status}`);
+  }
+
+  return payload;
+}
+
+function readVercelToken() {
+  if (process.env.VERCEL_TOKEN) {
+    return process.env.VERCEL_TOKEN;
+  }
+
+  const authPaths = [
+    path.join(process.env.HOME ?? "", ".vercel", "auth.json"),
+    path.join(process.env.HOME ?? "", "Library/Application Support/com.vercel.cli/auth.json"),
+  ];
+
+  for (const authPath of authPaths) {
+    if (!authPath || !fs.existsSync(authPath)) {
+      continue;
+    }
+
+    const authJson = JSON.parse(fs.readFileSync(authPath, "utf8"));
+
+    if (typeof authJson.token === "string" && authJson.token) {
+      return authJson.token;
+    }
+  }
+
+  fail("Could not find a Vercel API token. Set VERCEL_TOKEN or log in with the Vercel CLI.");
 }
 
 function parseTeamScopes(output) {

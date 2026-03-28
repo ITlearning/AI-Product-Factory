@@ -55,6 +55,8 @@ cd /path/to/AI-Product-Factory
 node scripts/bootstrap-vercel-project.mjs --service-dir Spending-Personality
 ```
 
+이 명령은 Vercel 프로젝트 생성/재사용, `Spending-Personality` 루트 디렉터리 설정, `npm run build` / `dist` 설정 동기화, 로컬 link 와 development settings pull 을 함께 처리합니다.
+
 ## 현재 셸 상태
 
 - 소비 내역 입력 영역은 시각적 셸까지만 제공됩니다
