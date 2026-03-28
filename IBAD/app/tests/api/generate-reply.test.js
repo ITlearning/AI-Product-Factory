@@ -103,7 +103,7 @@ test("returns normalized AI output for supported input", async () => {
   assert.deepEqual(body.result, {
     ...successfulReplyDraft(),
     recommendedTone: "polite-firm",
-    coachNote: "예의는 남기고 결론을 먼저 두면 차갑기보다 분명하게 읽혀요."
+    coachNote: "예의는 유지하되 결론을 먼저 두면 차갑기보다 분명하게 읽혀요."
   });
 });
 
@@ -276,6 +276,8 @@ test("builds an OpenAI user prompt from the request payload", () => {
   assert.match(prompt, /상대 메시지를 받고도 답장을 못 보내는 사람/);
   assert.match(prompt, /상황 타입: promise/);
   assert.match(prompt, /지금 막히는 이유: 너무 차갑게 보일까 걱정돼요/);
+  assert.match(prompt, /추천 톤 참고: polite-firm/);
+  assert.match(prompt, /코치 메모 참고: 예의는 유지하되 결론을 먼저 두면 차갑기보다 분명하게 읽혀요/);
   assert.doesNotMatch(prompt, /관계 타입/);
   assert.doesNotMatch(prompt, /거절 강도/);
 });

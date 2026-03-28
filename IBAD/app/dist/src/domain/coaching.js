@@ -3,11 +3,11 @@
 export const BLOCKER_COACHING = {
   guilt: {
     recommendedTone: "soft",
-    coachNote: "미안함을 길게 풀기보다 결론 한 번, 감사 한 번이면 충분해요."
+    coachNote: "미안함을 길게 풀어주기보다 결론 한 번, 감사 한 번이면 충분해요."
   },
   "tone-anxiety": {
     recommendedTone: "polite-firm",
-    coachNote: "예의는 남기고 결론을 먼저 두면 차갑기보다 분명하게 읽혀요."
+    coachNote: "예의는 유지하되 결론을 먼저 두면 차갑기보다 분명하게 읽혀요."
   },
   overexplaining: {
     recommendedTone: "short",

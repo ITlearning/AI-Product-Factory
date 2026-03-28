@@ -19,6 +19,13 @@ test("falls back to the default blocker coaching", () => {
   assert.equal(coaching.recommendedTone, "polite-firm");
 });
 
+test("returns coaching details for a supported blocker type", () => {
+  assert.deepEqual(getCoachingForBlocker("guilt"), {
+    recommendedTone: "soft",
+    coachNote: "미안함을 길게 풀어주기보다 결론 한 번, 감사 한 번이면 충분해요."
+  });
+});
+
 test("maps recommendation order consistently", () => {
   assert.equal(getRecommendedOptionIndex("soft"), 0);
   assert.equal(getRecommendedOptionIndex("polite-firm"), 1);

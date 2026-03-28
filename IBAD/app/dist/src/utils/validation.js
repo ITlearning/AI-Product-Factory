@@ -63,12 +63,12 @@ export function validateRequestPayload(payload) {
 
   const situationType =
     typeof payload.situationType === "string" ? payload.situationType : "";
+  const blockerType =
+    typeof payload.blockerType === "string" ? payload.blockerType : "";
 
   if (!SUPPORTED_SITUATION_VALUES.has(situationType)) {
     return { ok: false, message: "지원하지 않는 상황 타입입니다." };
   }
-
-  const blockerType = typeof payload.blockerType === "string" ? payload.blockerType : "";
 
   if (!SUPPORTED_BLOCKER_VALUES.has(blockerType)) {
     return { ok: false, message: "지원하지 않는 막힘 이유입니다." };

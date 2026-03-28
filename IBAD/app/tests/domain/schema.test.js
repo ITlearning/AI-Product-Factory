@@ -52,7 +52,7 @@ test("builds a full reply result with coaching metadata", () => {
     },
     {
       recommendedTone: "polite-firm",
-      coachNote: "예의는 남기고 결론을 먼저 두면 차갑기보다 분명하게 읽혀요."
+      coachNote: "예의는 유지하되 결론을 먼저 두면 차갑기보다 분명하게 읽혀요."
     }
   );
 
@@ -63,7 +63,7 @@ test("builds a full reply result with coaching metadata", () => {
       { text: "이번엔 어려워.", toneLabel: "짧게 끝내기", whyItWorks: "짧게 끝낸다." }
     ],
     recommendedTone: "polite-firm",
-    coachNote: "예의는 남기고 결론을 먼저 두면 차갑기보다 분명하게 읽혀요.",
+    coachNote: "예의는 유지하되 결론을 먼저 두면 차갑기보다 분명하게 읽혀요.",
     avoidPhrase: "나중에 보자"
   });
 });
@@ -76,7 +76,7 @@ test("normalizes a valid full reply result payload", () => {
       { text: "이번엔 어려워.", toneLabel: "짧게 끝내기", whyItWorks: "짧게 끝낸다." }
     ],
     recommendedTone: "polite-firm",
-    coachNote: "예의는 남기고 결론을 먼저 두면 차갑기보다 분명하게 읽혀요.",
+    coachNote: "예의는 유지하되 결론을 먼저 두면 차갑기보다 분명하게 읽혀요.",
     avoidPhrase: "나중에 보자"
   });
 

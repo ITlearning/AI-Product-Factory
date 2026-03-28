@@ -12,7 +12,7 @@ test("renders the IBAD app shell", () => {
   const markup = renderAppMarkup(createInitialState());
 
   assert.match(markup, /답장을 못 보내고 있다면, 여기서 시작하세요/);
-  assert.match(markup, /받은 메시지를 붙여넣어 주세요/);
+  assert.match(markup, /받은 메시지나 지금 상황을 적어 주세요/);
   assert.match(markup, /지금 막히는 이유가 뭐예요/);
   assert.match(markup, /미안해서 시작이 안 돼요/);
   assert.match(markup, /너무 차갑게 보일까 걱정돼요/);
@@ -29,9 +29,9 @@ test("renders the IBAD app shell", () => {
 });
 
 test("updates form fields in state", () => {
-  const state = updateField(createInitialState(), "situationType", "favor");
+  const state = updateField(createInitialState(), "blockerType", "overexplaining");
 
-  assert.equal(state.situationType, "favor");
+  assert.equal(state.blockerType, "overexplaining");
 });
 
 test("renders generated reply cards", async () => {
@@ -50,7 +50,7 @@ test("renders generated reply cards", async () => {
             { text: "이번엔 어려워.", toneLabel: "짧게 끝내기", whyItWorks: "짧게 마무리해 왕복을 줄인다." }
           ],
           recommendedTone: "polite-firm",
-          coachNote: "예의는 남기고 결론을 먼저 두면 차갑기보다 분명하게 읽혀요.",
+          coachNote: "예의는 유지하되 결론을 먼저 두면 차갑기보다 분명하게 읽혀요.",
           avoidPhrase: "나중에 보자"
         }
       })

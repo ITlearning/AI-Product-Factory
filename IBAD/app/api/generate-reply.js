@@ -128,11 +128,15 @@ export async function handleGenerateReplyRequest(request, options = {}) {
  * @returns {string}
  */
 export function buildUserPrompt(payload) {
+  const coaching = getCoachingForBlocker(payload.blockerType);
+
   return [
     "상대 메시지를 받고도 답장을 못 보내는 사람을 위한 한국어 답장 3개를 만들어 주세요.",
     `받은 메시지/상황: ${payload.input}`,
     `상황 타입: ${payload.situationType}`,
     `지금 막히는 이유: ${describeBlockerType(payload.blockerType)}`,
+    `추천 톤 참고: ${coaching.recommendedTone}`,
+    `코치 메모 참고: ${coaching.coachNote}`,
     "replyOptions는 부드럽게, 예의 있게 확실하게, 짧게 끝내기 순서로 작성해 주세요.",
     "각 답장은 바로 복사해 보낼 수 있는 첫 거절문처럼 짧고 분명하게 작성해 주세요.",
     "avoidPhrase에는 지금 상황에서 피해야 할 여지 남김 표현 하나만 적어 주세요."

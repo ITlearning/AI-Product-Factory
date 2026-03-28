@@ -6,11 +6,11 @@ const WORK_PATTERN = /회사|직장|팀장|상사|부장|과장|대표|거래처
 const FOLLOW_UP_PATTERN = /다시 뭐라고|한번 거절했는데|후속 답장|이어서 답장|답장 이어서/;
 
 /**
- * @param {{ relationshipType: string, situationType: string, input: string }} payload
+ * @param {{ situationType: string, input: string }} payload
  * @returns {{ supported: true } | { supported: false, code: "UNSUPPORTED_SCOPE", message: string }}
  */
 export function detectUnsupportedScope(payload) {
-  const source = `${payload.relationshipType} ${payload.situationType} ${payload.input}`;
+  const source = `${payload.situationType} ${payload.input}`;
 
   if (ROMANTIC_PATTERN.test(source) || FAMILY_PATTERN.test(source) || WORK_PATTERN.test(source)) {
     return unsupported();
