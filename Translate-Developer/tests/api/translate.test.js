@@ -84,6 +84,22 @@ test("extracts structured result from json payload content", () => {
   assert.deepEqual(result, validPayload);
 });
 
+test("extracts structured result from parsed payload content", () => {
+  const result = extractStructuredResult({
+    output: [
+      {
+        content: [
+          {
+            parsed: validPayload
+          }
+        ]
+      }
+    ]
+  });
+
+  assert.deepEqual(result, validPayload);
+});
+
 test("builds a PM/planner prompt that forbids guessing", async () => {
   let capturedBody = "";
   await handleTranslateRequest(fakeRequest("배포 후 결제 API에서 타임아웃이 반복돼서 확인 중입니다."), {
@@ -99,4 +115,28 @@ test("builds a PM/planner prompt that forbids guessing", async () => {
 
   assert.match(capturedBody, /PM\/기획자/);
   assert.match(capturedBody, /추정하지 마라/);
+});
+
+test("preserves OpenAI rate limit status for the browser client", async () => {
+  const response = await handleTranslateRequest(fakeRequest("로그인 서버 에러입니다."), {
+    apiKey: "test-key",
+    fetchImpl: async () =>
+      new Response(
+        JSON.stringify({
+          error: {
+            message: "Rate limit reached."
+          }
+        }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json" }
+        }
+      )
+  });
+
+  assert.equal(response.status, 429);
+
+  const body = await response.json();
+  assert.equal(body.error, "Rate limit reached.");
+  assert.equal(body.upstreamStatus, 429);
 });
