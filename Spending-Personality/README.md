@@ -17,8 +17,20 @@
 
 ```bash
 cd Spending-Personality
+npm install
 npm run dev
 ```
+
+기본 로컬 주소:
+
+```text
+http://127.0.0.1:4173
+```
+
+메모:
+
+- 이 브랜치가 아직 `main` 에 머지되지 않았다면, 로컬에서도 이 이슈 브랜치를 checkout 한 상태여야 합니다.
+- 기존 `vercel dev` 전역 설치가 없어도 `npm run dev` 만으로 실행됩니다.
 
 ## 검증
 
