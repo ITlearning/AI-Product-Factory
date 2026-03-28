@@ -9,12 +9,14 @@
   --surface-strong: #fff7eb;
   --surface-soft: rgba(255, 244, 230, 0.72);
   --line: rgba(74, 57, 35, 0.14);
+  --line-strong: rgba(74, 57, 35, 0.22);
   --accent: #c65d2e;
   --accent-soft: #f1b38a;
   --accent-deep: #8f3f1c;
   --mint: #2f7d6a;
   --mint-soft: rgba(47, 125, 106, 0.12);
   --shadow: 0 24px 60px rgba(86, 63, 36, 0.14);
+  --shadow-strong: 0 20px 45px rgba(104, 67, 30, 0.18);
   --radius-xl: 32px;
   --radius-lg: 24px;
   --radius-md: 16px;
@@ -124,11 +126,15 @@ button:focus-visible {
 
 .eyebrow,
 .panel-kicker,
+.preview-label,
 .milestone-card span,
 .next-move span,
 .format-card span,
 .summary-pill,
-.status-label {
+.status-label,
+.meta-pill,
+.share-card-badge,
+.source-note-card span {
   display: inline-flex;
   width: fit-content;
   padding: 8px 12px;
@@ -141,15 +147,33 @@ button:focus-visible {
 
 .eyebrow {
   margin-bottom: 18px;
+}
+
+.eyebrow,
+.format-card span,
+.milestone-card span,
+.meta-pill,
+.share-card-badge {
   color: var(--accent-deep);
   background: rgba(198, 93, 46, 0.1);
+}
+
+.panel-kicker,
+.preview-label,
+.status-label,
+.next-move span,
+.source-note-card span {
+  color: var(--mint);
+  background: var(--mint-soft);
 }
 
 .hero-copy h1,
 .panel-head h2,
 .preview-title,
 .status-banner h3,
-.feedback-card h3 {
+.feedback-card h3,
+.result-head h3,
+.share-card-character {
   font-family: "Fraunces", "Times New Roman", serif;
 }
 
@@ -163,7 +187,7 @@ button:focus-visible {
 
 .hero-copy p {
   margin: 18px 0 0;
-  max-width: 42rem;
+  max-width: 44rem;
   color: var(--ink-soft);
   font-size: 1.05rem;
   line-height: 1.8;
@@ -206,11 +230,12 @@ button:focus-visible {
     linear-gradient(160deg, rgba(255, 246, 235, 0.96), rgba(245, 232, 215, 0.84));
 }
 
-.preview-label,
-.panel-kicker,
-.status-label {
-  color: var(--mint);
-  background: var(--mint-soft);
+.preview-context,
+.share-card-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--accent-deep);
 }
 
 .preview-title {
@@ -225,12 +250,17 @@ button:focus-visible {
 }
 
 .tag-list,
+.meta-pills,
 .summary-strip,
 .button-group,
 .format-reminder {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.meta-pills {
+  margin-top: 2px;
 }
 
 .tag-pill {
@@ -243,6 +273,23 @@ button:focus-visible {
   color: var(--accent-deep);
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.hero-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.action-note {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  font-size: 0.94rem;
+}
+
+.reroll-button {
+  justify-self: start;
 }
 
 .workspace-grid {
@@ -276,13 +323,24 @@ button:focus-visible {
 .result-disclaimer,
 .preview-caption,
 .feedback-card p,
-.inline-hint {
+.inline-hint,
+.source-intro,
+.share-card-summary,
+.share-card-move {
   color: var(--ink-soft);
   line-height: 1.7;
 }
 
+.composer-intro,
+.preview-caption,
+.pattern-note,
+.result-disclaimer,
+.source-intro {
+  margin: 0;
+}
+
 .composer-intro {
-  margin: 0 0 18px;
+  margin-bottom: 18px;
 }
 
 .composer-form {
@@ -316,7 +374,9 @@ button:focus-visible {
 .milestone-card,
 .evidence-card,
 .feedback-card,
-.status-banner {
+.status-banner,
+.result-section,
+.source-item {
   padding: 18px;
   border-radius: 22px;
   border: 1px solid rgba(74, 57, 35, 0.1);
@@ -333,12 +393,6 @@ button:focus-visible {
 .parsed-card strong {
   font-size: 1rem;
   line-height: 1.55;
-}
-
-.format-card span,
-.milestone-card span {
-  color: var(--accent-deep);
-  background: rgba(198, 93, 46, 0.1);
 }
 
 textarea,
@@ -413,16 +467,13 @@ input {
   gap: 12px;
 }
 
-.composer-footer p,
-.pattern-note,
-.result-disclaimer,
-.preview-caption,
-.feedback-card p,
-.inline-hint {
-  margin: 0;
-}
-
-.preview-stack {
+.preview-stack,
+.result-stage,
+.result-flow-grid,
+.side-stack,
+.source-grid,
+.source-copy,
+.source-note-card {
   display: grid;
   gap: 16px;
 }
@@ -434,7 +485,8 @@ input {
 }
 
 .status-banner h3,
-.feedback-card h3 {
+.feedback-card h3,
+.result-head h3 {
   margin: 0;
   font-size: clamp(1.5rem, 3vw, 2.1rem);
   line-height: 1.08;
@@ -443,6 +495,10 @@ input {
 .status-banner p,
 .feedback-card p {
   margin: 0;
+}
+
+.result-banner {
+  padding-bottom: 20px;
 }
 
 .result-meta {
@@ -456,6 +512,7 @@ input {
 }
 
 .inline-hint {
+  margin: 0;
   padding: 16px 18px;
   border-radius: 20px;
   background: rgba(47, 125, 106, 0.08);
@@ -463,7 +520,8 @@ input {
 }
 
 .parsed-list,
-.evidence-grid {
+.evidence-grid,
+.source-list {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -486,6 +544,16 @@ input {
   white-space: nowrap;
 }
 
+.result-section {
+  align-content: start;
+  background: linear-gradient(180deg, rgba(255, 249, 242, 0.96), rgba(246, 237, 224, 0.9));
+}
+
+.result-head {
+  display: grid;
+  gap: 10px;
+}
+
 .evidence-head {
   display: flex;
   align-items: center;
@@ -501,6 +569,13 @@ input {
   margin: 10px 0 0;
 }
 
+.evidence-card small {
+  display: block;
+  margin-top: 10px;
+  color: rgba(82, 96, 109, 0.82);
+  line-height: 1.5;
+}
+
 .next-move {
   padding: 18px;
   border-radius: 22px;
@@ -510,14 +585,57 @@ input {
   gap: 10px;
 }
 
-.next-move span {
-  color: var(--mint);
-  background: rgba(47, 125, 106, 0.12);
-}
-
 .next-move strong {
   font-size: 1.05rem;
   line-height: 1.6;
+}
+
+.share-card {
+  padding: 22px;
+  border-radius: 28px;
+  border: 1px solid rgba(143, 63, 28, 0.12);
+  background:
+    linear-gradient(170deg, rgba(255, 248, 239, 0.98), rgba(248, 234, 217, 0.92));
+  box-shadow: var(--shadow-strong);
+}
+
+.share-card-character {
+  display: block;
+  margin-top: 14px;
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  line-height: 1.08;
+}
+
+.share-card-summary {
+  margin: 14px 0 0;
+}
+
+.share-tag-list {
+  margin-top: 18px;
+}
+
+.share-tag-list .tag-pill {
+  background: rgba(47, 125, 106, 0.12);
+  color: var(--mint);
+}
+
+.share-card-rule {
+  margin: 20px 0 16px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(143, 63, 28, 0.28), rgba(47, 125, 106, 0.16));
+}
+
+.share-card-caption {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+}
+
+.share-card-move {
+  margin: 8px 0 0;
 }
 
 .format-reminder span {
@@ -528,6 +646,67 @@ input {
   color: var(--ink);
   font-size: 0.94rem;
   line-height: 1.5;
+}
+
+.source-intro {
+  margin-bottom: 18px;
+}
+
+.source-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+}
+
+.source-item.is-parsed {
+  background: rgba(255, 247, 235, 0.95);
+}
+
+.source-item.is-ignored {
+  background: rgba(248, 242, 233, 0.8);
+}
+
+.source-index {
+  min-width: 2.6rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(198, 93, 46, 0.08);
+  color: var(--accent-deep);
+  font-weight: 700;
+  text-align: center;
+}
+
+.source-text {
+  line-height: 1.6;
+}
+
+.source-badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--mint);
+  background: rgba(47, 125, 106, 0.1);
+}
+
+.source-note-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(47, 125, 106, 0.14);
+  background: rgba(247, 252, 250, 0.92);
+  align-content: start;
+}
+
+.source-note-card strong {
+  font-size: 1.06rem;
+  line-height: 1.6;
+}
+
+.source-note-card p {
+  margin: 0;
 }
 
 .milestone-grid {
@@ -552,7 +731,8 @@ input {
   }
 
   .workspace-grid {
-    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+    grid-template-columns: minmax(0, 1.02fr) minmax(340px, 0.98fr);
+    align-items: start;
   }
 
   .format-showcase {
@@ -561,6 +741,16 @@ input {
 
   .button-row {
     grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .result-flow-grid {
+    grid-template-columns: minmax(0, 1.06fr) minmax(280px, 0.94fr);
+    align-items: start;
+  }
+
+  .source-grid {
+    grid-template-columns: minmax(0, 1.12fr) minmax(260px, 0.78fr);
     align-items: start;
   }
 
@@ -590,7 +780,9 @@ input {
   }
 
   .parsed-card,
-  .evidence-head {
+  .evidence-head,
+  .source-item {
+    grid-template-columns: 1fr;
     flex-direction: column;
     align-items: flex-start;
   }
@@ -602,7 +794,8 @@ input {
     animation: lift-in 520ms ease-out both;
   }
 
-  .hero-preview {
+  .hero-preview,
+  .share-card {
     animation: preview-in 700ms ease-out both;
   }
 }
