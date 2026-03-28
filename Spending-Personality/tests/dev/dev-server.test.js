@@ -4,17 +4,32 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createRequestHandler, resolveRequestPath } from "../../scripts/dev.mjs";
+import { DEFAULT_PORT, createRequestHandler, resolveRequestPath } from "../../scripts/dev.mjs";
 
 test("returns 400 for malformed request URLs instead of crashing the handler", () => {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "spending-personality-dev-"));
   fs.writeFileSync(path.join(projectRoot, "index.html"), "<!doctype html>");
 
-  const handler = createRequestHandler({ projectRoot, port: 4173 });
+  const handler = createRequestHandler({ projectRoot, port: DEFAULT_PORT });
   const response = createMockResponse();
 
   assert.doesNotThrow(() => {
     handler({ method: "GET", url: "/%" }, response);
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body, "Bad Request");
+});
+
+test("returns 400 for NUL bytes in decoded request paths instead of crashing the handler", () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "spending-personality-dev-"));
+  fs.writeFileSync(path.join(projectRoot, "index.html"), "<!doctype html>");
+
+  const handler = createRequestHandler({ projectRoot, port: DEFAULT_PORT });
+  const response = createMockResponse();
+
+  assert.doesNotThrow(() => {
+    handler({ method: "GET", url: "/%00" }, response);
   });
 
   assert.equal(response.statusCode, 400);
@@ -32,10 +47,30 @@ test("blocks sibling-directory traversal even when the directory names share a p
 
   const resolvedPath = resolveRequestPath("/%2e%2e%2fSpending-Personality2/secret.txt", {
     projectRoot,
-    port: 4173
+    port: DEFAULT_PORT
   });
 
   assert.equal(resolvedPath, null);
+});
+
+test("blocks symlinked files that resolve outside the project root", () => {
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "spending-personality-root-"));
+  const projectRoot = path.join(workspaceRoot, "Spending-Personality");
+  const externalRoot = path.join(workspaceRoot, "external");
+  const symlinkPath = path.join(projectRoot, "leak.txt");
+
+  fs.mkdirSync(projectRoot);
+  fs.mkdirSync(externalRoot);
+  fs.writeFileSync(path.join(externalRoot, "secret.txt"), "outside");
+  fs.symlinkSync(path.join(externalRoot, "secret.txt"), symlinkPath);
+
+  const handler = createRequestHandler({ projectRoot, port: DEFAULT_PORT });
+  const response = createMockResponse();
+
+  handler({ method: "GET", url: "/leak.txt" }, response);
+
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.body, "Forbidden");
 });
 
 /**

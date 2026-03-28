@@ -73,6 +73,20 @@ export function createRequestHandler(options = {}) {
       return;
     }
 
+    try {
+      filePath = resolveSafeFilePath(projectRoot, filePath);
+    } catch {
+      response.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Internal Server Error");
+      return;
+    }
+
+    if (!filePath) {
+      response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Forbidden");
+      return;
+    }
+
     fs.readFile(filePath, (error, content) => {
       if (error) {
         const statusCode = error.code === "ENOENT" ? 404 : 500;
@@ -123,14 +137,14 @@ export function resolveRequestPath(requestUrl, options = {}) {
   const projectRoot = path.resolve(options.projectRoot ?? defaultProjectRoot);
   const url = new URL(requestUrl, `http://${host}:${port}`);
   const relativePath = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
-  const filePath = path.resolve(projectRoot, `.${relativePath}`);
-  const relativeToRoot = path.relative(projectRoot, filePath);
 
-  if (
-    relativeToRoot === ".." ||
-    relativeToRoot.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relativeToRoot)
-  ) {
+  if (relativePath.includes("\0")) {
+    throw new Error("Invalid request path");
+  }
+
+  const filePath = path.resolve(projectRoot, `.${relativePath}`);
+
+  if (isPathOutsideRoot(projectRoot, filePath)) {
     return null;
   }
 
@@ -139,4 +153,39 @@ export function resolveRequestPath(requestUrl, options = {}) {
 
 function isDirectRun() {
   return Boolean(process.argv[1] && path.resolve(process.argv[1]) === __filename);
+}
+
+/**
+ * @param {string} projectRoot
+ * @param {string} filePath
+ * @returns {string | null}
+ */
+function resolveSafeFilePath(projectRoot, filePath) {
+  const realProjectRoot = fs.realpathSync(projectRoot);
+
+  try {
+    const realFilePath = fs.realpathSync(filePath);
+    return isPathOutsideRoot(realProjectRoot, realFilePath) ? null : realFilePath;
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return filePath;
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * @param {string} rootPath
+ * @param {string} targetPath
+ * @returns {boolean}
+ */
+function isPathOutsideRoot(rootPath, targetPath) {
+  const relativeToRoot = path.relative(rootPath, targetPath);
+
+  return (
+    relativeToRoot === ".." ||
+    relativeToRoot.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativeToRoot)
+  );
 }
