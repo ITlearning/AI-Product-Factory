@@ -8,6 +8,15 @@ import {
 } from "./content.js";
 import { CHARACTER_RESULT_STATUS } from "./character-contract.js";
 import { formatCurrency, generateCharacterResult, parseTransactions } from "./character-engine.js";
+import {
+  HISTORY_LIMIT,
+  createHistoryEntry,
+  loadHistoryEntries,
+  recordHistoryEntry,
+  saveHistoryEntries
+} from "./history.js";
+
+const HISTORY_PANEL_COPY = `최근 ${HISTORY_LIMIT}개 결과만 이 브라우저에 저장됩니다.`;
 
 /**
  * @param {string} value
@@ -27,15 +36,130 @@ export function createInitialAppState() {
     transactionsInput: "",
     note: "",
     hasGenerated: false,
-    sampleIndex: 0
+    sampleIndex: 0,
+    historyEntries: [],
+    activeHistoryEntryId: null
   };
+}
+
+/**
+ * @returns {Storage | null}
+ */
+function resolveStorage() {
+  try {
+    return globalThis.window?.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {object[]} historyEntries
+ * @param {string | null | undefined} entryId
+ * @returns {object | null}
+ */
+function findHistoryEntry(historyEntries, entryId) {
+  if (!entryId) {
+    return null;
+  }
+
+  return historyEntries.find((entry) => entry.id === entryId) ?? null;
+}
+
+/**
+ * @param {object[]} historyEntries
+ * @param {string} rawInput
+ * @param {string} note
+ * @returns {object | null}
+ */
+function findMatchingHistoryEntry(historyEntries, rawInput, note) {
+  const normalizedInput = rawInput.trim();
+  const normalizedNote = note.trim();
+
+  return (
+    historyEntries.find(
+      (entry) => entry.rawInput === normalizedInput && entry.note === normalizedNote
+    ) ?? null
+  );
+}
+
+/**
+ * @param {object} entry
+ * @returns {number}
+ */
+function findSampleIndexForHistoryEntry(entry) {
+  const foundIndex = PREVIEW_CASES.findIndex(
+    (previewCase) =>
+      previewCase.transactions.join("\n") === entry.rawInput &&
+      (previewCase.note ?? "").trim() === entry.note
+  );
+
+  return foundIndex >= 0 ? foundIndex : 0;
+}
+
+/**
+ * @param {ReturnType<typeof createInitialAppState>} state
+ * @param {object} entry
+ */
+function applyHistoryEntry(state, entry) {
+  state.transactionsInput = entry.rawInput;
+  state.note = entry.note;
+  state.hasGenerated = true;
+  state.activeHistoryEntryId = entry.id;
+  state.sampleIndex = findSampleIndexForHistoryEntry(entry);
+}
+
+/**
+ * @param {HTMLTextAreaElement} transactionsInput
+ * @param {HTMLInputElement} noteInput
+ * @param {ReturnType<typeof createInitialAppState>} state
+ */
+function syncDomInputs(transactionsInput, noteInput, state) {
+  transactionsInput.value = state.transactionsInput;
+  noteInput.value = state.note;
+}
+
+/**
+ * @param {ReturnType<typeof createInitialAppState>} state
+ * @param {Pick<Storage, "getItem" | "setItem"> | null} storage
+ */
+function recordHistoryFromState(state, storage) {
+  const viewModel = buildAppViewModel(state);
+
+  if (!state.hasGenerated || viewModel.result.status !== CHARACTER_RESULT_STATUS.SUCCESS) {
+    state.activeHistoryEntryId = null;
+    return viewModel;
+  }
+
+  const reusedEntry = findMatchingHistoryEntry(state.historyEntries, state.transactionsInput, state.note);
+  const historyEntry =
+    reusedEntry ??
+    createHistoryEntry({
+      rawInput: state.transactionsInput,
+      note: state.note,
+      result: viewModel.result
+    });
+
+  state.historyEntries = recordHistoryEntry(historyEntry, state.historyEntries);
+  state.activeHistoryEntryId = historyEntry.id;
+  saveHistoryEntries(storage, state.historyEntries);
+
+  return buildAppViewModel(state);
 }
 
 /**
  * @param {HTMLElement} root
  */
 export function createApp(root) {
+  const storage = resolveStorage();
   const state = createInitialAppState();
+
+  state.historyEntries = loadHistoryEntries(storage);
+
+  if (state.historyEntries.length > 0) {
+    applyHistoryEntry(state, state.historyEntries[0]);
+  }
+
   root.innerHTML = renderAppMarkup(state);
 
   const form = root.querySelector("[data-composer-form]");
@@ -95,6 +219,7 @@ export function createApp(root) {
     }
 
     state.hasGenerated = true;
+    recordHistoryFromState(state, storage);
     applyViewModel();
   });
 
@@ -105,19 +230,19 @@ export function createApp(root) {
 
     syncDraftFromDom();
     state.hasGenerated = false;
+    state.activeHistoryEntryId = null;
     applyViewModel();
   });
 
   root.addEventListener("click", (event) => {
-    const actionTarget = event.target instanceof HTMLElement
-      ? event.target.closest("[data-action]")
-      : null;
+    const actionTarget =
+      event.target instanceof HTMLElement ? event.target.closest("[data-action]") : null;
     const action = actionTarget instanceof HTMLElement ? actionTarget.dataset.action : null;
 
     if (action === "fill-sample") {
       applySampleCase(state, getSampleCase(state.sampleIndex), { hasGenerated: false });
-      transactionsInput.value = state.transactionsInput;
-      noteInput.value = state.note;
+      state.activeHistoryEntryId = null;
+      syncDomInputs(transactionsInput, noteInput, state);
       applyViewModel();
       transactionsInput.focus();
       transactionsInput.setSelectionRange(
@@ -130,8 +255,8 @@ export function createApp(root) {
       state.transactionsInput = "";
       state.note = "";
       state.hasGenerated = false;
-      transactionsInput.value = "";
-      noteInput.value = "";
+      state.activeHistoryEntryId = null;
+      syncDomInputs(transactionsInput, noteInput, state);
       applyViewModel();
       transactionsInput.focus();
     }
@@ -139,8 +264,20 @@ export function createApp(root) {
     if (action === "reroll-sample") {
       state.sampleIndex = normalizeSampleIndex(state.sampleIndex + 1);
       applySampleCase(state, getSampleCase(state.sampleIndex), { hasGenerated: true });
-      transactionsInput.value = state.transactionsInput;
-      noteInput.value = state.note;
+      recordHistoryFromState(state, storage);
+      syncDomInputs(transactionsInput, noteInput, state);
+      applyViewModel();
+    }
+
+    if (action === "open-history" && actionTarget instanceof HTMLElement) {
+      const entry = findHistoryEntry(state.historyEntries, actionTarget.dataset.entryId);
+
+      if (!entry) {
+        return;
+      }
+
+      applyHistoryEntry(state, entry);
+      syncDomInputs(transactionsInput, noteInput, state);
       applyViewModel();
     }
   });
@@ -154,6 +291,8 @@ export function createApp(root) {
  *   note?: string;
  *   hasGenerated?: boolean;
  *   sampleIndex?: number;
+ *   historyEntries?: object[];
+ *   activeHistoryEntryId?: string | null;
  * }} [state]
  */
 export function renderAppMarkup(state = createInitialAppState()) {
@@ -167,8 +306,8 @@ export function renderAppMarkup(state = createInitialAppState()) {
           <h1>붙여넣고 나면 결과 화면이 먼저 이해되는 소비 캐릭터 흐름</h1>
           <p>
             카드 문자, 메신저 메모, 가계부 메모를 그대로 붙여넣고 오늘 소비의 분위기를 읽습니다.
-            생성 뒤에는 캐릭터명과 요약, 근거 소비, 내일의 한 수, 공유 카드를 한 화면에서
-            바로 이해할 수 있도록 결과 우선 레이아웃으로 정리했습니다.
+            생성 뒤에는 캐릭터명과 요약, 근거 소비, 내일의 한 수, 공유 카드, 최근 히스토리를 한
+            흐름에서 다시 열 수 있도록 결과 우선 레이아웃으로 정리했습니다.
           </p>
           <ul class="hero-points">
             ${HERO_POINTS.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
@@ -284,25 +423,25 @@ export function renderAppMarkup(state = createInitialAppState()) {
  *   note?: string;
  *   hasGenerated?: boolean;
  *   sampleIndex?: number;
+ *   historyEntries?: object[];
+ *   activeHistoryEntryId?: string | null;
  * }} state
  */
 export function buildAppViewModel(state) {
   const transactionsInput = state.transactionsInput ?? "";
   const note = state.note ?? "";
   const hasGenerated = Boolean(state.hasGenerated);
+  const historyEntries = Array.isArray(state.historyEntries) ? state.historyEntries : [];
+  const activeHistoryEntry = hasGenerated
+    ? findHistoryEntry(historyEntries, state.activeHistoryEntryId)
+    : null;
+  const hasHistory = historyEntries.length > 0;
   const hasInput = transactionsInput.trim().length > 0;
-  const parsedTransactions = parseTransactions(transactionsInput);
   const rawLines = splitInputLines(transactionsInput);
-  const rawLineCount = rawLines.length;
-  const parsedTransactionCount = parsedTransactions.length;
-  const ignoredLineCount = Math.max(rawLineCount - parsedTransactionCount, 0);
-  const totalAmount = parsedTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const parsedTransactions = parseTransactions(transactionsInput);
   const samplePreview = getSamplePreviewModel(state.sampleIndex ?? 0);
   const sampleCase = samplePreview.previewCase;
   const isCurrentSample = matchesSampleInput(transactionsInput, note, sampleCase);
-  const noteSummary = note.trim()
-    ? "메모 문장도 함께 읽어 말투와 하루의 맥락을 조금 더 부드럽게 보정합니다."
-    : "메모 없이도 소비 패턴만으로 요약을 만들 수 있습니다.";
 
   if (!hasInput) {
     return {
@@ -317,22 +456,39 @@ export function buildAppViewModel(state) {
       footerCopy: "예시를 눌러 바로 체험하거나, 카드 문자와 메모를 그대로 붙여넣어 보세요.",
       previewState: "example",
       rawLines,
-      rawLineCount,
-      parsedTransactionCount,
-      ignoredLineCount,
+      rawLineCount: rawLines.length,
+      parsedTransactionCount: parsedTransactions.length,
+      ignoredLineCount: Math.max(rawLines.length - parsedTransactions.length, 0),
       parsedTransactions,
       totalAmountText: null,
       sourceEntries: [],
       result: samplePreview.result,
       samplePreview,
       isCurrentSample,
-      noteSummary,
+      noteSummary: "메모 없이도 소비 패턴만으로 요약을 만들 수 있습니다.",
       shareCardBadge: samplePreview.previewCase.label,
-      shareCardTitle: samplePreview.previewCase.title
+      shareCardTitle: samplePreview.previewCase.title,
+      historyEntries,
+      activeHistoryEntry,
+      hasHistory,
+      historyPanelCopy: HISTORY_PANEL_COPY
     };
   }
 
-  const result = generateCharacterResult(transactionsInput, { note });
+  const result = activeHistoryEntry
+    ? activeHistoryEntry.result
+    : generateCharacterResult(transactionsInput, { note });
+  const sourceRawInput = activeHistoryEntry ? activeHistoryEntry.rawInput : transactionsInput;
+  const sourceNote = activeHistoryEntry ? activeHistoryEntry.note : note;
+  const sourceRawLines = splitInputLines(sourceRawInput);
+  const sourceParsedTransactions = parseTransactions(sourceRawInput);
+  const sourceRawLineCount = sourceRawLines.length;
+  const sourceParsedTransactionCount = sourceParsedTransactions.length;
+  const sourceIgnoredLineCount = Math.max(sourceRawLineCount - sourceParsedTransactionCount, 0);
+  const totalAmount = sourceParsedTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const noteSummary = sourceNote.trim()
+    ? "메모 문장도 함께 읽어 말투와 하루의 맥락을 조금 더 부드럽게 보정합니다."
+    : "메모 없이도 소비 패턴만으로 요약을 만들 수 있습니다.";
 
   return {
     transactionsInput,
@@ -343,25 +499,35 @@ export function buildAppViewModel(state) {
     canClear: hasInput || note.trim().length > 0,
     buttonLabel: hasGenerated ? "이 입력으로 다시 생성" : "오늘의 소비 캐릭터 보기",
     sampleButtonLabel: "샘플 하루 채우기",
-    footerCopy: getFooterCopy(hasGenerated, result.status),
+    footerCopy: getFooterCopy(hasGenerated, result.status, activeHistoryEntry),
     previewState: getPreviewState(hasGenerated, result.status),
-    rawLines,
-    rawLineCount,
-    parsedTransactionCount,
-    ignoredLineCount,
-    parsedTransactions,
-    totalAmountText: parsedTransactionCount > 0 ? formatCurrency(totalAmount) : null,
-    sourceEntries: buildSourceEntries(rawLines, parsedTransactions),
+    rawLines: sourceRawLines,
+    rawLineCount: sourceRawLineCount,
+    parsedTransactionCount: sourceParsedTransactionCount,
+    ignoredLineCount: sourceIgnoredLineCount,
+    parsedTransactions: sourceParsedTransactions,
+    totalAmountText: sourceParsedTransactionCount > 0 ? formatCurrency(totalAmount) : null,
+    sourceEntries: buildSourceEntries(sourceRawLines, sourceParsedTransactions),
     result,
     samplePreview,
     isCurrentSample,
     noteSummary,
-    shareCardBadge: isCurrentSample
-      ? samplePreview.previewCase.label
-      : `${parsedTransactionCount}건 소비 로그`,
-    shareCardTitle: isCurrentSample
-      ? samplePreview.previewCase.title
-      : note.trim() || "오늘의 소비 흐름에서 읽은 캐릭터"
+    shareCardBadge: activeHistoryEntry
+      ? activeHistoryEntry.createdAt
+      : isCurrentSample
+        ? samplePreview.previewCase.label
+        : `${sourceParsedTransactionCount}건 소비 로그`,
+    shareCardTitle: activeHistoryEntry
+      ? isCurrentSample
+        ? samplePreview.previewCase.title
+        : sourceNote.trim() || "최근 다시 꺼낸 소비 흐름"
+      : isCurrentSample
+        ? samplePreview.previewCase.title
+        : note.trim() || "오늘의 소비 흐름에서 읽은 캐릭터",
+    historyEntries,
+    activeHistoryEntry,
+    hasHistory,
+    historyPanelCopy: HISTORY_PANEL_COPY
   };
 }
 
@@ -461,7 +627,7 @@ function renderExamplePreview(samplePreview) {
 
     <div class="inline-hint">
       카드 문자처럼 보이는 소비 줄을 2개 이상 붙여넣으면 근거 카드, 내일의 한 수,
-      저장/공유 카드까지 바로 열립니다.
+      저장/공유 카드, 최근 히스토리까지 바로 열립니다.
     </div>
   `;
 }
@@ -572,7 +738,7 @@ function renderSuccessPreview(viewModel) {
         : `
           ${renderParsedTransactionMarkup(viewModel.parsedTransactions)}
           <div class="inline-hint">
-            버튼을 누르면 근거 카드와 내일의 한 수, 저장/공유 카드까지 같은 톤으로 이어서 펼쳐집니다.
+            버튼을 누르면 근거 카드와 내일의 한 수, 저장/공유 카드, 최근 히스토리까지 같은 톤으로 이어서 펼쳐집니다.
           </div>
         `
     }
@@ -619,10 +785,41 @@ function renderFeedbackPreview(viewModel) {
  */
 function renderSupportPanelMarkup(viewModel) {
   if (viewModel.previewState === "generated-success") {
-    return renderSourcePanelMarkup(viewModel);
+    return renderSupportSectionsMarkup([
+      renderSourcePanelMarkup(viewModel),
+      viewModel.hasHistory ? renderHistoryPanelMarkup(viewModel) : ""
+    ]);
+  }
+
+  if (viewModel.hasHistory) {
+    return renderSupportSectionsMarkup([
+      renderHistoryPanelMarkup(viewModel),
+      renderRoadmapPanelMarkup()
+    ]);
   }
 
   return renderRoadmapPanelMarkup();
+}
+
+/**
+ * @param {string[]} sections
+ * @returns {string}
+ */
+function renderSupportSectionsMarkup(sections) {
+  return `
+    <div class="support-sections">
+      ${sections
+        .filter(Boolean)
+        .map(
+          (sectionMarkup) => `
+            <section class="support-section">
+              ${sectionMarkup}
+            </section>
+          `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 /**
@@ -637,8 +834,12 @@ function renderSourcePanelMarkup(viewModel) {
     </div>
 
     <p class="source-intro">
-      결과 카드와 공유 카드는 아래 입력 원문을 바탕으로 만들어집니다. 금액이 읽힌 줄은 근거
-      소비 후보가 되고, 선택 메모는 설명 톤과 하루의 맥락을 보정하는 데 함께 쓰입니다.
+      ${
+        viewModel.activeHistoryEntry
+          ? "최근 히스토리에서 다시 연 결과도 아래 입력 원문을 바탕으로 그대로 복원됩니다."
+          : "결과 카드와 공유 카드는 아래 입력 원문을 바탕으로 만들어집니다."
+      }
+      금액이 읽힌 줄은 근거 소비 후보가 되고, 선택 메모는 설명 톤과 하루의 맥락을 보정하는 데 함께 쓰입니다.
     </p>
 
     <div class="source-grid">
@@ -671,9 +872,69 @@ function renderSourcePanelMarkup(viewModel) {
               ? `<span class="summary-pill">${escapeHtml(viewModel.totalAmountText)}</span>`
               : ""
           }
+          ${
+            viewModel.activeHistoryEntry
+              ? `<span class="summary-pill">${escapeHtml(viewModel.activeHistoryEntry.createdAt)}</span>`
+              : ""
+          }
         </div>
       </aside>
     </div>
+  `;
+}
+
+/**
+ * @param {ReturnType<typeof buildAppViewModel>} viewModel
+ * @returns {string}
+ */
+function renderHistoryPanelMarkup(viewModel) {
+  return `
+    <div class="panel-head">
+      <p class="panel-kicker">Recent history</p>
+      <h2>최근 캐릭터 히스토리</h2>
+    </div>
+
+    <p class="history-intro">${escapeHtml(viewModel.historyPanelCopy)}</p>
+
+    <ol class="history-list">
+      ${viewModel.historyEntries
+        .map((entry, index) =>
+          renderHistoryItemMarkup(entry, index, viewModel.activeHistoryEntry?.id ?? null)
+        )
+        .join("")}
+    </ol>
+  `;
+}
+
+/**
+ * @param {object} entry
+ * @param {number} index
+ * @param {string | null} activeHistoryEntryId
+ * @returns {string}
+ */
+function renderHistoryItemMarkup(entry, index, activeHistoryEntryId) {
+  const isSelected = entry.id === activeHistoryEntryId;
+  const parsedTransactions = parseTransactions(entry.rawInput);
+  const detailLabel = entry.note || parsedTransactions[0]?.rawText || "저장된 소비 로그";
+
+  return `
+    <li>
+      <button
+        type="button"
+        class="history-item${isSelected ? " is-selected" : ""}"
+        data-action="open-history"
+        data-entry-id="${escapeHtml(entry.id)}"
+        aria-pressed="${isSelected ? "true" : "false"}"
+      >
+        <span class="history-meta">
+          <span class="history-rank">${index === 0 ? "가장 최근" : `최근 ${index + 1}`}</span>
+          <time datetime="${escapeHtml(entry.createdAt)}">${escapeHtml(entry.createdAt)}</time>
+        </span>
+        <strong>${escapeHtml(entry.result.characterName)}</strong>
+        <p>${escapeHtml(entry.result.summary)}</p>
+        <small>${escapeHtml(detailLabel)}</small>
+      </button>
+    </li>
   `;
 }
 
@@ -752,6 +1013,24 @@ function renderResultMetaMarkup(viewModel) {
  */
 function getHeroPreviewModel(viewModel) {
   if (viewModel.previewState === "generated-success" || viewModel.previewState === "anticipation") {
+    if (viewModel.previewState === "generated-success" && viewModel.activeHistoryEntry) {
+      return {
+        label: "최근 다시 연 결과",
+        context: viewModel.shareCardTitle,
+        result: viewModel.result,
+        meta: [
+          viewModel.activeHistoryEntry.createdAt,
+          `${viewModel.parsedTransactionCount}건 분석`,
+          viewModel.totalAmountText || "금액 합계 없음"
+        ],
+        showReroll: viewModel.isCurrentSample,
+        buttonLabel: "다른 하루로 다시 생성",
+        actionNote: viewModel.isCurrentSample
+          ? `다음 샘플: ${viewModel.samplePreview.nextPreviewLabel}`
+          : HISTORY_PANEL_COPY
+      };
+    }
+
     return {
       label: viewModel.previewState === "generated-success" ? "생성된 결과" : "곧 생성될 결과",
       context: viewModel.isCurrentSample
@@ -792,15 +1071,20 @@ function getHeroPreviewModel(viewModel) {
 /**
  * @param {boolean} hasGenerated
  * @param {string} status
+ * @param {object | null} activeHistoryEntry
  * @returns {string}
  */
-function getFooterCopy(hasGenerated, status) {
+function getFooterCopy(hasGenerated, status, activeHistoryEntry) {
+  if (activeHistoryEntry) {
+    return "최근 결과를 다시 열어 둔 상태예요. 입력을 바꾸면 미리보기로 돌아가고 현재 내용으로 다시 생성할 수 있어요.";
+  }
+
   if (hasGenerated) {
     return "입력을 바꾸면 다시 미리보기 상태로 돌아가고, 현재 내용으로 곧바로 다시 생성할 수 있어요.";
   }
 
   if (status === CHARACTER_RESULT_STATUS.SUCCESS) {
-    return "지금도 분위기는 읽히고 있어요. 버튼을 누르면 근거 카드, 내일의 한 수, 저장/공유 카드까지 펼쳐집니다.";
+    return "지금도 분위기는 읽히고 있어요. 버튼을 누르면 근거 카드, 내일의 한 수, 저장/공유 카드, 최근 히스토리까지 펼쳐집니다.";
   }
 
   if (status === CHARACTER_RESULT_STATUS.NEEDS_MORE_DATA) {

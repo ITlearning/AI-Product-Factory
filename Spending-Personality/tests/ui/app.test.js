@@ -16,6 +16,7 @@ import {
   SAMPLE_TRANSACTIONS,
   SHELL_MILESTONES
 } from "../../src/content.js";
+import { createHistoryEntry } from "../../src/history.js";
 
 test("renders the paste-first input screen with a disabled initial button", () => {
   const markup = renderAppMarkup();
@@ -65,7 +66,7 @@ test("builds an anticipation preview when enough parseable lines exist despite n
   assert.equal(viewModel.result.status, CHARACTER_RESULT_STATUS.SUCCESS);
   assert.equal(viewModel.parsedTransactionCount, 2);
   assert.equal(viewModel.ignoredLineCount, 1);
-  assert.match(viewModel.footerCopy, /저장\/공유 카드까지 펼쳐집니다/);
+  assert.match(viewModel.footerCopy, /저장\/공유 카드, 최근 히스토리까지 펼쳐집니다/);
   assert.match(markup, /곧 생성될 결과/);
 });
 
@@ -91,6 +92,28 @@ test("renders the full generated result with share card and source snapshot", ()
     assert.match(markup, new RegExp(escapeRegExp(evidence.label)));
     assert.match(markup, new RegExp(escapeRegExp(evidence.rawText)));
   }
+});
+
+test("renders recent history when a stored result is active", () => {
+  const historyEntry = createSuccessHistoryEntry({
+    now: new Date("2026-03-28T10:12:00Z")
+  });
+  const state = {
+    transactionsInput: historyEntry.rawInput,
+    note: historyEntry.note,
+    hasGenerated: true,
+    sampleIndex: 0,
+    historyEntries: [historyEntry],
+    activeHistoryEntryId: historyEntry.id
+  };
+  const viewModel = buildAppViewModel(state);
+  const markup = renderAppMarkup(state);
+
+  assert.equal(viewModel.shareCardBadge, historyEntry.createdAt);
+  assert.match(markup, /최근 캐릭터 히스토리/);
+  assert.match(markup, new RegExp(escapeRegExp(historyEntry.createdAt)));
+  assert.match(markup, new RegExp(escapeRegExp(historyEntry.result.characterName)));
+  assert.match(markup, /최근 다시 연 결과/);
 });
 
 test("keeps roadmap milestones visible before generation", () => {
@@ -122,6 +145,20 @@ test("escapes interpolated strings before they enter markup", () => {
     "&lt;&amp;&gt;&quot;&#39;"
   );
 });
+
+/**
+ * @param {{ now?: Date }} [options]
+ */
+function createSuccessHistoryEntry(options = {}) {
+  const preview = getSamplePreviewModel(0);
+
+  return createHistoryEntry({
+    now: options.now ?? new Date("2026-03-28T09:00:00Z"),
+    note: SAMPLE_NOTE,
+    rawInput: SAMPLE_TRANSACTIONS.join("\n"),
+    result: preview.result
+  });
+}
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
