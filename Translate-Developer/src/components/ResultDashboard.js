@@ -1,6 +1,6 @@
 import React from "react";
 
-import { RESULT_COPY, RESULT_PLACEHOLDERS } from "../data/view-content.js";
+import { RESULT_COPY, RESULT_PLACEHOLDERS, RESULT_TABS } from "../data/view-content.js";
 import { RichTextContent } from "./RichTextContent.js";
 
 const { createElement: h } = React;
@@ -39,7 +39,7 @@ export function ResultDashboard(props) {
       h(
         "div",
         { className: "results-toolbar" },
-        h("span", { className: "results-kicker" }, RESULT_COPY.primaryCardTitle),
+        h("span", { className: "results-kicker" }, RESULT_COPY.summaryLabel),
         h(
           "span",
           {
@@ -58,19 +58,47 @@ export function ResultDashboard(props) {
         { className: "results-main-column" },
         renderResultPanel(
           "rewritten",
-          RESULT_COPY.primaryCardTitle,
+          RESULT_TABS[0].label,
           props.state.result?.rewrittenMessage ?? RESULT_PLACEHOLDERS.rewritten,
           true,
           !props.state.result
         ),
-        h("p", { className: "results-footer" }, footerCopy)
+        h(
+          "div",
+          { className: "results-secondary-grid" },
+          renderResultPanel(
+            "impact",
+            RESULT_TABS[2].label,
+            props.state.result?.confirmedImpact ?? RESULT_PLACEHOLDERS.impact,
+            false,
+            !props.state.result
+          ),
+          renderResultPanel(
+            "context",
+            RESULT_TABS[3].label,
+            props.state.result?.needsMoreContext ?? RESULT_PLACEHOLDERS.context,
+            false,
+            !props.state.result
+          )
+        )
+      ),
+      h(
+        "aside",
+        {
+          className: "glossary-panel",
+          id: "result-glossary"
+        },
+        h("h3", { className: "glossary-title" }, RESULT_COPY.glossaryTitle),
+        h("p", { className: "glossary-description" }, RESULT_COPY.glossaryDescription),
+        renderGlossaryContent(props.state.result),
+        h("p", { className: "glossary-footer" }, footerCopy)
       )
     )
   );
 }
 
 /**
- * @param {"rewritten"} id
+ * @param {"rewritten" | "impact" | "context"} id
  * @param {string} title
  * @param {string} value
  * @param {boolean} isPrimary
@@ -96,6 +124,46 @@ function renderResultPanel(id, title, value, isPrimary, isPlaceholder) {
       value,
       variant: isPrimary ? "primary" : "default"
     })
+  );
+}
+
+/**
+ * @param {import("../engine/types.js").TranslationResult | null} result
+ */
+function renderGlossaryContent(result) {
+  if (!result || result.termExplanations.length === 0) {
+    return h("p", { className: "glossary-empty" }, RESULT_COPY.glossaryEmpty);
+  }
+
+  return h(
+    "div",
+    { className: "glossary-table-shell" },
+    h(
+      "table",
+      { className: "glossary-table" },
+      h(
+        "thead",
+        null,
+        h(
+          "tr",
+          null,
+          h("th", { scope: "col" }, RESULT_COPY.glossaryColumns.term),
+          h("th", { scope: "col" }, RESULT_COPY.glossaryColumns.explanation)
+        )
+      ),
+      h(
+        "tbody",
+        null,
+        result.termExplanations.map((item, index) =>
+          h(
+            "tr",
+            { key: `${item.term}-${index}` },
+            h("td", null, item.term),
+            h("td", null, item.explanation)
+          )
+        )
+      )
+    )
   );
 }
 

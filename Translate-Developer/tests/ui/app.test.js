@@ -74,7 +74,9 @@ test("renders translated output after submit", async () => {
   assert.match(markup, /쉽게 다시 쓴 내용/);
   assert.match(markup, /AI 설명/);
   assert.doesNotMatch(markup, /class="results-tabs"/);
-  assert.doesNotMatch(markup, /class="glossary-panel"/);
+  assert.match(markup, /class="glossary-panel"/);
+  assert.match(markup, /이 대화에서 보이는 영향/);
+  assert.match(markup, /더 알려주면 정확해지는 부분/);
 });
 
 test("does not render the results dashboard before a translation result exists", () => {
@@ -100,7 +102,7 @@ test("renders multiline result text as readable paragraphs and bullet lists", ()
   assert.match(markup, /class="result-paragraph result-paragraph-label"/);
   assert.match(markup, /class="result-list"/);
   assert.match(markup, /송출 중에 갑자기 중단된 케이스가 있었어요/);
-  assert.doesNotMatch(markup, /class="glossary-panel"/);
+  assert.match(markup, /class="glossary-panel"/);
 });
 
 test("uses fallback mode when the API request fails", async () => {

@@ -514,16 +514,23 @@ a {
 
 .results-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1.14fr) minmax(320px, 0.86fr);
+  gap: 22px;
 }
 
 .results-main-column {
   display: grid;
-  gap: 14px;
+  gap: 20px;
 }
 
-.result-card {
+.results-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.result-card,
+.glossary-panel {
   border-radius: var(--radius-lg);
   border: 1px solid var(--surface-border);
   background: linear-gradient(180deg, rgba(24, 32, 48, 0.95), rgba(17, 24, 38, 0.96));
@@ -620,11 +627,71 @@ a {
   list-style: decimal;
 }
 
-.results-footer {
+.glossary-panel {
+  padding: 24px;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.glossary-title {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.glossary-description,
+.glossary-empty,
+.glossary-footer {
   margin: 0;
   color: var(--text-muted);
+  line-height: 1.62;
+}
+
+.glossary-table-shell {
+  overflow: auto;
+  max-height: 630px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 18, 29, 0.72);
+}
+
+.glossary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.glossary-table th,
+.glossary-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  vertical-align: top;
+}
+
+.glossary-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(18, 24, 37, 0.98);
+  color: #dbe4f4;
+  font-size: 0.92rem;
+}
+
+.glossary-table td {
+  color: rgba(243, 247, 252, 0.92);
+  line-height: 1.64;
+}
+
+.glossary-table td:first-child {
+  width: 34%;
+  color: #eef5ff;
+  font-family: "JetBrains Mono", monospace;
+}
+
+.glossary-footer {
   font-size: 0.95rem;
-  line-height: 1.68;
 }
 
 @media (max-width: 1100px) {
@@ -702,6 +769,10 @@ a {
   .results-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .results-secondary-grid {
+    grid-template-columns: 1fr;
   }
 
   .result-content-primary .result-paragraph,
