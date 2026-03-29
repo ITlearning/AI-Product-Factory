@@ -55,7 +55,10 @@ export function useTranslatorApp(options = {}) {
     });
 
     setState(nextState);
-    setShouldRevealResults(true);
+
+    if (nextState.result) {
+      setShouldRevealResults(true);
+    }
   });
 
   return {

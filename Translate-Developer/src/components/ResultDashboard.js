@@ -13,6 +13,10 @@ const { createElement: h } = React;
  * }} props
  */
 export function ResultDashboard(props) {
+  if (!props.state.result) {
+    return null;
+  }
+
   const footerCopy =
     props.state.engineSource === "ai"
       ? RESULT_COPY.footerBySource.ai

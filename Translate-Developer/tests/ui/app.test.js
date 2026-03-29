@@ -77,6 +77,13 @@ test("renders translated output after submit", async () => {
   assert.match(markup, /AI 설명/);
 });
 
+test("does not render the results dashboard before a translation result exists", () => {
+  const markup = renderAppMarkup(createInitialState());
+
+  assert.doesNotMatch(markup, /class="results-section"/);
+  assert.doesNotMatch(markup, /쉽게 다시 쓴 내용/);
+});
+
 test("renders multiline result text as readable paragraphs and bullet lists", () => {
   const markup = renderAppMarkup({
     ...createInitialState(),

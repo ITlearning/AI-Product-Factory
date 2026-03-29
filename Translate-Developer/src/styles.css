@@ -210,18 +210,46 @@ a {
   transition:
     transform 160ms ease,
     background-color 160ms ease,
+    border-color 160ms ease,
     box-shadow 160ms ease;
 }
 
-.audience-tab:hover {
+.audience-tab:not(.audience-tab-active):hover,
+.audience-tab:not(.audience-tab-active):focus-visible {
   transform: translateY(-1px);
   background: rgba(58, 66, 85, 0.86);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .audience-tab-active {
   background: linear-gradient(90deg, #0dcf89 0%, #3ee18d 100%);
   color: #f8fbff;
   box-shadow: 0 10px 30px rgba(39, 213, 141, 0.2);
+  animation: audience-tab-pop 220ms ease-out;
+}
+
+.audience-tab-active:hover,
+.audience-tab-active:focus-visible {
+  transform: none;
+  background: linear-gradient(90deg, #0dcf89 0%, #3ee18d 100%);
+  border-color: transparent;
+}
+
+@keyframes audience-tab-pop {
+  0% {
+    transform: scale(0.985);
+    box-shadow: 0 0 0 rgba(39, 213, 141, 0);
+  }
+
+  70% {
+    transform: scale(1.01);
+    box-shadow: 0 14px 34px rgba(39, 213, 141, 0.26);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 10px 30px rgba(39, 213, 141, 0.2);
+  }
 }
 
 .composer-form {
