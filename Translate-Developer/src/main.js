@@ -1,9 +1,13 @@
-import { createApp } from "./app.js";
+import React from "react";
+import { createRoot } from "react-dom/client";
 
-const root = document.querySelector("#app");
+import { App } from "./app.js";
+import "./styles.css";
 
-if (!root) {
+const container = document.querySelector("#app");
+
+if (!container) {
   throw new Error("App root not found");
 }
 
-createApp(root);
+createRoot(container).render(React.createElement(App));

@@ -1,98 +1,37 @@
-import { DEFAULT_EXAMPLE, EXAMPLE_MESSAGES } from "./data/examples.js";
-import {
-  applyExample,
-  createInitialState,
-  startTranslation,
-  submitTranslationAsync,
-  updateAudience,
-  updateInput
-} from "./ui/state.js";
-import { renderAppMarkup } from "./ui/templates.js";
+import React from "react";
+
+import { EXAMPLE_MESSAGES } from "./data/examples.js";
+import { useTranslatorApp } from "./hooks/useTranslatorApp.js";
+import { AppShell } from "./components/AppShell.js";
+
+const { createElement: h } = React;
 
 /**
- * @param {HTMLElement} root
  * @param {{
  *   requestTranslation?: typeof import("./api/translate.js").requestAiTranslation,
- *   fallbackEngine?: (input: string, audience: import("./engine/types.js").AudienceId) => import("./engine/types.js").TranslationResult
+ *   fallbackEngine?: (input: string, audience: import("./engine/types.js").AudienceId) => import("./engine/types.js").TranslationResult,
+ *   initialState?: import("./ui/state.js").AppState
  * }} [options]
  */
-export function createApp(root, options = {}) {
-  let state = createInitialState();
-  let shouldRevealResults = false;
+export function App(options = {}) {
+  const {
+    state,
+    selectedAudience,
+    resultsRef,
+    handleAudienceChange,
+    handleExampleSelect,
+    handleInputChange,
+    handleSubmit
+  } = useTranslatorApp(options);
 
-  function bindEvents() {
-    const form = root.querySelector('[data-role="composer"]');
-    const textarea = root.querySelector("#developer-message");
-    const exampleButton = root.querySelector('[data-action="example"]');
-    const exampleChips = root.querySelectorAll("[data-example-index]");
-    const audienceButtons = root.querySelectorAll("[data-audience]");
-
-    if (!(form instanceof HTMLFormElement) || !(textarea instanceof HTMLTextAreaElement)) {
-      return;
-    }
-
-    textarea.addEventListener("input", (event) => {
-      const nextValue = /** @type {HTMLTextAreaElement} */ (event.currentTarget).value;
-      state = updateInput(state, nextValue);
-    });
-
-    exampleButton?.addEventListener("click", () => {
-      state = applyExample(state, DEFAULT_EXAMPLE);
-      render();
-    });
-
-    for (const chip of exampleChips) {
-      chip.addEventListener("click", () => {
-        const index = Number(chip.getAttribute("data-example-index"));
-        const message = EXAMPLE_MESSAGES[index] ?? DEFAULT_EXAMPLE;
-        state = applyExample(state, message);
-        render();
-      });
-    }
-
-    for (const button of audienceButtons) {
-      button.addEventListener("click", () => {
-        const audience = button.getAttribute("data-audience");
-
-        if (audience) {
-          state = updateAudience(state, audience);
-          render();
-        }
-      });
-    }
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      state = startTranslation(state);
-      render();
-      state = await submitTranslationAsync(state, {
-        requestTranslation: options.requestTranslation,
-        fallbackEngine: options.fallbackEngine
-      });
-      shouldRevealResults = true;
-      render();
-    });
-  }
-
-  function render() {
-    root.innerHTML = renderAppMarkup(state, {
-      defaultExample: DEFAULT_EXAMPLE,
-      examples: EXAMPLE_MESSAGES
-    });
-    bindEvents();
-
-    if (shouldRevealResults) {
-      const results = root.querySelector("#results");
-      results?.scrollIntoView({ behavior: "smooth", block: "start" });
-      shouldRevealResults = false;
-    }
-  }
-
-  render();
-
-  return {
-    getState() {
-      return state;
-    }
-  };
+  return h(AppShell, {
+    examples: EXAMPLE_MESSAGES,
+    onInputChange: handleInputChange,
+    onSelectAudience: handleAudienceChange,
+    onSelectExample: handleExampleSelect,
+    onSubmit: handleSubmit,
+    resultsRef,
+    selectedAudience,
+    state
+  });
 }

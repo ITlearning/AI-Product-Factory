@@ -1,25 +1,45 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { DEFAULT_EXAMPLE } from "../../src/data/examples.js";
-import { DEFAULT_AUDIENCE } from "../../src/data/audiences.js";
+import { DEFAULT_AUDIENCE, getAudienceOption } from "../../src/data/audiences.js";
+import { AppShell } from "../../src/components/AppShell.js";
 import {
   applyExample,
   createInitialState,
   startTranslation,
   submitTranslationAsync
 } from "../../src/ui/state.js";
-import { renderAppMarkup } from "../../src/ui/templates.js";
+
+const { createElement: h } = React;
+
+/**
+ * @param {import("../../src/ui/state.js").AppState} state
+ * @returns {string}
+ */
+function renderAppMarkup(state) {
+  return renderToStaticMarkup(
+    h(AppShell, {
+      examples: [DEFAULT_EXAMPLE],
+      onInputChange() {},
+      onSelectAudience() {},
+      onSelectExample() {},
+      onSubmit() {},
+      selectedAudience: getAudienceOption(state.audience),
+      state
+    })
+  );
+}
 
 test("renders the translator shell", () => {
-  const markup = renderAppMarkup(createInitialState(), {
-    defaultExample: DEFAULT_EXAMPLE,
-    examples: [DEFAULT_EXAMPLE]
-  });
+  const markup = renderAppMarkup(createInitialState());
 
-  assert.match(markup, /개발자 설명을 함께 일하는 비개발자가 이해하게 풀어줍니다/);
+  assert.match(markup, /개발자 메시지 해설기/);
   assert.match(markup, /PM\/기획자/);
   assert.match(markup, /쉽게 풀어보기/);
+  assert.match(markup, /빠른 예시/);
 });
 
 test("loads an example message into state", () => {
@@ -49,40 +69,40 @@ test("renders translated output after submit", async () => {
       })
     }
   );
-  const markup = renderAppMarkup(nextState, {
-    defaultExample: DEFAULT_EXAMPLE,
-    examples: [DEFAULT_EXAMPLE]
-  });
+  const markup = renderAppMarkup(nextState);
 
   assert.match(markup, /쉽게 다시 쓴 내용/);
-  assert.match(markup, /전문 용어 풀이/);
-  assert.match(markup, /더 알려주면 정확해지는 부분/);
   assert.match(markup, /AI 설명/);
+  assert.doesNotMatch(markup, /class="results-tabs"/);
+  assert.match(markup, /class="glossary-panel"/);
+  assert.match(markup, /이 대화에서 보이는 영향/);
+  assert.match(markup, /더 알려주면 정확해지는 부분/);
+});
+
+test("does not render the results dashboard before a translation result exists", () => {
+  const markup = renderAppMarkup(createInitialState());
+
+  assert.doesNotMatch(markup, /class="results-section"/);
+  assert.doesNotMatch(markup, /쉽게 다시 쓴 내용/);
 });
 
 test("renders multiline result text as readable paragraphs and bullet lists", () => {
-  const markup = renderAppMarkup(
-    {
-      ...createInitialState(),
-      result: {
-        rewrittenMessage: "상황 요약:\n- 송출 중에 갑자기 중단된 케이스가 있었어요.\n- 원인은 아직 확정되지 않았어요.",
-        confirmedImpact: "확실히 보이는 점:\nverbose log와 이미지가 같이 공유됐어요.",
-        needsMoreContext:
-          "아직 모르는 점:\n- 비디오 패킷 미수신이 정확한 시작점인지\n- 워커 문제가 실제 원인인지",
-        termExplanations: []
-      },
-      engineSource: "ai"
+  const markup = renderAppMarkup({
+    ...createInitialState(),
+    result: {
+      rewrittenMessage: "상황 요약:\n- 송출 중에 갑자기 중단된 케이스가 있었어요.\n- 원인은 아직 확정되지 않았어요.",
+      confirmedImpact: "확실히 보이는 점:\nverbose log와 이미지가 같이 공유됐어요.",
+      needsMoreContext:
+        "아직 모르는 점:\n- 비디오 패킷 미수신이 정확한 시작점인지\n- 워커 문제가 실제 원인인지",
+      termExplanations: []
     },
-    {
-      defaultExample: DEFAULT_EXAMPLE,
-      examples: [DEFAULT_EXAMPLE]
-    }
-  );
+    engineSource: "ai"
+  });
 
   assert.match(markup, /class="result-paragraph result-paragraph-label"/);
   assert.match(markup, /class="result-list"/);
   assert.match(markup, /송출 중에 갑자기 중단된 케이스가 있었어요/);
-  assert.match(markup, /verbose log와 이미지가 같이 공유됐어요/);
+  assert.match(markup, /class="glossary-panel"/);
 });
 
 test("uses fallback mode when the API request fails", async () => {
