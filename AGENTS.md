@@ -31,12 +31,12 @@
 | PRODUCT_SENSE.md | 제품 감각 가이드 | [`docs/PRODUCT_SENSE.md`](docs/PRODUCT_SENSE.md) |
 | RELIABILITY.md | 신뢰성 기준 | [`docs/RELIABILITY.md`](docs/RELIABILITY.md) |
 | WORKFLOW.md | Symphony 오케스트레이션 계약 | [`WORKFLOW.md`](WORKFLOW.md) |
+| SECURITY.md | 보안 기준 | [`docs/SECURITY.md`](docs/SECURITY.md) |
 
 ### 예약 문서 (미생성)
 
 | 문서 | 역할 | 예정 PR |
 |------|------|---------|
-| SECURITY.md | 보안 기준 | PR 0-8 |
 | admission 템플릿 | PRD 실행 허가 계약 | PR 0-9 |
 | spec-lock 규칙 | 잠금 규칙 | PR 0-10 |
 | evidence trail | 검증 증거 포맷 | PR 0-13 |
