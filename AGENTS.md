@@ -33,12 +33,12 @@
 | WORKFLOW.md | Symphony 오케스트레이션 계약 | [`WORKFLOW.md`](WORKFLOW.md) |
 | SECURITY.md | 보안 기준 | [`docs/SECURITY.md`](docs/SECURITY.md) |
 | admission 템플릿 | PRD 실행 허가 계약 | [`docs/harness/admission.md`](docs/harness/admission.md) |
+| spec-lock 규칙 | 잠금 규칙 | [`docs/harness/spec-lock.md`](docs/harness/spec-lock.md) |
 
 ### 예약 문서 (미생성)
 
 | 문서 | 역할 | 예정 PR |
 |------|------|---------|
-| spec-lock 규칙 | 잠금 규칙 | PR 0-10 |
 | evidence trail | 검증 증거 포맷 | PR 0-13 |
 
 예약 문서는 해당 PR이 병합되면 실존 문서로 승격된다. 두 문서가 충돌하면 CHARTER.md가 우선한다.
