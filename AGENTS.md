@@ -29,13 +29,13 @@
 | PLANS.md | 계획 관리 규칙 | [`docs/PLANS.md`](docs/PLANS.md) |
 | QUALITY_SCORE.md | 리뷰 점수 계산 구조 | [`docs/QUALITY_SCORE.md`](docs/QUALITY_SCORE.md) |
 | PRODUCT_SENSE.md | 제품 감각 가이드 | [`docs/PRODUCT_SENSE.md`](docs/PRODUCT_SENSE.md) |
+| RELIABILITY.md | 신뢰성 기준 | [`docs/RELIABILITY.md`](docs/RELIABILITY.md) |
 | WORKFLOW.md | Symphony 오케스트레이션 계약 | [`WORKFLOW.md`](WORKFLOW.md) |
 
 ### 예약 문서 (미생성)
 
 | 문서 | 역할 | 예정 PR |
 |------|------|---------|
-| RELIABILITY.md | 신뢰성 기준 | PR 0-7 |
 | SECURITY.md | 보안 기준 | PR 0-8 |
 | admission 템플릿 | PRD 실행 허가 계약 | PR 0-9 |
 | spec-lock 규칙 | 잠금 규칙 | PR 0-10 |
