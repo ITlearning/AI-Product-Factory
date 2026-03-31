@@ -132,7 +132,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | CHARTER.md | 하네스 헌장, 책임 경계, 실행 경로 | `docs/harness/CHARTER.md` |
 | AGENTS.md | 저장소 진입점 맵 | `AGENTS.md` |
 | ARCHITECTURE.md | 기술 아키텍처 | [`ARCHITECTURE.md`](../../ARCHITECTURE.md) |
-| PLANS.md | 계획 관리 규칙 | `docs/PLANS.md` (PR 0-4) |
+| PLANS.md | 계획 관리 규칙 | [`docs/PLANS.md`](../PLANS.md) |
 | QUALITY_SCORE.md | 리뷰 점수 계산 구조 | `docs/QUALITY_SCORE.md` (PR 0-5) |
 | PRODUCT_SENSE.md | 제품 감각 가이드 | `docs/PRODUCT_SENSE.md` (PR 0-6) |
 | RELIABILITY.md | 신뢰성 기준 | `docs/RELIABILITY.md` (PR 0-7) |

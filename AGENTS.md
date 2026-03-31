@@ -26,13 +26,13 @@
 | Harness Charter | 책임 경계, 실행 경로, 중단 규칙, 리뷰 게이트 | [`docs/harness/CHARTER.md`](docs/harness/CHARTER.md) |
 | AGENTS.md | 저장소 진입점 맵 (이 파일) | [`AGENTS.md`](AGENTS.md) |
 | ARCHITECTURE.md | 기술 아키텍처 | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| PLANS.md | 계획 관리 규칙 | [`docs/PLANS.md`](docs/PLANS.md) |
 | WORKFLOW.md | Symphony 오케스트레이션 계약 | [`WORKFLOW.md`](WORKFLOW.md) |
 
 ### 예약 문서 (미생성)
 
 | 문서 | 역할 | 예정 PR |
 |------|------|---------|
-| PLANS.md | 계획 관리 규칙 | PR 0-4 |
 | QUALITY_SCORE.md | 리뷰 점수 계산 구조 | PR 0-5 |
 | PRODUCT_SENSE.md | 제품 감각 가이드 | PR 0-6 |
 | RELIABILITY.md | 신뢰성 기준 | PR 0-7 |
