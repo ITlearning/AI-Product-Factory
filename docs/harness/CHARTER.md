@@ -138,6 +138,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | decomposition | Sprint/PR 분해 수치 기준 | [`docs/harness/decomposition.md`](decomposition.md) |
 | ralplan-ralph | ralplan→ralph 공식 경로 | [`docs/harness/ralplan-ralph.md`](ralplan-ralph.md) |
 | evidence trail | 검증 증거 포맷 | [`docs/harness/evidence-trail.md`](evidence-trail.md) |
+| doc-lint | 문서 전용 변경 검증 규칙 | [`docs/harness/doc-lint.md`](doc-lint.md) |
 
 ### 규칙
 
@@ -161,7 +162,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | 리뷰 점수 세부 계산식 | [`QUALITY_SCORE.md`](../QUALITY_SCORE.md)에서 별도 정의한다 |
 | admission 템플릿 필드 정의 | [`admission.md`](admission.md)에서 별도 정의한다 |
 | PR 크기 수치 기준 | [`decomposition.md`](decomposition.md)에서 별도 정의한다 |
-| lint/doc-gardening 구현 | PR 0-15에서 별도 정의한다 |
+| lint/doc-gardening 구현 | [`doc-lint.md`](doc-lint.md)에서 별도 정의한다 |
 
 ---
 
@@ -202,3 +203,4 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | 날짜 | PR | 변경 내용 |
 |------|-----|----------|
 | 2026-03-31 | PR 0-1 | 초기 헌장 작성 |
+| 2026-03-31 | PR 0-15 | doc-lint Source of Truth Map 등록, Non-Goals 링크 전환, 임시 조항 전환 |

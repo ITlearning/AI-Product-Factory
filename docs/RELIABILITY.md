@@ -46,7 +46,7 @@ lint (check-syntax.mjs) → test (node --test) → build
 코드가 아닌 문서만 변경한 경우:
 - 자동화된 검증이 없으면 그 사실을 명시한다.
 - 링크 유효성, 문서 간 정합성을 수동으로 확인한다.
-- 향후 PR 0-15(doc-gardening/lint)에서 자동 검증을 추가한다.
+- [`doc-lint.md`](harness/doc-lint.md)의 수동 체크리스트를 수행한다.
 
 ---
 
@@ -158,6 +158,7 @@ lint (check-syntax.mjs) → test (node --test) → build
 | [`docs/harness/CHARTER.md`](harness/CHARTER.md) | Stop Rules, Prohibited Actions |
 | [`docs/PRODUCT_SENSE.md`](PRODUCT_SENSE.md) | 오류 메시지 문구 위임 규칙 |
 | [`docs/SECURITY.md`](SECURITY.md) | 보안 관련 신뢰성 (정보 노출 금지 등) |
+| [`docs/harness/doc-lint.md`](harness/doc-lint.md) | 문서 전용 변경 검증 규칙, 수동 체크리스트 |
 
 ---
 
@@ -166,3 +167,4 @@ lint (check-syntax.mjs) → test (node --test) → build
 | 날짜 | PR | 변경 내용 |
 |------|-----|----------|
 | 2026-03-31 | PR 0-7 | 초기 신뢰성 기준 작성 |
+| 2026-03-31 | PR 0-15 | 문서 전용 변경 섹션에 doc-lint.md 링크 추가 |

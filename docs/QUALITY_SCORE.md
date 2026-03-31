@@ -166,6 +166,7 @@
 | [`docs/harness/CHARTER.md`](harness/CHARTER.md) | Review Gates 섹션, 임시 조항 전환 규칙 |
 | [`AGENTS.md`](../AGENTS.md) | Guardrails → Review Gates 포인터 |
 | [`docs/harness/evidence-trail.md`](harness/evidence-trail.md) | 검증 증거 포맷 |
+| [`docs/harness/doc-lint.md`](harness/doc-lint.md) | doc-lint 검증은 리뷰 점수 산정 이전 단계 |
 
 ---
 
