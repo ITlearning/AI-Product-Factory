@@ -141,7 +141,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | spec-lock 규칙 | 잠금 규칙 | [`docs/harness/spec-lock.md`](spec-lock.md) |
 | decomposition | Sprint/PR 분해 수치 기준 | [`docs/harness/decomposition.md`](decomposition.md) |
 | ralplan-ralph | ralplan→ralph 공식 경로 | [`docs/harness/ralplan-ralph.md`](ralplan-ralph.md) |
-| evidence trail | 검증 증거 포맷 | `docs/harness/evidence-trail.md` (PR 0-13) |
+| evidence trail | 검증 증거 포맷 | [`docs/harness/evidence-trail.md`](evidence-trail.md) |
 
 ### 규칙
 

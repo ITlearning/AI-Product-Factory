@@ -36,14 +36,9 @@
 | spec-lock 규칙 | 잠금 규칙 | [`docs/harness/spec-lock.md`](docs/harness/spec-lock.md) |
 | decomposition | Sprint/PR 분해 수치 기준 | [`docs/harness/decomposition.md`](docs/harness/decomposition.md) |
 | ralplan-ralph | ralplan→ralph 공식 경로 | [`docs/harness/ralplan-ralph.md`](docs/harness/ralplan-ralph.md) |
+| evidence trail | 검증 증거 포맷 | [`docs/harness/evidence-trail.md`](docs/harness/evidence-trail.md) |
 
-### 예약 문서 (미생성)
-
-| 문서 | 역할 | 예정 PR |
-|------|------|---------|
-| evidence trail | 검증 증거 포맷 | PR 0-13 |
-
-예약 문서는 해당 PR이 병합되면 실존 문서로 승격된다. 두 문서가 충돌하면 CHARTER.md가 우선한다.
+두 문서가 충돌하면 CHARTER.md가 우선한다.
 
 ---
 
