@@ -34,6 +34,7 @@
 | SECURITY.md | 보안 기준 | [`docs/SECURITY.md`](docs/SECURITY.md) |
 | admission 템플릿 | PRD 실행 허가 계약 | [`docs/harness/admission.md`](docs/harness/admission.md) |
 | spec-lock 규칙 | 잠금 규칙 | [`docs/harness/spec-lock.md`](docs/harness/spec-lock.md) |
+| decomposition | Sprint/PR 분해 수치 기준 | [`docs/harness/decomposition.md`](docs/harness/decomposition.md) |
 
 ### 예약 문서 (미생성)
 

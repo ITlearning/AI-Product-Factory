@@ -139,6 +139,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | SECURITY.md | 보안 기준 | [`docs/SECURITY.md`](../SECURITY.md) |
 | admission 템플릿 | PRD 실행 허가 계약 | [`docs/harness/admission.md`](admission.md) |
 | spec-lock 규칙 | 잠금 규칙 | [`docs/harness/spec-lock.md`](spec-lock.md) |
+| decomposition | Sprint/PR 분해 수치 기준 | [`docs/harness/decomposition.md`](decomposition.md) |
 | evidence trail | 검증 증거 포맷 | `docs/harness/evidence-trail.md` (PR 0-13) |
 
 ### 규칙
