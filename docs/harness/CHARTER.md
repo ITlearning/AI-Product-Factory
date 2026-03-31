@@ -134,7 +134,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | ARCHITECTURE.md | 기술 아키텍처 | [`ARCHITECTURE.md`](../../ARCHITECTURE.md) |
 | PLANS.md | 계획 관리 규칙 | [`docs/PLANS.md`](../PLANS.md) |
 | QUALITY_SCORE.md | 리뷰 점수 계산 구조 | [`docs/QUALITY_SCORE.md`](../QUALITY_SCORE.md) |
-| PRODUCT_SENSE.md | 제품 감각 가이드 | `docs/PRODUCT_SENSE.md` (PR 0-6) |
+| PRODUCT_SENSE.md | 제품 감각 가이드 | [`docs/PRODUCT_SENSE.md`](../PRODUCT_SENSE.md) |
 | RELIABILITY.md | 신뢰성 기준 | `docs/RELIABILITY.md` (PR 0-7) |
 | SECURITY.md | 보안 기준 | `docs/SECURITY.md` (PR 0-8) |
 | admission 템플릿 | PRD 실행 허가 계약 | `docs/harness/admission.md` (PR 0-9) |
