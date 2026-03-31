@@ -118,7 +118,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 ### 리뷰 프로세스
 
 1. 에이전트가 PR을 생성한다.
-2. 최소 2개 역할의 에이전트 리뷰를 수행한다.
+2. 3개 역할(critic, architect, analyst) 전체의 에이전트 리뷰를 수행한다.
 3. 리뷰 결과에 따라 수정하고 재검증한다.
 4. 리뷰 점수가 기준을 충족하면 인간에게 병합 승인을 요청한다.
 5. 인간이 최종 승인하면 병합한다.
@@ -133,7 +133,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | AGENTS.md | 저장소 진입점 맵 | `AGENTS.md` |
 | ARCHITECTURE.md | 기술 아키텍처 | [`ARCHITECTURE.md`](../../ARCHITECTURE.md) |
 | PLANS.md | 계획 관리 규칙 | [`docs/PLANS.md`](../PLANS.md) |
-| QUALITY_SCORE.md | 리뷰 점수 계산 구조 | `docs/QUALITY_SCORE.md` (PR 0-5) |
+| QUALITY_SCORE.md | 리뷰 점수 계산 구조 | [`docs/QUALITY_SCORE.md`](../QUALITY_SCORE.md) |
 | PRODUCT_SENSE.md | 제품 감각 가이드 | `docs/PRODUCT_SENSE.md` (PR 0-6) |
 | RELIABILITY.md | 신뢰성 기준 | `docs/RELIABILITY.md` (PR 0-7) |
 | SECURITY.md | 보안 기준 | `docs/SECURITY.md` (PR 0-8) |
