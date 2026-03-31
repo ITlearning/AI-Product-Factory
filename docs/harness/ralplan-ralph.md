@@ -250,7 +250,7 @@ ralph 실행 중 CHARTER.md Stop Rules가 트리거되면:
 | [`docs/RELIABILITY.md`](../RELIABILITY.md) | 검증 파이프라인, 롤백 기준 |
 | [`AGENTS.md`](../../AGENTS.md) | Validation 테이블 (서비스별 검증 명령) |
 | [`docs/PRODUCT_SENSE.md`](../PRODUCT_SENSE.md) | 구현 중 제품 결정 위임 규칙 |
-| [`docs/harness/evidence-trail.md`](evidence-trail.md) | 검증 증거 포맷 (PR 0-13) |
+| [`docs/harness/evidence-trail.md`](evidence-trail.md) | 검증 증거 포맷 |
 
 ---
 

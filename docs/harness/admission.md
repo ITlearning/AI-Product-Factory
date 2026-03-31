@@ -177,7 +177,7 @@ PRD가 admission을 통과하려면 다음 필드를 모두 포함해야 한다.
 | [`docs/harness/CHARTER.md`](CHARTER.md) | Execution Contract (admission 단계 정의), Ownership (에이전트 보조) |
 | [`AGENTS.md`](../../AGENTS.md) | Repo Map (대상 서비스 검증 기준), Harness Path |
 | [`docs/PRODUCT_SENSE.md`](../PRODUCT_SENSE.md) | 제품 결정 위임 규칙 (admission에서도 적용) |
-| [`docs/harness/spec-lock.md`](spec-lock.md) | admission 다음 단계 (PR 0-10) |
+| [`docs/harness/spec-lock.md`](spec-lock.md) | admission 다음 단계 |
 | [`docs/PLANS.md`](../PLANS.md) | ralplan 입력으로 admission output 사용 |
 
 ---

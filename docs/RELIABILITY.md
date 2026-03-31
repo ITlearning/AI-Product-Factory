@@ -157,7 +157,7 @@ lint (check-syntax.mjs) → test (node --test) → build
 | [`AGENTS.md`](../AGENTS.md) | Validation 테이블, Delivery 규칙 |
 | [`docs/harness/CHARTER.md`](harness/CHARTER.md) | Stop Rules, Prohibited Actions |
 | [`docs/PRODUCT_SENSE.md`](PRODUCT_SENSE.md) | 오류 메시지 문구 위임 규칙 |
-| `docs/SECURITY.md` (PR 0-8) | 보안 관련 신뢰성 (정보 노출 금지 등) |
+| [`docs/SECURITY.md`](SECURITY.md) | 보안 관련 신뢰성 (정보 노출 금지 등) |
 
 ---
 

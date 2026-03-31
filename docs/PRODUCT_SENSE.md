@@ -112,8 +112,8 @@
 | 기술 아키텍처 결정 | [`ARCHITECTURE.md`](../ARCHITECTURE.md) |
 | 리뷰 점수 기준 | [`docs/QUALITY_SCORE.md`](QUALITY_SCORE.md) |
 | 실행 경로/중단 규칙 | [`docs/harness/CHARTER.md`](harness/CHARTER.md) |
-| 보안 기준 | `docs/SECURITY.md` (PR 0-8) |
-| 신뢰성 기준 | `docs/RELIABILITY.md` (PR 0-7) |
+| 보안 기준 | [`docs/SECURITY.md`](SECURITY.md) |
+| 신뢰성 기준 | [`docs/RELIABILITY.md`](RELIABILITY.md) |
 
 ---
 
@@ -123,7 +123,7 @@
 |------|------|
 | [`docs/harness/CHARTER.md`](harness/CHARTER.md) | Ownership (인간 소유: 목표/비목표/성공 기준), Stop Rules |
 | [`AGENTS.md`](../AGENTS.md) | Ownership Boundary 요약 |
-| `docs/harness/admission.md` (PR 0-9) | PRD 필수 필드, 자동 반려 조건 |
+| [`docs/harness/admission.md`](harness/admission.md) | PRD 필수 필드, 자동 반려 조건 |
 
 ---
 

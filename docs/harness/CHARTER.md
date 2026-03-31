@@ -109,11 +109,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 
 ### 리뷰 점수 기준
 
-> **임시 조항**: `docs/QUALITY_SCORE.md` (PR 0-5)가 확정되기 전까지, 모든 리뷰 게이트는 에이전트 점수 산정 결과와 무관하게 **인간 수동 승인**을 최종 게이트로 한다. 자동 통과는 허용하지 않는다.
-
-점수 산정 방식은 PR 0-5에서 정의한다. 확정 전까지 위 임시 조항이 적용된다.
-
-> **전환 규칙**: `docs/QUALITY_SCORE.md` (PR 0-5)가 병합되면 이 임시 조항은 자동 폐기되고, QUALITY_SCORE.md의 점수 기준이 리뷰 게이트의 공식 기준으로 대체된다.
+[`docs/QUALITY_SCORE.md`](../QUALITY_SCORE.md)의 점수 기준이 리뷰 게이트의 공식 기준이다. 모든 PR은 QUALITY_SCORE.md의 통과 기준(역할별 최소 7/10, 평균 8.0/10)을 충족해야 병합 승인을 요청할 수 있다. 인간의 최종 병합 승인은 항상 필요하다.
 
 ### 리뷰 프로세스
 
@@ -130,7 +126,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | 문서 | 역할 | 위치 |
 |------|------|------|
 | CHARTER.md | 하네스 헌장, 책임 경계, 실행 경로 | `docs/harness/CHARTER.md` |
-| AGENTS.md | 저장소 진입점 맵 | `AGENTS.md` |
+| AGENTS.md | 저장소 진입점 맵 | [`AGENTS.md`](../../AGENTS.md) |
 | ARCHITECTURE.md | 기술 아키텍처 | [`ARCHITECTURE.md`](../../ARCHITECTURE.md) |
 | PLANS.md | 계획 관리 규칙 | [`docs/PLANS.md`](../PLANS.md) |
 | QUALITY_SCORE.md | 리뷰 점수 계산 구조 | [`docs/QUALITY_SCORE.md`](../QUALITY_SCORE.md) |
@@ -147,7 +143,7 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 
 - 위 맵에 없는 문서는 source of truth가 아니다.
 - 두 문서가 충돌하면 상위 문서(CHARTER.md)가 우선한다.
-- `(PR 0-N)` 표기는 아직 생성되지 않은 예약 문서다.
+- 이전에 `(PR 0-N)` 표기가 사용되었으나, Sprint 0에서 모든 예약 문서가 생성 완료되었다.
 
 ---
 
@@ -162,9 +158,9 @@ PRD -> admission -> spec-lock -> ralplan -> sprint/PR 분해 -> ralph 실행 -> 
 | AI의 제품 결정 대행 | 에이전트는 제품 판단을 대신하지 않는다 |
 | 모든 검토 자동 보장 | 자동 검토는 보조 수단이며 최종 판단을 대체하지 않는다 |
 | 서비스별 예외 규칙 정의 | 이 문서는 공통 하네스만 다룬다 |
-| 리뷰 점수 세부 계산식 | PR 0-5에서 별도 정의한다 |
-| admission 템플릿 필드 정의 | PR 0-9에서 별도 정의한다 |
-| PR 크기 수치 기준 | PR 0-11에서 별도 정의한다 |
+| 리뷰 점수 세부 계산식 | [`QUALITY_SCORE.md`](../QUALITY_SCORE.md)에서 별도 정의한다 |
+| admission 템플릿 필드 정의 | [`admission.md`](admission.md)에서 별도 정의한다 |
+| PR 크기 수치 기준 | [`decomposition.md`](decomposition.md)에서 별도 정의한다 |
 | lint/doc-gardening 구현 | PR 0-15에서 별도 정의한다 |
 
 ---

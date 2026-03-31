@@ -79,7 +79,7 @@ draft → review → locked → executing → completed
 
 ## Sprint/PR 분해 원칙
 
-> 이 섹션은 원칙만 다룬다. 수치 기준과 세부 규칙은 PR 0-11(sprint/PR 분해 규칙)에서 정의한다.
+> 이 섹션은 원칙만 다룬다. 수치 기준과 세부 규칙은 [`decomposition.md`](harness/decomposition.md)에서 정의한다.
 
 ### Sprint 분해
 
@@ -171,8 +171,8 @@ draft → review → locked → executing → completed
 |------|------|
 | [`docs/harness/CHARTER.md`](harness/CHARTER.md) | 실행 경로, 중단 규칙, 금지 조항 |
 | [`AGENTS.md`](../AGENTS.md) | 하네스 경로 맵, 라우팅 |
-| `docs/harness/spec-lock.md` (PR 0-10) | spec-lock 해제/재잠금 절차 |
-| `docs/harness/admission.md` (PR 0-9) | admission 통과 조건 |
+| [`docs/harness/spec-lock.md`](harness/spec-lock.md) | spec-lock 해제/재잠금 절차 |
+| [`docs/harness/admission.md`](harness/admission.md) | admission 통과 조건 |
 
 ---
 

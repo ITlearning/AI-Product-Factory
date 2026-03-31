@@ -139,7 +139,7 @@ spec-lock 해제 시 다음을 기록한다:
 - 변경된 항목 목록
 - 완료 PR 중 재검증이 필요한 PR 목록
 
-기록 위치와 포맷은 `docs/harness/evidence-trail.md` (PR 0-13)에서 정의한다.
+기록 위치와 포맷은 [`evidence-trail.md`](evidence-trail.md)에서 정의한다.
 
 ---
 
