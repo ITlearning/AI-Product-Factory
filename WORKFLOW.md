@@ -36,7 +36,7 @@ codex:
   turn_sandbox_policy:
     type: workspaceWrite
     writableRoots:
-      - /Users/tabber/code/ai-product-factory-workspaces
+      - $SYMPHONY_WORKSPACE_ROOT
     readOnlyAccess:
       type: fullAccess
     networkAccess: true
