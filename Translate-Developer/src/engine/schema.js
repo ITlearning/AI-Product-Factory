@@ -1,4 +1,4 @@
-const REQUIRED_STRING_FIELDS = ["rewrittenMessage", "confirmedImpact", "needsMoreContext"];
+const REQUIRED_STRING_FIELDS = ["rewrittenMessage", "context", "caveat"];
 
 /**
  * @param {unknown} value
@@ -46,8 +46,8 @@ export function normalizeTranslationResult(value) {
 
   return {
     rewrittenMessage: value.rewrittenMessage.trim(),
-    confirmedImpact: value.confirmedImpact.trim(),
-    needsMoreContext: value.needsMoreContext.trim(),
+    context: value.context.trim(),
+    caveat: value.caveat.trim(),
     termExplanations: value.termExplanations.map((item) => ({
       term: item.term.trim(),
       explanation: item.explanation.trim()
@@ -60,11 +60,11 @@ export const TRANSLATION_JSON_SCHEMA = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["rewrittenMessage", "confirmedImpact", "needsMoreContext", "termExplanations"],
+    required: ["rewrittenMessage", "context", "caveat", "termExplanations"],
     properties: {
       rewrittenMessage: { type: "string" },
-      confirmedImpact: { type: "string" },
-      needsMoreContext: { type: "string" },
+      context: { type: "string" },
+      caveat: { type: "string" },
       termExplanations: {
         type: "array",
         items: {

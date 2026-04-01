@@ -1,14 +1,45 @@
 import { createEmptyTranslationResult } from "./types.js";
 import {
-  applyPhraseReplacements,
-  applyTermSimplifications,
   detectSignals,
   extractCauseLabel,
   extractStatusLabel,
-  extractTermExplanations,
   extractTopic
 } from "./rules.js";
 import { ensureSentence, normalizeInput } from "../utils/text.js";
+import { getDictionary } from "./dictionaries/index.js";
+
+/**
+ * @param {string} input
+ * @param {ReturnType<typeof getDictionary>} dict
+ * @returns {string}
+ */
+function applyTermSimplifications(input, dict) {
+  return dict.TERM_DICTIONARY.reduce((acc, [term, simplified]) => {
+    return acc.split(term).join(simplified);
+  }, input);
+}
+
+/**
+ * @param {string} input
+ * @param {ReturnType<typeof getDictionary>} dict
+ * @returns {string}
+ */
+function applyPhraseReplacements(input, dict) {
+  return dict.PHRASE_REPLACEMENTS.reduce((acc, [source, target]) => {
+    return acc.split(source).join(target);
+  }, input);
+}
+
+/**
+ * @param {string} input
+ * @param {ReturnType<typeof getDictionary>} dict
+ * @returns {{ term: string, explanation: string }[]}
+ */
+function extractTermExplanations(input, dict) {
+  return dict.TERM_DICTIONARY
+    .filter(([term]) => input.includes(term))
+    .map(([term, explanation]) => ({ term, explanation }));
+}
 
 /**
  * @param {string} topic
@@ -16,8 +47,8 @@ import { ensureSentence, normalizeInput } from "../utils/text.js";
  * @param {{ issueLike: boolean, urgent: boolean, investigating: boolean, delayed: boolean, deployRelated: boolean }} signals
  * @returns {string}
  */
-function buildRewrittenMessage(input, topic, audience, signals) {
-  const simplified = ensureSentence(applyPhraseReplacements(applyTermSimplifications(input)));
+function buildRewrittenMessage(input, topic, audience, signals, dict) {
+  const simplified = ensureSentence(applyPhraseReplacements(applyTermSimplifications(input, dict), dict));
   const cause = extractCauseLabel(input);
   const status = extractStatusLabel(input);
   const topicLabel = topic === "서비스" ? "이 내용" : `${topic} 관련 내용`;
@@ -137,23 +168,25 @@ function buildNeedsMoreContext(input, topic, audience, signals) {
 /**
  * @param {string} input
  * @param {import("./types.js").AudienceId} [audience]
+ * @param {string} [categoryId]
  * @returns {import("./types.js").TranslationResult}
  */
-export function translateWithRules(input, audience = "pm-planner") {
+export function translateWithRules(input, audience = "pm-planner", categoryId = "developer") {
   const normalized = normalizeInput(input);
 
   if (!normalized) {
     return createEmptyTranslationResult();
   }
 
+  const dict = getDictionary(categoryId);
   const signals = detectSignals(normalized);
   const topic = extractTopic(normalized);
-  const termExplanations = extractTermExplanations(normalized);
+  const termExplanations = extractTermExplanations(normalized, dict);
 
   return {
-    rewrittenMessage: buildRewrittenMessage(normalized, topic, audience, signals),
-    confirmedImpact: buildConfirmedImpact(normalized, audience, signals),
-    needsMoreContext: buildNeedsMoreContext(normalized, topic, audience, signals),
+    rewrittenMessage: buildRewrittenMessage(normalized, topic, audience, signals, dict),
+    context: buildConfirmedImpact(normalized, audience, signals),
+    caveat: buildNeedsMoreContext(normalized, topic, audience, signals),
     termExplanations
   };
 }

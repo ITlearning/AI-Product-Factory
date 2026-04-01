@@ -25,7 +25,7 @@ export function App(options = {}) {
   } = useTranslatorApp(options);
 
   return h(AppShell, {
-    examples: EXAMPLE_MESSAGES,
+    examples: EXAMPLE_MESSAGES.developer,
     onInputChange: handleInputChange,
     onSelectAudience: handleAudienceChange,
     onSelectExample: handleExampleSelect,

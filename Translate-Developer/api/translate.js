@@ -20,6 +20,7 @@ export async function handleTranslateRequest(request, options = {}) {
   const body = await readRequestBody(request);
   const input = normalizeInput(typeof body?.input === "string" ? body.input : "");
   const audience = normalizeAudience(body?.audience);
+  const categoryId = typeof body?.categoryId === "string" ? body.categoryId : "developer";
 
   if (!input) {
     return jsonResponse({ error: "입력 메시지가 필요합니다." }, 400);
@@ -46,14 +47,14 @@ export async function handleTranslateRequest(request, options = {}) {
         input: [
           {
             role: "system",
-            content: [{ type: "input_text", text: buildSystemPrompt(audience) }]
+            content: [{ type: "input_text", text: buildSystemPrompt(audience, categoryId) }]
           },
           {
             role: "user",
             content: [
               {
                 type: "input_text",
-                text: buildUserPrompt(input)
+                text: buildUserPrompt(input, categoryId)
               }
             ]
           }
