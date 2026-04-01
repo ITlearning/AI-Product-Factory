@@ -16,6 +16,12 @@ git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.cl
 **Available gstack skills:**
 `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/design-shotgun`, `/design-html`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/connect-chrome`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/learn`
 
+## 언어 규칙
+
+- 한국어로 대화할 때는 자연스러운 한국어를 사용한다. 영어를 직역하지 않는다.
+- AskUserQuestion의 질문, 옵션 레이블, 설명 모두 실제 한국어 화자가 쓰는 표현으로 작성한다.
+- 번역 투의 어색한 문장 (예: "데이터가 달라질어요", "앉을 벴들때") 은 금지한다.
+
 ## Skill routing
 
 When the user's request matches an available skill, ALWAYS invoke it using the Skill
