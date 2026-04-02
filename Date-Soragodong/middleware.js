@@ -10,7 +10,7 @@
  * The SPA JS still hydrates normally — this only affects the initial HTML response.
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse } from "@vercel/edge";
 
 export const config = {
   matcher: ["/result"],
