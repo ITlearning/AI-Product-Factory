@@ -66,8 +66,8 @@ export default async function middleware(request) {
   return new NextResponse(injected, {
     headers: {
       "content-type": "text/html; charset=utf-8",
-      // Don't cache dynamic OG — each URL combination is unique
-      "cache-control": "public, max-age=86400, stale-while-revalidate=3600",
+      // Cache at CDN keyed by full URL (each course combo is unique), but not in browser
+      "cache-control": "public, s-maxage=86400, max-age=0, stale-while-revalidate=3600",
     },
   });
 }

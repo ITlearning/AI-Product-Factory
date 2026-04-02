@@ -461,6 +461,16 @@ button:focus-visible { outline: 3px solid rgba(255, 167, 38, 0.7); outline-offse
 .error-title { font-size: 20px; font-weight: 700; }
 .error-subtitle { font-size: 14px; color: rgba(255,255,255,0.6); }
 
+.draw-error {
+  margin: 8px 24px 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(255,80,80,0.15);
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  text-align: center;
+}
+
 /* ─── Responsive ─────────────────────────────────────────── */
 @media (min-width: 768px) {
   .app, .result-page {

@@ -54,3 +54,33 @@
 v1.1 카드 데이터 변경 전에 URL 전략 결정 권장.
 
 **Depends on:** Date-Soragodong MVP 배포 후, 첫 카드 데이터 변경 요구사항 발생 전.
+
+---
+
+## [TODO-4] Date-Soragodong: NotoSansKR 서브셋 폰트 번들
+
+**What:** OG 이미지 생성에 필요한 Noto Sans KR 서브셋 TTF 파일을 `api/fonts/NotoSansKR-subset.ttf`에 배치.
+
+**Why:** Satori(OG 이미지 렌더러)는 시스템 폰트/Google Fonts에 접근 불가. 폰트가 없으면 `/api/og`가 500을 반환하고 카카오/iMessage 미리보기 이미지가 깨짐. 랜딩 및 결과 페이지 자체는 정상 동작.
+
+**How:** Noto Sans KR 서브셋(한글 기본자모 + ASCII) TTF를 생성하거나 다운로드 후 `Date-Soragodong/api/fonts/NotoSansKR-subset.ttf`에 커밋.
+참고: `pyftsubset` (fonttools) 또는 [Google Fonts subset helper](https://fonts.google.com) 사용.
+
+**Depends on:** Vercel 프로젝트 연결 전 완료 권장.
+
+---
+
+## [TODO-5] Date-Soragodong: 다시 뽑기 필터 상태 보존
+
+**What:** 결과 페이지의 "다시 뽑기"가 메인 페이지에서 선택한 필터를 무시하고 전체 풀에서 뽑는 현상.
+
+**Why:** 결과 URL(`/result?place=...`)에 필터 선택 정보가 포함되지 않음. `redrawCourse(course)` 호출 시 `filters` 인자가 없어 전체 카드에서 재추첨됨. 사용자가 "카페만" 선택했어도 다시 뽑기하면 다른 장소가 나올 수 있음.
+
+**Options:**
+- URL에 필터 파라미터 추가 (`?placeFilter=카페,공원&...`)
+- 세션 스토리지에 필터 상태 저장
+- 현재 동작을 "필터 없는 확장 재추첨"으로 명시 (의도적 기능으로 문서화)
+
+**Context:** adversarial review (2026-04-03) Finding 10. MVP는 현재 동작으로 출시. 사용자 피드백 후 결정.
+
+**Depends on:** MVP 출시 후 사용자 피드백 수집.

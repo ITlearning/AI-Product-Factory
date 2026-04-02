@@ -49,6 +49,7 @@ export function App() {
     transportFilter: new Set(),
     budgetFilter: new Set(),
   });
+  const [drawError, setDrawError] = useState(false);
 
   const toggleExpand = useCallback((key) => {
     setExpanded(prev => prev === key ? null : key);
@@ -74,6 +75,7 @@ export function App() {
       window.location.href = url;
     } catch (e) {
       console.error("drawCourse failed:", e);
+      setDrawError(true);
     }
   }, [selected]);
 
@@ -153,6 +155,11 @@ export function App() {
       className: "cta-btn",
       onClick: handleAsk,
       "aria-label": "소라고동님께 오늘의 데이트 물어보기",
-    }, "소라고동님께 물어보기 🐚")
+    }, "소라고동님께 물어보기 🐚"),
+
+    drawError && h("p", {
+      className: "draw-error",
+      role: "alert",
+    }, "소라고동님이 잠시 자리를 비우셨어요 🐚 잠시 후 다시 시도해주세요.")
   );
 }
