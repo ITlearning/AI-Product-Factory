@@ -53,10 +53,11 @@ Primary routing rules:
   - `service:ibad` -> `IBAD/app`
   - `service:translate-developer` -> `Translate-Developer`
   - `service:spending-personality` -> `Spending-Personality`
+  - `service:date-soragodong` -> `Date-Soragodong`
   - `service:uggk` -> `UGGK`
   - `service:docs` -> `docs` or root-level docs
   - `service:new-service` -> a new top-level service directory named explicitly in the issue body
-- If the label is missing, infer the target from a title prefix such as `[IBAD]`, `[Translate-Developer]`, `[Spending-Personality]`, or `[UGGK]`.
+- If the label is missing, infer the target from a title prefix such as `[IBAD]`, `[Translate-Developer]`, `[Spending-Personality]`, `[Date-Soragodong]`, or `[UGGK]`.
 - If the target path is still ambiguous, stop and report the ambiguity instead of guessing.
 - Do not expand scope across multiple services unless the issue explicitly says it is cross-cutting.
 
@@ -65,6 +66,7 @@ Repository structure:
 - `IBAD/app`: Vercel app for Korean rejection-message generation
 - `Translate-Developer`: Vercel app for translating developer language into plain Korean
 - `Spending-Personality`: Vercel app for spending personality diagnosis
+- `Date-Soragodong`: Vercel app for couples date course picker (랜덤 데이트 코스)
 - `UGGK`: early-stage service area; treat as docs/spec-first unless the issue explicitly asks for implementation
 - `docs`: design docs and implementation plans
 

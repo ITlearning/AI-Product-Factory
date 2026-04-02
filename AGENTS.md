@@ -12,6 +12,7 @@
 | [`IBAD/app`](IBAD/app) | 한국어 거절 메시지 웹 앱 | active |
 | [`Translate-Developer`](Translate-Developer) | 개발자 언어 → 일반 한국어 번역 웹 앱 | active |
 | [`Spending-Personality`](Spending-Personality) | 소비 성격 진단 웹 앱 | active |
+| [`Date-Soragodong`](Date-Soragodong) | 커플 데이트 코스 뽑기 웹 앱 | active |
 | `UGGK` | 초기 단계; 디렉토리 미생성, 명시적 구현 요청이 없으면 docs/spec-first | spec-first |
 | [`docs`](docs) | 계획, 설계 노트, 하네스 문서 | active |
 
