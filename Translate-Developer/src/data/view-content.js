@@ -3,6 +3,30 @@ export const BRAND_COPY = {
   subtitle: "Role-Aware"
 };
 
+export const DESIGNER_COMPOSER_COPY = {
+  title: "디자이너 메시지 해설기",
+  description: "디자인 용어와 협업 맥락이 담긴 슬랙 메시지를 개발자·PM이 바로 이해할 수 있게 풀어드립니다.",
+  textareaLabel: "원문 또는 대화 내용",
+  textareaHelp: "짧은 한 줄보다 앞뒤 대화와 작업 맥락을 함께 넣을수록 더 정확하게 풀어드립니다.",
+  textareaPlaceholder: "디자인 관련 슬랙 메시지나 대화 내용을 붙여넣어 주세요.",
+  submitIdleLabel: "쉽게 풀어보기",
+  submitLoadingLabel: "AI 설명 정리 중..."
+};
+
+export const DESIGNER_EXAMPLE_PANEL_COPY = {
+  title: "빠른 예시",
+  description: "실제 협업에서 자주 나오는 디자이너 메시지로 바로 확인할 수 있습니다."
+};
+
+export const DESIGNER_GUIDANCE_COPY = {
+  title: "더 알려주면 정확해지는 부분",
+  items: [
+    "어떤 화면이나 컴포넌트에 대한 이야기인지 함께 적기",
+    "개발 단계(기획·디자인·QA·배포)가 어느 시점인지 언급하기",
+    "아직 확인되지 않은 부분도 그대로 두기"
+  ]
+};
+
 export const COMPOSER_COPY = {
   title: "개발자 메시지 해설기",
   description: "한 줄만 넣기보다, 앞뒤 슬랙 대화와 맥락을 함께 넣을수록 더 정확하게 풀어드립니다.",

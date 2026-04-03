@@ -12,6 +12,7 @@ AI-Product-Factory/          ← 모노레포 루트
 ├── IBAD/app/                ← 서비스: 한국어 거절 메시지
 ├── Translate-Developer/     ← 서비스: 개발자 언어 번역
 ├── Spending-Personality/    ← 서비스: 소비 성격 진단
+├── Date-Soragodong/         ← 서비스: 커플 데이트 코스 뽑기
 ├── UGGK/                   ← 서비스: 초기 단계 (디렉토리 미생성, spec-first)
 ├── docs/                   ← 설계 문서, 하네스 문서
 │   ├── harness/            ← 하네스 엔지니어링 문서
@@ -96,6 +97,37 @@ cross-cutting 작업은 명시적으로 선언된 경우에만 허용된다.
 - `src/character-engine.js` — 캐릭터 생성 엔진
 - `src/character-contract.js` — 캐릭터 계약 정의
 - `src/content.js` — 콘텐츠 데이터
+
+### Date-Soragodong
+
+커플 데이트 코스 뽑기 웹 앱. 갈 곳 / 먹을 곳 / 탈 것 / 금액 4가지 카테고리에서 랜덤으로 조합을 뽑아 공유할 수 있다.
+
+| 항목 | 값 |
+|------|-----|
+| 경로 | `Date-Soragodong/` |
+| 런타임 | Node.js (ESM) |
+| 프레임워크 | Vite + React 19 |
+| API | `api/og.js` (Vercel Edge Runtime — OG 이미지) |
+| Middleware | `middleware.js` (Edge Middleware — /result OG 메타 주입) |
+| 빌드 | `vite build` |
+| 검증 | `npm run verify` (lint → test → build) |
+| 배포 | Vercel |
+| 상태 | active |
+
+핵심 모듈:
+- `src/utils/url.js` — buildResultUrl / buildOgUrl / parseCourseFromParams (URL 단일 소스)
+- `src/utils/course.js` — drawCourse / redrawCourse (랜덤 코스 생성)
+- `src/utils/random.js` — pickOne / pickOneDifferent (기본 랜덤 유틸)
+- `src/data/cards.json` — 카드 데이터 (갈_곳 / 먹을_곳 / 탈_것 / 금액)
+- `api/og.js` — Edge Runtime OG 이미지 생성 (@vercel/og + Satori)
+- `middleware.js` — /result 라우트 OG 메타 태그 주입
+
+**주요 아키텍처 결정:**
+- SPA지만 OG 지원: Edge Middleware가 /result 요청에서 OG 메타 삽입
+- Noto Sans KR 폰트: `api/fonts/NotoSansKR-subset.ttf`에 번들 (Satori는 시스템 폰트 없음)
+- URL 인코딩: 모든 한글 값은 `URLSearchParams`가 자동 인코딩 (encodeURIComponent)
+
+---
 
 ### UGGK
 

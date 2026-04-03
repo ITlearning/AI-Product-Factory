@@ -12,8 +12,8 @@ import {
 
 const validPayload = {
   rewrittenMessage: "배포 뒤 결제 연결이 자주 늦어지거나 끊겨서, 지금 원인을 확인하고 있어요.",
-  confirmedImpact: "이 메시지에는 실제 사용자 결제 실패가 직접적으로 적혀 있지 않아요.",
-  needsMoreContext: "실제 결제 실패가 얼마나 발생하는지는 앞뒤 대화가 더 있으면 명확해져요.",
+  context: "이 메시지에는 실제 사용자 결제 실패가 직접적으로 적혀 있지 않아요.",
+  caveat: "실제 결제 실패가 얼마나 발생하는지는 앞뒤 대화가 더 있으면 명확해져요.",
   termExplanations: [{ term: "API", explanation: "시스템끼리 정보를 주고받는 연결" }]
 };
 

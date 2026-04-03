@@ -69,14 +69,14 @@ export function ResultDashboard(props) {
           renderResultPanel(
             "impact",
             RESULT_TABS[2].label,
-            props.state.result?.confirmedImpact ?? RESULT_PLACEHOLDERS.impact,
+            props.state.result?.context ?? RESULT_PLACEHOLDERS.impact,
             false,
             !props.state.result
           ),
           renderResultPanel(
             "context",
             RESULT_TABS[3].label,
-            props.state.result?.needsMoreContext ?? RESULT_PLACEHOLDERS.context,
+            props.state.result?.caveat ?? RESULT_PLACEHOLDERS.context,
             false,
             !props.state.result
           )

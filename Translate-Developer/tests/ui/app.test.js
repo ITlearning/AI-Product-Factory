@@ -62,8 +62,8 @@ test("renders translated output after submit", async () => {
         ok: true,
         result: {
           rewrittenMessage: "배포 뒤 결제 연결이 자주 늦어지거나 끊겨서, 지금 원인을 확인하고 있어요.",
-          confirmedImpact: "이 메시지에는 실제 사용자 결제 실패가 직접적으로 적혀 있지 않아요.",
-          needsMoreContext: "실제 결제 실패가 얼마나 발생하는지는 앞뒤 대화가 더 있으면 명확해져요.",
+          context: "이 메시지에는 실제 사용자 결제 실패가 직접적으로 적혀 있지 않아요.",
+          caveat: "실제 결제 실패가 얼마나 발생하는지는 앞뒤 대화가 더 있으면 명확해져요.",
           termExplanations: [{ term: "API", explanation: "시스템끼리 정보를 주고받는 연결" }]
         }
       })
@@ -91,8 +91,8 @@ test("renders multiline result text as readable paragraphs and bullet lists", ()
     ...createInitialState(),
     result: {
       rewrittenMessage: "상황 요약:\n- 송출 중에 갑자기 중단된 케이스가 있었어요.\n- 원인은 아직 확정되지 않았어요.",
-      confirmedImpact: "확실히 보이는 점:\nverbose log와 이미지가 같이 공유됐어요.",
-      needsMoreContext:
+      context: "확실히 보이는 점:\nverbose log와 이미지가 같이 공유됐어요.",
+      caveat:
         "아직 모르는 점:\n- 비디오 패킷 미수신이 정확한 시작점인지\n- 워커 문제가 실제 원인인지",
       termExplanations: []
     },
@@ -157,8 +157,8 @@ test("passes the selected audience into the async translation request", async ()
         ok: true,
         result: {
           rewrittenMessage: "쉽게 풀어쓴 내용",
-          confirmedImpact: "확인된 영향이 아직 명확하지 않아요.",
-          needsMoreContext: "앞뒤 대화가 더 있으면 정확해져요.",
+          context: "확인된 영향이 아직 명확하지 않아요.",
+          caveat: "앞뒤 대화가 더 있으면 정확해져요.",
           termExplanations: []
         }
       };

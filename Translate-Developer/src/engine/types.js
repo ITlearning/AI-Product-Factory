@@ -9,8 +9,8 @@
 /**
  * @typedef {{
  *   rewrittenMessage: string,
- *   confirmedImpact: string,
- *   needsMoreContext: string,
+ *   context: string,
+ *   caveat: string,
  *   termExplanations: TermExplanation[]
  * }} TranslationResult
  */
@@ -27,8 +27,8 @@
 export function createEmptyTranslationResult() {
   return {
     rewrittenMessage: "",
-    confirmedImpact: "",
-    needsMoreContext: "",
+    context: "",
+    caveat: "",
     termExplanations: []
   };
 }

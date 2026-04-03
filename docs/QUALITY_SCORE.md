@@ -21,8 +21,18 @@
 | **critic** | 반박자 | 잘못된 가정, 빠진 엣지 케이스, 실패 시나리오, 논리적 허점 |
 | **architect** | 구조 설계자 | 기존 문서/코드와의 정합성, 구조적 모순, 확장성, 범위 적절성 |
 | **analyst** | 인간 운영자 대변인 | 사용자 4대 조건 반영, 운영 부담, 실용성, 명확성 |
+| **verifier** | 검증 감사자 | 테스트 완전성, 의미 있는 케이스 커버리지, evidence record 충분성 |
 
 ### 각 역할의 채점 기준
+
+#### verifier (10점 만점)
+
+| 점수 구간 | 의미 |
+|-----------|------|
+| 9-10 | 모든 성공 기준에 대응하는 테스트 존재, 경계값/엣지 케이스 커버, evidence record 완전 |
+| 7-8 | 핵심 케이스 커버, 일부 경계값 누락이나 운영에 지장 없음 |
+| 5-6 | 중요한 테스트 누락 또는 evidence 불완전, 수정 필요 |
+| 1-4 | 테스트가 형식적이거나 evidence 부재, 재작성 필요 |
 
 #### critic (10점 만점)
 
@@ -65,7 +75,7 @@
 ### 통과 판정 로직
 
 ```
-통과 = (critic ≥ 7) AND (architect ≥ 7) AND (analyst ≥ 7) AND (평균 ≥ 8.0)
+통과 = (critic ≥ 7) AND (architect ≥ 7) AND (analyst ≥ 7) AND (verifier ≥ 7) AND (평균 ≥ 8.0)
 ```
 
 ### 판정 결과
@@ -111,7 +121,7 @@
 
 기록 형식:
 ```
-멀티 에이전트 리뷰 (critic N/10, architect N/10, analyst N/10)
+멀티 에이전트 리뷰 (critic N/10, architect N/10, analyst N/10, verifier N/10)
 ```
 
 ---
@@ -120,9 +130,9 @@
 
 | PR 유형 | 적용 역할 | 비고 |
 |---------|----------|------|
-| 문서 PR | critic, architect, analyst | 전체 적용 |
-| 코드 PR | critic, architect, analyst | 전체 적용 |
-| 핫픽스 | critic | architect/analyst는 사후 리뷰로 대체 가능 (인간 승인 시) |
+| 문서 PR | critic, architect, analyst, verifier | verifier는 evidence record 충분성 심사 |
+| 코드 PR | critic, architect, analyst, verifier | verifier는 테스트 완전성 + evidence 심사 |
+| 핫픽스 | critic | architect/analyst/verifier는 사후 리뷰로 대체 가능 (인간 승인 시) |
 
 핫픽스의 경우 인간이 "긴급"으로 판단하면 critic 단독 리뷰 + 인간 승인으로 병합할 수 있다. 단, 사후 48시간 내 전체 리뷰를 보완해야 한다. 48시간 내 보완이 이루어지지 않으면 에이전트가 인간에게 미이행을 보고하고, 해당 PR은 기술 부채로 기록한다.
 
@@ -144,7 +154,6 @@
 
 | 역할 | 관점 | 추가 시점 |
 |------|------|----------|
-| verifier | 검증 완전성, 테스트 시나리오, evidence 충분성 | Sprint 1 (코드 PR 시작 시) |
 | security | 보안 취약점, 인증/인가, 데이터 보호 | 외부 API/사용자 데이터 처리 시 |
 
 역할 추가는 이 문서의 변경이므로 일반 PR과 동일한 리뷰 게이트를 거친다.
@@ -175,3 +184,4 @@
 | 날짜 | PR | 변경 내용 |
 |------|-----|----------|
 | 2026-03-31 | PR 0-5 | 초기 점수 계산 구조 작성 |
+| 2026-04-01 | — | verifier 역할 추가 (검증 감사자), 통과 기준 및 기록 형식 갱신 |
