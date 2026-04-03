@@ -8,9 +8,10 @@
  * Solution: Intercept GET /result?... requests at the Edge, fetch the static HTML,
  * inject dynamic OG meta tags, return the modified HTML.
  * The SPA JS still hydrates normally — this only affects the initial HTML response.
+ *
+ * Note: Non-Next.js Vercel middleware uses standard Web APIs (Request/Response).
+ * Returning undefined passes through to the next handler.
  */
-
-import { NextResponse } from "@vercel/edge";
 
 export const config = {
   matcher: ["/result"],
@@ -20,7 +21,7 @@ export default async function middleware(request) {
   const url = new URL(request.url);
 
   // Only apply to GET requests for /result with course params
-  if (request.method !== "GET") return NextResponse.next();
+  if (request.method !== "GET") return;
 
   const place = url.searchParams.get("place");
   const food = url.searchParams.get("food");
@@ -28,13 +29,13 @@ export default async function middleware(request) {
   const budget = url.searchParams.get("budget");
 
   // If any required param is missing, pass through as-is
-  if (!place || !food || !transport || !budget) return NextResponse.next();
+  if (!place || !food || !transport || !budget) return;
 
   // Fetch the static index.html
   const indexUrl = new URL("/", request.url);
   const res = await fetch(indexUrl);
 
-  if (!res.ok) return NextResponse.next();
+  if (!res.ok) return;
 
   const html = await res.text();
 
@@ -63,7 +64,7 @@ export default async function middleware(request) {
       `<meta name="twitter:card" content="summary_large_image" />`
     );
 
-  return new NextResponse(injected, {
+  return new Response(injected, {
     headers: {
       "content-type": "text/html; charset=utf-8",
       // Cache at CDN keyed by full URL (each course combo is unique), but not in browser
