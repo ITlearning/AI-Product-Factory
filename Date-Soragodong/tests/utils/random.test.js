@@ -39,18 +39,11 @@ describe("pickOne", () => {
 });
 
 describe("pickOneDifferent", () => {
-  test("avoids returning previous value when pool has multiple items", () => {
-    const pool = ["a", "b", "c", "d", "e"];
-    let sameCount = 0;
-    const iterations = 200;
-    for (let i = 0; i < iterations; i++) {
-      const result = pickOneDifferent(pool, "a");
-      if (result === "a") sameCount++;
+  test("never returns previous value when pool has multiple items", () => {
+    const pool = ["a", "b"];
+    for (let i = 0; i < 200; i++) {
+      assert.equal(pickOneDifferent(pool, "a"), "b");
     }
-    // With retry logic, same value rate should be very low (< 10%)
-    assert.ok(sameCount / iterations < 0.1,
-      `Too many same-value picks: ${sameCount}/${iterations}`
-    );
   });
 
   test("returns the only item when pool has one element", () => {

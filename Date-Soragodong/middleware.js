@@ -33,11 +33,14 @@ export default async function middleware(request) {
 
   // Fetch the static index.html
   const indexUrl = new URL("/", request.url);
-  const res = await fetch(indexUrl);
-
-  if (!res.ok) return;
-
-  const html = await res.text();
+  let html;
+  try {
+    const res = await fetch(indexUrl);
+    if (!res.ok) return;
+    html = await res.text();
+  } catch {
+    return;
+  }
 
   // Build OG image URL
   const ogParams = new URLSearchParams({ place, food, transport, budget });

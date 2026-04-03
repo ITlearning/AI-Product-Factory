@@ -13,7 +13,7 @@ export function pickOne(pool) {
 
 /**
  * Pick one random item that is different from `previous`.
- * Makes at most one retry — not guaranteed to differ if pool has only one item.
+ * Guaranteed to differ from `previous` when pool has more than one distinct value.
  * @template T
  * @param {T[]} pool
  * @param {T} previous
@@ -22,7 +22,7 @@ export function pickOne(pool) {
 export function pickOneDifferent(pool, previous) {
   const pick = pickOne(pool);
   if (pool.length === 1 || pick !== previous) return pick;
-  // One retry
-  const retry = pickOne(pool);
-  return retry;
+  const candidates = pool.filter((item) => item !== previous);
+  if (candidates.length === 0) return pick;
+  return pickOne(candidates);
 }

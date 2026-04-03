@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { drawCourse } from "./utils/course.js";
 import { buildResultUrl } from "./utils/url.js";
 import cards from "./data/cards.json" with { type: "json" };
@@ -14,28 +14,31 @@ const CATEGORIES = [
 
 /** Procedural star field — renders once */
 function StarField() {
-  const stars = [];
-  const count = 60;
-  for (let i = 0; i < count; i++) {
-    const size = Math.random() * 2.5 + 0.8;
-    const x = Math.random() * 100;
-    const y = Math.random() * 70;
-    const dur = (Math.random() * 3 + 2).toFixed(1);
-    const delay = (Math.random() * 4).toFixed(1);
-    stars.push(h("div", {
-      key: i,
-      className: "star",
-      style: {
-        width: `${size}px`,
-        height: `${size}px`,
-        left: `${x}%`,
-        top: `${y}%`,
-        "--twinkle-dur": `${dur}s`,
-        "--twinkle-delay": `${delay}s`,
-        opacity: Math.random() * 0.5 + 0.3,
-      }
-    }));
-  }
+  const stars = useMemo(() => {
+    const result = [];
+    const count = 60;
+    for (let i = 0; i < count; i++) {
+      const size = Math.random() * 2.5 + 0.8;
+      const x = Math.random() * 100;
+      const y = Math.random() * 70;
+      const dur = (Math.random() * 3 + 2).toFixed(1);
+      const delay = (Math.random() * 4).toFixed(1);
+      result.push(h("div", {
+        key: i,
+        className: "star",
+        style: {
+          width: `${size}px`,
+          height: `${size}px`,
+          left: `${x}%`,
+          top: `${y}%`,
+          "--twinkle-dur": `${dur}s`,
+          "--twinkle-delay": `${delay}s`,
+          opacity: Math.random() * 0.5 + 0.3,
+        }
+      }));
+    }
+    return result;
+  }, []);
   return h("div", { className: "stars", "aria-hidden": "true" }, ...stars);
 }
 

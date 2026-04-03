@@ -21,10 +21,14 @@ const semiBoldFont = readFileSync(join(__dirname, "fonts", "Pretendard-SemiBold.
 
 export default async function handler(request, response) {
   const { searchParams } = new URL(request.url, "http://localhost");
-  const place = searchParams.get("place") || "???";
-  const food = searchParams.get("food") || "???";
-  const transport = searchParams.get("transport") || "???";
-  const budget = searchParams.get("budget") || "???";
+  const normalize = (v, fallback = "???") => {
+    if (!v) return fallback;
+    return v.trim().slice(0, 80);
+  };
+  const place = normalize(searchParams.get("place"));
+  const food = normalize(searchParams.get("food"));
+  const transport = normalize(searchParams.get("transport"));
+  const budget = normalize(searchParams.get("budget"));
 
   try {
     const imageResponse = new ImageResponse(
