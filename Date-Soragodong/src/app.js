@@ -13,7 +13,7 @@ const CATEGORIES = [
 ];
 
 /** Procedural star field — renders once */
-function StarField() {
+export function StarField() {
   const stars = useMemo(() => {
     const result = [];
     const count = 60;

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { parseCourseFromParams, buildResultUrl, buildOgUrl } from "./utils/url.js";
 import { redrawCourse, isSameCourse } from "./utils/course.js";
+import { StarField } from "./app.js";
 
 const { createElement: h } = React;
 
@@ -96,7 +97,7 @@ export function ResultPage() {
 
   return h("div", { className: "result-page", role: "main" },
     // Stars
-    h("div", { className: "stars", "aria-hidden": "true" }),
+    h(StarField),
 
     h("div", { className: "deco deco-moon", "aria-hidden": "true" }, "🌙"),
     h("div", { className: "deco deco-blossom-1", "aria-hidden": "true" }, "🌸"),
