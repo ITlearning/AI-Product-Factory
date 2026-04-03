@@ -72,6 +72,7 @@ Repository structure:
 
 Execution rules:
 
+0. **모든 구현 작업은 멀티 에이전트로 수행한다.** 단일 에이전트 직접 구현은 금지한다. 구현 에이전트와 리뷰 에이전트를 동시에 띄우고, 독립적인 서브에이전트들로 작업을 분산한다. 본 원칙은 CHARTER.md `## Multi-Agent Execution Principle`에서 우선 정의하며, 이 문서는 그 원칙을 따른다.
 1. Start by identifying the exact target path for the issue.
 2. Read the root `README.md` and any service-local README before editing.
 3. Only modify the subtree needed for the current issue.
