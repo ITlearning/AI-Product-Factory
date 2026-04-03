@@ -2,7 +2,7 @@
  * /api/og — Vercel Edge Runtime OG image generator
  *
  * Generates a 1200×630 PNG for social sharing previews.
- * Uses @vercel/og (Satori) with bundled NotoSansKR subset.
+ * Uses @vercel/og (Satori) with bundled Pretendard subset.
  *
  * Query params: place, food, transport, budget
  */
@@ -11,17 +11,22 @@ import { ImageResponse } from "@vercel/og";
 
 export const config = { runtime: "edge" };
 
-// Module-level font cache — loaded once, reused across invocations.
-// Satori has no access to system fonts or Google Fonts; font must be bundled.
-let fontCache = null;
+// Module-level font cache — loaded once per isolate, reused across requests.
+// Satori has no access to system fonts; fonts must be bundled.
+let fontPromise = null;
 
-async function getFont() {
-  if (fontCache) return fontCache;
-  const url = new URL("./fonts/NotoSansKR-subset.ttf", import.meta.url);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Font load failed: ${res.status}`);
-  fontCache = await res.arrayBuffer();
-  return fontCache;
+async function getFonts() {
+  if (fontPromise) return fontPromise;
+  fontPromise = (async () => {
+    const [regular, semiBold] = await Promise.all([
+      fetch(new URL("./fonts/Pretendard-Regular.subset.woff", import.meta.url)),
+      fetch(new URL("./fonts/Pretendard-SemiBold.subset.woff", import.meta.url)),
+    ]);
+    if (!regular.ok) throw new Error(`Font load failed: Pretendard-Regular ${regular.status}`);
+    if (!semiBold.ok) throw new Error(`Font load failed: Pretendard-SemiBold ${semiBold.status}`);
+    return [await regular.arrayBuffer(), await semiBold.arrayBuffer()];
+  })();
+  return fontPromise;
 }
 
 export default async function handler(request) {
@@ -32,7 +37,7 @@ export default async function handler(request) {
   const budget = searchParams.get("budget") || "???";
 
   try {
-    const fontData = await getFont();
+    const [regularData, semiBoldData] = await getFonts();
 
     return new ImageResponse(
       {
@@ -46,7 +51,7 @@ export default async function handler(request) {
             alignItems: "center",
             justifyContent: "center",
             background: "linear-gradient(180deg, #0f0d2e 0%, #1a1060 35%, #6b3fa0 72%, #c97fd8 100%)",
-            fontFamily: "Noto Sans KR, sans-serif",
+            fontFamily: "Pretendard, sans-serif",
             padding: "48px",
             gap: "24px",
           },
@@ -57,7 +62,7 @@ export default async function handler(request) {
               props: {
                 style: {
                   fontSize: "40px",
-                  fontWeight: 900,
+                  fontWeight: 600,
                   color: "#ffffff",
                   letterSpacing: "-1px",
                   textAlign: "center",
@@ -93,6 +98,7 @@ export default async function handler(request) {
                   fontSize: "18px",
                   color: "rgba(255,255,255,0.5)",
                   marginTop: "8px",
+                  fontWeight: 400,
                 },
                 children: "데이트 소라고동 — 오늘의 데이트를 소라고동님께",
               },
@@ -103,11 +109,14 @@ export default async function handler(request) {
       {
         width: 1200,
         height: 630,
-        fonts: [{ name: "Noto Sans KR", data: fontData, weight: 700 }],
+        fonts: [
+          { name: "Pretendard", data: regularData, weight: 400 },
+          { name: "Pretendard", data: semiBoldData, weight: 600 },
+        ],
       }
     );
   } catch (err) {
-    // OG failure degrades gracefully — static default image used by middleware
+    // OG failure degrades gracefully — result page still works without OG image
     console.error("OG generation failed:", err);
     return new Response("OG image generation failed", { status: 500 });
   }
@@ -136,8 +145,8 @@ function ogCard(icon, category, value) {
       },
       children: [
         { type: "span", props: { style: { fontSize: "32px" }, children: icon } },
-        { type: "span", props: { style: { fontSize: "13px", color: "rgba(255,255,255,0.5)", fontWeight: 500 }, children: category } },
-        { type: "span", props: { style: { fontSize: "22px", color: "#ffffff", fontWeight: 700 }, children: value } },
+        { type: "span", props: { style: { fontSize: "13px", color: "rgba(255,255,255,0.5)", fontWeight: 400 }, children: category } },
+        { type: "span", props: { style: { fontSize: "22px", color: "#ffffff", fontWeight: 600 }, children: value } },
       ],
     },
   };
