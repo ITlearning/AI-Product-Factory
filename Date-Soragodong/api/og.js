@@ -1,45 +1,33 @@
 /**
- * /api/og — Vercel Edge Runtime OG image generator
+ * /api/og — OG image generator (Node.js Serverless Function)
  *
  * Generates a 1200×630 PNG for social sharing previews.
  * Uses @vercel/og (Satori) with bundled Pretendard subset.
+ * Runs as Node.js serverless (50 MB limit) — edge was 1 MB which is too small for fonts.
  *
  * Query params: place, food, transport, budget
  */
 
 import { ImageResponse } from "@vercel/og";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
-export const config = { runtime: "edge" };
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Module-level font cache — loaded once per isolate, reused across requests.
-// Satori has no access to system fonts; fonts must be bundled.
-let fontPromise = null;
+// Load fonts at module init — shared across warm invocations
+const regularFont = readFileSync(join(__dirname, "fonts", "Pretendard-Regular.subset.woff"));
+const semiBoldFont = readFileSync(join(__dirname, "fonts", "Pretendard-SemiBold.subset.woff"));
 
-async function getFonts() {
-  if (fontPromise) return fontPromise;
-  fontPromise = (async () => {
-    const [regular, semiBold] = await Promise.all([
-      fetch(new URL("./fonts/Pretendard-Regular.subset.woff", import.meta.url)),
-      fetch(new URL("./fonts/Pretendard-SemiBold.subset.woff", import.meta.url)),
-    ]);
-    if (!regular.ok) throw new Error(`Font load failed: Pretendard-Regular ${regular.status}`);
-    if (!semiBold.ok) throw new Error(`Font load failed: Pretendard-SemiBold ${semiBold.status}`);
-    return [await regular.arrayBuffer(), await semiBold.arrayBuffer()];
-  })();
-  return fontPromise;
-}
-
-export default async function handler(request) {
-  const { searchParams } = new URL(request.url);
+export default async function handler(request, response) {
+  const { searchParams } = new URL(request.url, "http://localhost");
   const place = searchParams.get("place") || "???";
   const food = searchParams.get("food") || "???";
   const transport = searchParams.get("transport") || "???";
   const budget = searchParams.get("budget") || "???";
 
   try {
-    const [regularData, semiBoldData] = await getFonts();
-
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
       {
         type: "div",
         props: {
@@ -110,15 +98,21 @@ export default async function handler(request) {
         width: 1200,
         height: 630,
         fonts: [
-          { name: "Pretendard", data: regularData, weight: 400 },
-          { name: "Pretendard", data: semiBoldData, weight: 600 },
+          { name: "Pretendard", data: regularFont, weight: 400 },
+          { name: "Pretendard", data: semiBoldFont, weight: 600 },
         ],
       }
     );
+
+    // Convert ImageResponse to Node.js response
+    const buf = await imageResponse.arrayBuffer();
+    response.setHeader("Content-Type", "image/png");
+    response.setHeader("Cache-Control", "public, s-maxage=86400, max-age=0");
+    response.end(Buffer.from(buf));
   } catch (err) {
     // OG failure degrades gracefully — result page still works without OG image
     console.error("OG generation failed:", err);
-    return new Response("OG image generation failed", { status: 500 });
+    response.status(500).end("OG image generation failed");
   }
 }
 
