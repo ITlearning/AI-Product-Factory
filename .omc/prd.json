@@ -1,0 +1,142 @@
+{
+  "title": "Translate-Developer 직군 플랫폼 확장",
+  "description": "plan-eng-review에서 결정된 구조 변경: schema 리네임, 카테고리 분리, 딕셔너리 분리, 프롬프트 카테고리 레이어, API 파라미터 확장",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "schema.js 필드 리네임",
+      "passes": true,
+      "acceptanceCriteria": [
+        "schema.js에 confirmedImpact 필드가 더 이상 존재하지 않고 context 필드가 존재한다",
+        "schema.js에 needsMoreContext 필드가 더 이상 존재하지 않고 caveat 필드가 존재한다",
+        "isValidTranslationResult()가 context + caveat 필드를 검증한다",
+        "normalizeTranslationResult()가 context + caveat 필드를 정규화한다",
+        "TRANSLATION_JSON_SCHEMA의 required/properties가 context + caveat로 업데이트된다",
+        "기존 테스트에서 confirmedImpact/needsMoreContext 참조가 context/caveat로 업데이트된다"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "src/data/categories.js 신규 생성",
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/data/categories.js 파일이 존재한다",
+        "LANGUAGE_CATEGORIES 배열에 developer, designer 두 항목이 있다",
+        "각 항목은 id, label, description 필드를 갖는다",
+        "DEFAULT_CATEGORY는 'developer'다",
+        "isValidCategoryId('developer')는 true를 반환한다",
+        "isValidCategoryId('unknown')는 false를 반환한다",
+        "normalizeCategoryId('unknown')는 'developer'를 반환한다"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "dictionaries/ 디렉토리 분리",
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/engine/dictionaries/developer.js 파일이 존재하고 기존 dictionary.js의 TERM_DICTIONARY, PHRASE_REPLACEMENTS 등을 포함한다",
+        "src/engine/dictionaries/designer.js 파일이 존재하고 디자이너 전용 TERM_DICTIONARY, PHRASE_REPLACEMENTS를 포함한다 (최소 10개 용어)",
+        "src/engine/dictionaries/index.js 파일이 존재하고 getDictionary(categoryId)를 export한다",
+        "getDictionary('developer')는 developer.js 내용을 반환한다",
+        "getDictionary('designer')는 designer.js 내용을 반환한다",
+        "getDictionary('unknown')는 developer dictionary를 기본값으로 반환한다 (침묵 실패 방지)"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "rule-engine.js categoryId 파라미터 추가",
+      "passes": true,
+      "dependsOn": [
+        "US-003"
+      ],
+      "acceptanceCriteria": [
+        "translateWithRules(input, audience, categoryId='developer') 시그니처로 변경된다",
+        "categoryId 없이 호출 시 기존 동작과 동일하다 (하위 호환)",
+        "categoryId='designer' 전달 시 getDictionary('designer')를 사용한다",
+        "기존 테스트 6개가 전부 그대로 통과한다 (수정 없이)"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "prompt.js 카테고리 레이어 추가",
+      "passes": true,
+      "dependsOn": [
+        "US-002"
+      ],
+      "acceptanceCriteria": [
+        "buildSystemPrompt(audience, categoryId) 시그니처로 변경된다",
+        "CATEGORY_RULES 맵이 존재하고 developer, designer 키를 포함한다",
+        "SHARED_RULES에서 '개발자 메시지' 하드코딩이 제거되고 카테고리 중립적 문구로 교체된다",
+        "buildUserPrompt(input, categoryId) 시그니처로 변경되고 카테고리별 문구를 사용한다",
+        "CATEGORY_RULES에 없는 categoryId 입력 시 developer fallback을 사용한다 (침묵 실패 방지)",
+        "categoryId 없이 호출 시 기존 동작과 동일하다 (하위 호환)"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "api/translate.js + src/api/translate.js categoryId 수신",
+      "passes": true,
+      "dependsOn": [
+        "US-004",
+        "US-005"
+      ],
+      "acceptanceCriteria": [
+        "api/translate.js가 request body에서 categoryId를 읽는다",
+        "categoryId가 없을 때 'developer'를 기본값으로 사용한다",
+        "categoryId가 buildSystemPrompt와 translateWithRules에 전달된다",
+        "기존 테스트(translate.test.js)가 전부 통과한다"
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "examples.js + view-content.js 신규 카테고리 내용 추가",
+      "passes": true,
+      "dependsOn": [
+        "US-002"
+      ],
+      "acceptanceCriteria": [
+        "src/data/examples.js가 designer 카테고리 예시를 포함한다",
+        "src/data/view-content.js가 designer 카테고리용 UI 카피를 포함한다",
+        "developer 카테고리 기존 내용이 그대로 유지된다"
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "신규 카테고리 테스트 추가",
+      "passes": true,
+      "dependsOn": [
+        "US-003",
+        "US-004",
+        "US-005"
+      ],
+      "acceptanceCriteria": [
+        "tests/engine/dictionary.test.js 파일이 존재한다",
+        "getDictionary('developer')가 TERM_DICTIONARY를 반환하는 테스트가 존재한다",
+        "getDictionary('designer')가 designer 전용 사전을 반환하는 테스트가 존재한다",
+        "getDictionary('unknown')가 developer fallback을 반환하는 테스트가 존재한다",
+        "translateWithRules의 categoryId 기본값 'developer' 동작 테스트가 존재한다",
+        "모든 신규 테스트가 node --test로 통과한다"
+      ]
+    },
+    {
+      "id": "US-009",
+      "title": "전체 빌드 + 테스트 통과 확인",
+      "passes": true,
+      "dependsOn": [
+        "US-001",
+        "US-002",
+        "US-003",
+        "US-004",
+        "US-005",
+        "US-006",
+        "US-007",
+        "US-008"
+      ],
+      "acceptanceCriteria": [
+        "npm test (node --test)가 전체 통과한다",
+        "npm run build (vite build)가 오류 없이 성공한다",
+        "npm run lint가 오류 없이 성공한다 (lint 스크립트 있을 경우)"
+      ]
+    }
+  ]
+}

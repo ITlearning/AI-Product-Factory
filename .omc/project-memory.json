@@ -1,0 +1,175 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775029325067,
+  "projectRoot": "/Users/tabber/AI-Product-Factory",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "scripts"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "IBAD": {
+      "path": "IBAD",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775029325056,
+      "keyFiles": [
+        "ibeonen-an-dwae-feature-definition.md"
+      ]
+    },
+    "Spending-Personality": {
+      "path": "Spending-Personality",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1775029325058,
+      "keyFiles": [
+        "01-spending-personality-summary-prd.md",
+        "02-spending-personality-linear-package.md",
+        "README.md",
+        "index.html",
+        "package.json"
+      ]
+    },
+    "Translate-Developer": {
+      "path": "Translate-Developer",
+      "purpose": null,
+      "fileCount": 8,
+      "lastAccessed": 1775029325060,
+      "keyFiles": [
+        "index.html",
+        "package-lock.json",
+        "package.json",
+        "plan.md",
+        "vercel.json"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 7,
+      "lastAccessed": 1775029325061,
+      "keyFiles": [
+        "PLANS.md",
+        "PRODUCT_SENSE.md",
+        "QUALITY_SCORE.md",
+        "RELIABILITY.md",
+        "SECURITY.md"
+      ]
+    },
+    "planImages": {
+      "path": "planImages",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1775029325061,
+      "keyFiles": [
+        "image copy 2.png",
+        "image copy 3.png",
+        "image copy.png",
+        "image.png"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 1,
+      "lastAccessed": 1775029325061,
+      "keyFiles": [
+        "bootstrap-vercel-project.mjs"
+      ]
+    },
+    "IBAD/app": {
+      "path": "IBAD/app",
+      "purpose": "Application code",
+      "fileCount": 6,
+      "lastAccessed": 1775029325061,
+      "keyFiles": [
+        "README.md",
+        "index.html",
+        "package.json"
+      ]
+    },
+    "Spending-Personality/scripts": {
+      "path": "Spending-Personality/scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 3,
+      "lastAccessed": 1775029325062,
+      "keyFiles": [
+        "build.mjs",
+        "check-syntax.mjs",
+        "dev.mjs"
+      ]
+    },
+    "Spending-Personality/src": {
+      "path": "Spending-Personality/src",
+      "purpose": "Source code",
+      "fileCount": 6,
+      "lastAccessed": 1775029325062,
+      "keyFiles": [
+        "app.js",
+        "character-contract.js",
+        "character-engine.js"
+      ]
+    },
+    "Spending-Personality/tests": {
+      "path": "Spending-Personality/tests",
+      "purpose": "Test files",
+      "fileCount": 0,
+      "lastAccessed": 1775029325062,
+      "keyFiles": []
+    },
+    "Translate-Developer/api": {
+      "path": "Translate-Developer/api",
+      "purpose": "API routes",
+      "fileCount": 1,
+      "lastAccessed": 1775029325062,
+      "keyFiles": [
+        "translate.js"
+      ]
+    },
+    "Translate-Developer/dist": {
+      "path": "Translate-Developer/dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 1,
+      "lastAccessed": 1775029325062,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "Translate-Developer/node_modules": {
+      "path": "Translate-Developer/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1775029325063,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [],
+  "userDirectives": []
+}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"node -e \\\"\\nconst fs = require('fs');\\nconst prd = JSON.parse(fs.readFileSync('.omc/prd.json'));\\n['US-008','US-009'].forEach(id => {\\n  const s = prd.stories.find(s => s.id === id);\\n  if...",
+  "error": "Exit code 1\nnode:fs:555\n  return binding.open(\n                 ^\n\nError: ENOENT: no such file or directory, open '.omc/prd.json'\n    at Object.openSync (node:fs:555:18)\n    at Object.readFileSync (node:fs:439:35)\n    at [eval]:3:27\n    at runScriptInThisContext (node:internal/vm:219:10)\n    at node:internal/process/execution:451:12\n    at [eval]-wrapper:6:24\n    at runScriptInContext (node:internal/process/execution:449:60)\n    at evalFunction (node:internal/process/execution:283:30)\n    at eva...",
+  "timestamp": "2026-04-01T07:11:59.849Z",
+  "retry_count": 1
+}
