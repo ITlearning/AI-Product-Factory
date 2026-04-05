@@ -44,15 +44,9 @@ struct ProgressDashboardView: View {
                 statsRow(viewModel: viewModel)
             }
 
-            // Calendar heatmap placeholder
+            // Calendar heatmap
             Section {
-                HStack {
-                    Image(systemName: "calendar")
-                        .foregroundStyle(Color.deepBlue)
-                    Text(String(localized: "progress.calendar.placeholder", defaultValue: "학습 캘린더는 다음 업데이트에서!"))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 4)
+                CalendarHeatmapView(studyData: viewModel.state.streakData)
             } header: {
                 Text(String(localized: "progress.calendar.header", defaultValue: "학습 캘린더"))
             }

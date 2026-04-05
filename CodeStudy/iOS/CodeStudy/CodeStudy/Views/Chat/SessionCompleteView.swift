@@ -9,6 +9,8 @@ struct SessionCompleteView: View {
 
     @State private var displayedStreak: Int = 0
     @State private var animateIcon = false
+    @State private var shareImage: UIImage?
+    @State private var showShareSheet = false
 
     // Design tokens
     private let accentColor = Color(hex: "FF6B35")
@@ -147,6 +149,36 @@ struct SessionCompleteView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
             }
 
+            // Share button
+            Button {
+                shareImage = ShareCardRenderer.render(
+                    conceptTitle: session.conceptTitle,
+                    isMastered: isMastered,
+                    streakCount: displayedStreak
+                )
+                if shareImage != nil {
+                    showShareSheet = true
+                }
+            } label: {
+                Label(
+                    String(localized: "complete.share", defaultValue: "공유하기"),
+                    systemImage: "square.and.arrow.up"
+                )
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .foregroundStyle(deepBlue)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(deepBlue, lineWidth: 1.5)
+                )
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let shareImage {
+                    ShareSheet(items: [shareImage])
+                }
+            }
+
             if !isMastered {
                 Button {
                     dismiss()
@@ -200,6 +232,18 @@ struct SessionCompleteView: View {
         }
         return "\(seconds)초"
     }
+}
+
+// MARK: - UIActivityViewController Wrapper
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview("Mastered") {
