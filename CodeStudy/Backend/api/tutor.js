@@ -2,9 +2,18 @@ import { CONFIG } from '../src/config.js';
 import { validateTutorRequest } from '../src/validation.js';
 import { checkRateLimit } from '../src/rate-limiter.js';
 import { buildSystemPrompt } from '../src/prompts/socratic-rules.js';
+import { streamChat } from '../src/llm/provider.js';
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-
+/**
+ * POST /api/tutor — Socratic tutor chat endpoint.
+ *
+ * Forwards a streaming LLM response as SSE to the client.
+ * Each chunk: `data: {"t":"텍스트"}\n\n`
+ * Final chunk:  `data: {"done":true,"mastered":boolean}\n\n`
+ *
+ * The [MASTERY] marker is stripped from displayed text and reported
+ * via the `mastered` flag in the final chunk.
+ */
 export default async function handler(req, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
 
@@ -15,14 +24,25 @@ export default async function handler(req, options = {}) {
     });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  // API key check (Claude by default, Gemini for fallback)
+  const provider = options.provider || CONFIG.DEFAULT_PROVIDER;
+  const apiKeyEnvVar =
+    provider === 'claude' ? 'ANTHROPIC_API_KEY' : 'GEMINI_API_KEY';
+  const apiKey = options.apiKey || process.env[apiKeyEnvVar];
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'Server misconfiguration' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        error: 'Server misconfiguration',
+        detail: `${apiKeyEnvVar} not set`,
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
   }
 
+  // Parse body
   let body;
   try {
     body = await req.json();
@@ -33,6 +53,7 @@ export default async function handler(req, options = {}) {
     });
   }
 
+  // Validate body
   const validation = validateTutorRequest(body);
   if (!validation.valid) {
     return new Response(JSON.stringify({ error: validation.error }), {
@@ -54,8 +75,9 @@ export default async function handler(req, options = {}) {
     });
   }
 
-  // Turn limit: 40 messages = 20 pairs
   const { messages, conceptId, userProfile } = body;
+
+  // Turn limit: 40 messages = 20 pairs
   if (messages && messages.length > 40) {
     return new Response(
       JSON.stringify({ error: 'Turn limit exceeded. Start a new session.' }),
@@ -78,93 +100,31 @@ export default async function handler(req, options = {}) {
     });
   }
 
-  // Build prompt and call Gemini
+  // Build system prompt
   const systemPrompt = buildSystemPrompt(
     conceptId,
     userProfile.level,
     userProfile.language,
   );
-  const geminiMessages = (messages || []).map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }));
 
-  const geminiBody = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
-    contents: geminiMessages,
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1024,
-    },
-  };
-
-  const url = `${GEMINI_API_URL}/${CONFIG.GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-
-  let upstream;
-  try {
-    upstream = await fetchImpl(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiBody),
-    });
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: 'Upstream LLM request failed' }),
-      {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
-  }
-
-  if (!upstream.ok) {
-    return new Response(
-      JSON.stringify({ error: 'Upstream LLM error', status: upstream.status }),
-      {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
-  }
-
-  // Stream SSE to client
-  const reader = upstream.body.getReader();
-  const decoder = new TextDecoder();
+  // Stream LLM response and forward as SSE
+  const encoder = new TextEncoder();
   let fullText = '';
 
   const stream = new ReadableStream({
     async start(controller) {
-      const encoder = new TextEncoder();
-
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const jsonStr = line.slice(6).trim();
-            if (!jsonStr || jsonStr === '[DONE]') continue;
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const text =
-                parsed?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-              if (text) {
-                fullText += text;
-                // Strip [MASTERY] from displayed text
-                const displayText = text.replace(/\[MASTERY\]/g, '');
-                if (displayText) {
-                  const sseData = `data: ${JSON.stringify({ t: displayText })}\n\n`;
-                  controller.enqueue(encoder.encode(sseData));
-                }
-              }
-            } catch {
-              // Skip unparseable chunks
-            }
+        for await (const chunk of streamChat(messages || [], systemPrompt, {
+          provider,
+          apiKey,
+          fetchImpl,
+        })) {
+          fullText += chunk;
+          // Strip [MASTERY] from displayed text
+          const displayText = chunk.replace(/\[MASTERY\]/g, '');
+          if (displayText) {
+            const sseData = `data: ${JSON.stringify({ t: displayText })}\n\n`;
+            controller.enqueue(encoder.encode(sseData));
           }
         }
 
@@ -174,7 +134,14 @@ export default async function handler(req, options = {}) {
         controller.enqueue(encoder.encode(finalData));
         controller.close();
       } catch (err) {
-        controller.error(err);
+        // Upstream LLM failure — emit an error SSE event, then close.
+        const errorData = `data: ${JSON.stringify({ error: 'stream_interrupted', message: err.message })}\n\n`;
+        try {
+          controller.enqueue(encoder.encode(errorData));
+        } catch {
+          // controller already closed
+        }
+        controller.close();
       }
     },
   });
