@@ -5,6 +5,7 @@ struct DailyChallengeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: DailyChallengeViewModel?
     @State private var navigateToChat = false
+    @State private var chatViewModel: ChatViewModel?
 
     var body: some View {
         Group {
@@ -127,7 +128,16 @@ struct DailyChallengeView: View {
         Button {
             Task {
                 await viewModel.handle(.startSession)
-                if viewModel.activeSession != nil {
+                if let session = viewModel.activeSession {
+                    // Create ChatViewModel ONCE and store it in @State.
+                    // This prevents re-creation on body re-evaluation, which
+                    // would cause streaming updates to land on an orphaned
+                    // instance (making the first AI message invisible).
+                    chatViewModel = ChatViewModel(
+                        aiService: APIProvider(baseURL: AppConstants.apiBaseURL),
+                        session: session,
+                        modelContext: modelContext
+                    )
                     navigateToChat = true
                 }
             }
@@ -141,8 +151,9 @@ struct DailyChallengeView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .navigationDestination(isPresented: $navigateToChat) {
-            // ChatView will be provided by Sprint 3-D
-            Text("ChatView Placeholder")
+            if let chatVM = chatViewModel {
+                ChatView(viewModel: chatVM)
+            }
         }
     }
 

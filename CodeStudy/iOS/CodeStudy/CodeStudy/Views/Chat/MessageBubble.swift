@@ -34,9 +34,10 @@ struct MessageBubble: View {
     // MARK: - User content
 
     private var userContent: some View {
-        Text(message.content)
+        Text(markdownAttributed(message.content))
             .font(.body)
             .foregroundStyle(.white)
+            .tint(.white)  // links use white on dark bubble
     }
 
     // MARK: - Assistant content
@@ -47,7 +48,7 @@ struct MessageBubble: View {
         ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
             switch segment {
             case .text(let text):
-                Text(text)
+                Text(markdownAttributed(text))
                     .font(.body)
                     .foregroundStyle(Color.primary)
             case .code(let language, let code):
@@ -57,6 +58,25 @@ struct MessageBubble: View {
 
         if message.isStreaming {
             StreamingCursor()
+        }
+    }
+
+    // MARK: - Markdown renderer
+
+    /// Parses inline markdown (**bold**, *italic*, `code`, [link](url)) into an AttributedString.
+    /// Falls back to plain text if parsing fails or while streaming produces incomplete syntax.
+    private func markdownAttributed(_ text: String) -> AttributedString {
+        do {
+            return try AttributedString(
+                markdown: text,
+                options: AttributedString.MarkdownParsingOptions(
+                    allowsExtendedAttributes: false,
+                    interpretedSyntax: .inlineOnlyPreservingWhitespace,
+                    failurePolicy: .returnPartiallyParsedIfPossible
+                )
+            )
+        } catch {
+            return AttributedString(text)
         }
     }
 

@@ -9,7 +9,7 @@ struct StreakEntry: TimelineEntry {
     let isStudiedToday: Bool
 }
 
-struct StreakTimelineProvider: TimelineProvider {
+struct StreakTimelineProvider: @MainActor TimelineProvider {
 
     private static let appGroupID = "group.com.itlearning.codestudy"
 
@@ -31,12 +31,12 @@ struct StreakTimelineProvider: TimelineProvider {
         StreakEntry(date: .now, streakCount: 7, conceptTitle: "옵셔널 체이닝", isStudiedToday: true)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (StreakEntry) -> Void) {
+    @MainActor func getSnapshot(in context: Context, completion: @escaping (StreakEntry) -> Void) {
         let entry = fetchCurrentEntry() ?? placeholder(in: context)
         completion(entry)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<StreakEntry>) -> Void) {
+    @MainActor func getTimeline(in context: Context, completion: @escaping (Timeline<StreakEntry>) -> Void) {
         let entry = fetchCurrentEntry() ?? StreakEntry(
             date: .now,
             streakCount: 0,

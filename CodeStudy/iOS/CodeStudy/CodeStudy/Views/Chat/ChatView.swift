@@ -13,7 +13,7 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(viewModel.state.messages) { message in
+                        ForEach(viewModel.messages) { message in
                             MessageBubble(message: message)
                                 .id(message.id)
                         }
@@ -22,8 +22,8 @@ struct ChatView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 4)
                 }
-                .onChange(of: viewModel.state.messages.count) {
-                    if let lastMsg = viewModel.state.messages.last {
+                .onChange(of: viewModel.messages.count) {
+                    if let lastMsg = viewModel.messages.last {
                         withAnimation(.easeOut(duration: 0.2)) {
                             proxy.scrollTo(lastMsg.id, anchor: .bottom)
                         }
@@ -32,7 +32,7 @@ struct ChatView: View {
             }
 
             // Error banner
-            if let error = viewModel.state.error {
+            if let error = viewModel.error {
                 ErrorBanner(error: error) {
                     Task { await viewModel.handle(.retry) }
                 } onDismiss: {
@@ -41,17 +41,17 @@ struct ChatView: View {
             }
 
             // Action buttons
-            if !viewModel.state.isStreaming && viewModel.state.sessionState == .active {
+            if !viewModel.isStreaming && viewModel.sessionState == .active {
                 ActionButtonBar { hint in
                     Task { await viewModel.handle(.sendAction(hint)) }
                 }
             }
 
             // Input bar
-            if viewModel.state.sessionState == .active {
+            if viewModel.sessionState == .active {
                 MessageInputBar(
                     text: $inputText,
-                    isStreaming: viewModel.state.isStreaming,
+                    isStreaming: viewModel.isStreaming,
                     isFocused: $isInputFocused
                 ) {
                     let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -63,22 +63,26 @@ struct ChatView: View {
         }
         .navigationTitle(viewModel.session.conceptTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            print("[ChatView] .task fired, messages count: \(viewModel.messages.count)")
+            await viewModel.handle(.startInitialMessage)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(String(localized: "chat.done", defaultValue: "완료")) {
                     Task { await viewModel.handle(.completeManually) }
                 }
-                .disabled(viewModel.state.isStreaming)
+                .disabled(viewModel.isStreaming)
             }
         }
-        .onChange(of: viewModel.state.sessionState) { _, newState in
+        .onChange(of: viewModel.sessionState) { _, newState in
             if newState == .mastered || newState == .manualComplete {
                 showCompletionSheet = true
             }
         }
         .sheet(isPresented: $showCompletionSheet) {
             SessionCompleteView(
-                isMastered: viewModel.state.sessionState == .mastered,
+                isMastered: viewModel.sessionState == .mastered,
                 session: viewModel.session
             )
         }

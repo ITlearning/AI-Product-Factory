@@ -25,19 +25,10 @@ struct ChatMessageUI: Identifiable {
 @Observable
 final class ChatViewModel {
 
-    // MARK: - State
-
-    struct State {
-        var messages: [ChatMessageUI] = []
-        var isStreaming = false
-        var error: AIServiceError?
-        var sessionState: SessionState = .active
-        var turnCount = 0
-    }
-
     // MARK: - Actions (TCA-friendly)
 
     enum Action {
+        case startInitialMessage
         case sendMessage(String)
         case sendAction(ActionHint)
         case completeManually
@@ -52,9 +43,32 @@ final class ChatViewModel {
         case error
     }
 
-    // MARK: - Published State
+    // MARK: - Observed State (top-level for SwiftUI Observation compatibility)
 
-    private(set) var state = State()
+    var messages: [ChatMessageUI] = []
+    var isStreaming = false
+    var error: AIServiceError?
+    var sessionState: SessionState = .active
+    var turnCount = 0
+
+    /// Backwards-compat alias so existing `viewModel.state.xxx` reads still work.
+    var state: StateSnapshot {
+        StateSnapshot(
+            messages: messages,
+            isStreaming: isStreaming,
+            error: error,
+            sessionState: sessionState,
+            turnCount: turnCount
+        )
+    }
+
+    struct StateSnapshot {
+        let messages: [ChatMessageUI]
+        let isStreaming: Bool
+        let error: AIServiceError?
+        let sessionState: SessionState
+        let turnCount: Int
+    }
 
     // MARK: - Dependencies
 
@@ -76,6 +90,8 @@ final class ChatViewModel {
 
     func handle(_ action: Action) async {
         switch action {
+        case .startInitialMessage:
+            await sendInitialMessage()
         case .sendMessage(let text):
             await sendMessage(text)
         case .sendAction(let hint):
@@ -83,12 +99,85 @@ final class ChatViewModel {
         case .completeManually:
             await completeSession(type: .manual)
         case .retry:
-            state.error = nil
-            if let lastUserMsg = state.messages.last(where: { $0.role == .user }) {
+            error = nil
+            if let lastUserMsg = messages.last(where: { $0.role == .user }) {
                 await sendMessage(lastUserMsg.content, isRetry: true)
             }
         case .dismissError:
-            state.error = nil
+            error = nil
+        }
+    }
+
+    /// Sends an empty context request so the AI produces the first message.
+    /// Called once when ChatView appears. Guards against double-starting.
+    @MainActor
+    private func sendInitialMessage() async {
+        print("[ChatVM] sendInitialMessage called. messages=\(messages.count) state=\(sessionState)")
+        // Only start if there are no messages yet
+        guard messages.isEmpty else {
+            print("[ChatVM] skip: messages not empty")
+            return
+        }
+        guard sessionState == .active else {
+            print("[ChatVM] skip: session not active")
+            return
+        }
+        print("[ChatVM] starting initial message stream")
+
+        // Create placeholder assistant message
+        
+        let assistantIndex = messages.count
+        let assistantMessage = ChatMessageUI(role: .assistant, content: "", isStreaming: true)
+        messages.append(assistantMessage)
+
+        isStreaming = true
+
+        let context = buildConversationContext()
+
+        do {
+            // Send a special "start" trigger so the backend knows to produce
+            // an opening message. The backend treats an empty message array
+            // + this trigger as "greet and introduce the concept".
+            print("[ChatVM] calling aiService.sendMessage(__START__)")
+            let stream = aiService.sendMessage("__START__", context: context)
+            print("[ChatVM] stream created, awaiting chunks...")
+            var chunkCount = 0
+            for try await chunk in stream {
+                chunkCount += 1
+                if chunkCount <= 3 {
+                    print("[ChatVM] chunk #\(chunkCount): \(chunk.prefix(40))")
+                }
+                // Re-assign the full array so @Observable triggers SwiftUI updates.
+                // Nested mutation (messages[i].content += ...) is not observed.
+                var updatedMessages = messages
+                updatedMessages[assistantIndex].content += chunk
+                messages = updatedMessages
+            }
+            print("[ChatVM] stream ended. total chunks=\(chunkCount)")
+
+            // Mark streaming complete — also via full re-assign
+            var finalMessages = messages
+            finalMessages[assistantIndex].isStreaming = false
+
+            // Check for mastery marker (unlikely on first message, but safe)
+            if finalMessages[assistantIndex].content.contains("[MASTERY]") {
+                finalMessages[assistantIndex].content = finalMessages[assistantIndex].content
+                    .replacingOccurrences(of: "[MASTERY]", with: "")
+            }
+            messages = finalMessages
+            isStreaming = false
+
+            persistMessages()
+        } catch let serviceError as AIServiceError {
+            print("[ChatVM] AIServiceError: \(serviceError.localizedDescription)")
+            messages.removeLast()
+            isStreaming = false
+            self.error = serviceError
+        } catch {
+            print("[ChatVM] unknown error: \(error)")
+            messages.removeLast()
+            isStreaming = false
+            self.error = .invalidResponse
         }
     }
 
@@ -96,27 +185,27 @@ final class ChatViewModel {
 
     private func sendMessage(_ text: String, isRetry: Bool = false) async {
         // Guard: session must be active
-        guard state.sessionState == .active else { return }
+        guard sessionState == .active else { return }
 
         // Guard: turn limit
-        guard state.turnCount < AppConstants.maxTurnsPerSession else {
-            state.error = .sessionTurnLimitExceeded
+        guard turnCount < AppConstants.maxTurnsPerSession else {
+            error = .sessionTurnLimitExceeded
             return
         }
 
         // 1. Append user message (skip if retrying, message already exists)
         if !isRetry {
             let userMessage = ChatMessageUI(role: .user, content: text)
-            state.messages.append(userMessage)
+            messages.append(userMessage)
         }
 
         // 2. Create placeholder assistant message
-        let assistantIndex = state.messages.count
+        let assistantIndex = messages.count
         let assistantMessage = ChatMessageUI(role: .assistant, content: "", isStreaming: true)
-        state.messages.append(assistantMessage)
+        messages.append(assistantMessage)
 
         // 3. Set streaming state
-        state.isStreaming = true
+        isStreaming = true
 
         // 4. Build conversation context
         let context = buildConversationContext()
@@ -125,17 +214,22 @@ final class ChatViewModel {
         do {
             let stream = aiService.sendMessage(text, context: context)
             for try await chunk in stream {
-                state.messages[assistantIndex].content += chunk
+                // Re-assign the full array so @Observable triggers SwiftUI updates.
+                var updatedMessages = messages
+                updatedMessages[assistantIndex].content += chunk
+                messages = updatedMessages
             }
 
-            // 6. Mark streaming complete
-            state.messages[assistantIndex].isStreaming = false
-            state.isStreaming = false
-            state.turnCount += 1
-            session.turnCount = state.turnCount
+            // 6. Mark streaming complete via full re-assign
+            var finalMessages = messages
+            finalMessages[assistantIndex].isStreaming = false
+            messages = finalMessages
+            isStreaming = false
+            turnCount += 1
+            session.turnCount = turnCount
 
             // 7. Check for mastery marker
-            let fullResponse = state.messages[assistantIndex].content
+            let fullResponse = messages[assistantIndex].content
             if fullResponse.contains("[MASTERY]") {
                 await completeSession(type: .mastered)
             }
@@ -144,21 +238,23 @@ final class ChatViewModel {
             persistMessages()
 
         } catch let serviceError as AIServiceError {
-            state.messages[assistantIndex].isStreaming = false
-            state.isStreaming = false
-            state.error = serviceError
-            state.sessionState = .error
+            var updatedMessages = messages
+            updatedMessages[assistantIndex].isStreaming = false
+            messages = updatedMessages
+            isStreaming = false
+            error = serviceError
+            sessionState = .error
             // Remove the empty assistant placeholder on error
-            if state.messages[assistantIndex].content.isEmpty {
-                state.messages.remove(at: assistantIndex)
+            if messages[assistantIndex].content.isEmpty {
+                messages.remove(at: assistantIndex)
             }
         } catch {
-            state.messages[assistantIndex].isStreaming = false
-            state.isStreaming = false
-            state.error = .streamingFailed
-            state.sessionState = .error
-            if state.messages[assistantIndex].content.isEmpty {
-                state.messages.remove(at: assistantIndex)
+            messages[assistantIndex].isStreaming = false
+            isStreaming = false
+            self.error = .streamingFailed
+            sessionState = .error
+            if messages[assistantIndex].content.isEmpty {
+                messages.remove(at: assistantIndex)
             }
         }
     }
@@ -186,39 +282,43 @@ final class ChatViewModel {
         }
 
         let userMessage = ChatMessageUI(role: .user, content: displayText)
-        state.messages.append(userMessage)
+        messages.append(userMessage)
 
         // Send the action-tagged message to AI (includes hint metadata)
         await sendMessageWithActionHint(actionText, hint: hint)
     }
 
     private func sendMessageWithActionHint(_ text: String, hint: ActionHint) async {
-        guard state.sessionState == .active else { return }
-        guard state.turnCount < AppConstants.maxTurnsPerSession else {
-            state.error = .sessionTurnLimitExceeded
+        guard sessionState == .active else { return }
+        guard turnCount < AppConstants.maxTurnsPerSession else {
+            error = .sessionTurnLimitExceeded
             return
         }
 
-        let assistantIndex = state.messages.count
+        let assistantIndex = messages.count
         let assistantMessage = ChatMessageUI(role: .assistant, content: "", isStreaming: true)
-        state.messages.append(assistantMessage)
+        messages.append(assistantMessage)
 
-        state.isStreaming = true
+        isStreaming = true
 
         let context = buildConversationContext(actionHint: hint)
 
         do {
             let stream = aiService.sendMessage(text, context: context)
             for try await chunk in stream {
-                state.messages[assistantIndex].content += chunk
+                var updatedMessages = messages
+                updatedMessages[assistantIndex].content += chunk
+                messages = updatedMessages
             }
 
-            state.messages[assistantIndex].isStreaming = false
-            state.isStreaming = false
-            state.turnCount += 1
-            session.turnCount = state.turnCount
+            var finalMessages = messages
+            finalMessages[assistantIndex].isStreaming = false
+            messages = finalMessages
+            isStreaming = false
+            turnCount += 1
+            session.turnCount = turnCount
 
-            let fullResponse = state.messages[assistantIndex].content
+            let fullResponse = messages[assistantIndex].content
             if fullResponse.contains("[MASTERY]") {
                 await completeSession(type: .mastered)
             }
@@ -226,20 +326,20 @@ final class ChatViewModel {
             persistMessages()
 
         } catch let serviceError as AIServiceError {
-            state.messages[assistantIndex].isStreaming = false
-            state.isStreaming = false
-            state.error = serviceError
-            state.sessionState = .error
-            if state.messages[assistantIndex].content.isEmpty {
-                state.messages.remove(at: assistantIndex)
+            messages[assistantIndex].isStreaming = false
+            isStreaming = false
+            error = serviceError
+            sessionState = .error
+            if messages[assistantIndex].content.isEmpty {
+                messages.remove(at: assistantIndex)
             }
         } catch {
-            state.messages[assistantIndex].isStreaming = false
-            state.isStreaming = false
-            state.error = .streamingFailed
-            state.sessionState = .error
-            if state.messages[assistantIndex].content.isEmpty {
-                state.messages.remove(at: assistantIndex)
+            messages[assistantIndex].isStreaming = false
+            isStreaming = false
+            self.error = .streamingFailed
+            sessionState = .error
+            if messages[assistantIndex].content.isEmpty {
+                messages.remove(at: assistantIndex)
             }
         }
     }
@@ -250,11 +350,11 @@ final class ChatViewModel {
 
         switch type {
         case .mastered:
-            state.sessionState = .mastered
+            sessionState = .mastered
             updateConceptProgress(mastered: true)
             updateStreak()
         case .manual:
-            state.sessionState = .manualComplete
+            sessionState = .manualComplete
             updateConceptProgress(mastered: false)
             updateStreak()
         case .abandoned:
@@ -266,7 +366,7 @@ final class ChatViewModel {
         do {
             try modelContext.save()
         } catch {
-            state.error = .streamingFailed
+            self.error = .streamingFailed
         }
     }
 
@@ -275,7 +375,7 @@ final class ChatViewModel {
         let profileSnapshot = fetchUserProfileSnapshot()
 
         // Build message history
-        let previousMessages: [MessageSnapshot] = state.messages
+        let previousMessages: [MessageSnapshot] = messages
             .filter { !$0.isStreaming }
             .map { MessageSnapshot(role: $0.role.rawValue, content: $0.content) }
 
@@ -308,7 +408,7 @@ final class ChatViewModel {
     private func persistMessages() {
         // Sync UI messages to SwiftData ChatMessage models
         let existingIDs = Set(session.messages.map(\.id))
-        for (index, uiMessage) in state.messages.enumerated() {
+        for (index, uiMessage) in messages.enumerated() {
             if !existingIDs.contains(uiMessage.id) && !uiMessage.isStreaming {
                 let chatMessage = ChatMessage(
                     role: uiMessage.role,

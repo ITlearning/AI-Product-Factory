@@ -93,6 +93,18 @@ export async function POST(req) {
     userProfile.language,
   );
 
+  // Handle the initial-message trigger: iOS sends "__START__" as the first
+  // (and only) user message when ChatView appears. Replace it with an
+  // explicit instruction so the AI produces a warm opening message.
+  let effectiveMessages = messages || [];
+  if (effectiveMessages.length === 1 && effectiveMessages[0].content === '__START__') {
+    const startInstruction =
+      userProfile.language === 'en'
+        ? 'Start the session: warmly greet the student in one line, briefly introduce the concept (one sentence about WHY it matters), then ask your first Socratic opening question. Keep the whole response under 5 lines.'
+        : '세션을 시작해주세요: 학습자에게 한 줄로 따뜻하게 인사하고, 이 개념이 왜 중요한지 한 문장으로 소개한 뒤, 첫 번째 소크라테스식 질문을 던져주세요. 전체 응답은 5줄 이내로 작성해주세요.';
+    effectiveMessages = [{ role: 'user', content: startInstruction }];
+  }
+
   // Stream LLM response and forward as SSE
   const encoder = new TextEncoder();
   let fullText = '';
@@ -100,7 +112,7 @@ export async function POST(req) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of streamChat(messages || [], systemPrompt, {
+        for await (const chunk of streamChat(effectiveMessages, systemPrompt, {
           provider,
           apiKey,
         })) {

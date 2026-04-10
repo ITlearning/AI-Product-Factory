@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppConstants {
-    static let apiBaseURL = URL(string: "https://codestudy-backend.vercel.app")!
+    static let apiBaseURL = URL(string: "https://codestudy-nine.vercel.app")!
     static let maxSessionsPerDay = 5
     static let maxTurnsPerSession = 20
     static let appGroupIdentifier = "group.com.itlearning.codestudy"
