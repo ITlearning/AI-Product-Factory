@@ -2,26 +2,26 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 /**
- * Helper: build a GET Request-like object with query params
+ * Helper: build a GET Request-like object with query params.
+ * Route Handler req.url is already a full absolute URL.
  */
 function makeRequest(queryString) {
   return {
-    method: 'GET',
     url: `http://localhost/api/daily-concept${queryString}`,
     headers: {
-      get(key) {
+      get(_key) {
         return null;
       },
     },
   };
 }
 
-let handler;
+let GET;
 let importError;
 
 try {
   const mod = await import('../../api/daily-concept.js');
-  handler = mod.default;
+  GET = mod.GET;
 } catch (err) {
   importError = err;
 }
@@ -31,7 +31,7 @@ describe('GET /api/daily-concept', () => {
 
   testFn('returns a concept for a valid level', async () => {
     const req = makeRequest('?level=beginner');
-    const res = await handler(req);
+    const res = await GET(req);
 
     assert.equal(res.status, 200);
     const data = await res.json();
@@ -44,13 +44,13 @@ describe('GET /api/daily-concept', () => {
 
   testFn('returns 400 for missing level', async () => {
     const req = makeRequest('');
-    const res = await handler(req);
+    const res = await GET(req);
     assert.equal(res.status, 400);
   });
 
   testFn('returns 400 for unknown level', async () => {
     const req = makeRequest('?level=nonexistent_level_xyz');
-    const res = await handler(req);
+    const res = await GET(req);
     assert.equal(res.status, 400);
     const data = await res.json();
     assert.ok(data.error.includes('nonexistent_level_xyz'));
@@ -63,16 +63,10 @@ describe('GET /api/daily-concept', () => {
       ',',
     );
     const req = makeRequest(`?level=beginner&studied=${manyIds}`);
-    const res = await handler(req);
+    const res = await GET(req);
 
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.ok(data.conceptId, 'should still return a concept for review');
-  });
-
-  testFn('returns 405 for non-GET requests', async () => {
-    const req = { ...makeRequest('?level=beginner'), method: 'POST' };
-    const res = await handler(req);
-    assert.equal(res.status, 405);
   });
 });

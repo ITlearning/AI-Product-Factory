@@ -7,24 +7,11 @@
  *   3. Level-specific adaptation
  */
 
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { curriculum as curriculumData } from '../data/curriculum.js';
 import { getLevelInstructions } from './level-adapters.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const curriculumPath = path.join(__dirname, '..', 'data', 'curriculum.json');
-
-let _curriculum = null;
-
 function loadCurriculum() {
-  if (!_curriculum) {
-    const raw = readFileSync(curriculumPath, 'utf-8');
-    _curriculum = JSON.parse(raw);
-  }
-  return _curriculum;
+  return curriculumData;
 }
 
 /**

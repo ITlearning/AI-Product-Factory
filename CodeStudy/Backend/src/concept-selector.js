@@ -1,20 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const curriculumPath = path.join(__dirname, 'data', 'curriculum.json');
-
-let _curriculum = null;
+import { curriculum as curriculumData } from './data/curriculum.js';
 
 function loadCurriculum() {
-  if (!_curriculum) {
-    const raw = readFileSync(curriculumPath, 'utf-8');
-    _curriculum = JSON.parse(raw);
-  }
-  return _curriculum;
+  return curriculumData;
 }
 
 /**

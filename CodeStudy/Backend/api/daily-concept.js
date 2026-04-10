@@ -1,14 +1,7 @@
 import { selectDailyConcept } from '../src/concept-selector.js';
 
-export default async function handler(req) {
-  if (req.method !== 'GET') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  const url = new URL(req.url, 'http://localhost');
+export async function GET(req) {
+  const url = new URL(req.url);
   const level = url.searchParams.get('level');
   const language = url.searchParams.get('lang') || 'ko';
   const studiedParam = url.searchParams.get('studied') || '';

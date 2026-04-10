@@ -14,21 +14,12 @@ import { streamChat } from '../src/llm/provider.js';
  * The [MASTERY] marker is stripped from displayed text and reported
  * via the `mastered` flag in the final chunk.
  */
-export default async function handler(req, options = {}) {
-  const fetchImpl = options.fetchImpl || fetch;
-
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
+export async function POST(req) {
   // API key check (Claude by default, Gemini for fallback)
-  const provider = options.provider || CONFIG.DEFAULT_PROVIDER;
+  const provider = CONFIG.DEFAULT_PROVIDER;
   const apiKeyEnvVar =
     provider === 'claude' ? 'ANTHROPIC_API_KEY' : 'GEMINI_API_KEY';
-  const apiKey = options.apiKey || process.env[apiKeyEnvVar];
+  const apiKey = process.env[apiKeyEnvVar];
   if (!apiKey) {
     return new Response(
       JSON.stringify({
@@ -64,9 +55,7 @@ export default async function handler(req, options = {}) {
 
   // Rate limit by IP
   const ip =
-    req.headers.get?.('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
-    'unknown';
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   const rateLimitResult = checkRateLimit(ip);
   if (!rateLimitResult.allowed) {
     return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -89,10 +78,7 @@ export default async function handler(req, options = {}) {
   }
 
   // Bundle ID check
-  const bundleId =
-    req.headers.get?.('x-app-bundle-id') ||
-    req.headers?.['x-app-bundle-id'] ||
-    '';
+  const bundleId = req.headers.get('x-app-bundle-id') || '';
   if (!CONFIG.ALLOWED_BUNDLE_IDS.includes(bundleId)) {
     return new Response(JSON.stringify({ error: 'Unauthorized client' }), {
       status: 400,
@@ -117,7 +103,6 @@ export default async function handler(req, options = {}) {
         for await (const chunk of streamChat(messages || [], systemPrompt, {
           provider,
           apiKey,
-          fetchImpl,
         })) {
           fullText += chunk;
           // Strip [MASTERY] from displayed text
