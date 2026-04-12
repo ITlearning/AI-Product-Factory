@@ -45,9 +45,11 @@ final class APIProvider: AIService, @unchecked Sendable {
                             continuation.yield(chunk.t)
                         } else if let done = try? JSONDecoder().decode(DoneChunk.self, from: data) {
                             if done.done {
-                                // Signal mastery status via a special marker the ViewModel can parse
+                                // Signal mastery by appending the [MASTERY] marker.
+                                // ChatViewModel strips this from displayed content
+                                // and uses it to trigger the completion sheet.
                                 if done.mastered == true {
-                                    continuation.yield("[MASTERED]")
+                                    continuation.yield("[MASTERY]")
                                 }
                                 break
                             }

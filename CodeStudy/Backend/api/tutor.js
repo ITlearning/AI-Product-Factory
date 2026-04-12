@@ -15,10 +15,13 @@ import { streamChat } from '../src/llm/provider.js';
  * via the `mastered` flag in the final chunk.
  */
 export async function POST(req) {
-  // API key check (Claude by default, Gemini for fallback)
+  // API key check — resolve the right env var for the configured provider
   const provider = CONFIG.DEFAULT_PROVIDER;
-  const apiKeyEnvVar =
-    provider === 'claude' ? 'ANTHROPIC_API_KEY' : 'GEMINI_API_KEY';
+  const apiKeyEnvVar = {
+    openrouter: 'OPENROUTER_API_KEY',
+    claude: 'ANTHROPIC_API_KEY',
+    gemini: 'GEMINI_API_KEY',
+  }[provider] || 'OPENROUTER_API_KEY';
   const apiKey = process.env[apiKeyEnvVar];
   if (!apiKey) {
     return new Response(
@@ -115,6 +118,7 @@ export async function POST(req) {
         for await (const chunk of streamChat(effectiveMessages, systemPrompt, {
           provider,
           apiKey,
+          model: CONFIG.OPENROUTER_MODEL,
         })) {
           fullText += chunk;
           // Strip [MASTERY] from displayed text

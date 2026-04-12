@@ -33,11 +33,20 @@ struct MessageBubble: View {
 
     // MARK: - User content
 
+    @ViewBuilder
     private var userContent: some View {
-        Text(markdownAttributed(message.content))
-            .font(.body)
-            .foregroundStyle(.white)
-            .tint(.white)  // links use white on dark bubble
+        let segments = parseContent(message.content)
+        ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+            switch segment {
+            case .text(let text):
+                Text(markdownAttributed(text))
+                    .font(.body)
+                    .foregroundStyle(.white)
+                    .tint(.white)
+            case .code(let language, let code):
+                codeBlock(language: language, code: code)
+            }
+        }
     }
 
     // MARK: - Assistant content
@@ -90,14 +99,30 @@ struct MessageBubble: View {
                     .foregroundStyle(.secondary)
                     .padding(.leading, 4)
             }
-            Text(code)
-                .font(.system(.callout, design: .monospaced))
-                .foregroundStyle(Color.primary)
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.systemGray5))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            // Horizontal scroll so long lines don't wrap or clip.
+            ScrollView(.horizontal, showsIndicators: false) {
+                Text(highlightedCode(code, language: language))
+                    .font(.system(.callout, design: .monospaced))
+                    .textSelection(.enabled)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color(red: 0.117, green: 0.117, blue: 0.137))  // Xcode editor background
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
+    }
+
+    /// Returns a syntax-highlighted AttributedString for Swift, or a plain
+    /// AttributedString for other languages.
+    private func highlightedCode(_ code: String, language: String) -> AttributedString {
+        let normalizedLang = language.lowercased()
+        if normalizedLang.isEmpty || normalizedLang == "swift" {
+            return SwiftSyntaxHighlighter.highlight(code)
+        }
+        var plain = AttributedString(code)
+        plain.foregroundColor = SwiftSyntaxHighlighter.defaultColor
+        plain.font = .system(.callout, design: .monospaced)
+        return plain
     }
 
     // MARK: - Markdown-lite parser

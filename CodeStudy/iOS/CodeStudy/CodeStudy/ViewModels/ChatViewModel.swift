@@ -220,22 +220,25 @@ final class ChatViewModel {
                 messages = updatedMessages
             }
 
-            // 6. Mark streaming complete via full re-assign
+            // 6. Check for mastery marker + strip from displayed text
             var finalMessages = messages
             finalMessages[assistantIndex].isStreaming = false
+            let mastered = finalMessages[assistantIndex].content.contains("[MASTERY]")
+            if mastered {
+                finalMessages[assistantIndex].content = finalMessages[assistantIndex].content
+                    .replacingOccurrences(of: "[MASTERY]", with: "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
             messages = finalMessages
             isStreaming = false
             turnCount += 1
             session.turnCount = turnCount
 
-            // 7. Check for mastery marker
-            let fullResponse = messages[assistantIndex].content
-            if fullResponse.contains("[MASTERY]") {
+            // 7. Persist and complete if mastered
+            persistMessages()
+            if mastered {
                 await completeSession(type: .mastered)
             }
-
-            // 8. Persist messages to SwiftData
-            persistMessages()
 
         } catch let serviceError as AIServiceError {
             var updatedMessages = messages
@@ -313,17 +316,21 @@ final class ChatViewModel {
 
             var finalMessages = messages
             finalMessages[assistantIndex].isStreaming = false
+            let mastered = finalMessages[assistantIndex].content.contains("[MASTERY]")
+            if mastered {
+                finalMessages[assistantIndex].content = finalMessages[assistantIndex].content
+                    .replacingOccurrences(of: "[MASTERY]", with: "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
             messages = finalMessages
             isStreaming = false
             turnCount += 1
             session.turnCount = turnCount
 
-            let fullResponse = messages[assistantIndex].content
-            if fullResponse.contains("[MASTERY]") {
+            persistMessages()
+            if mastered {
                 await completeSession(type: .mastered)
             }
-
-            persistMessages()
 
         } catch let serviceError as AIServiceError {
             messages[assistantIndex].isStreaming = false

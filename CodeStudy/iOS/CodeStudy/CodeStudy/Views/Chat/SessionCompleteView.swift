@@ -17,27 +17,36 @@ struct SessionCompleteView: View {
     private let deepBlue = Color(hex: "1E3A5F")
 
     var body: some View {
-        VStack(spacing: 28) {
-            Spacer()
+        ZStack {
+            VStack(spacing: 28) {
+                Spacer()
 
-            // Icon
-            iconSection
+                // Icon
+                iconSection
 
-            // Title & subtitle
-            titleSection
+                // Title & subtitle
+                titleSection
 
-            // Session summary
-            summarySection
+                // Session summary
+                summarySection
 
-            // Streak counter
-            streakSection
+                // Streak counter
+                streakSection
 
-            Spacer()
+                Spacer()
 
-            // Action buttons
-            buttonSection
+                // Action buttons
+                buttonSection
+            }
+            .padding(24)
+
+            // Celebration particles on mastery
+            if isMastered {
+                ConfettiView(particleCount: 120, duration: 3.0)
+                    .ignoresSafeArea()
+            }
         }
-        .padding(24)
+        .interactiveDismissDisabled(false)
         .onAppear {
             withAnimation(.spring(duration: 0.6, bounce: 0.4)) {
                 animateIcon = true

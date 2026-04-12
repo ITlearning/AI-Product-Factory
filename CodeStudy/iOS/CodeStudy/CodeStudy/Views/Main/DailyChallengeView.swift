@@ -36,6 +36,12 @@ struct DailyChallengeView: View {
                 await vm.handle(.loadTodayConcept)
             }
         }
+        // Reload streak + concept data when returning from ChatView
+        .onChange(of: navigateToChat) { _, isNavigating in
+            if !isNavigating, let vm = viewModel {
+                Task { await vm.handle(.loadTodayConcept) }
+            }
+        }
     }
 
     // MARK: - Concept Content
