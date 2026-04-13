@@ -32,6 +32,11 @@ struct ProgressDashboardView: View {
                 await vm.handle(.loadProgress)
             }
         }
+        .onAppear {
+            if let vm = viewModel {
+                Task { await vm.handle(.loadProgress) }
+            }
+        }
     }
 
     // MARK: - Progress Content

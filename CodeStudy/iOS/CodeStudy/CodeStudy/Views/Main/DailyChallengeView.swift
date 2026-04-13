@@ -36,7 +36,13 @@ struct DailyChallengeView: View {
                 await vm.handle(.loadTodayConcept)
             }
         }
-        // Reload streak + concept data when returning from ChatView
+        // Reload when this tab becomes visible (covers settings changes + chat return)
+        .onAppear {
+            if let vm = viewModel {
+                Task { await vm.handle(.loadTodayConcept) }
+            }
+        }
+        // Also reload when returning from ChatView navigation
         .onChange(of: navigateToChat) { _, isNavigating in
             if !isNavigating, let vm = viewModel {
                 Task { await vm.handle(.loadTodayConcept) }
