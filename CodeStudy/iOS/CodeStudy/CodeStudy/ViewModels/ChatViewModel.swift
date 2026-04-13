@@ -369,6 +369,7 @@ final class ChatViewModel {
             sessionState = .mastered
             updateConceptProgress(mastered: true)
             updateStreak()  // 마스터리만 스트릭 카운트
+            incrementDailySessionCount()  // 마스터리만 세션 카운트
         case .manual:
             sessionState = .manualComplete
             updateConceptProgress(mastered: false)
@@ -505,6 +506,24 @@ final class ChatViewModel {
         streak.lastStudyDate = today
         if streak.currentStreak > streak.longestStreak {
             streak.longestStreak = streak.currentStreak
+        }
+    }
+
+    /// Increment the daily session count on UserProfile.
+    /// Only called on mastery — abandoned/manual sessions don't count.
+    private func incrementDailySessionCount() {
+        let descriptor = FetchDescriptor<UserProfile>()
+        guard let profile = try? modelContext.fetch(descriptor).first else { return }
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let lastReset = calendar.startOfDay(for: profile.lastSessionCountResetDate)
+
+        if lastReset < today {
+            profile.dailySessionCount = 1
+            profile.lastSessionCountResetDate = Date()
+        } else {
+            profile.dailySessionCount += 1
         }
     }
 }

@@ -88,8 +88,9 @@ final class DailyChallengeViewModel {
         guard state.canStartSession else { return }
         guard let concept = state.todayConcept else { return }
 
-        // Increment daily session count on the profile
-        incrementDailySessionCount()
+        // Session count is incremented by ChatViewModel.completeSession(.mastered),
+        // NOT here. Starting a session doesn't count — only mastering it does.
+        // This prevents abandoned sessions from eating the daily limit.
 
         // Create a new StudySession
         let session = StudySession(conceptID: concept.id, conceptTitle: concept.titleKo)
