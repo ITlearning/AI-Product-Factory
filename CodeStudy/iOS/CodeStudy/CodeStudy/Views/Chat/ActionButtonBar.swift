@@ -4,7 +4,7 @@ struct ActionButtonBar: View {
     let onAction: (ActionHint) -> Void
 
     // Design tokens
-    private let accentColor = Color(hex: "FF6B35")
+    private let accentColor = Color.warmOrange
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {

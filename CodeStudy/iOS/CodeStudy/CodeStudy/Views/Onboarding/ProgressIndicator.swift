@@ -7,16 +7,13 @@ struct ProgressIndicator: View {
     let currentStep: Int
     let totalSteps: Int
 
-    // Design tokens
-    private let accentColor = Color.warmOrange
-    private let inactiveColor = Color.gray.opacity(0.3)
     private let barHeight: CGFloat = 4
 
     var body: some View {
         HStack(spacing: 8) {
             ForEach(0..<totalSteps, id: \.self) { step in
                 Capsule()
-                    .fill(step <= currentStep ? accentColor : inactiveColor)
+                    .fill(step <= currentStep ? Color.warmOrange : Color.gray.opacity(0.3))
                     .frame(height: barHeight)
                     .animation(.easeInOut(duration: 0.3), value: currentStep)
             }

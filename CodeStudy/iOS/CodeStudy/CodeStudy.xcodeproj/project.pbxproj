@@ -6,12 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		F54F6A422F82D0130061170D /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F54F6A412F82D0120061170D /* WidgetKit.framework */; };
-		F54F6A442F82D0130061170D /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F54F6A432F82D0130061170D /* SwiftUI.framework */; };
-		F54F6A552F82D0130061170D /* CodeStudyWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F54F6A3F2F82D0120061170D /* CodeStudyWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		F54F694E2F82CA250061170D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,13 +21,6 @@
 			remoteGlobalIDString = F54F693D2F82CA230061170D;
 			remoteInfo = CodeStudy;
 		};
-		F54F6A532F82D0130061170D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F54F69362F82CA230061170D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F54F6A3E2F82D0120061170D;
-			remoteInfo = CodeStudyWidgetExtension;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,7 +30,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				F54F6A552F82D0130061170D /* CodeStudyWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -54,35 +40,13 @@
 		F54F693E2F82CA230061170D /* CodeStudy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodeStudy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F54F694D2F82CA250061170D /* CodeStudyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CodeStudyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F54F69572F82CA250061170D /* CodeStudyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CodeStudyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		F54F6A3F2F82D0120061170D /* CodeStudyWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CodeStudyWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F54F6A412F82D0120061170D /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		F54F6A432F82D0130061170D /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		F54F6A562F82D0130061170D /* Exceptions for "CodeStudyWidget" folder in "CodeStudyWidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = F54F6A3E2F82D0120061170D /* CodeStudyWidgetExtension */;
-		};
-		F54F74E62F8913E40061170D /* Exceptions for "CodeStudy" folder in "CodeStudyWidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/ConceptProgress.swift,
-				Models/DailyStreak.swift,
-			);
-			target = F54F6A3E2F82D0120061170D /* CodeStudyWidgetExtension */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F54F69402F82CA230061170D /* CodeStudy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				F54F74E62F8913E40061170D /* Exceptions for "CodeStudy" folder in "CodeStudyWidgetExtension" target */,
-			);
 			path = CodeStudy;
 			sourceTree = "<group>";
 		};
@@ -98,9 +62,6 @@
 		};
 		F54F6A452F82D0130061170D /* CodeStudyWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				F54F6A562F82D0130061170D /* Exceptions for "CodeStudyWidget" folder in "CodeStudyWidgetExtension" target */,
-			);
 			path = CodeStudyWidget;
 			sourceTree = "<group>";
 		};
@@ -128,15 +89,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F54F6A3C2F82D0120061170D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				F54F6A442F82D0130061170D /* SwiftUI.framework in Frameworks */,
-				F54F6A422F82D0130061170D /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -158,7 +110,6 @@
 				F54F693E2F82CA230061170D /* CodeStudy.app */,
 				F54F694D2F82CA250061170D /* CodeStudyTests.xctest */,
 				F54F69572F82CA250061170D /* CodeStudyUITests.xctest */,
-				F54F6A3F2F82D0120061170D /* CodeStudyWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -187,7 +138,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				F54F6A542F82D0130061170D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				F54F69402F82CA230061170D /* CodeStudy */,
@@ -245,28 +195,6 @@
 			productReference = F54F69572F82CA250061170D /* CodeStudyUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		F54F6A3E2F82D0120061170D /* CodeStudyWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = F54F6A572F82D0130061170D /* Build configuration list for PBXNativeTarget "CodeStudyWidgetExtension" */;
-			buildPhases = (
-				F54F6A3B2F82D0120061170D /* Sources */,
-				F54F6A3C2F82D0120061170D /* Frameworks */,
-				F54F6A3D2F82D0120061170D /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				F54F6A452F82D0130061170D /* CodeStudyWidget */,
-			);
-			name = CodeStudyWidgetExtension;
-			packageProductDependencies = (
-			);
-			productName = CodeStudyWidgetExtension;
-			productReference = F54F6A3F2F82D0120061170D /* CodeStudyWidgetExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -288,9 +216,6 @@
 						CreatedOnToolsVersion = 26.0.1;
 						TestTargetID = F54F693D2F82CA230061170D;
 					};
-					F54F6A3E2F82D0120061170D = {
-						CreatedOnToolsVersion = 26.0.1;
-					};
 				};
 			};
 			buildConfigurationList = F54F69392F82CA230061170D /* Build configuration list for PBXProject "CodeStudy" */;
@@ -310,7 +235,6 @@
 				F54F693D2F82CA230061170D /* CodeStudy */,
 				F54F694C2F82CA250061170D /* CodeStudyTests */,
 				F54F69562F82CA250061170D /* CodeStudyUITests */,
-				F54F6A3E2F82D0120061170D /* CodeStudyWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -331,13 +255,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F54F69552F82CA250061170D /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F54F6A3D2F82D0120061170D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -368,13 +285,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F54F6A3B2F82D0120061170D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -387,11 +297,6 @@
 			isa = PBXTargetDependency;
 			target = F54F693D2F82CA230061170D /* CodeStudy */;
 			targetProxy = F54F69582F82CA250061170D /* PBXContainerItemProxy */;
-		};
-		F54F6A542F82D0130061170D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F54F6A3E2F82D0120061170D /* CodeStudyWidgetExtension */;
-			targetProxy = F54F6A532F82D0130061170D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -673,66 +578,6 @@
 			};
 			name = Release;
 		};
-		F54F6A582F82D0130061170D /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = ZMXTCSPNUZ;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CodeStudyWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = CodeStudyWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.itlearning.codestudy.CodeStudy.CodeStudyWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		F54F6A592F82D0130061170D /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = ZMXTCSPNUZ;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CodeStudyWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = CodeStudyWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.itlearning.codestudy.CodeStudy.CodeStudyWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -768,15 +613,6 @@
 			buildConfigurations = (
 				F54F69682F82CA250061170D /* Debug */,
 				F54F69692F82CA250061170D /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		F54F6A572F82D0130061170D /* Build configuration list for PBXNativeTarget "CodeStudyWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F54F6A582F82D0130061170D /* Debug */,
-				F54F6A592F82D0130061170D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

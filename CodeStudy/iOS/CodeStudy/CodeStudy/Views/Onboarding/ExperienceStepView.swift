@@ -8,10 +8,6 @@ struct ExperienceStepView: View {
     let onSelect: (Bool) -> Void
     let onNext: () -> Void
 
-    // Design tokens
-    private let deepBlue = Color(hex: "1E3A5F")
-    private let accent = Color(hex: "FF6B35")
-
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
@@ -22,7 +18,7 @@ struct ExperienceStepView: View {
                          defaultValue: "개발 경험이 있으신가요?"))
                 // EN: Do you have coding experience?
                 .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(deepBlue)
+                .foregroundStyle(Color.deepBlue)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
@@ -75,7 +71,7 @@ struct ExperienceStepView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(selection != nil ? accent : Color.gray.opacity(0.3))
+                    .background(selection != nil ? Color.warmOrange : Color.gray.opacity(0.3))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
             }
             .disabled(selection == nil)
@@ -97,19 +93,19 @@ struct ExperienceStepView: View {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.system(size: 28))
-                    .foregroundStyle(isSelected ? accent : deepBlue.opacity(0.6))
+                    .foregroundStyle(isSelected ? Color.warmOrange : Color.deepBlue.opacity(0.6))
                     .frame(width: 48)
 
                 Text(title)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(deepBlue)
+                    .foregroundStyle(Color.deepBlue)
 
                 Spacer()
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title3)
-                        .foregroundStyle(accent)
+                        .foregroundStyle(Color.warmOrange)
                         .transition(.scale.combined(with: .opacity))
                 }
             }
@@ -118,11 +114,11 @@ struct ExperienceStepView: View {
             .frame(height: 120)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? accent.opacity(0.08) : Color(.systemGray6))
+                    .fill(isSelected ? Color.warmOrange.opacity(0.08) : Color(.systemGray6))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? accent : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.warmOrange : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)

@@ -10,10 +10,6 @@ struct NotificationStepView: View {
     let onEnable: () -> Void
     let onSkip: () -> Void
 
-    // Design tokens
-    private let deepBlue = Color(hex: "1E3A5F")
-    private let accent = Color(hex: "FF6B35")
-
     // Internal time binding
     private var reminderDate: Binding<Date> {
         Binding<Date>(
@@ -38,7 +34,7 @@ struct NotificationStepView: View {
             // Bell icon
             Image(systemName: "bell.badge.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(accent)
+                .foregroundStyle(Color.warmOrange)
                 .symbolRenderingMode(.hierarchical)
                 .padding(.bottom, 24)
 
@@ -47,7 +43,7 @@ struct NotificationStepView: View {
                          defaultValue: "매일 학습 리마인더를 받으시겠어요?"))
                 // EN: Want daily study reminders?
                 .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(deepBlue)
+                .foregroundStyle(Color.deepBlue)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
@@ -93,7 +89,7 @@ struct NotificationStepView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(accent)
+                        .background(Color.warmOrange)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 extension Color {
     init(hex: String) {
@@ -25,6 +26,26 @@ extension Color {
         )
     }
 
-    static let deepBlue = Color(hex: "1E3A5F")
-    static let warmOrange = Color(hex: "FF6B35")
+    // Dynamic colors that adapt to light/dark mode
+    static let deepBlue = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.45, green: 0.65, blue: 0.95, alpha: 1.0)   // lighter blue for dark bg
+            : UIColor(red: 0.118, green: 0.227, blue: 0.373, alpha: 1.0) // #1E3A5F
+    })
+
+    static let warmOrange = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 1.0, green: 0.5, blue: 0.25, alpha: 1.0)     // slightly brighter for dark bg
+            : UIColor(red: 1.0, green: 0.420, blue: 0.208, alpha: 1.0)  // #FF6B35
+    })
+
+    // For user message bubbles — keep deep blue even in dark mode (it's on a colored bg, not the app bg)
+    static let userBubbleColor = Color(hex: "1E3A5F")  // static, doesn't change
+
+    // For concept cards, onboarding cards — need subtle background that works in both modes
+    static let cardBackground = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor.secondarySystemBackground
+            : UIColor.secondarySystemBackground
+    })
 }

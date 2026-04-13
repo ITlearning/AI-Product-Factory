@@ -8,10 +8,6 @@ struct SwiftLevelStepView: View {
     let onSelect: (SwiftLevel) -> Void
     let onNext: () -> Void
 
-    // Design tokens
-    private let deepBlue = Color(hex: "1E3A5F")
-    private let accent = Color(hex: "FF6B35")
-
     private var levelData: [(SwiftLevel, String, String, String)] {
         [
             // (level, title, description, SF Symbol)
@@ -55,7 +51,7 @@ struct SwiftLevelStepView: View {
                          defaultValue: "Swift 경험은 어느 정도인가요?"))
                 // EN: How much Swift experience do you have?
                 .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(deepBlue)
+                .foregroundStyle(Color.deepBlue)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
@@ -89,7 +85,7 @@ struct SwiftLevelStepView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(selection != nil ? accent : Color.gray.opacity(0.3))
+                    .background(selection != nil ? Color.warmOrange : Color.gray.opacity(0.3))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
             }
             .disabled(selection == nil)
@@ -114,13 +110,13 @@ struct SwiftLevelStepView: View {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
-                    .foregroundStyle(isSelected ? accent : deepBlue.opacity(0.6))
+                    .foregroundStyle(isSelected ? Color.warmOrange : Color.deepBlue.opacity(0.6))
                     .frame(width: 40)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
-                        .foregroundStyle(deepBlue)
+                        .foregroundStyle(Color.deepBlue)
 
                     Text(description)
                         .font(.subheadline)
@@ -133,7 +129,7 @@ struct SwiftLevelStepView: View {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title3)
-                        .foregroundStyle(accent)
+                        .foregroundStyle(Color.warmOrange)
                         .transition(.scale.combined(with: .opacity))
                 }
             }
@@ -142,11 +138,11 @@ struct SwiftLevelStepView: View {
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(isSelected ? accent.opacity(0.08) : Color(.systemGray6))
+                    .fill(isSelected ? Color.warmOrange.opacity(0.08) : Color(.systemGray6))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(isSelected ? accent : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.warmOrange : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)

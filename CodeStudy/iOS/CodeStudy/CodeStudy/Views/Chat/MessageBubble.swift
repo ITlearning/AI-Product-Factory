@@ -4,7 +4,7 @@ struct MessageBubble: View {
     let message: ChatMessageUI
 
     // Design tokens
-    private let userBubbleColor = Color(hex: "1E3A5F")
+    private let userBubbleColor = Color.userBubbleColor
     private let aiBubbleColor = Color(.systemGray6)
     private let maxWidthFraction: CGFloat = 0.80
     private let cornerRadius: CGFloat = 16

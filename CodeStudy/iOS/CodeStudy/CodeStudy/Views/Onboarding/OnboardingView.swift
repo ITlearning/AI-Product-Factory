@@ -8,9 +8,6 @@ struct OnboardingView: View {
     @State private var viewModel: OnboardingViewModel
     @Environment(\.modelContext) private var modelContext
 
-    // Design tokens
-    private let deepBlue = Color(hex: "1E3A5F")
-
     init(modelContext: ModelContext) {
         _viewModel = State(initialValue: OnboardingViewModel(modelContext: modelContext))
     }

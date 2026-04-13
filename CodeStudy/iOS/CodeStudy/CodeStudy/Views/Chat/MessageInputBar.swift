@@ -13,7 +13,7 @@ struct MessageInputBar: View {
     // Controlled by the parent so AI responses can auto-toggle it.
 
     // Design tokens
-    private let accentColor = Color(hex: "FF6B35")
+    private let accentColor = Color.warmOrange
     private let codeBgColor = Color(red: 0.117, green: 0.117, blue: 0.137)
     private let sendButtonSize: CGFloat = 36
     private let toggleButtonSize: CGFloat = 36

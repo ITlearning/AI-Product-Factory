@@ -13,8 +13,8 @@ struct SessionCompleteView: View {
     @State private var showShareSheet = false
 
     // Design tokens
-    private let accentColor = Color(hex: "FF6B35")
-    private let deepBlue = Color(hex: "1E3A5F")
+    private let accentColor = Color.warmOrange
+    private let deepBlue = Color.deepBlue
 
     var body: some View {
         ZStack {

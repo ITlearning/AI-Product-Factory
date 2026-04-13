@@ -8,9 +8,9 @@ struct ShareCardView: View {
     let streakCount: Int
     let date: Date
 
-    private let deepBlue = Color(hex: "1E3A5F")
+    private let deepBlue = Color.deepBlue
     private let deepBlueDark = Color(hex: "0F2440")
-    private let accentOrange = Color(hex: "FF6B35")
+    private let accentOrange = Color.warmOrange
 
     private var formattedDate: String {
         let formatter = DateFormatter()
