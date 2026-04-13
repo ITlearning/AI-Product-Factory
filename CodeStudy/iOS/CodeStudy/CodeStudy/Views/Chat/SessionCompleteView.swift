@@ -16,22 +16,18 @@ struct SessionCompleteView: View {
     private let accentColor = Color.warmOrange
     private let deepBlue = Color.deepBlue
 
-    @State private var confettiBursts: [ConfettiBurst] = []
-
-    struct ConfettiBurst: Identifiable {
-        let id = UUID()
-        let x: CGFloat
-        let y: CGFloat
-    }
+    /// Changing this ID re-creates the ConfettiView, triggering a new burst.
+    /// This is the easter egg: tap the background → new confetti explosion.
+    @State private var confettiID = UUID()
 
     var body: some View {
         ZStack {
-            // Background tap area for easter egg confetti
-            // (behind everything, so buttons stay tappable)
+            // Background tap area for easter egg (behind buttons)
             Color.clear
                 .contentShape(Rectangle())
-                .onTapGesture { location in
-                    confettiBursts.append(ConfettiBurst(x: location.x, y: location.y))
+                .onTapGesture {
+                    // Change ID → SwiftUI destroys + recreates ConfettiView → onAppear fires → new burst
+                    confettiID = UUID()
                 }
 
             VStack(spacing: 28) {
@@ -51,22 +47,15 @@ struct SessionCompleteView: View {
 
                 Spacer()
 
-                // Action buttons (must be ABOVE the clear background to receive taps)
+                // Action buttons (above background, receive taps normally)
                 buttonSection
             }
             .padding(24)
 
-            // Celebration particles — passthrough (doesn't block taps)
+            // Confetti layer — passthrough, doesn't block taps
             if isMastered {
-                ConfettiView(particleCount: 120, duration: 3.0)
-                    .allowsHitTesting(false)
-                    .ignoresSafeArea()
-            }
-
-            // Easter egg bursts from tap locations
-            ForEach(confettiBursts) { burst in
-                ConfettiView(particleCount: 40, duration: 2.0)
-                    .allowsHitTesting(false)
+                ConfettiView(particleCount: 100, duration: 3.0)
+                    .id(confettiID)  // Easter egg: new ID = new burst
                     .ignoresSafeArea()
             }
         }
