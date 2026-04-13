@@ -90,11 +90,16 @@ struct ShareCardView: View {
 
                 Spacer()
 
-                // Watermark
-                Text("CodeStudy — AI Swift Tutor")
-                    .font(.system(size: 24, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.3))
-                    .padding(.bottom, 48)
+                // App promo + watermark
+                VStack(spacing: 8) {
+                    Text("나도 AI로 Swift 공부하기")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.7))
+                    Text("CodeStudy — 무료 다운로드")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                .padding(.bottom, 48)
             }
         }
         .frame(width: 1080, height: 1080)

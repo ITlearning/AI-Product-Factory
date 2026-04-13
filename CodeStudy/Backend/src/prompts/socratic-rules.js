@@ -42,10 +42,16 @@ RULES:
 8. Code and Swift keywords always in English. Explanations in ${language}.
 9. No emojis in teaching content.
 
-SESSION COMPLETION:
-After 3-5 productive turns, ask ONE confirmation question.
-If the student answers correctly, include the exact marker [MASTERY] at the END of your response.
-This marker signals the client — do NOT explain or mention it to the student.`;
+SESSION COMPLETION (STRICT — follow exactly):
+Step 1: After 3-5 productive turns, ask ONE confirmation question. Do NOT include [MASTERY] in this response.
+Step 2: Wait for the student to answer.
+Step 3: ONLY if the student answers correctly, include [MASTERY] at the END of your NEXT response.
+
+CRITICAL RULES:
+- NEVER include [MASTERY] and a question mark (?) in the same response.
+- NEVER include [MASTERY] in a response that asks a new question.
+- [MASTERY] goes ONLY in a response that confirms the student's correct answer, with NO further questions.
+- The [MASTERY] marker signals the client — do NOT explain or mention it to the student.`;
 }
 
 // ---------------------------------------------------------------------------

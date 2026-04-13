@@ -226,12 +226,16 @@ final class ChatViewModel {
             // 6. Check for mastery marker + strip from displayed text
             var finalMessages = messages
             finalMessages[assistantIndex].isStreaming = false
-            let mastered = finalMessages[assistantIndex].content.contains("[MASTERY]")
-            if mastered {
-                finalMessages[assistantIndex].content = finalMessages[assistantIndex].content
+            // Always strip [MASTERY] from displayed text
+            let content = finalMessages[assistantIndex].content
+            let hasMastery = content.contains("[MASTERY]")
+            if hasMastery {
+                finalMessages[assistantIndex].content = content
                     .replacingOccurrences(of: "[MASTERY]", with: "")
                     .trimmingCharacters(in: .whitespacesAndNewlines)
             }
+            // [MASTERY] + question mark = AI is still asking → don't end session yet
+            let mastered = hasMastery && !content.contains("?")
             messages = finalMessages
             isStreaming = false
             turnCount += 1
@@ -321,12 +325,16 @@ final class ChatViewModel {
 
             var finalMessages = messages
             finalMessages[assistantIndex].isStreaming = false
-            let mastered = finalMessages[assistantIndex].content.contains("[MASTERY]")
-            if mastered {
-                finalMessages[assistantIndex].content = finalMessages[assistantIndex].content
+            // Always strip [MASTERY] from displayed text
+            let content = finalMessages[assistantIndex].content
+            let hasMastery = content.contains("[MASTERY]")
+            if hasMastery {
+                finalMessages[assistantIndex].content = content
                     .replacingOccurrences(of: "[MASTERY]", with: "")
                     .trimmingCharacters(in: .whitespacesAndNewlines)
             }
+            // [MASTERY] + question mark = AI is still asking → don't end session yet
+            let mastered = hasMastery && !content.contains("?")
             messages = finalMessages
             isStreaming = false
             turnCount += 1

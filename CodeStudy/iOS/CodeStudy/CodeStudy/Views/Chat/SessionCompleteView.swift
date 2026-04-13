@@ -16,20 +16,8 @@ struct SessionCompleteView: View {
     private let accentColor = Color.warmOrange
     private let deepBlue = Color.deepBlue
 
-    /// Changing this ID re-creates the ConfettiView, triggering a new burst.
-    /// This is the easter egg: tap the background → new confetti explosion.
-    @State private var confettiID = UUID()
-
     var body: some View {
         ZStack {
-            // Background tap area for easter egg (behind buttons)
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    // Change ID → SwiftUI destroys + recreates ConfettiView → onAppear fires → new burst
-                    confettiID = UUID()
-                }
-
             VStack(spacing: 28) {
                 Spacer()
 
@@ -47,15 +35,15 @@ struct SessionCompleteView: View {
 
                 Spacer()
 
-                // Action buttons (above background, receive taps normally)
+                // Action buttons
                 buttonSection
             }
             .padding(24)
 
-            // Confetti layer — passthrough, doesn't block taps
+            // Confetti — auto plays on sheet appear, no interaction needed
             if isMastered {
                 ConfettiView(particleCount: 100, duration: 3.0)
-                    .id(confettiID)  // Easter egg: new ID = new burst
+                    .allowsHitTesting(false)
                     .ignoresSafeArea()
             }
         }
