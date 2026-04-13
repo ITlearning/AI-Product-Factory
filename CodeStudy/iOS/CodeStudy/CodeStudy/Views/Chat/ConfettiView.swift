@@ -2,6 +2,10 @@ import SwiftUI
 
 /// Lightweight confetti particle animation for celebration moments.
 /// Zero dependencies — pure SwiftUI Canvas + TimelineView.
+///
+/// Supports multiple bursts: call `burst(at:)` to fire confetti from a
+/// specific screen position. Each burst is independent and fades out after
+/// `duration` seconds. The initial burst fires automatically on appear.
 struct ConfettiView: View {
     let particleCount: Int
     let duration: Double
@@ -11,39 +15,94 @@ struct ConfettiView: View {
         self.duration = duration
     }
 
-    @State private var particles: [Particle] = []
-    @State private var startTime: Date = .now
+    /// Each burst has its own particles and start time so multiple can
+    /// run simultaneously.
+    struct Burst: Identifiable {
+        let id = UUID()
+        let particles: [Particle]
+        let startTime: Date
+        /// Normalized origin (0...1) where the confetti erupts from.
+        let originX: Double
+        let originY: Double
+    }
+
+    @State private var bursts: [Burst] = []
 
     var body: some View {
         TimelineView(.animation) { context in
             Canvas { ctx, size in
-                let elapsed = context.date.timeIntervalSince(startTime)
-                guard elapsed < duration else { return }
-                let progress = elapsed / duration
+                // Draw all active bursts
+                for burst in bursts {
+                    let elapsed = context.date.timeIntervalSince(burst.startTime)
+                    guard elapsed < duration else { continue }
+                    let progress = elapsed / duration
 
-                for particle in particles {
-                    draw(particle: particle, progress: progress, in: ctx, size: size)
+                    for particle in burst.particles {
+                        draw(
+                            particle: particle,
+                            progress: progress,
+                            origin: CGPoint(x: burst.originX * size.width,
+                                            y: burst.originY * size.height),
+                            in: ctx,
+                            size: size
+                        )
+                    }
                 }
             }
         }
-        .allowsHitTesting(false)
+        // Easter egg: tap anywhere to fire another burst 🎉
+        .contentShape(Rectangle())
+        .onTapGesture { location in
+            // We don't get the Canvas's size here, so use UIScreen as proxy.
+            let screenWidth = UIScreen.main.bounds.width
+            let screenHeight = UIScreen.main.bounds.height
+            let normX = location.x / screenWidth
+            let normY = location.y / screenHeight
+            addBurst(originX: normX, originY: normY)
+        }
         .onAppear {
-            particles = (0..<particleCount).map { _ in Particle.random() }
-            startTime = .now
+            // Initial celebration burst from center
+            addBurst(originX: 0.5, originY: 0.45)
+        }
+    }
+
+    // MARK: - Public
+
+    /// Fire a new confetti burst at the given normalized coordinates.
+    private func addBurst(originX: Double, originY: Double) {
+        let newParticles = (0..<particleCount).map { _ in
+            Particle.random(originX: originX, originY: originY)
+        }
+        let burst = Burst(
+            particles: newParticles,
+            startTime: .now,
+            originX: originX,
+            originY: originY
+        )
+        bursts.append(burst)
+
+        // Cleanup old finished bursts after they expire to save memory
+        let dur = duration
+        DispatchQueue.main.asyncAfter(deadline: .now() + dur + 0.5) {
+            bursts.removeAll { Date().timeIntervalSince($0.startTime) > dur }
         }
     }
 
     // MARK: - Drawing
 
-    private func draw(particle: Particle, progress: Double, in ctx: GraphicsContext, size: CGSize) {
-        // Parabolic trajectory: up + gravity
+    private func draw(
+        particle: Particle,
+        progress: Double,
+        origin: CGPoint,
+        in ctx: GraphicsContext,
+        size: CGSize
+    ) {
         let t = progress
-        let x = particle.startX * size.width + particle.velocityX * t * 400
-        let y = particle.startY * size.height
+        let x = origin.x + particle.velocityX * t * 400
+        let y = origin.y
             + particle.velocityY * t * 400
             + 0.5 * 800 * t * t  // gravity
 
-        // Fade out near the end
         let opacity = 1.0 - max(0, (t - 0.7) / 0.3)
 
         let rect = CGRect(
@@ -67,17 +126,15 @@ struct ConfettiView: View {
 
     // MARK: - Particle model
 
-    private struct Particle {
-        let startX: Double      // 0...1 (fraction of width)
-        let startY: Double      // 0...1
-        let velocityX: Double   // -1...1
-        let velocityY: Double   // negative = up
+    struct Particle {
+        let velocityX: Double
+        let velocityY: Double
         let size: Double
         let rotation: Double
         let rotationSpeed: Double
         let color: Color
 
-        static func random() -> Particle {
+        static func random(originX: Double = 0.5, originY: Double = 0.5) -> Particle {
             let palette: [Color] = [
                 Color(red: 0.988, green: 0.420, blue: 0.208),  // orange
                 Color(red: 0.118, green: 0.227, blue: 0.373),  // deep blue
@@ -86,10 +143,8 @@ struct ConfettiView: View {
                 Color(red: 0.922, green: 0.341, blue: 0.522),  // pink
             ]
             return Particle(
-                startX: Double.random(in: 0.3...0.7),
-                startY: Double.random(in: 0.4...0.6),
-                velocityX: Double.random(in: -1.0...1.0),
-                velocityY: Double.random(in: -2.0...(-0.8)),
+                velocityX: Double.random(in: -1.2...1.2),
+                velocityY: Double.random(in: -2.2...(-0.6)),
                 size: Double.random(in: 6...12),
                 rotation: Double.random(in: 0...360),
                 rotationSpeed: Double.random(in: 1...3),
@@ -104,6 +159,7 @@ struct ConfettiView: View {
         Color.black.opacity(0.05)
         VStack {
             Text("🎉 마스터!").font(.largeTitle.bold())
+            Text("아무 곳이나 터치해보세요").font(.caption).foregroundStyle(.secondary)
         }
         ConfettiView()
     }

@@ -50,13 +50,9 @@ struct ChatView: View {
                 print("[ChatView] .task fired, messages count: \(viewModel.messages.count)")
                 await viewModel.handle(.startInitialMessage)
             }
-            .onChange(of: viewModel.sessionState) { _, newState in
-                // Auto-show celebration sheet on mastery.
-                // Manual completion from back button handles its own dismiss.
-                if newState == .mastered {
-                    showCompletionSheet = true
-                }
-            }
+            // Mastery sheet is triggered by the "학습 결과 보기" button in
+            // bottomInputArea, NOT automatically. This lets the user read the
+            // AI's final congratulatory message before the sheet covers it.
             // Auto-toggle code mode when AI asks for code
             .onChange(of: viewModel.isStreaming) { _, streaming in
                 // Only check when streaming just ended (AI finished responding)
@@ -154,13 +150,34 @@ struct ChatView: View {
                 }
             }
 
-            if !viewModel.isStreaming && viewModel.sessionState == .active {
-                ActionButtonBar { hint in
-                    Task { await viewModel.handle(.sendAction(hint)) }
+            if viewModel.sessionState == .mastered {
+                // Duolingo-style "continue" button — replaces input bar after mastery.
+                // User reads the AI's final message, then taps when ready.
+                Button {
+                    showCompletionSheet = true
+                } label: {
+                    HStack {
+                        Image(systemName: "party.popper.fill")
+                        Text(String(localized: "chat.viewResults", defaultValue: "학습 결과 보기"))
+                            .fontWeight(.semibold)
+                    }
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.warmOrange)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-            }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            } else if viewModel.sessionState == .active {
+                // Normal input area
+                if !viewModel.isStreaming {
+                    ActionButtonBar { hint in
+                        Task { await viewModel.handle(.sendAction(hint)) }
+                    }
+                }
 
-            if viewModel.sessionState == .active {
                 MessageInputBar(
                     text: $inputText,
                     isStreaming: viewModel.isStreaming,
@@ -170,7 +187,6 @@ struct ChatView: View {
                     let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !text.isEmpty else { return }
                     inputText = ""
-                    // Turn off code mode after sending so the user isn't stuck in it
                     let wasCodeMode = isCodeMode
                     Task { await viewModel.handle(.sendMessage(text)) }
                     if wasCodeMode {
