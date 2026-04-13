@@ -338,13 +338,15 @@ final class ChatViewModel {
             }
 
         } catch let serviceError as AIServiceError {
-            messages[assistantIndex].isStreaming = false
+            var updatedMessages = messages
+            updatedMessages[assistantIndex].isStreaming = false
+            if updatedMessages[assistantIndex].content.isEmpty {
+                updatedMessages.remove(at: assistantIndex)
+            }
+            messages = updatedMessages
             isStreaming = false
             error = serviceError
             sessionState = .error
-            if messages[assistantIndex].content.isEmpty {
-                messages.remove(at: assistantIndex)
-            }
         } catch {
             var updatedMessages = messages
             updatedMessages[assistantIndex].isStreaming = false
@@ -381,7 +383,7 @@ final class ChatViewModel {
         do {
             try modelContext.save()
         } catch {
-            self.error = .streamingFailed
+            self.error = .saveFailed
         }
     }
 

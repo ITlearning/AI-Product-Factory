@@ -73,8 +73,9 @@ struct StreakTimelineProvider: @MainActor TimelineProvider {
             isStudiedToday = false
         }
 
-        // Fetch the most recently studied concept
+        // Fetch the most recently studied concept (exclude never-studied ones)
         var conceptDescriptor = FetchDescriptor<ConceptProgress>(
+            predicate: #Predicate<ConceptProgress> { $0.lastStudiedAt != nil },
             sortBy: [SortDescriptor(\.lastStudiedAt, order: .reverse)]
         )
         conceptDescriptor.fetchLimit = 1

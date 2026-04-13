@@ -92,11 +92,24 @@ enum SwiftAutoIndent {
         guard prevLine.allSatisfy({ $0 == " " || $0 == "\t" }) else {
             return CloseBraceResult(deleteBefore: 0, insertion: "}")
         }
-        let leadingCount = prevLine.count
-        guard leadingCount >= indentUnit else {
+        // Use visual indent width (tabs count as indentUnit spaces)
+        let visualIndent = leadingSpaces(in: prevLine)
+        guard visualIndent >= indentUnit else {
             return CloseBraceResult(deleteBefore: 0, insertion: "}")
         }
-        return CloseBraceResult(deleteBefore: indentUnit, insertion: "}")
+        // Walk backward to find how many CHARACTERS make up one indentUnit of visual width
+        var columnsToRemove = indentUnit
+        var charsToDelete = 0
+        for c in prevLine.reversed() where columnsToRemove > 0 {
+            if c == " " {
+                columnsToRemove -= 1
+                charsToDelete += 1
+            } else if c == "\t" {
+                columnsToRemove -= indentUnit
+                charsToDelete += 1
+            }
+        }
+        return CloseBraceResult(deleteBefore: charsToDelete, insertion: "}")
     }
 
     // MARK: - Auto-pairing: ( [ { "

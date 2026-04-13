@@ -46,6 +46,7 @@ enum AIServiceError: LocalizedError {
     case sessionTurnLimitExceeded
     case streamingFailed
     case invalidResponse
+    case saveFailed
 
     var errorDescription: String? {
         switch self {
@@ -63,6 +64,8 @@ enum AIServiceError: LocalizedError {
             return String(localized: "응답을 받는 중 오류가 발생했습니다")
         case .invalidResponse:
             return String(localized: "잘못된 응답입니다")
+        case .saveFailed:
+            return String(localized: "학습 데이터 저장에 실패했습니다")
         }
     }
 }
