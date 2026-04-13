@@ -11,10 +11,12 @@ struct CodeStudyApp: App {
             ConceptProgress.self,
             DailyStreak.self,
         ])
+        // App Group removed for MVP — widget data sharing will be added
+        // in v0.4 when the App Group ID is registered in Apple Developer Portal.
+        // groupContainer: .identifier("group.com.itlearning.codestudy")
         let modelConfiguration = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: false,
-            groupContainer: .identifier("group.com.itlearning.codestudy") // App Group for WidgetKit
+            isStoredInMemoryOnly: false
         )
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])

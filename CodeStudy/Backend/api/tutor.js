@@ -84,17 +84,28 @@ export async function POST(req) {
   const bundleId = req.headers.get('x-app-bundle-id') || '';
   if (!CONFIG.ALLOWED_BUNDLE_IDS.includes(bundleId)) {
     return new Response(JSON.stringify({ error: 'Unauthorized client' }), {
-      status: 400,
+      status: 403,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // Build system prompt
-  const systemPrompt = buildSystemPrompt(
-    conceptId,
-    userProfile.level,
-    userProfile.language,
-  );
+  // Build system prompt — can throw if conceptId is not in curriculum
+  let systemPrompt;
+  try {
+    systemPrompt = buildSystemPrompt(
+      conceptId,
+      userProfile.level,
+      userProfile.language,
+    );
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: 'Invalid concept', detail: err.message }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  }
 
   // Handle the initial-message trigger: iOS sends "__START__" as the first
   // (and only) user message when ChatView appears. Replace it with an
@@ -115,10 +126,15 @@ export async function POST(req) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
+        const modelByProvider = {
+          openrouter: CONFIG.OPENROUTER_MODEL,
+          claude: CONFIG.CLAUDE_MODEL,
+          gemini: CONFIG.GEMINI_MODEL,
+        };
         for await (const chunk of streamChat(effectiveMessages, systemPrompt, {
           provider,
           apiKey,
-          model: CONFIG.OPENROUTER_MODEL,
+          model: modelByProvider[provider],
         })) {
           fullText += chunk;
           // Strip [MASTERY] from displayed text

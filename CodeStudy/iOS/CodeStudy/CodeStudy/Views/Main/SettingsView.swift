@@ -112,7 +112,7 @@ struct SettingsView: View {
                 HStack {
                     Text(String(localized: "settings.credits", defaultValue: "만든 사람"))
                     Spacer()
-                    Text("Built with AI by Tabber")
+                    Text("Tabber")
                         .foregroundStyle(.secondary)
                         .font(.footnote)
                 }

@@ -32,6 +32,7 @@ final class ChatViewModel {
         case sendMessage(String)
         case sendAction(ActionHint)
         case completeManually
+        case abandon    // 중도 포기 — 스트릭/진행 카운트 안 됨
         case retry
         case dismissError
     }
@@ -98,6 +99,8 @@ final class ChatViewModel {
             await sendActionMessage(hint)
         case .completeManually:
             await completeSession(type: .manual)
+        case .abandon:
+            await completeSession(type: .abandoned)
         case .retry:
             error = nil
             if let lastUserMsg = messages.last(where: { $0.role == .user }) {
@@ -252,13 +255,15 @@ final class ChatViewModel {
                 messages.remove(at: assistantIndex)
             }
         } catch {
-            messages[assistantIndex].isStreaming = false
+            var updatedMessages = messages
+            updatedMessages[assistantIndex].isStreaming = false
+            if updatedMessages[assistantIndex].content.isEmpty {
+                updatedMessages.remove(at: assistantIndex)
+            }
+            messages = updatedMessages
             isStreaming = false
             self.error = .streamingFailed
             sessionState = .error
-            if messages[assistantIndex].content.isEmpty {
-                messages.remove(at: assistantIndex)
-            }
         }
     }
 
@@ -341,13 +346,15 @@ final class ChatViewModel {
                 messages.remove(at: assistantIndex)
             }
         } catch {
-            messages[assistantIndex].isStreaming = false
+            var updatedMessages = messages
+            updatedMessages[assistantIndex].isStreaming = false
+            if updatedMessages[assistantIndex].content.isEmpty {
+                updatedMessages.remove(at: assistantIndex)
+            }
+            messages = updatedMessages
             isStreaming = false
             self.error = .streamingFailed
             sessionState = .error
-            if messages[assistantIndex].content.isEmpty {
-                messages.remove(at: assistantIndex)
-            }
         }
     }
 
@@ -359,12 +366,13 @@ final class ChatViewModel {
         case .mastered:
             sessionState = .mastered
             updateConceptProgress(mastered: true)
-            updateStreak()
+            updateStreak()  // 마스터리만 스트릭 카운트
         case .manual:
             sessionState = .manualComplete
             updateConceptProgress(mastered: false)
-            updateStreak()
+            // 수동 완료는 스트릭 카운트 안 함 (마스터리만 카운트 규칙)
         case .abandoned:
+            // 중도 포기 — 스트릭도 진행도 업데이트 안 함
             break
         }
 

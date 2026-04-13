@@ -81,7 +81,7 @@ struct ChatView: View {
                 Button(String(localized: "chat.exit.leave", defaultValue: "나가기"),
                        role: .destructive) {
                     Task {
-                        await viewModel.handle(.completeManually)
+                        await viewModel.handle(.abandon)
                         dismiss()
                     }
                 }
