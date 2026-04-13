@@ -22,6 +22,12 @@ git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.cl
 - AskUserQuestion의 질문, 옵션 레이블, 설명 모두 실제 한국어 화자가 쓰는 표현으로 작성한다.
 - 번역 투의 어색한 문장 (예: "데이터가 달라질어요", "앉을 벴들때") 은 금지한다.
 
+## 멀티 에이전트 병렬 실행 원칙
+
+- N개의 독립 작업(탐색, 기획, 검색, 리뷰 등)이 있으면 **무조건 멀티 에이전트 병렬 실행**을 시도한다.
+- 단일 에이전트는 이전 결과에 의존하는 순차 작업에만 사용한다.
+- 하나의 메시지에 여러 Agent 도구 호출을 포함해서 병렬로 보낸다.
+
 ## Skill routing
 
 When the user's request matches an available skill, ALWAYS invoke it using the Skill

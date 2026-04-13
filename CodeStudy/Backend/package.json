@@ -1,0 +1,11 @@
+{
+  "name": "codestudy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node scripts/check-syntax.mjs",
+    "test": "node --test tests/*.test.js",
+    "verify": "npm run lint && npm test"
+  }
+}
