@@ -16,8 +16,24 @@ struct SessionCompleteView: View {
     private let accentColor = Color.warmOrange
     private let deepBlue = Color.deepBlue
 
+    @State private var confettiBursts: [ConfettiBurst] = []
+
+    struct ConfettiBurst: Identifiable {
+        let id = UUID()
+        let x: CGFloat
+        let y: CGFloat
+    }
+
     var body: some View {
         ZStack {
+            // Background tap area for easter egg confetti
+            // (behind everything, so buttons stay tappable)
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { location in
+                    confettiBursts.append(ConfettiBurst(x: location.x, y: location.y))
+                }
+
             VStack(spacing: 28) {
                 Spacer()
 
@@ -35,14 +51,22 @@ struct SessionCompleteView: View {
 
                 Spacer()
 
-                // Action buttons
+                // Action buttons (must be ABOVE the clear background to receive taps)
                 buttonSection
             }
             .padding(24)
 
-            // Celebration particles on mastery
+            // Celebration particles — passthrough (doesn't block taps)
             if isMastered {
                 ConfettiView(particleCount: 120, duration: 3.0)
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
+            }
+
+            // Easter egg bursts from tap locations
+            ForEach(confettiBursts) { burst in
+                ConfettiView(particleCount: 40, duration: 2.0)
+                    .allowsHitTesting(false)
                     .ignoresSafeArea()
             }
         }

@@ -50,16 +50,7 @@ struct ConfettiView: View {
                 }
             }
         }
-        // Easter egg: tap anywhere to fire another burst 🎉
-        .contentShape(Rectangle())
-        .onTapGesture { location in
-            // We don't get the Canvas's size here, so use UIScreen as proxy.
-            let screenWidth = UIScreen.main.bounds.width
-            let screenHeight = UIScreen.main.bounds.height
-            let normX = location.x / screenWidth
-            let normY = location.y / screenHeight
-            addBurst(originX: normX, originY: normY)
-        }
+        .allowsHitTesting(false)
         .onAppear {
             // Initial celebration burst from center
             addBurst(originX: 0.5, originY: 0.45)
