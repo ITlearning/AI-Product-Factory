@@ -171,14 +171,26 @@ final class ChatViewModel {
             isStreaming = false
 
             persistMessages()
+        } catch is CancellationError {
+            // View가 사라져서 .task가 취소된 경우 — 조용히 정리만.
+            // 앱이 복귀하면 .task가 다시 실행되지만 guard(messages.isEmpty)로 early return.
+            print("[ChatVM] initial message cancelled")
+            if messages.last?.isStreaming == true {
+                messages.removeLast()
+            }
+            isStreaming = false
         } catch let serviceError as AIServiceError {
             print("[ChatVM] AIServiceError: \(serviceError.localizedDescription)")
-            messages.removeLast()
+            if messages.last?.isStreaming == true {
+                messages.removeLast()
+            }
             isStreaming = false
             self.error = serviceError
         } catch {
             print("[ChatVM] unknown error: \(error)")
-            messages.removeLast()
+            if messages.last?.isStreaming == true {
+                messages.removeLast()
+            }
             isStreaming = false
             self.error = .invalidResponse
         }
@@ -247,6 +259,19 @@ final class ChatViewModel {
                 await completeSession(type: .mastered)
             }
 
+        } catch is CancellationError {
+            // 잠금화면/백그라운드 전환으로 View의 .task가 취소된 경우.
+            // state를 .error로 바꾸면 bottomInputArea의 guard가 false가 되어
+            // 복귀 시 입력창이 사라짐. 여기서는 조용히 placeholder만 정리.
+            var updatedMessages = messages
+            if updatedMessages.indices.contains(assistantIndex),
+               updatedMessages[assistantIndex].content.isEmpty {
+                updatedMessages.remove(at: assistantIndex)
+            } else if updatedMessages.indices.contains(assistantIndex) {
+                updatedMessages[assistantIndex].isStreaming = false
+            }
+            messages = updatedMessages
+            isStreaming = false
         } catch let serviceError as AIServiceError {
             var updatedMessages = messages
             updatedMessages[assistantIndex].isStreaming = false
@@ -408,6 +433,7 @@ final class ChatViewModel {
         return ConversationContext(
             conceptID: session.conceptID,
             conceptTitle: session.conceptTitle,
+            sessionId: session.id.uuidString,
             userProfile: profileSnapshot,
             previousMessages: previousMessages,
             actionHint: actionHint

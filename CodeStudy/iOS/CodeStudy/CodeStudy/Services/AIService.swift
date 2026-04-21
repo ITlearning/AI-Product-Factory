@@ -14,6 +14,10 @@ protocol AIService: Sendable {
 struct ConversationContext: Sendable {
     let conceptID: String
     let conceptTitle: String
+    /// 한 StudySession 동안 고정되는 ID. 서버 로깅에서 동일 세션 내 turn들을
+    /// 묶기 위해 사용. 기존에는 APIProvider가 매 요청마다 새 UUID를 발급해서
+    /// 턴들이 같은 세션으로 묶이지 않는 버그가 있었음.
+    let sessionId: String
     let userProfile: UserProfileSnapshot
     let previousMessages: [MessageSnapshot]
     let actionHint: ActionHint?

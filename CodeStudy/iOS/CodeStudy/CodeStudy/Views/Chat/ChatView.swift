@@ -107,7 +107,13 @@ struct ChatView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 8)
+                // 메시지 사이 여백·빈 공간 탭도 hit-test로 잡아서 키보드 dismiss
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    isInputFocused = false
+                }
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.messages.count) {
                 scrollToBottom(proxy: proxy)
             }

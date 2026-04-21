@@ -3,6 +3,8 @@ import SwiftUI
 struct CalendarHeatmapView: View {
     let studyData: [Date: ProgressViewModel.StudyDay]
 
+    @Environment(\.colorScheme) private var colorScheme
+
     private let weeksToShow = 15
     private let cellSize: CGFloat = 12
     private let cellSpacing: CGFloat = 3
@@ -161,7 +163,7 @@ struct CalendarHeatmapView: View {
 
             ForEach([0.0, 0.25, 0.5, 0.75, 1.0], id: \.self) { intensity in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(intensity == 0 ? Color(.systemGray6) : Color.green.opacity(0.2 + intensity * 0.6))
+                    .fill(intensity == 0 ? emptyCellColor : Color.green.opacity(0.2 + intensity * 0.6))
                     .frame(width: cellSize, height: cellSize)
             }
 
@@ -174,10 +176,17 @@ struct CalendarHeatmapView: View {
 
     // MARK: - Color Logic
 
+    /// 비어있는 잔디 칸 색.
+    /// 다크모드에서 systemGray6(#1C1C1E)은 배경과 거의 구분되지 않음 →
+    /// 다크모드는 systemGray4로 한 단계 밝게.
+    private var emptyCellColor: Color {
+        colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray6)
+    }
+
     private func colorForDay(_ date: Date) -> Color {
         let day = calendar.startOfDay(for: date)
         guard let info = studyData[day] else {
-            return Color(.systemGray6)
+            return emptyCellColor
         }
         if info.hasMastery {
             return Color.green.opacity(0.85)

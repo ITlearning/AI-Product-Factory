@@ -3,6 +3,7 @@ import { validateTutorRequest } from '../src/validation.js';
 import { checkRateLimit } from '../src/rate-limiter.js';
 import { buildSystemPrompt } from '../src/prompts/socratic-rules.js';
 import { streamChat } from '../src/llm/provider.js';
+import { logConversation } from '../src/logger.js';
 
 /**
  * POST /api/tutor — Socratic tutor chat endpoint.
@@ -67,7 +68,7 @@ export async function POST(req) {
     });
   }
 
-  const { messages, conceptId, userProfile } = body;
+  const { messages, conceptId, userProfile, sessionId: bodySessionId } = body;
 
   // Turn limit: 40 messages = 20 pairs
   if (messages && messages.length > 40) {
@@ -88,6 +89,11 @@ export async function POST(req) {
       headers: { 'Content-Type': 'application/json' },
     });
   }
+
+  // 로깅용 식별자. 헤더 → body → 'unknown' 순으로 fallback.
+  const userId = req.headers.get('x-codestudy-userid') || 'unknown';
+  const sessionId =
+    req.headers.get('x-codestudy-sessionid') || bodySessionId || 'unknown';
 
   // Build system prompt — can throw if conceptId is not in curriculum
   let systemPrompt;
@@ -122,19 +128,29 @@ export async function POST(req) {
   // Stream LLM response and forward as SSE
   const encoder = new TextEncoder();
   let fullText = '';
+  const startTime = Date.now();
+
+  // 로깅용 메타데이터 — stream 안팎 모두에서 접근
+  const modelByProvider = {
+    openrouter: CONFIG.OPENROUTER_MODEL,
+    claude: CONFIG.CLAUDE_MODEL,
+    gemini: CONFIG.GEMINI_MODEL,
+  };
+  const modelName = modelByProvider[provider];
+  // body.messages에서 마지막 user 메시지(원문) 추출.
+  // effectiveMessages는 __START__가 치환된 경우가 있어 로그에 원문이 남도록.
+  const originalMessages = messages || [];
+  const lastUserMessage = [...originalMessages].reverse().find(m => m.role === 'user');
+  const userInput = lastUserMessage ? lastUserMessage.content : '';
+  const turnIndex = originalMessages.length;
 
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const modelByProvider = {
-          openrouter: CONFIG.OPENROUTER_MODEL,
-          claude: CONFIG.CLAUDE_MODEL,
-          gemini: CONFIG.GEMINI_MODEL,
-        };
         for await (const chunk of streamChat(effectiveMessages, systemPrompt, {
           provider,
           apiKey,
-          model: modelByProvider[provider],
+          model: modelName,
         })) {
           fullText += chunk;
           // Strip [MASTERY] from displayed text
@@ -150,6 +166,23 @@ export async function POST(req) {
         const finalData = `data: ${JSON.stringify({ done: true, mastered })}\n\n`;
         controller.enqueue(encoder.encode(finalData));
         controller.close();
+
+        // 성공 로그
+        logConversation({
+          event: 'turn',
+          userId,
+          sessionId,
+          conceptId,
+          turnIndex,
+          userInput,
+          aiOutput: fullText,
+          mastered,
+          model: modelName,
+          provider,
+          latencyMs: Date.now() - startTime,
+          level: userProfile.level,
+          language: userProfile.language,
+        });
       } catch (err) {
         // Upstream LLM failure — emit an error SSE event, then close.
         const errorData = `data: ${JSON.stringify({ error: 'stream_interrupted', message: err.message })}\n\n`;
@@ -159,6 +192,23 @@ export async function POST(req) {
           // controller already closed
         }
         controller.close();
+
+        // 에러 로그
+        logConversation({
+          event: 'error',
+          userId,
+          sessionId,
+          conceptId,
+          turnIndex,
+          userInput,
+          model: modelName,
+          provider,
+          latencyMs: Date.now() - startTime,
+          level: userProfile.level,
+          language: userProfile.language,
+          errorCode: 'stream_interrupted',
+          errorMessage: err.message,
+        });
       }
     },
   });

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Photos
 
 struct SessionCompleteView: View {
     let isMastered: Bool
@@ -9,8 +10,11 @@ struct SessionCompleteView: View {
 
     @State private var displayedStreak: Int = 0
     @State private var animateIcon = false
-    @State private var shareImage: UIImage?
-    @State private var showShareSheet = false
+    /// Identifiable 래퍼를 담아 .sheet(item:)로 띄움.
+    /// .sheet(isPresented:) + `if let shareImage` 패턴은 최초 body 빌드 시
+    /// shareImage == nil로 sheet 내부가 EmptyView로 캐시되어 첫 탭에서 빈 시트가 뜸.
+    @State private var sharePayload: SharePayload?
+    @State private var saveAlert: SaveAlert?
 
     // Design tokens
     private let accentColor = Color.warmOrange
@@ -159,15 +163,30 @@ struct SessionCompleteView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
             }
 
-            // Share button
+            // 이미지로 저장 — 한 탭으로 사진 앱에 바로 저장
             Button {
-                shareImage = ShareCardRenderer.render(
+                handleSaveToPhotos()
+            } label: {
+                Label(
+                    String(localized: "complete.saveImage", defaultValue: "이미지로 저장"),
+                    systemImage: "square.and.arrow.down"
+                )
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .foregroundStyle(.white)
+                .background(accentColor)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+
+            // 공유하기 — 인스타/카톡/기타 앱 전송
+            Button {
+                if let image = ShareCardRenderer.render(
                     conceptTitle: session.conceptTitle,
                     isMastered: isMastered,
                     streakCount: displayedStreak
-                )
-                if shareImage != nil {
-                    showShareSheet = true
+                ) {
+                    sharePayload = SharePayload(image: image)
                 }
             } label: {
                 Label(
@@ -183,10 +202,8 @@ struct SessionCompleteView: View {
                         .strokeBorder(deepBlue, lineWidth: 1.5)
                 )
             }
-            .sheet(isPresented: $showShareSheet) {
-                if let shareImage {
-                    ShareSheet(items: [shareImage])
-                }
+            .sheet(item: $sharePayload) { payload in
+                ShareSheet(items: [payload.image])
             }
 
             if !isMastered {
@@ -205,6 +222,52 @@ struct SessionCompleteView: View {
                         )
                 }
             }
+        }
+        .alert(item: $saveAlert) { alert in
+            Alert(
+                title: Text(alert.title),
+                message: Text(alert.message),
+                dismissButton: .default(Text(String(
+                    localized: "common.ok",
+                    defaultValue: "확인"
+                )))
+            )
+        }
+    }
+
+    // MARK: - Save to Photos
+
+    private func handleSaveToPhotos() {
+        guard let image = ShareCardRenderer.render(
+            conceptTitle: session.conceptTitle,
+            isMastered: isMastered,
+            streakCount: displayedStreak
+        ) else {
+            saveAlert = SaveAlert.failed
+            return
+        }
+        Task {
+            let status = await saveImageToPhotos(image)
+            await MainActor.run {
+                saveAlert = status
+            }
+        }
+    }
+
+    /// 사진 앱에 이미지 저장. addOnly 권한 → Info.plist에
+    /// INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription 필수.
+    private func saveImageToPhotos(_ image: UIImage) async -> SaveAlert {
+        let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+        guard status == .authorized || status == .limited else {
+            return .permissionDenied
+        }
+        do {
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.creationRequestForAsset(from: image)
+            }
+            return .success
+        } catch {
+            return .failed
         }
     }
 
@@ -242,6 +305,46 @@ struct SessionCompleteView: View {
         }
         return "\(seconds)초"
     }
+}
+
+// MARK: - Share payload
+
+/// UIImage를 Identifiable로 감싸 .sheet(item:)에 전달하기 위한 래퍼.
+/// .sheet(isPresented:) + `if let image`는 첫 body 빌드에 EmptyView로 캐시되는
+/// SwiftUI 버그가 있음 — .sheet(item:)로 해결.
+struct SharePayload: Identifiable {
+    let id = UUID()
+    let image: UIImage
+}
+
+// MARK: - Save alert
+
+/// 이미지 저장 결과를 alert로 전달. Identifiable conformance는 case별 id로.
+struct SaveAlert: Identifiable {
+    let id: String
+    let title: String
+    let message: String
+
+    static let success = SaveAlert(
+        id: "success",
+        title: String(localized: "save.success.title", defaultValue: "저장 완료"),
+        message: String(localized: "save.success.message",
+                        defaultValue: "사진 앱에 이미지를 저장했어요.")
+    )
+
+    static let failed = SaveAlert(
+        id: "failed",
+        title: String(localized: "save.failed.title", defaultValue: "저장 실패"),
+        message: String(localized: "save.failed.message",
+                        defaultValue: "이미지를 저장하지 못했어요. 잠시 후 다시 시도해주세요.")
+    )
+
+    static let permissionDenied = SaveAlert(
+        id: "permissionDenied",
+        title: String(localized: "save.permission.title", defaultValue: "사진 접근 권한 필요"),
+        message: String(localized: "save.permission.message",
+                        defaultValue: "설정 > CodeStudy에서 사진 접근을 허용해주세요.")
+    )
 }
 
 // MARK: - UIActivityViewController Wrapper

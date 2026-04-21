@@ -82,6 +82,9 @@ final class APIProvider: AIService, @unchecked Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.setValue(bundleID, forHTTPHeaderField: "X-App-Bundle-Id")
+        // 서버 로깅용 익명 식별자. 서버는 이 값으로 DAU/세션을 집계한다.
+        request.setValue(AnonymousID.current, forHTTPHeaderField: "X-CodeStudy-UserID")
+        request.setValue(context.sessionId, forHTTPHeaderField: "X-CodeStudy-SessionID")
 
         var allMessages = context.previousMessages
         var userMessage = message
@@ -93,7 +96,7 @@ final class APIProvider: AIService, @unchecked Sendable {
         let body = TutorRequest(
             messages: allMessages,
             conceptId: context.conceptID,
-            sessionId: UUID().uuidString,
+            sessionId: context.sessionId,
             userProfile: .init(
                 level: context.userProfile.swiftLevel,
                 language: context.userProfile.preferredLanguage
