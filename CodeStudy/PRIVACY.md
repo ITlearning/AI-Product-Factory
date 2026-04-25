@@ -1,6 +1,6 @@
 # CodeStudy 개인정보 처리방침 (Privacy Policy)
 
-최종 수정일: 2026년 4월 22일
+최종 수정일: 2026년 4월 25일
 
 ## 1. 수집하는 개인정보
 
@@ -51,21 +51,31 @@ AI 제공자의 개인정보 처리방침이 별도로 적용됩니다.
 학습 성취 공유 카드를 사진 앱에 **저장할 때만** 권한을 요청합니다 (Add-only).
 기존 사진을 읽거나 편집하지 않으며, 사용자가 "이미지로 저장" 버튼을 눌러야만 동작합니다.
 
-## 6. 광고 및 제3자 공유
+## 6. 인앱 설문 (Google Forms)
+
+서비스 개선을 위해 개념을 마스터한 사용자에게 1회 설문을 권유합니다.
+
+- **참여는 100% 자발적이며**, 응답하지 않거나 닫아도 학습에 영향이 없습니다
+- 설문은 외부 서비스(Google Forms)를 통해 진행되며, 응답은 익명으로 수집됩니다
+- 사용자가 **이메일 주소를 자발적으로 입력**한 경우 (스타벅스 쿠폰 추첨 또는 사용자 인터뷰 동의), 해당 이메일은 추첨 발송과 인터뷰 요청 외 다른 목적으로 사용되지 않습니다
+- 추첨 종료 후 90일 이내 이메일 정보는 삭제됩니다
+- 설문 자체의 데이터 처리는 [Google 개인정보 처리방침](https://policies.google.com/privacy)이 별도로 적용됩니다
+
+## 7. 광고 및 제3자 공유
 
 - 앱 내 광고를 표시하지 않습니다
 - 사용자 행동 데이터를 광고 네트워크와 공유하지 않습니다
 - 제3자에게 데이터를 판매하거나 공유하지 않습니다
 
-## 7. 아동 보호
+## 8. 아동 보호
 
 CodeStudy는 만 13세 이상의 사용자를 대상으로 합니다.
 
-## 8. 변경 사항
+## 9. 변경 사항
 
 본 개인정보 처리방침은 변경될 수 있으며, 변경 시 앱 내 또는 이 페이지를 통해 공지합니다.
 
-## 9. 문의
+## 10. 문의
 
 개인정보 관련 문의: https://github.com/ITlearning/AI-Product-Factory/issues
 
@@ -73,7 +83,7 @@ CodeStudy는 만 13세 이상의 사용자를 대상으로 합니다.
 
 # Privacy Policy (English)
 
-Last updated: April 22, 2026
+Last updated: April 25, 2026
 
 ## 1. Personal Information We Collect
 
@@ -120,20 +130,30 @@ These logs are accessible only to the service operator and are never used for ad
 
 We request photo library access **only to save** your learning achievement share card to your Photos app (add-only). We do not read or modify your existing photos; the save action runs only when you tap the "Save Image" button.
 
-## 6. Advertising and Third-Party Sharing
+## 6. In-App Survey (Google Forms)
+
+After mastering a concept, users are invited once to take an optional feedback survey.
+
+- **Participation is entirely voluntary.** Skipping or closing the survey has no effect on your learning experience.
+- The survey is delivered via a third-party service (Google Forms) and responses are collected anonymously.
+- If you **voluntarily provide your email address** (to enter the Starbucks gift card lottery or to opt into a user interview), that email is used only for those two purposes.
+- Email addresses are deleted within 90 days after the lottery concludes.
+- Google's [Privacy Policy](https://policies.google.com/privacy) applies separately to data handling within the survey form itself.
+
+## 7. Advertising and Third-Party Sharing
 
 - No in-app advertising
 - No sharing of user behavior data with ad networks
 - No sale or sharing of data with third parties
 
-## 7. Children
+## 8. Children
 
 CodeStudy is intended for users aged 13 and older.
 
-## 8. Changes
+## 9. Changes
 
 This privacy policy may be updated; changes will be announced in the app or on this page.
 
-## 9. Contact
+## 10. Contact
 
 For privacy inquiries: https://github.com/ITlearning/AI-Product-Factory/issues
