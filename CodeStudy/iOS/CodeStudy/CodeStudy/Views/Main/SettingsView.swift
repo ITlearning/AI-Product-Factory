@@ -45,7 +45,7 @@ struct SettingsView: View {
                     )
                 ) {
                     ForEach(SwiftLevel.allCases) { level in
-                        Text(level.displayName_ko).tag(level)
+                        Text(level.displayName(for: viewModel.state.language)).tag(level)
                     }
                 }
 

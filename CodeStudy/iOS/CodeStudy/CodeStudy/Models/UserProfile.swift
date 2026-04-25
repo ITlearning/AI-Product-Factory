@@ -14,7 +14,7 @@ final class UserProfile {
     init(
         hasDevelopmentExperience: Bool = false,
         swiftLevel: SwiftLevel = .beginner,
-        preferredLanguage: AppLanguage = .korean
+        preferredLanguage: AppLanguage = .systemDefault
     ) {
         self.id = UUID()
         self.createdAt = Date()
@@ -61,9 +61,25 @@ enum SwiftLevel: String, Codable, CaseIterable, Identifiable {
         case .advanced: return "Advanced"
         }
     }
+
+    /// 사용자 설정 언어 기반 라벨. View/ViewModel에서 직접 분기 안 하도록 헬퍼 제공.
+    func displayName(for language: AppLanguage) -> String {
+        language == .korean ? displayName_ko : displayName_en
+    }
 }
 
 enum AppLanguage: String, Codable {
     case korean = "ko"
     case english = "en"
+
+    /// 디바이스 locale 기반 기본 언어.
+    /// - 한국어 디바이스 → `.korean`
+    /// - 그 외 모든 언어 → `.english` (영어권 진출 정책: 영어를 글로벌 기본으로)
+    ///
+    /// 신규 `UserProfile` 생성 시 기본값으로 사용. 기존 사용자는 영향 없음.
+    /// 사용자는 Settings 탭에서 언제든지 직접 변경 가능.
+    static var systemDefault: AppLanguage {
+        let code = Locale.current.language.languageCode?.identifier
+        return code == "ko" ? .korean : .english
+    }
 }

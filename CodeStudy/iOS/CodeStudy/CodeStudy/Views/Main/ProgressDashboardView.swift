@@ -1,18 +1,43 @@
 import SwiftUI
 import SwiftData
+import TipKit
 
 struct ProgressDashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: ProgressViewModel?
     @Query private var streaks: [DailyStreak]
+    @Query private var profiles: [UserProfile]
+
+    /// Curriculum 즉시 로드. 목록의 개념 제목을 사용자 언어로 즉석 변환.
+    private let curriculum = ConceptCurriculum()
+
+    private var language: AppLanguage {
+        profiles.first?.language ?? .korean
+    }
+
+    /// 저장된 conceptTitle 대신 curriculum lookup으로 사용자 언어 표시.
+    /// 기존 사용자가 한글로 저장한 ConceptProgress도 실시간 영문 노출 가능.
+    private func displayTitle(for item: ProgressViewModel.ConceptProgressItem) -> String {
+        if let concept = curriculum.conceptByID(item.id) {
+            return concept.title(for: language)
+        }
+        return item.title
+    }
+
+    /// Cycle 2 신규 기능 안내 — 마스터한 개념 탭하면 학습 여정 볼 수 있다.
+    /// TipKit이 표시 조건 / dismiss 영구화 / 빈도 조절을 알아서 처리.
+    private let conceptHistoryTip = ConceptHistoryTip()
 
     var body: some View {
         Group {
             if let viewModel {
-                if viewModel.state.concepts.isEmpty && !viewModel.state.totalStudied.isMultiple(of: 1) {
-                    // Still loading — show spinner briefly
+                if viewModel.state.isLoading && viewModel.state.concepts.isEmpty {
+                    // Initial load in progress — show spinner.
+                    // (Replaces dead `!isMultiple(of: 1)` heuristic which
+                    // was always false for any Int.)
                     ProgressView()
                         .controlSize(.large)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.state.concepts.isEmpty {
                     emptyState
                 } else {
@@ -25,17 +50,27 @@ struct ProgressDashboardView: View {
             }
         }
         .navigationTitle(String(localized: "progress.title", defaultValue: "학습 기록"))
+        // Lane B's ConceptHistoryView is the destination. Tapping a concept
+        // row pushes its history. Typed value = String (conceptId).
+        .navigationDestination(for: String.self) { conceptId in
+            ConceptHistoryView(conceptId: conceptId)
+        }
         .task {
             if viewModel == nil {
                 let vm = ProgressViewModel(modelContext: modelContext)
                 viewModel = vm
                 await vm.handle(.loadProgress)
             }
+            // TipKit Rule 평가용 — 마스터 1개라도 있으면 tip 노출 자격.
+            ConceptHistoryTip.hasMasteredConcepts = (viewModel?.state.totalMastered ?? 0) > 0
         }
         .onAppear {
             if let vm = viewModel {
                 Task { await vm.handle(.loadProgress) }
             }
+        }
+        .onChange(of: viewModel?.state.totalMastered) { _, newValue in
+            ConceptHistoryTip.hasMasteredConcepts = (newValue ?? 0) > 0
         }
     }
 
@@ -56,6 +91,14 @@ struct ProgressDashboardView: View {
                 Text(String(localized: "progress.calendar.header", defaultValue: "학습 캘린더"))
             }
 
+            // Cycle 2 신규 기능 안내 (TipKit). hasMasteredConcepts == true일 때만
+            // 자동 노출. 사용자가 dismiss하면 TipKit이 영구히 안 띄움.
+            Section {
+                TipView(conceptHistoryTip)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+
             // Concept list grouped by category
             let grouped = Dictionary(grouping: viewModel.state.concepts, by: \.category)
             let sortedKeys = grouped.keys.sorted()
@@ -63,7 +106,12 @@ struct ProgressDashboardView: View {
             ForEach(sortedKeys, id: \.self) { category in
                 Section {
                     ForEach(grouped[category] ?? []) { item in
-                        conceptRow(item: item)
+                        // NavigationLink(value:) pairs with the
+                        // .navigationDestination(for: String.self) above.
+                        // SwiftUI auto-renders the trailing chevron.
+                        NavigationLink(value: item.id) {
+                            conceptRow(item: item)
+                        }
                     }
                 } header: {
                     Text(category)
@@ -71,6 +119,9 @@ struct ProgressDashboardView: View {
             }
         }
         .listStyle(.insetGrouped)
+        // Section 사이 기본 간격이 너무 커서 tip 카드 위아래로 빈 공간 생김.
+        // .compact으로 압축해서 시각적 흐름 자연스럽게.
+        .listSectionSpacing(.compact)
     }
 
     // MARK: - Stats Row
@@ -129,8 +180,10 @@ struct ProgressDashboardView: View {
     private func conceptRow(item: ProgressViewModel.ConceptProgressItem) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
+                Text(displayTitle(for: item))
                     .font(.body)
+                // Xcode가 자동으로 "%lld회 학습"으로 키 추출.
+                // xcstrings에 ko/en 둘 다 등록됨 ("%lld sessions").
                 Text("\(item.studiedCount)회 학습")
                     .font(.caption)
                     .foregroundStyle(.secondary)

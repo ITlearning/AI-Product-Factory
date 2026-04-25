@@ -70,9 +70,9 @@ final class DailyChallengeViewModel {
         let concept = curriculum.selectNextConcept(level: userLevel.rawValue, masteredIDs: masteredIDs)
         state.todayConcept = concept
 
-        // 4. Load daily tip
+        // 4. Load daily tip in user's selected language
         if let concept {
-            state.dailyTip = concept.tipKo
+            state.dailyTip = concept.tip(for: fetchUserLanguage())
         }
 
         // 5. Load streak
@@ -92,8 +92,12 @@ final class DailyChallengeViewModel {
         // NOT here. Starting a session doesn't count — only mastering it does.
         // This prevents abandoned sessions from eating the daily limit.
 
-        // Create a new StudySession
-        let session = StudySession(conceptID: concept.id, conceptTitle: concept.titleKo)
+        // Create a new StudySession with title in user's selected language.
+        // 학습 기록 화면에 그대로 표시되므로 사용자 언어로 저장.
+        let session = StudySession(
+            conceptID: concept.id,
+            conceptTitle: concept.title(for: fetchUserLanguage())
+        )
         modelContext.insert(session)
 
         do {
@@ -114,6 +118,14 @@ final class DailyChallengeViewModel {
             return .beginner
         }
         return profile.level
+    }
+
+    private func fetchUserLanguage() -> AppLanguage {
+        let descriptor = FetchDescriptor<UserProfile>()
+        guard let profile = try? modelContext.fetch(descriptor).first else {
+            return .korean
+        }
+        return profile.language
     }
 
     private func fetchMasteredConceptIDs() -> Set<String> {

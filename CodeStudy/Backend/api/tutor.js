@@ -144,6 +144,10 @@ export async function POST(req) {
   const userInput = lastUserMessage ? lastUserMessage.content : '';
   const turnIndex = originalMessages.length;
 
+  // streamChat 내부에서 usage 청크 도착 시 ref.value에 채워줌.
+  // ref 패턴: stream 끝난 후 logConversation에서 읽기 위한 캡처 컨테이너.
+  const usageRef = { value: null };
+
   const stream = new ReadableStream({
     async start(controller) {
       try {
@@ -151,6 +155,7 @@ export async function POST(req) {
           provider,
           apiKey,
           model: modelName,
+          onUsage: (u) => { usageRef.value = u; },
         })) {
           fullText += chunk;
           // Strip [MASTERY] from displayed text
@@ -182,6 +187,16 @@ export async function POST(req) {
           latencyMs: Date.now() - startTime,
           level: userProfile.level,
           language: userProfile.language,
+          // OpenRouter 응답 마지막 SSE 청크의 usage. 비용 추적 + 토큰 카운트.
+          //
+          // Cache 참고: OpenRouter는 prompt_tokens_details.cached_tokens /
+          // cache_write_tokens 필드로 cache hit/miss를 노출함. Haiku 4.5는
+          // 시스템 프롬프트가 2048 토큰 미만이면 캐시 자체를 안 만들어서
+          // 두 값 모두 0으로 들어옴. cache 검증은 향후 prompt 크기 늘릴 때.
+          tokensIn: usageRef.value?.prompt_tokens ?? null,
+          tokensOut: usageRef.value?.completion_tokens ?? null,
+          costUsd: usageRef.value?.cost ?? null,
+          usage: usageRef.value,
         });
       } catch (err) {
         // Upstream LLM failure — emit an error SSE event, then close.

@@ -84,3 +84,45 @@ v1.1 카드 데이터 변경 전에 URL 전략 결정 권장.
 **Context:** adversarial review (2026-04-03) Finding 10. MVP는 현재 동작으로 출시. 사용자 피드백 후 결정.
 
 **Depends on:** MVP 출시 후 사용자 피드백 수집.
+
+---
+
+## [TODO-6] CodeStudy: 마스터 안 된 개념의 progress indicator
+
+**What:** ProgressDashboardView 또는 ConceptHistoryView에서 "마스터하려면 N회 더 학습"같은 progress indicator 추가.
+
+**Why:** 현재 사용자는 "내가 어떻게 마스터하지?" 답을 못 얻음. 마스터 기준이 불투명해서 학습 동기가 떨어질 수 있음. 듀오링고가 강력한 이유 중 하나가 progression visibility.
+
+**Pros:** 학습 동기 강화, "다음 목표" 명확화, retention 기여.
+**Cons:** 마스터 기준이 동적(품질 + 양)이라 단순 카운터로 표현 어려움. 사용자 기대 관리 신중 필요.
+**Context:** plan-design-review (2026-04-25) Cycle 2 unresolved decision U1. Cycle 2 stage 1 데이터 수집 후 결정.
+
+**Depends on:** 마스터 기준의 user-facing 표현 방식 결정.
+
+---
+
+## [TODO-7] CodeStudy: SettingsView에 freeze 사용 이력 섹션
+
+**What:** SettingsView에 현재 freeze 잔여 개수 + 최근 사용 이력 표시.
+
+**Why:** Cycle 2에 streak freeze 기능 추가했는데 사용자가 "내 freeze 몇 개 남았지?" "언제 썼지?" 확인할 곳이 없음. 토스트만으로는 신뢰감 부족. 듀오링고는 streak 화면에 freeze 표시.
+
+**Pros:** 투명성 ↑, 사용자가 freeze 시스템 이해 → 행동 변화. 신뢰 build.
+**Cons:** SettingsView UI 변경. freeze 발급/사용 로그 데이터 모델 필요.
+**Context:** plan-design-review (2026-04-25) Cycle 2 unresolved decision U2. Cycle 2는 freeze 자동 적용만 포함, 이력 화면은 deferred.
+
+**Depends on:** Cycle 2 streak freeze 안정 운영 확인.
+
+---
+
+## [TODO-8] CodeStudy: ConceptHistoryView "학습 계속하기" CTA
+
+**What:** ConceptHistoryView 하단에 "이 개념 다시 학습" 또는 "관련 개념 학습" CTA 버튼 추가.
+
+**Why:** 사용자가 history 보다가 "지금 또 학습하고 싶다"는 동기 발생 — 현재는 뒤로 가서 메인 탭에서 다시 시작해야 해서 마찰. CTA가 그 자리에서 학습 진입 가능하게 함.
+
+**Pros:** session count ↑, "기억하고 또 학습" loop 강화. Product promise 직접 강화.
+**Cons:** 학습 진입 트리거 로직 추가. 마스터한 개념 재학습 시 mastery 재계산 정책 결정 필요.
+**Context:** plan-design-review (2026-04-25) Cycle 2 unresolved decision U4. 핵심 화면 신규라 우선 read-only로 출시.
+
+**Depends on:** Cycle 2 ConceptHistoryView 출시 + retention 데이터.

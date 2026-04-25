@@ -12,6 +12,10 @@ final class ProgressViewModel {
         var totalStudied: Int = 0
         var totalMastered: Int = 0
         var streakData: [Date: StudyDay] = [:]  // calendar heatmap
+        /// True while `loadProgress` is in flight. Replaces the dead
+        /// `!isMultiple(of: 1)` heuristic in ProgressDashboardView so the
+        /// loading spinner branch actually executes.
+        var isLoading: Bool = false
     }
 
     struct ConceptProgressItem: Identifiable {
@@ -58,6 +62,9 @@ final class ProgressViewModel {
     // MARK: - Private
 
     private func loadProgress() async {
+        state.isLoading = true
+        defer { state.isLoading = false }
+
         // 1. Load all ConceptProgress entries
         let conceptDescriptor = FetchDescriptor<ConceptProgress>(
             sortBy: [SortDescriptor(\.conceptTitle)]

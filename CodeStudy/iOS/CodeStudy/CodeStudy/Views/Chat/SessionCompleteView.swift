@@ -7,6 +7,13 @@ struct SessionCompleteView: View {
     let session: StudySession
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(ConfigService.self) private var configService
+    @Query private var profiles: [UserProfile]
+
+    /// 사용자 설정 언어. UserProfile이 없으면 디바이스 locale fallback.
+    private var language: AppLanguage {
+        profiles.first?.language ?? .systemDefault
+    }
 
     @State private var displayedStreak: Int = 0
     @State private var animateIcon = false
@@ -16,9 +23,22 @@ struct SessionCompleteView: View {
     @State private var sharePayload: SharePayload?
     @State private var saveAlert: SaveAlert?
 
+    /// Set to `true` when the user dismisses this view after a mastery
+    /// AND the survey has not yet been shown. The parent (`ChatView`)
+    /// reads this flag in its `.sheet(onDismiss:)` to present the
+    /// SurveyModalView right after this sheet closes.
+    @State private var pendingSurvey: Bool = false
+    @State private var showSurvey: Bool = false
+
     // Design tokens
     private let accentColor = Color.warmOrange
     private let deepBlue = Color.deepBlue
+
+    // MARK: - Survey config
+    //
+    // 설문 URL은 `ConfigService`(서버 /api/config)에서 받아온다.
+    // App Store 심사 없이 URL 변경/설문 토글 가능. 자세한 운영은
+    // CodeStudy/SURVEY.md 참조.
 
     var body: some View {
         ZStack {
@@ -58,6 +78,67 @@ struct SessionCompleteView: View {
             }
             animateStreakCounter()
         }
+        // Survey gate: after a mastery, ask once for feedback. The sheet
+        // dismisses → onDismiss decides whether to persist the
+        // `surveyShown` flag (NOT for `.errorOffline` so the user gets
+        // another shot next time).
+        .sheet(isPresented: $showSurvey, onDismiss: {
+            // Sheet has fully closed. Now pop back to home.
+            dismiss()
+        }) {
+            // surveyURL은 handleHomeButton에서 nil 체크 후 진입하므로
+            // 여기 도달했다면 항상 유효. 방어적으로 force-unwrap 회피.
+            if let url = configService.current.surveyURL(for: language) {
+                SurveyModalView(
+                    surveyURL: url,
+                    onDismiss: { reason in
+                        handleSurveyDismiss(reason: reason)
+                    }
+                )
+            } else {
+                // Edge case: config가 fetch 사이에 빠짐. 즉시 dismiss하고
+                // surveyShown은 set하지 않음 (다음 기회 보존).
+                Color.clear.onAppear { showSurvey = false }
+            }
+        }
+    }
+
+    // MARK: - Home / Survey flow
+
+    /// Decides whether to present the survey before dismissing back to
+    /// home. Triggered iff: this is a mastery session AND the survey
+    /// hasn't been shown yet.
+    private func handleHomeButton() {
+        let defaults = UserDefaults.standard
+        let alreadyShown = defaults.bool(forKey: OneTimeMigration.surveyShownKey)
+        // 설문 게이트: 마스터리 + 미노출 + 서버에서 enabled + 유효한 URL
+        let config = configService.current
+        let canShowSurvey = isMastered
+            && !alreadyShown
+            && config.surveyEnabled
+            && config.surveyURL(for: language) != nil
+        if canShowSurvey {
+            pendingSurvey = true
+            showSurvey = true
+            return
+        }
+        dismiss()
+    }
+
+    /// Persist `surveyShown=true` only on resolved exits (.completed or
+    /// .closed). Network errors leave the flag untouched so the user
+    /// gets another chance after a future mastery.
+    private func handleSurveyDismiss(reason: SurveyModalView.DismissReason) {
+        switch reason {
+        case .completed, .closed:
+            UserDefaults.standard.set(true, forKey: OneTimeMigration.surveyShownKey)
+        case .errorOffline:
+            // Preserve flag — the user wasn't given a real chance.
+            break
+        }
+        // Close the survey sheet. The sheet's onDismiss closure handles
+        // the final pop back to home.
+        showSurvey = false
     }
 
     // MARK: - Icon
@@ -152,7 +233,7 @@ struct SessionCompleteView: View {
     private var buttonSection: some View {
         VStack(spacing: 12) {
             Button {
-                dismiss()
+                handleHomeButton()
             } label: {
                 Text(String(localized: "complete.home", defaultValue: "홈으로"))
                     .font(.headline)

@@ -69,9 +69,17 @@ struct ConceptCurriculum {
 
     // MARK: - Load
 
+    /// Picks the curriculum file based on the current locale.
+    /// Falls back to English if Korean isn't selected, and to the legacy
+    /// `curriculum.json` if locale-specific files aren't bundled yet.
     static func loadConcepts() -> [Concept] {
-        guard let url = Bundle.main.url(forResource: "curriculum", withExtension: "json") else {
-            assertionFailure("curriculum.json not found in bundle")
+        let resourceName = preferredResourceName()
+        let url = Bundle.main.url(forResource: resourceName, withExtension: "json")
+            ?? Bundle.main.url(forResource: "curriculum_en", withExtension: "json")
+            ?? Bundle.main.url(forResource: "curriculum", withExtension: "json")
+
+        guard let url else {
+            assertionFailure("curriculum json not found in bundle")
             return []
         }
 
@@ -80,9 +88,15 @@ struct ConceptCurriculum {
             let decoded = try JSONDecoder().decode([Concept].self, from: data)
             return decoded.sorted { $0.order < $1.order }
         } catch {
-            assertionFailure("Failed to decode curriculum.json: \(error)")
+            assertionFailure("Failed to decode \(url.lastPathComponent): \(error)")
             return []
         }
+    }
+
+    /// Returns "curriculum_ko" when device language is Korean, otherwise "curriculum_en".
+    private static func preferredResourceName() -> String {
+        let code = Locale.current.language.languageCode?.identifier
+        return code == "ko" ? "curriculum_ko" : "curriculum_en"
     }
 
     // MARK: - Query

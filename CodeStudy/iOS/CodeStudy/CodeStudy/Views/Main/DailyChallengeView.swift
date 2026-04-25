@@ -3,9 +3,15 @@ import SwiftData
 
 struct DailyChallengeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var profiles: [UserProfile]
     @State private var viewModel: DailyChallengeViewModel?
     @State private var navigateToChat = false
     @State private var chatViewModel: ChatViewModel?
+
+    /// 사용자 설정 언어. UserProfile이 없을 땐(첫 실행 등) 한국어 fallback.
+    private var language: AppLanguage {
+        profiles.first?.language ?? .korean
+    }
 
     var body: some View {
         Group {
@@ -93,7 +99,7 @@ struct DailyChallengeView: View {
                     .foregroundStyle(Color.deepBlue)
                     .clipShape(Capsule())
 
-                Text(SwiftLevel(rawValue: concept.level)?.displayName_ko ?? concept.level)
+                Text(SwiftLevel(rawValue: concept.level)?.displayName(for: language) ?? concept.level)
                     .font(.caption)
                     .fontWeight(.medium)
                     .padding(.horizontal, 8)
@@ -104,12 +110,12 @@ struct DailyChallengeView: View {
             }
 
             // Concept title
-            Text(concept.titleKo)
+            Text(concept.title(for: language))
                 .font(.title2)
                 .fontWeight(.bold)
 
             // Description
-            Text(concept.teachingHintsKo.what)
+            Text(concept.teachingHints(for: language).what)
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)

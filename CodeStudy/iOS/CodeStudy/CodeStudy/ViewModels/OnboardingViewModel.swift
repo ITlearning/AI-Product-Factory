@@ -142,10 +142,12 @@ final class OnboardingViewModel {
         let experience = state.hasDevelopmentExperience ?? false
         let level = state.swiftLevel ?? .beginner
 
+        // 신규 사용자는 디바이스 locale 따라감. 영어권 디바이스 = .english.
+        // 사용자가 Settings에서 언제든 변경 가능.
         let profile = UserProfile(
             hasDevelopmentExperience: experience,
             swiftLevel: level,
-            preferredLanguage: .korean
+            preferredLanguage: .systemDefault
         )
 
         modelContext.insert(profile)
