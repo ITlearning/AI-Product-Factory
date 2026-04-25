@@ -193,18 +193,40 @@ https://github.com/ITlearning/AI-Product-Factory/blob/main/CodeStudy/PRIVACY.md
 
 ## 앱 개인정보 보호 세부사항 (App Store Connect → "앱 개인정보 보호")
 
-기존 1.0.x 입력값 그대로 OK. Cycle 2 추가분:
+> ⚠️ **1.0.x에서 "데이터가 수집되지 않음"으로 입력했다면 1.1.0 심사 제출 전 반드시 변경.**
+> 사실 1.0.x도 console.log로 Vercel logs에 흘렀지만, Neon Postgres 도입으로 명백한 "수집"이 됐음.
+> Apple App Privacy 가이드 위반으로 reject 위험.
 
-**수집되는 데이터** (모두 익명, 신원 미연결, 추적 사용 안 함)
-- **기타 사용자 콘텐츠** — AI 튜터와의 대화 메시지
-  - 목적: 앱 기능, 분석
-- **제품 상호작용** — 마스터리 진행도, 세션 횟수, 스트릭
-  - 목적: 앱 기능, 분석
+### 변경 절차
 
-**수집하지 않는 데이터**
-- 위치, 연락처, 이메일, 사진, 계정 정보 등 일체 X
+App Store Connect → 앱 정보 → "앱 개인정보 보호" → **"앱이 데이터를 수집합니까?"** → "예" 선택.
 
-(`PrivacyInfo.xcprivacy`와 일치하게 입력)
+### 4개 데이터 카테고리 추가
+
+각 카테고리 공통 옵션:
+- ☑ 연결되지 않음 (Not linked to user) — 익명 UUID, 신원 식별 불가
+- ☑ 추적 안 함 (Not used for tracking) — 광고/제3자 공유 없음
+- ☑ 사용 목적: **앱 기능 (App Functionality)** + **분석 (Analytics)**
+
+| # | Apple 카테고리 경로 | 수집 내용 | 우리 구현 |
+|---|---|---|---|
+| 1 | 사용자 콘텐츠 → **기타 사용자 콘텐츠** | AI 튜터와의 대화 (사용자 입력 + AI 응답) | `codestudy_log.raw.userInput`, `aiOutput` |
+| 2 | 식별자 → **디바이스 ID** | 익명 UUID (앱 첫 실행 시 생성, Apple IDFA 무관, 재설치 시 리셋) | `AnonymousID.current` |
+| 3 | 사용 데이터 → **제품 상호 작용** | 마스터리 진행도, 세션 카운트, 스트릭, 학습 개념 ID | `concept_id`, `event='turn'`, `mastered` |
+| 4 | 진단 → **성능 데이터** | 응답 지연 시간, 사용 AI 모델, token usage | `latencyMs`, `model`, `prompt_tokens`, `completion_tokens` |
+
+### 보존 기간 / 처리
+
+"앱 개인정보 보호 질문" 답변 시:
+- 30일 이내 자동 삭제 명시 (PRIVACY.md와 일치)
+- 광고·마케팅 사용 X
+- 제3자 판매·공유 X
+
+### 수집하지 않는 데이터 (명시)
+
+위치, 연락처, 이메일, 사진(저장만), 결제 정보, 헬스 데이터, 검색 기록 등 일체 X.
+
+`PrivacyInfo.xcprivacy` (이미 추가됨) + `PRIVACY.md` 4조 + 이 입력이 **3가지 일관**되어야 함.
 
 ---
 

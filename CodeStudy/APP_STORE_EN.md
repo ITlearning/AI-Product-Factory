@@ -189,18 +189,40 @@ https://github.com/ITlearning/AI-Product-Factory/blob/main/CodeStudy/PRIVACY.md
 
 ## App Privacy Details (App Store Connect → "App Privacy")
 
-이미 한국어 출시 시 입력한 그대로 영문 출시에도 동일 적용. 변경 사항:
+> ⚠️ **If 1.0.x is set to "Data Not Collected", switch BEFORE submitting 1.1.0.**
+> Since Cycle 2 introduces Neon Postgres logging, data is now explicitly "collected"
+> per Apple's definition. Mismatch = reject risk.
 
-**Data Collected** (모두 anonymous, not linked to identity, not used for tracking)
-- **Other User Content** — Chat messages with the AI tutor
-  - Purposes: App Functionality, Analytics
-- **Product Interaction** — Mastery progress, session counts, streak
-  - Purposes: App Functionality, Analytics
+### How to update
 
-**Data NOT Collected**
-- 위치, 연락처, 이메일, 사진, 계정 정보 등 일체 X
+App Store Connect → App Information → **App Privacy** → **"Does this app collect data?"** → Select **Yes**.
 
-(`PrivacyInfo.xcprivacy`와 일치하게 입력)
+### Add 4 data categories
+
+For each, select these common options:
+- ☑ **Not linked to user** — anonymous UUID, no identity mapping
+- ☑ **Not used for tracking** — no advertising / third-party sharing
+- ☑ Purposes: **App Functionality** + **Analytics**
+
+| # | Apple Category Path | Data Collected | Our Implementation |
+|---|---|---|---|
+| 1 | User Content → **Other User Content** | AI tutor conversation (user input + AI response) | `codestudy_log.raw.userInput`, `aiOutput` |
+| 2 | Identifiers → **Device ID** | Anonymous UUID (generated on first launch, NOT Apple's IDFA, reset on reinstall) | `AnonymousID.current` |
+| 3 | Usage Data → **Product Interaction** | Mastery progress, session counts, streak, concept IDs studied | `concept_id`, `event='turn'`, `mastered` |
+| 4 | Diagnostics → **Performance Data** | Response latency, AI model used, token usage | `latencyMs`, `model`, `prompt_tokens`, `completion_tokens` |
+
+### Retention / handling
+
+When answering App Privacy questionnaire, declare:
+- 30-day max retention (matches PRIVACY_EN.md Section 4)
+- Not used for advertising or marketing
+- Never sold or shared with third parties
+
+### Data NOT Collected (declare explicitly)
+
+Location, contacts, email, photos (only saved), payment info, health data, search history, etc.
+
+The 3 sources of truth must match: `PrivacyInfo.xcprivacy` + `PRIVACY_EN.md` Section 4 + this App Privacy entry.
 
 ---
 
