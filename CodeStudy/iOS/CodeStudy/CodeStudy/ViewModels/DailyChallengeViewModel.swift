@@ -106,9 +106,11 @@ final class DailyChallengeViewModel {
 
         // Create a new StudySession with title in user's selected language.
         // 학습 기록 화면에 그대로 표시되므로 사용자 언어로 저장.
+        // Cycle 3+ — 트랙 정보 동봉. 기록 탭이 트랙별로 필터링하기 위해.
         let session = StudySession(
             conceptID: concept.id,
-            conceptTitle: concept.title(for: fetchUserLanguage())
+            conceptTitle: concept.title(for: fetchUserLanguage()),
+            track: fetchUserTrack()
         )
         modelContext.insert(session)
 
