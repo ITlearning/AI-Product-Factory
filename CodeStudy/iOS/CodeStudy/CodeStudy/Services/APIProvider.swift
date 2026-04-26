@@ -100,7 +100,8 @@ final class APIProvider: AIService, @unchecked Sendable {
             userProfile: .init(
                 level: context.userProfile.swiftLevel,
                 language: context.userProfile.preferredLanguage
-            )
+            ),
+            track: context.userProfile.track
         )
 
         request.httpBody = try JSONEncoder().encode(body)

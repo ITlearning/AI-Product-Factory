@@ -11,10 +11,15 @@ final class UserProfile {
     var dailySessionCount: Int
     var lastSessionCountResetDate: Date
 
+    /// 학습 트랙 (Cycle 3 추가). 신규 사용자는 Onboarding에서 선택.
+    /// 기존 1.0.x/1.1.x 사용자는 SwiftData lightweight migration으로 .swift 자동.
+    var preferredTrack: String = TrackType.swift.rawValue
+
     init(
         hasDevelopmentExperience: Bool = false,
         swiftLevel: SwiftLevel = .beginner,
-        preferredLanguage: AppLanguage = .systemDefault
+        preferredLanguage: AppLanguage = .systemDefault,
+        preferredTrack: TrackType = .swift
     ) {
         self.id = UUID()
         self.createdAt = Date()
@@ -23,6 +28,7 @@ final class UserProfile {
         self.preferredLanguage = preferredLanguage.rawValue
         self.dailySessionCount = 0
         self.lastSessionCountResetDate = Date()
+        self.preferredTrack = preferredTrack.rawValue
     }
 
     var level: SwiftLevel {
@@ -33,6 +39,11 @@ final class UserProfile {
     var language: AppLanguage {
         get { AppLanguage(rawValue: preferredLanguage) ?? .korean }
         set { preferredLanguage = newValue.rawValue }
+    }
+
+    var track: TrackType {
+        get { TrackType(rawValue: preferredTrack) ?? .swift }
+        set { preferredTrack = newValue.rawValue }
     }
 }
 

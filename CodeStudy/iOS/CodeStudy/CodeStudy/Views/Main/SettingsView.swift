@@ -62,6 +62,21 @@ struct SettingsView: View {
                     Text("한국어").tag(AppLanguage.korean)
                     Text("English").tag(AppLanguage.english)
                 }
+
+                // Track picker (Cycle 3 — multi-track support)
+                Picker(
+                    String(localized: "settings.track", defaultValue: "학습 트랙"),
+                    selection: Binding(
+                        get: { viewModel.state.track },
+                        set: { newTrack in
+                            Task { await viewModel.handle(.updateTrack(newTrack)) }
+                        }
+                    )
+                ) {
+                    ForEach(TrackType.allCases) { track in
+                        Text(track.displayName(for: viewModel.state.language)).tag(track)
+                    }
+                }
             } header: {
                 Text(String(localized: "settings.section.profile", defaultValue: "프로필"))
             }

@@ -33,7 +33,7 @@ final class DailyChallengeViewModel {
 
     // MARK: - Dependencies
 
-    private let curriculum: ConceptCurriculum
+    private var curriculum: ConceptCurriculum
     private let modelContext: ModelContext
 
     /// Set after `startSession` creates one — the View layer reads it.
@@ -42,6 +42,11 @@ final class DailyChallengeViewModel {
     init(curriculum: ConceptCurriculum, modelContext: ModelContext) {
         self.curriculum = curriculum
         self.modelContext = modelContext
+    }
+
+    /// 사용자가 Settings에서 track 변경 시 호출 — 새 trackcurriculum 로드.
+    func reloadCurriculum(for track: TrackType) {
+        self.curriculum = ConceptCurriculum(track: track)
     }
 
     // MARK: - Action Handler
@@ -60,11 +65,18 @@ final class DailyChallengeViewModel {
     private func loadTodayConcept() async {
         state.isLoading = true
 
-        // 1. Fetch user profile for level
+        // 1. Fetch user profile for level + track
         let userLevel = fetchUserLevel()
+        let userTrack = fetchUserTrack()
 
-        // 2. Fetch mastered concept IDs
-        let masteredIDs = fetchMasteredConceptIDs()
+        // Curriculum이 외부에서 주입됐는데 사용자 트랙과 불일치하면 재로드.
+        // (Settings에서 트랙 변경 직후 reloadCurriculum 안 거친 케이스 방어)
+        if curriculum.track != userTrack {
+            curriculum = ConceptCurriculum(track: userTrack)
+        }
+
+        // 2. Fetch mastered concept IDs (현재 트랙 한정)
+        let masteredIDs = fetchMasteredConceptIDs(track: userTrack)
 
         // 3. Get next concept from curriculum
         let concept = curriculum.selectNextConcept(level: userLevel.rawValue, masteredIDs: masteredIDs)
@@ -128,12 +140,21 @@ final class DailyChallengeViewModel {
         return profile.language
     }
 
-    private func fetchMasteredConceptIDs() -> Set<String> {
+    private func fetchMasteredConceptIDs(track: TrackType = .swift) -> Set<String> {
+        let trackRaw = track.rawValue
         let descriptor = FetchDescriptor<ConceptProgress>(
-            predicate: #Predicate { $0.isMastered == true }
+            predicate: #Predicate { $0.isMastered == true && $0.track == trackRaw }
         )
         let progresses = (try? modelContext.fetch(descriptor)) ?? []
         return Set(progresses.map(\.conceptID))
+    }
+
+    private func fetchUserTrack() -> TrackType {
+        let descriptor = FetchDescriptor<UserProfile>()
+        guard let profile = try? modelContext.fetch(descriptor).first else {
+            return .swift
+        }
+        return profile.track
     }
 
     private func loadStreakData() {

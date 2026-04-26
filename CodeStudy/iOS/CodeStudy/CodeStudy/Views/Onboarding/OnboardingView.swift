@@ -18,7 +18,7 @@ struct OnboardingView: View {
             HStack {
                 ProgressIndicator(
                     currentStep: viewModel.state.currentStep.rawValue,
-                    totalSteps: 3
+                    totalSteps: 4
                 )
 
                 // "건너뛰기" shown only on notification step
@@ -56,7 +56,19 @@ struct OnboardingView: View {
                 )
                 .tag(OnboardingViewModel.OnboardingStep.experience)
 
-                // Step 2: Swift Level
+                // Step 2: Track 선택 (Cycle 3 추가)
+                TrackStepView(
+                    selection: viewModel.state.preferredTrack,
+                    onSelect: { track in
+                        viewModel.state.preferredTrack = track
+                    },
+                    onNext: {
+                        Task { await viewModel.handle(.setTrack(viewModel.state.preferredTrack ?? .swift)) }
+                    }
+                )
+                .tag(OnboardingViewModel.OnboardingStep.track)
+
+                // Step 3: Swift Level
                 SwiftLevelStepView(
                     selection: viewModel.state.swiftLevel,
                     onSelect: { level in

@@ -1597,6 +1597,60 @@
         }
       }
     },
+    "settings.track" : {
+      "comment" : "Settings → 학습 트랙 picker label",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Track"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "학습 트랙"
+          }
+        }
+      }
+    },
+    "onboarding.track.title" : {
+      "comment" : "Onboarding TrackStepView heading",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What do you want to learn?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "어떤 분야를 학습하시겠어요?"
+          }
+        }
+      }
+    },
+    "onboarding.track.subtitle" : {
+      "comment" : "Onboarding TrackStepView subtitle (can change later)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can switch tracks anytime in Settings"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나중에 설정에서 언제든 바꿀 수 있어요"
+          }
+        }
+      }
+    },
     "settings.title" : {
       "extractionState" : "manual",
       "localizations" : {
