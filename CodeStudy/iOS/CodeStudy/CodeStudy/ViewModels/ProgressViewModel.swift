@@ -65,8 +65,15 @@ final class ProgressViewModel {
         state.isLoading = true
         defer { state.isLoading = false }
 
-        // 1. Load all ConceptProgress entries
+        // Cycle 3+ — 현재 사용자 트랙 기준으로 ConceptProgress / StudySession을
+        // 모두 필터링. 트랙 전환 시 기록 탭이 해당 트랙의 진척만 보여줌.
+        // 1.0.x 데이터(track 미설정)는 모두 .swift로 backfill되어 있음.
+        let userTrack = fetchUserTrack()
+        let trackRaw = userTrack.rawValue
+
+        // 1. Load ConceptProgress entries for current track only
         let conceptDescriptor = FetchDescriptor<ConceptProgress>(
+            predicate: #Predicate { $0.track == trackRaw },
             sortBy: [SortDescriptor(\.conceptTitle)]
         )
         let progresses = (try? modelContext.fetch(conceptDescriptor)) ?? []
@@ -84,8 +91,9 @@ final class ProgressViewModel {
         state.totalStudied = progresses.count
         state.totalMastered = progresses.filter(\.isMastered).count
 
-        // 2. Build calendar heatmap from StudySessions
+        // 2. Build calendar heatmap from current-track StudySessions only
         let sessionDescriptor = FetchDescriptor<StudySession>(
+            predicate: #Predicate { $0.track == trackRaw },
             sortBy: [SortDescriptor(\.startedAt)]
         )
         let sessions = (try? modelContext.fetch(sessionDescriptor)) ?? []
@@ -110,5 +118,16 @@ final class ProgressViewModel {
                 hasMastery: pair.value.hasMastery
             )
         }
+    }
+
+    /// 현재 사용자 트랙. UserProfile 미설정 또는 invalid 값은 .swift fallback.
+    /// (S2 결정: streak는 글로벌 유지. 여기서 track은 ConceptProgress/StudySession
+    /// 필터링용으로만 사용.)
+    private func fetchUserTrack() -> TrackType {
+        let descriptor = FetchDescriptor<UserProfile>()
+        guard let profile = try? modelContext.fetch(descriptor).first else {
+            return .swift
+        }
+        return profile.track
     }
 }

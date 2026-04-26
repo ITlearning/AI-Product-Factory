@@ -72,6 +72,13 @@ struct ProgressDashboardView: View {
                 Task { await vm.handle(.loadProgress) }
             }
         }
+        // 사용자가 Settings에서 트랙 전환하면 즉시 기록 탭 갱신.
+        // .preferredTrack 변화를 감지해서 loadProgress 재실행.
+        .onChange(of: profiles.first?.preferredTrack) { _, _ in
+            if let vm = viewModel {
+                Task { await vm.handle(.loadProgress) }
+            }
+        }
         .onChange(of: viewModel?.state.totalMastered) { _, newValue in
             ConceptHistoryTip.hasMasteredConcepts = (newValue ?? 0) > 0
         }

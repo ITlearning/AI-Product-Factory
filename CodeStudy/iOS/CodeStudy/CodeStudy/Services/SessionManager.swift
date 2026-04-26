@@ -12,9 +12,14 @@ struct SessionManager {
     static func createSession(
         conceptID: String,
         conceptTitle: String,
+        track: TrackType,
         modelContext: ModelContext
     ) -> StudySession {
-        let session = StudySession(conceptID: conceptID, conceptTitle: conceptTitle)
+        let session = StudySession(
+            conceptID: conceptID,
+            conceptTitle: conceptTitle,
+            track: track
+        )
         modelContext.insert(session)
         try? modelContext.save()
         return session
@@ -57,6 +62,7 @@ struct SessionManager {
         conceptID: String,
         conceptTitle: String,
         category: String,
+        track: TrackType,
         mastered: Bool,
         modelContext: ModelContext
     ) {
@@ -70,7 +76,8 @@ struct SessionManager {
             progress = ConceptProgress(
                 conceptID: conceptID,
                 conceptTitle: conceptTitle,
-                category: category
+                category: category,
+                track: track
             )
             modelContext.insert(progress)
         }
