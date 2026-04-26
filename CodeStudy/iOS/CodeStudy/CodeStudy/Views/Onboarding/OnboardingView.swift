@@ -68,9 +68,10 @@ struct OnboardingView: View {
                 )
                 .tag(OnboardingViewModel.OnboardingStep.track)
 
-                // Step 3: Swift Level
+                // Step 3: Swift Level (track-aware)
                 SwiftLevelStepView(
                     selection: viewModel.state.swiftLevel,
+                    track: viewModel.state.preferredTrack ?? .swift,
                     onSelect: { level in
                         viewModel.state.swiftLevel = level
                     },

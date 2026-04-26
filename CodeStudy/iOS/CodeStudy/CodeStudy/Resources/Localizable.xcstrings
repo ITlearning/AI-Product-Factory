@@ -1615,6 +1615,96 @@
         }
       }
     },
+    "onboarding.level.title.backend" : {
+      "comment" : "SwiftLevelStepView title for backend track",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How much backend experience do you have?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "백엔드 경험은 어느 정도인가요?"
+          }
+        }
+      }
+    },
+    "onboarding.level.backend.beginner.desc" : {
+      "comment" : "Backend track beginner level description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First time with Spring/Kotlin"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spring/Kotlin을 처음 접해요"
+          }
+        }
+      }
+    },
+    "onboarding.level.backend.basic.desc" : {
+      "comment" : "Backend track basic level description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I've built basic CRUD APIs"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기본 CRUD API는 만들어봤어요"
+          }
+        }
+      }
+    },
+    "onboarding.level.backend.intermediate.desc" : {
+      "comment" : "Backend track intermediate level description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have JPA and transaction experience"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPA, 트랜잭션 운영 경험 있어요"
+          }
+        }
+      }
+    },
+    "onboarding.level.backend.advanced.desc" : {
+      "comment" : "Backend track advanced level description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I want to study large-scale system design"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대규모 시스템 설계를 공부하고 싶어요"
+          }
+        }
+      }
+    },
     "onboarding.track.title" : {
       "comment" : "Onboarding TrackStepView heading",
       "extractionState" : "manual",
