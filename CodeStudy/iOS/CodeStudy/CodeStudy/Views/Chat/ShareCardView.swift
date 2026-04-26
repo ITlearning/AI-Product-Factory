@@ -92,7 +92,10 @@ struct ShareCardView: View {
 
                 // App promo + watermark
                 VStack(spacing: 8) {
-                    Text("나도 AI로 Swift 공부하기")
+                    Text(String(
+                        localized: "share.card.cta",
+                        defaultValue: "나도 AI로 코딩 공부하기"
+                    ))
                         .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.7))
                     Text("CodeStudy — 무료 다운로드")

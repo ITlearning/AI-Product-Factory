@@ -12,6 +12,7 @@ final class OnboardingViewModel {
         var currentStep: OnboardingStep = .experience
         var hasDevelopmentExperience: Bool?
         var swiftLevel: SwiftLevel?
+        var preferredTrack: TrackType?
         var notificationEnabled = false
         var reminderHour = 20   // default 8 PM
         var reminderMinute = 0
@@ -20,14 +21,16 @@ final class OnboardingViewModel {
 
     enum OnboardingStep: Int, CaseIterable {
         case experience = 0
-        case swiftLevel = 1
-        case notification = 2
+        case track = 1         // 트랙 선택 (Cycle 3 추가)
+        case swiftLevel = 2
+        case notification = 3
     }
 
     // MARK: - Actions
 
     enum Action {
         case setExperience(Bool)
+        case setTrack(TrackType)
         case setSwiftLevel(SwiftLevel)
         case enableNotifications
         case skipNotifications
@@ -53,6 +56,10 @@ final class OnboardingViewModel {
         switch action {
         case .setExperience(let hasExperience):
             state.hasDevelopmentExperience = hasExperience
+            advanceStep()
+
+        case .setTrack(let track):
+            state.preferredTrack = track
             advanceStep()
 
         case .setSwiftLevel(let level):
@@ -82,6 +89,8 @@ final class OnboardingViewModel {
         switch state.currentStep {
         case .experience:
             return state.hasDevelopmentExperience != nil
+        case .track:
+            return state.preferredTrack != nil
         case .swiftLevel:
             return state.swiftLevel != nil
         case .notification:
@@ -120,7 +129,7 @@ final class OnboardingViewModel {
         center.removeAllPendingNotificationRequests()
 
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "notification.reminder.title", defaultValue: "오늘의 Swift 학습")
+        content.title = String(localized: "notification.reminder.title", defaultValue: "오늘의 학습")
         content.body = String(localized: "notification.reminder.body", defaultValue: "5분만 투자해서 새로운 개념을 마스터해보세요!")
         content.sound = .default
 
@@ -141,13 +150,15 @@ final class OnboardingViewModel {
     private func completeOnboarding() async {
         let experience = state.hasDevelopmentExperience ?? false
         let level = state.swiftLevel ?? .beginner
+        let track = state.preferredTrack ?? .swift
 
         // 신규 사용자는 디바이스 locale 따라감. 영어권 디바이스 = .english.
         // 사용자가 Settings에서 언제든 변경 가능.
         let profile = UserProfile(
             hasDevelopmentExperience: experience,
             swiftLevel: level,
-            preferredLanguage: .systemDefault
+            preferredLanguage: .systemDefault,
+            preferredTrack: track
         )
 
         modelContext.insert(profile)

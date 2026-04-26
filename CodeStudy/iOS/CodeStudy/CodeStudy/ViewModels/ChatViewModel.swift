@@ -447,13 +447,15 @@ final class ChatViewModel {
             return UserProfileSnapshot(
                 hasDevelopmentExperience: false,
                 swiftLevel: SwiftLevel.beginner.rawValue,
-                preferredLanguage: AppLanguage.korean.rawValue
+                preferredLanguage: AppLanguage.korean.rawValue,
+                track: TrackType.swift.rawValue
             )
         }
         return UserProfileSnapshot(
             hasDevelopmentExperience: profile.hasDevelopmentExperience,
             swiftLevel: profile.swiftLevel,
-            preferredLanguage: profile.preferredLanguage
+            preferredLanguage: profile.preferredLanguage,
+            track: profile.preferredTrack
         )
     }
 
@@ -492,10 +494,14 @@ final class ChatViewModel {
                 progress.isMastered = true
             }
         } else {
+            // 신규 ConceptProgress 생성 시 사용자의 현재 track을 함께 저장.
+            // (SettingsView에서 트랙 전환했어도 새로 마스터한 개념이 그 트랙에 귀속)
+            let userTrack = fetchUserTrack()
             let progress = ConceptProgress(
                 conceptID: session.conceptID,
                 conceptTitle: session.conceptTitle,
-                category: ""  // Category set by curriculum service
+                category: "",  // Category set by curriculum service
+                track: userTrack
             )
             progress.studiedCount = 1
             progress.lastStudiedAt = Date()
@@ -505,6 +511,14 @@ final class ChatViewModel {
             }
             modelContext.insert(progress)
         }
+    }
+
+    private func fetchUserTrack() -> TrackType {
+        let descriptor = FetchDescriptor<UserProfile>()
+        guard let profile = try? modelContext.fetch(descriptor).first else {
+            return .swift
+        }
+        return profile.track
     }
 
     private func updateStreak() {

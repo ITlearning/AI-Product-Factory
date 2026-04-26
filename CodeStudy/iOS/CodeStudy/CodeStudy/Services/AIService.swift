@@ -27,6 +27,7 @@ struct UserProfileSnapshot: Sendable {
     let hasDevelopmentExperience: Bool
     let swiftLevel: String  // "beginner"/"basic"/"intermediate"/"advanced"
     let preferredLanguage: String  // "ko"/"en"
+    let track: String  // "swift"/"backend" (Cycle 3)
 }
 
 struct MessageSnapshot: Sendable, Codable {
@@ -81,6 +82,8 @@ struct TutorRequest: Encodable {
     let conceptId: String
     let sessionId: String
     let userProfile: TutorUserProfile
+    /// Cycle 3 — 학습 트랙. Backend가 track-aware Socratic prompt 선택에 사용.
+    let track: String
 
     struct TutorUserProfile: Encodable {
         let level: String

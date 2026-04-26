@@ -113,14 +113,17 @@ export async function logConversation(entry) {
     const costUsd = entry.costUsd ?? null;
     const model = entry.model || null;
     const errorText = entry.errorMessage || entry.errorCode || null;
+    // Cycle 3 — 트랙별 분석을 위한 first-class 컬럼.
+    // 1.0.x 클라이언트는 track 미전송 → 'swift' fallback (tutor.js와 동일).
+    const track = String(entry.track || 'swift');
 
     await sql`
       INSERT INTO codestudy_log
         (user_id, session_id, concept_id, event, prompt_tokens,
-         completion_tokens, cost_usd, model, error, raw)
+         completion_tokens, cost_usd, model, error, track, raw)
       VALUES
         (${userId}, ${sessionId}, ${conceptId}, ${event}, ${promptTokens},
-         ${completionTokens}, ${costUsd}, ${model}, ${errorText}, ${JSON.stringify(safe)})
+         ${completionTokens}, ${costUsd}, ${model}, ${errorText}, ${track}, ${JSON.stringify(safe)})
     `;
   } catch (err) {
     // 어떠한 실패도 호출자에게 전파하지 않고 console로 fallback.

@@ -2,34 +2,48 @@
  * Socratic prompt engine.
  *
  * Assembles the system prompt from 3 layers:
- *   1. Socratic methodology rules
- *   2. Concept data from curriculum.json
+ *   1. Socratic methodology rules (track-aware: Swift/iOS vs Backend/Spring)
+ *   2. Concept data from curriculum (track-specific)
  *   3. Level-specific adaptation
  */
 
-import { curriculum as curriculumData } from '../data/curriculum.js';
+import { curriculum as swiftCurriculum } from '../data/curriculum.js';
+import { curriculum as backendCurriculum } from '../data/curriculum_backend.js';
 import { getLevelInstructions } from './level-adapters.js';
 
-function loadCurriculum() {
-  return curriculumData;
+const VALID_TRACKS = ['swift', 'backend'];
+
+/**
+ * Track-specific curriculum lookup. Falls back to swift for backward
+ * compatibility (older clients won't send track).
+ */
+function loadCurriculum(track = 'swift') {
+  if (track === 'backend') return backendCurriculum;
+  return swiftCurriculum;
 }
 
 /**
- * Find a concept by ID in the curriculum.
+ * Find a concept by ID in the curriculum for given track.
  *
  * @param {string} conceptId
+ * @param {string} [track='swift']
  * @returns {object|undefined}
  */
-function findConcept(conceptId) {
-  const curriculum = loadCurriculum();
+function findConcept(conceptId, track = 'swift') {
+  const curriculum = loadCurriculum(track);
   return curriculum.find((c) => c.id === conceptId);
 }
 
 // ---------------------------------------------------------------------------
-// Layer 1: Socratic methodology rules
+// Layer 1: Socratic methodology rules (track-aware)
 // ---------------------------------------------------------------------------
-function buildMethodologyLayer(language) {
-  return `You are a Socratic Swift/iOS tutor. You NEVER give direct answers.
+function buildMethodologyLayer(language, track = 'swift') {
+  // Track별 어법/예시 차이만 다르고 소크라테스식 원칙은 동일.
+  const tutorIdentity = track === 'backend'
+    ? 'You are a Socratic Kotlin/Spring backend tutor.'
+    : 'You are a Socratic Swift/iOS tutor.';
+
+  return `${tutorIdentity} You NEVER give direct answers.
 
 RULES:
 1. Ask questions to guide the student to discover answers themselves.
@@ -39,7 +53,7 @@ RULES:
 5. Wrong answer (2nd attempt): explain the answer, then move on.
 6. "I don't know" or confusion: pivot to a simpler example or analogy.
 7. 3-5 turns to converge on mastery of one concept.
-8. Code and Swift keywords always in English. Explanations in ${language}.
+8. ${track === 'backend' ? 'Code and Kotlin/Spring keywords' : 'Code and Swift keywords'} always in English. Explanations in ${language}.
 9. No emojis in teaching content.
 
 SESSION COMPLETION (STRICT — follow exactly):
@@ -88,21 +102,23 @@ function buildLevelLayer(level) {
 /**
  * Build the full system prompt for a Socratic tutoring session.
  *
- * @param {string} conceptId - Concept ID from curriculum.json
+ * @param {string} conceptId - Concept ID from curriculum
  * @param {'beginner'|'basic'|'intermediate'|'advanced'} userLevel
  * @param {'ko'|'en'} language - Response language
+ * @param {'swift'|'backend'} [track='swift'] - Learning track
  * @returns {string} Assembled system prompt
  */
-export function buildSystemPrompt(conceptId, userLevel, language = 'ko') {
-  const concept = findConcept(conceptId);
+export function buildSystemPrompt(conceptId, userLevel, language = 'ko', track = 'swift') {
+  const safeTrack = VALID_TRACKS.includes(track) ? track : 'swift';
+  const concept = findConcept(conceptId, safeTrack);
   if (!concept) {
-    throw new Error(`Concept not found: ${conceptId}`);
+    throw new Error(`Concept not found: ${conceptId} (track: ${safeTrack})`);
   }
 
   const lang = language === 'en' ? 'English' : 'Korean';
 
   const layers = [
-    buildMethodologyLayer(lang),
+    buildMethodologyLayer(lang, safeTrack),
     buildConceptLayer(concept, language),
     buildLevelLayer(userLevel),
   ];

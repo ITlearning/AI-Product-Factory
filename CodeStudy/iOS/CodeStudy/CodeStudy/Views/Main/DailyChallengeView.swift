@@ -204,7 +204,7 @@ struct DailyChallengeView: View {
                 .font(.system(size: 64))
                 .foregroundStyle(Color.warmOrange.opacity(0.7))
 
-            Text(String(localized: "dailyChallenge.empty.title", defaultValue: "첫 번째 Swift 여정을 시작해볼까요?"))
+            Text(String(localized: "dailyChallenge.empty.title", defaultValue: "첫 번째 학습 여정을 시작해볼까요?"))
                 .font(.title3)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.center)

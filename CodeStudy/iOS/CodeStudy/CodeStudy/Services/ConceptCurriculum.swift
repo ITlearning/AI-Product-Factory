@@ -61,25 +61,38 @@ struct Concept: Codable, Identifiable {
 // MARK: - ConceptCurriculum
 
 struct ConceptCurriculum {
+    let track: TrackType
     private let concepts: [Concept]
 
-    init() {
-        self.concepts = Self.loadConcepts()
+    /// 트랙 명시 가능. 기본은 .swift (기존 호출자 호환).
+    init(track: TrackType = .swift) {
+        self.track = track
+        self.concepts = Self.loadConcepts(track: track)
     }
 
     // MARK: - Load
 
-    /// Picks the curriculum file based on the current locale.
-    /// Falls back to English if Korean isn't selected, and to the legacy
-    /// `curriculum.json` if locale-specific files aren't bundled yet.
-    static func loadConcepts() -> [Concept] {
-        let resourceName = preferredResourceName()
-        let url = Bundle.main.url(forResource: resourceName, withExtension: "json")
-            ?? Bundle.main.url(forResource: "curriculum_en", withExtension: "json")
-            ?? Bundle.main.url(forResource: "curriculum", withExtension: "json")
+    /// Track + locale 조합으로 curriculum 파일 선택.
+    ///
+    /// 시도 순서 (fallback chain):
+    /// 1. `curriculum_{track}_{locale}.json` (정확한 매치)
+    /// 2. `curriculum_{track}_en.json` (track 영문 fallback)
+    /// 3. `curriculum_swift_{locale}.json` (Swift 트랙 fallback — 트랙 파일 누락 대비)
+    /// 4. `curriculum_swift_en.json` (최종 fallback)
+    /// 5. legacy `curriculum.json` (1.1.x 이전 빌드 호환)
+    static func loadConcepts(track: TrackType = .swift) -> [Concept] {
+        let candidates = preferredResourceCandidates(track: track)
+
+        var url: URL?
+        for name in candidates {
+            if let found = Bundle.main.url(forResource: name, withExtension: "json") {
+                url = found
+                break
+            }
+        }
 
         guard let url else {
-            assertionFailure("curriculum json not found in bundle")
+            assertionFailure("curriculum json not found in bundle for track \(track.rawValue)")
             return []
         }
 
@@ -93,10 +106,18 @@ struct ConceptCurriculum {
         }
     }
 
-    /// Returns "curriculum_ko" when device language is Korean, otherwise "curriculum_en".
-    private static func preferredResourceName() -> String {
+    /// Locale 기반 file 후보 목록 (우선순위 순).
+    private static func preferredResourceCandidates(track: TrackType) -> [String] {
         let code = Locale.current.language.languageCode?.identifier
-        return code == "ko" ? "curriculum_ko" : "curriculum_en"
+        let langSuffix = (code == "ko") ? "ko" : "en"
+
+        return [
+            "curriculum_\(track.rawValue)_\(langSuffix)",
+            "curriculum_\(track.rawValue)_en",
+            "curriculum_swift_\(langSuffix)",
+            "curriculum_swift_en",
+            "curriculum",  // legacy
+        ]
     }
 
     // MARK: - Query

@@ -11,6 +11,7 @@ final class SettingsViewModel {
     struct State {
         var swiftLevel: SwiftLevel = .beginner
         var language: AppLanguage = .korean
+        var track: TrackType = .swift
         var notificationEnabled = false
         var reminderHour = 20
         var reminderMinute = 0
@@ -23,6 +24,7 @@ final class SettingsViewModel {
         case loadSettings
         case updateLevel(SwiftLevel)
         case updateLanguage(AppLanguage)
+        case updateTrack(TrackType)
         case toggleNotifications(Bool)
         case updateReminderTime(hour: Int, minute: Int)
     }
@@ -49,6 +51,8 @@ final class SettingsViewModel {
             await updateLevel(level)
         case .updateLanguage(let language):
             await updateLanguage(language)
+        case .updateTrack(let track):
+            await updateTrack(track)
         case .toggleNotifications(let enabled):
             await toggleNotifications(enabled)
         case .updateReminderTime(let hour, let minute):
@@ -63,6 +67,7 @@ final class SettingsViewModel {
 
         state.swiftLevel = profile.level
         state.language = profile.language
+        state.track = profile.track
 
         // Check current notification authorization status
         let center = UNUserNotificationCenter.current()
@@ -93,6 +98,13 @@ final class SettingsViewModel {
         guard let profile = fetchProfile() else { return }
         profile.language = language
         state.language = language
+        saveContext()
+    }
+
+    private func updateTrack(_ track: TrackType) async {
+        guard let profile = fetchProfile() else { return }
+        profile.track = track
+        state.track = track
         saveContext()
     }
 
@@ -129,7 +141,7 @@ final class SettingsViewModel {
         center.removePendingNotificationRequests(withIdentifiers: ["daily-study-reminder"])
 
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "notification.reminder.title", defaultValue: "오늘의 Swift 학습")
+        content.title = String(localized: "notification.reminder.title", defaultValue: "오늘의 학습")
         content.body = String(localized: "notification.reminder.body", defaultValue: "5분만 투자해서 새로운 개념을 마스터해보세요!")
         content.sound = .default
 

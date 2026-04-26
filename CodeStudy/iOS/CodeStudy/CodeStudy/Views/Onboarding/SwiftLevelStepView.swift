@@ -5,40 +5,76 @@ import SwiftUI
 
 struct SwiftLevelStepView: View {
     let selection: SwiftLevel?
+    let track: TrackType  // Cycle 3 — 트랙별 다른 카피 노출
     let onSelect: (SwiftLevel) -> Void
     let onNext: () -> Void
 
+    /// 트랙에 맞는 level 카드 데이터.
     private var levelData: [(SwiftLevel, String, String, String)] {
+        switch track {
+        case .swift:
+            return swiftLevelData
+        case .backend:
+            return backendLevelData
+        }
+    }
+
+    private var swiftLevelData: [(SwiftLevel, String, String, String)] {
         [
-            // (level, title, description, SF Symbol)
             (.beginner,
              String(localized: "onboarding.level.beginner", defaultValue: "처음"),
-             // EN: Beginner
              String(localized: "onboarding.level.beginner.desc", defaultValue: "Swift를 처음 접해요"),
-             // EN: Completely new to Swift
              "leaf"),
-
             (.basic,
              String(localized: "onboarding.level.basic", defaultValue: "기초"),
-             // EN: Basic
              String(localized: "onboarding.level.basic.desc", defaultValue: "변수, 조건문 정도는 알아요"),
-             // EN: I know variables and conditionals
              "text.book.closed"),
-
             (.intermediate,
              String(localized: "onboarding.level.intermediate", defaultValue: "중급"),
-             // EN: Intermediate
              String(localized: "onboarding.level.intermediate.desc", defaultValue: "프로토콜, 제네릭을 써봤어요"),
-             // EN: I've used protocols and generics
              "hammer"),
-
             (.advanced,
              String(localized: "onboarding.level.advanced", defaultValue: "고급"),
-             // EN: Advanced
              String(localized: "onboarding.level.advanced.desc", defaultValue: "Concurrency, Macro를 공부하고 싶어요"),
-             // EN: I want to study Concurrency and Macros
              "bolt"),
         ]
+    }
+
+    private var backendLevelData: [(SwiftLevel, String, String, String)] {
+        [
+            (.beginner,
+             String(localized: "onboarding.level.beginner", defaultValue: "처음"),
+             String(localized: "onboarding.level.backend.beginner.desc",
+                    defaultValue: "Spring/Kotlin을 처음 접해요"),
+             "leaf"),
+            (.basic,
+             String(localized: "onboarding.level.basic", defaultValue: "기초"),
+             String(localized: "onboarding.level.backend.basic.desc",
+                    defaultValue: "기본 CRUD API는 만들어봤어요"),
+             "text.book.closed"),
+            (.intermediate,
+             String(localized: "onboarding.level.intermediate", defaultValue: "중급"),
+             String(localized: "onboarding.level.backend.intermediate.desc",
+                    defaultValue: "JPA, 트랜잭션 운영 경험 있어요"),
+             "hammer"),
+            (.advanced,
+             String(localized: "onboarding.level.advanced", defaultValue: "고급"),
+             String(localized: "onboarding.level.backend.advanced.desc",
+                    defaultValue: "대규모 시스템 설계를 공부하고 싶어요"),
+             "bolt"),
+        ]
+    }
+
+    /// 트랙별 헤더 타이틀.
+    private var titleText: String {
+        switch track {
+        case .swift:
+            return String(localized: "onboarding.level.title",
+                          defaultValue: "Swift 경험은 어느 정도인가요?")
+        case .backend:
+            return String(localized: "onboarding.level.title.backend",
+                          defaultValue: "백엔드 경험은 어느 정도인가요?")
+        }
     }
 
     var body: some View {
@@ -46,10 +82,8 @@ struct SwiftLevelStepView: View {
             Spacer()
                 .frame(height: 32)
 
-            // Title
-            Text(String(localized: "onboarding.level.title",
-                         defaultValue: "Swift 경험은 어느 정도인가요?"))
-                // EN: How much Swift experience do you have?
+            // Title (track-aware)
+            Text(titleText)
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(Color.deepBlue)
                 .multilineTextAlignment(.center)
@@ -150,9 +184,19 @@ struct SwiftLevelStepView: View {
     }
 }
 
-#Preview {
+#Preview("Swift") {
     SwiftLevelStepView(
         selection: .basic,
+        track: .swift,
+        onSelect: { _ in },
+        onNext: {}
+    )
+}
+
+#Preview("Backend") {
+    SwiftLevelStepView(
+        selection: .basic,
+        track: .backend,
         onSelect: { _ in },
         onNext: {}
     )

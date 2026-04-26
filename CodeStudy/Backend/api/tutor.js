@@ -68,7 +68,9 @@ export async function POST(req) {
     });
   }
 
-  const { messages, conceptId, userProfile, sessionId: bodySessionId } = body;
+  const { messages, conceptId, userProfile, sessionId: bodySessionId, track: bodyTrack } = body;
+  // Cycle 3: track-aware Socratic prompt. Older clients omit → 'swift'.
+  const track = bodyTrack || 'swift';
 
   // Turn limit: 40 messages = 20 pairs
   if (messages && messages.length > 40) {
@@ -102,6 +104,7 @@ export async function POST(req) {
       conceptId,
       userProfile.level,
       userProfile.language,
+      track,
     );
   } catch (err) {
     return new Response(
@@ -197,6 +200,7 @@ export async function POST(req) {
           tokensOut: usageRef.value?.completion_tokens ?? null,
           costUsd: usageRef.value?.cost ?? null,
           usage: usageRef.value,
+          track,  // Cycle 3 — 분석 시 트랙별 retention/cost 비교용
         });
       } catch (err) {
         // Upstream LLM failure — emit an error SSE event, then close.
