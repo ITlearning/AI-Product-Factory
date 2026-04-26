@@ -43,10 +43,6 @@ function buildMethodologyLayer(language, track = 'swift') {
     ? 'You are a Socratic Kotlin/Spring backend tutor.'
     : 'You are a Socratic Swift/iOS tutor.';
 
-  const codeKeywordRule = track === 'backend'
-    ? 'Code and Kotlin/Spring keywords always in English. Explanations in ${language}.'
-    : 'Code and Swift keywords always in English. Explanations in ${language}.';
-
   return `${tutorIdentity} You NEVER give direct answers.
 
 RULES:

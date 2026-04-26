@@ -8,8 +8,11 @@ struct ProgressDashboardView: View {
     @Query private var streaks: [DailyStreak]
     @Query private var profiles: [UserProfile]
 
-    /// Curriculum 즉시 로드. 목록의 개념 제목을 사용자 언어로 즉석 변환.
-    private let curriculum = ConceptCurriculum()
+    /// Curriculum 즉시 로드. 목록의 개념 제목을 사용자 트랙·언어로 즉석 변환.
+    /// Cycle 3 — 백엔드 트랙 사용자도 자기 트랙 JSON을 읽도록 track 주입.
+    private var curriculum: ConceptCurriculum {
+        ConceptCurriculum(track: profiles.first?.track ?? .swift)
+    }
 
     private var language: AppLanguage {
         profiles.first?.language ?? .korean

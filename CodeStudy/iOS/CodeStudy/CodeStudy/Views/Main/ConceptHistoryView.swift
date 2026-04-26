@@ -19,8 +19,12 @@ struct ConceptHistoryView: View {
 
     @State private var isLoading = true
 
-    /// Curriculum 즉시 로드. 사용자 언어에 맞는 JSON을 골라 읽음.
-    private let curriculum = ConceptCurriculum()
+    /// Curriculum 즉시 로드. 사용자 트랙·언어에 맞는 JSON을 골라 읽음.
+    /// Cycle 3 — 백엔드 트랙 conceptId가 swift JSON에 없어 fallback 카피
+    /// 노출되던 문제를 막기 위해 track 주입.
+    private var curriculum: ConceptCurriculum {
+        ConceptCurriculum(track: profiles.first?.track ?? .swift)
+    }
 
     /// 사용자 설정 언어. UserProfile이 없으면(첫 실행) 한국어 fallback.
     private var language: AppLanguage {
