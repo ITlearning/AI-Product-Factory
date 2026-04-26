@@ -141,7 +141,7 @@ final class SettingsViewModel {
         center.removePendingNotificationRequests(withIdentifiers: ["daily-study-reminder"])
 
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "notification.reminder.title", defaultValue: "오늘의 Swift 학습")
+        content.title = String(localized: "notification.reminder.title", defaultValue: "오늘의 학습")
         content.body = String(localized: "notification.reminder.body", defaultValue: "5분만 투자해서 새로운 개념을 마스터해보세요!")
         content.sound = .default
 

@@ -88,7 +88,7 @@ struct MessageInputBar: View {
                         // So the first glyph's baseline starts at (15, 10).
                         Text(String(
                             localized: "input.placeholder.code",
-                            defaultValue: "Swift 코드를 입력하세요..."
+                            defaultValue: "코드를 입력하세요..."
                         ))
                         .font(.system(size: 16, design: .monospaced))
                         .foregroundStyle(Color.white.opacity(0.35))

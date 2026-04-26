@@ -36,7 +36,7 @@ struct SettingsView: View {
             Section {
                 // Swift level picker
                 Picker(
-                    String(localized: "settings.level", defaultValue: "Swift 레벨"),
+                    String(localized: "settings.level", defaultValue: "레벨"),
                     selection: Binding(
                         get: { viewModel.state.swiftLevel },
                         set: { newLevel in

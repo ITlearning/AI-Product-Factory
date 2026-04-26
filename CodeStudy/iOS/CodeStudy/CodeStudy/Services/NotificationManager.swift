@@ -30,7 +30,7 @@ final class NotificationManager: @unchecked Sendable {
         let content = UNMutableNotificationContent()
         content.title = String(
             localized: "notification.reminder.title",
-            defaultValue: "오늘의 Swift 학습"
+            defaultValue: "오늘의 학습"
         )
 
         if let tip = conceptTip, !tip.isEmpty {
@@ -38,7 +38,7 @@ final class NotificationManager: @unchecked Sendable {
         } else {
             content.body = String(
                 localized: "notification.reminder.body",
-                defaultValue: "오늘도 Swift 한 개념 마스터해볼까요?"
+                defaultValue: "오늘도 한 개념 마스터해볼까요?"
             )
         }
 
