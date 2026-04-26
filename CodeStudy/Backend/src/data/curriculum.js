@@ -1448,5 +1448,875 @@ export const curriculum = [
       "any is a zoo that accepts any animal; some is a pen for one specific species"
     ],
     "simpler_fallback": "swift-protocols"
+  },
+  {
+    "id": "swift-defer",
+    "title_en": "defer Statement",
+    "title_ko": "defer 문",
+    "level": "basic",
+    "category": "control-flow",
+    "order": 51,
+    "tip_ko": "defer 블록은 현재 스코프를 빠져나갈 때 항상 실행돼요. 자원 정리에 안성맞춤이에요",
+    "tip_en": "defer always runs when the current scope exits — perfect for cleanup",
+    "teaching_hints_ko": {
+      "what": "스코프를 떠나기 직전에 실행하기로 예약하는 코드 블록",
+      "why": "에러나 early return이 있어도 정리 코드를 빠뜨리지 않게 해줘요",
+      "how": "func readFile() {\n    let file = open(\"a.txt\")\n    defer { file.close() } // 어떤 경로로 빠져나가도 닫힘\n    // 파일 작업...\n}",
+      "watchOut": "여러 defer가 있으면 LIFO(나중에 등록한 게 먼저 실행)로 동작해요"
+    },
+    "teaching_hints_en": {
+      "what": "A block scheduled to run just before the current scope exits",
+      "why": "Guarantees cleanup runs even on errors or early returns",
+      "how": "func readFile() {\n    let file = open(\"a.txt\")\n    defer { file.close() } // runs no matter how we exit\n    // work with file...\n}",
+      "watchOut": "Multiple defers run in LIFO order — last registered runs first"
+    },
+    "analogies_ko": [
+      "방을 나갈 때 자동으로 불을 끄는 동작 감지 센서"
+    ],
+    "analogies_en": [
+      "A motion sensor that automatically turns the lights off as you leave the room"
+    ],
+    "simpler_fallback": "swift-functions"
+  },
+  {
+    "id": "swift-function-types",
+    "title_en": "Function Types",
+    "title_ko": "함수 타입",
+    "level": "basic",
+    "category": "functions",
+    "order": 52,
+    "tip_ko": "함수도 값이에요. 변수에 담고, 인자로 넘기고, 리턴할 수 있어요",
+    "tip_en": "Functions are values — you can store them, pass them, and return them",
+    "teaching_hints_ko": {
+      "what": "(파라미터타입) -> 리턴타입 형태로 표현되는 함수의 타입",
+      "why": "함수를 일급 시민(first-class citizen)으로 다룰 수 있어 콜백·전략 패턴이 자연스러워져요",
+      "how": "func add(_ a: Int, _ b: Int) -> Int { a + b }\nlet op: (Int, Int) -> Int = add\nprint(op(3, 4)) // 7",
+      "watchOut": "함수 타입과 클로저 타입 표기는 동일해요. 둘은 같은 개념의 두 표현이에요"
+    },
+    "teaching_hints_en": {
+      "what": "A function's type, written as (ParamType) -> ReturnType",
+      "why": "Lets functions be first-class citizens — natural callbacks and strategy patterns",
+      "how": "func add(_ a: Int, _ b: Int) -> Int { a + b }\nlet op: (Int, Int) -> Int = add\nprint(op(3, 4)) // 7",
+      "watchOut": "Function and closure types share the same syntax — they're two faces of the same idea"
+    },
+    "analogies_ko": [
+      "요리사 자체를 박스에 담아 다른 식당으로 보내는 것"
+    ],
+    "analogies_en": [
+      "Boxing up the chef themselves and shipping them to another restaurant"
+    ],
+    "simpler_fallback": "swift-functions"
+  },
+  {
+    "id": "swift-inout",
+    "title_en": "inout Parameters",
+    "title_ko": "inout 매개변수",
+    "level": "basic",
+    "category": "functions",
+    "order": 53,
+    "tip_ko": "inout은 값을 안에서 바꾸고 호출자에게 돌려주는 통로예요. 호출 때 &를 붙이는 거 잊지 마세요",
+    "tip_en": "inout is a two-way channel — mutate inside the function and send the change back. Remember the & at the call site",
+    "teaching_hints_ko": {
+      "what": "함수가 인자의 원본을 직접 수정할 수 있게 해주는 키워드",
+      "why": "Swift는 기본이 값 전달이라, 원본을 바꾸려면 명시적인 통로가 필요해요",
+      "how": "func swapInts(_ a: inout Int, _ b: inout Int) {\n    let t = a; a = b; b = t\n}\nvar x = 1, y = 2\nswapInts(&x, &y) // 호출 시 &",
+      "watchOut": "let 상수나 리터럴은 inout으로 넘길 수 없어요. 반드시 var여야 해요"
+    },
+    "teaching_hints_en": {
+      "what": "A keyword that lets a function mutate the caller's original value",
+      "why": "Swift passes by value by default — you need an explicit channel to write back",
+      "how": "func swapInts(_ a: inout Int, _ b: inout Int) {\n    let t = a; a = b; b = t\n}\nvar x = 1, y = 2\nswapInts(&x, &y) // & at call site",
+      "watchOut": "You can't pass let constants or literals as inout — they must be var"
+    },
+    "analogies_ko": [
+      "서류를 들고 가서 도장 찍어 그대로 돌려주는 심부름"
+    ],
+    "analogies_en": [
+      "Handing someone your form, they stamp it, and hand the same paper back"
+    ],
+    "simpler_fallback": "swift-functions"
+  },
+  {
+    "id": "swift-weak-unowned",
+    "title_en": "weak and unowned",
+    "title_ko": "weak와 unowned",
+    "level": "intermediate",
+    "category": "oop",
+    "order": 54,
+    "tip_ko": "참조 사이클이 의심되면 둘 중 하나의 방향을 weak이나 unowned로 끊어요",
+    "tip_en": "When a retain cycle is suspected, break one direction with weak or unowned",
+    "teaching_hints_ko": {
+      "what": "강한 순환 참조를 끊기 위한 약한 참조 키워드. weak는 옵셔널, unowned는 비옵셔널",
+      "why": "ARC가 메모리를 회수하지 못해 누수가 생길 때 사이클을 끊어줘야 해요",
+      "how": "class Owner { var pet: Pet? }\nclass Pet { weak var owner: Owner? } // weak로 사이클 차단",
+      "watchOut": "unowned는 객체가 살아있다고 확신할 때만. 죽은 unowned 접근은 크래시예요"
+    },
+    "teaching_hints_en": {
+      "what": "Reference modifiers that break strong reference cycles. weak is optional, unowned is not",
+      "why": "ARC can't reclaim memory inside a cycle — you must break it manually",
+      "how": "class Owner { var pet: Pet? }\nclass Pet { weak var owner: Owner? } // weak breaks the cycle",
+      "watchOut": "Use unowned only when you're sure the object outlives this reference — accessing a dead unowned crashes"
+    },
+    "analogies_ko": [
+      "weak는 풀어진 끈, unowned는 풀어졌지만 절대 안 끊긴다고 약속한 끈"
+    ],
+    "analogies_en": [
+      "weak is a loose tether that may be empty; unowned is a tether you promise will never break"
+    ],
+    "simpler_fallback": "swift-classes"
+  },
+  {
+    "id": "swift-capture-lists",
+    "title_en": "Capture Lists",
+    "title_ko": "캡처 리스트",
+    "level": "intermediate",
+    "category": "closures",
+    "order": 55,
+    "tip_ko": "클로저 안에서 self를 쓸 때 [weak self]나 [unowned self]를 거의 항상 고민하세요",
+    "tip_en": "Whenever a closure uses self, almost always consider [weak self] or [unowned self]",
+    "teaching_hints_ko": {
+      "what": "클로저가 외부 값을 어떻게 잡을지 명시하는 [weak self], [a, b] 같은 리스트",
+      "why": "기본 강한 캡처는 객체와 클로저가 서로를 붙잡아 메모리 누수의 원인이 돼요",
+      "how": "viewModel.onUpdate = { [weak self] value in\n    guard let self else { return }\n    self.label.text = \"\\(value)\"\n}",
+      "watchOut": "[weak self]를 쓰면 self가 옵셔널이 돼요. guard let self로 풀어 쓰는 게 일반적"
+    },
+    "teaching_hints_en": {
+      "what": "A list like [weak self] that tells a closure how to capture outer values",
+      "why": "Default strong capture lets the closure and the object hold each other — leak risk",
+      "how": "viewModel.onUpdate = { [weak self] value in\n    guard let self else { return }\n    self.label.text = \"\\(value)\"\n}",
+      "watchOut": "[weak self] makes self optional inside — usually unwrap with guard let self"
+    },
+    "analogies_ko": [
+      "여행 가방에 뭘 가져갈지 입구에서 적어두는 짐 목록"
+    ],
+    "analogies_en": [
+      "A packing list at the door that declares exactly what goes in your suitcase"
+    ],
+    "simpler_fallback": "swift-closures"
+  },
+  {
+    "id": "swift-async-sequence",
+    "title_en": "AsyncSequence",
+    "title_ko": "AsyncSequence",
+    "level": "intermediate",
+    "category": "concurrency",
+    "order": 56,
+    "tip_ko": "for try await로 시간이 흐르며 도착하는 값들을 한 줄씩 받아쓸 수 있어요",
+    "tip_en": "Use for try await to consume values that arrive over time, one by one",
+    "teaching_hints_ko": {
+      "what": "값을 비동기적으로, 시간 차를 두고 하나씩 내보내는 시퀀스 프로토콜",
+      "why": "스트리밍·소켓·라인 단위 파일 읽기처럼 끝없이 흐르는 데이터에 자연스러워요",
+      "how": "let url = URL(string: \"https://example.com/log\")!\nfor try await line in url.lines {\n    print(line)\n}",
+      "watchOut": "AsyncSequence 자체는 async 함수 안에서만 소비할 수 있어요"
+    },
+    "teaching_hints_en": {
+      "what": "A protocol for sequences that yield values asynchronously, over time",
+      "why": "Natural fit for streams, sockets, and line-by-line file reads",
+      "how": "let url = URL(string: \"https://example.com/log\")!\nfor try await line in url.lines {\n    print(line)\n}",
+      "watchOut": "An AsyncSequence can only be consumed inside an async context"
+    },
+    "analogies_ko": [
+      "컨베이어 벨트 위로 하나씩 도착하는 택배"
+    ],
+    "analogies_en": [
+      "Packages arriving one at a time on a conveyor belt"
+    ],
+    "simpler_fallback": "swift-async-await"
+  },
+  {
+    "id": "swift-continuations",
+    "title_en": "Continuations",
+    "title_ko": "Continuations",
+    "level": "advanced",
+    "category": "concurrency",
+    "order": 57,
+    "tip_ko": "콜백 기반 옛 API를 async/await로 감싸는 다리예요. resume은 정확히 한 번만!",
+    "tip_en": "A bridge that wraps callback-based legacy APIs into async/await. Call resume exactly once",
+    "teaching_hints_ko": {
+      "what": "비동기 작업을 잠시 멈추고, 외부에서 완료되었음을 알리는 핸들",
+      "why": "URLSession 콜백, 델리게이트 같은 옛 API를 await로 끌어오기 위해 필요해요",
+      "how": "func load() async throws -> Data {\n    try await withCheckedThrowingContinuation { cont in\n        api.fetch { result in cont.resume(with: result) }\n    }\n}",
+      "watchOut": "resume을 두 번 호출하면 크래시. 한 번도 호출 안 하면 영원히 멈춰요"
+    },
+    "teaching_hints_en": {
+      "what": "A handle that suspends an async task and resumes it from the outside",
+      "why": "Needed to lift callback-based or delegate APIs into the await world",
+      "how": "func load() async throws -> Data {\n    try await withCheckedThrowingContinuation { cont in\n        api.fetch { result in cont.resume(with: result) }\n    }\n}",
+      "watchOut": "Resuming twice crashes; never resuming hangs forever"
+    },
+    "analogies_ko": [
+      "대기표를 손에 쥐고 번호가 불릴 때까지 기다리는 손님"
+    ],
+    "analogies_en": [
+      "Holding a deli ticket and waiting for your number to be called"
+    ],
+    "simpler_fallback": "swift-async-await"
+  },
+  {
+    "id": "swift-mainactor",
+    "title_en": "@MainActor",
+    "title_ko": "@MainActor",
+    "level": "intermediate",
+    "category": "concurrency",
+    "order": 58,
+    "tip_ko": "UI를 만지는 코드는 @MainActor로 묶어두면 컴파일러가 메인 스레드를 보장해줘요",
+    "tip_en": "Annotate UI-touching code with @MainActor and the compiler guarantees the main thread",
+    "teaching_hints_ko": {
+      "what": "특정 타입·메서드를 메인 스레드에서만 실행되도록 강제하는 어노테이션",
+      "why": "UIKit/SwiftUI는 메인 스레드 외 접근 시 미정의 동작이라 컴파일 타임에 막아주는 게 안전해요",
+      "how": "@MainActor\nfinal class HomeViewModel: ObservableObject {\n    @Published var title = \"Hello\"\n    func update(_ s: String) { title = s } // 항상 메인",
+      "watchOut": "MainActor가 아닌 컨텍스트에서 호출하려면 await로 호핑이 필요해요"
+    },
+    "teaching_hints_en": {
+      "what": "An annotation that forces a type or method to run on the main thread",
+      "why": "UIKit/SwiftUI off-main access is undefined behavior — better to catch it at compile time",
+      "how": "@MainActor\nfinal class HomeViewModel: ObservableObject {\n    @Published var title = \"Hello\"\n    func update(_ s: String) { title = s } // always main\n}",
+      "watchOut": "Calling from a non-MainActor context requires await to hop over"
+    },
+    "analogies_ko": [
+      "무대 위에서만 연기 가능한 배우 — 다른 데로 끌어오면 NG"
+    ],
+    "analogies_en": [
+      "An actor allowed to perform only on the main stage — anywhere else is a flubbed take"
+    ],
+    "simpler_fallback": "swift-async-await"
+  },
+  {
+    "id": "swift-strict-concurrency",
+    "title_en": "Strict Concurrency",
+    "title_ko": "엄격한 동시성",
+    "level": "advanced",
+    "category": "concurrency",
+    "order": 59,
+    "tip_ko": "Swift 6의 데이터 레이스 안전성 — 컴파일러가 동시성 버그를 미리 막아줘요",
+    "tip_en": "Swift 6's data-race safety — the compiler stops concurrency bugs before they ship",
+    "teaching_hints_ko": {
+      "what": "액터 격리·Sendable 검사·고립 위반을 컴파일러가 강제하는 모드",
+      "why": "런타임에서야 터지던 데이터 레이스를 빌드 타임에 잡아내기 위해서예요",
+      "how": "// 액터 사이로 보낼 타입은 Sendable이어야 함\nstruct User: Sendable { let id: Int; let name: String }\nactor Store { var users: [User] = [] }",
+      "watchOut": "기존 코드에 Sendable 경고가 폭발할 수 있어요. 점진 적용(Strict mode)을 활용하세요"
+    },
+    "teaching_hints_en": {
+      "what": "A mode where the compiler enforces actor isolation, Sendable, and isolation rules",
+      "why": "Catches data races at build time instead of crashing in production",
+      "how": "// Types that cross actor boundaries must be Sendable\nstruct User: Sendable { let id: Int; let name: String }\nactor Store { var users: [User] = [] }",
+      "watchOut": "Existing code may light up with Sendable warnings — adopt incrementally via strict mode"
+    },
+    "analogies_ko": [
+      "공항 보안검색대 — 통과시킬 짐만 미리 정해 사고를 차단"
+    ],
+    "analogies_en": [
+      "Airport security — only pre-cleared luggage crosses, blocking incidents at the gate"
+    ],
+    "simpler_fallback": "swift-actors"
+  },
+  {
+    "id": "swift-typed-throws",
+    "title_en": "Typed throws",
+    "title_ko": "타입 throws",
+    "level": "advanced",
+    "category": "modern",
+    "order": 60,
+    "tip_ko": "throws(MyError)로 함수가 던질 수 있는 에러 종류를 타입 시스템에 적어둘 수 있어요",
+    "tip_en": "throws(MyError) lets you declare exactly which error type a function can throw",
+    "teaching_hints_ko": {
+      "what": "Swift 6에서 도입된, 던지는 에러의 구체적인 타입을 명시하는 문법",
+      "why": "어떤 에러가 나올지 호출자가 미리 알 수 있어, do-catch가 더 정확해져요",
+      "how": "enum NetError: Error { case offline, timeout }\nfunc fetch() throws(NetError) -> Data {\n    throw .offline\n}",
+      "watchOut": "에러 종류가 늘면 호환이 깨지기 쉬워요. 라이브러리 경계에선 신중히 도입하세요"
+    },
+    "teaching_hints_en": {
+      "what": "A Swift 6 syntax that declares the specific error type a function can throw",
+      "why": "Callers know exactly which errors are possible, making do-catch precise",
+      "how": "enum NetError: Error { case offline, timeout }\nfunc fetch() throws(NetError) -> Data {\n    throw .offline\n}",
+      "watchOut": "Adding new error cases is a breaking change — use carefully at library boundaries"
+    },
+    "analogies_ko": [
+      "식당 메뉴판에 알레르기 유발 성분을 미리 적어두는 것"
+    ],
+    "analogies_en": [
+      "A restaurant menu listing the exact allergens up front, so you know what to expect"
+    ],
+    "simpler_fallback": "swift-error-handling"
+  },
+  {
+    "id": "swift-observable-framework",
+    "title_en": "Observable Framework (@Observable)",
+    "title_ko": "Observable 프레임워크 (@Observable)",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 61,
+    "tip_ko": "iOS 17+에서는 ObservableObject + @Published 대신 @Observable 매크로 하나로 끝나요",
+    "tip_en": "On iOS 17+, replace ObservableObject + @Published with the single @Observable macro",
+    "teaching_hints_ko": {
+      "what": "클래스에 붙이면 모든 저장 프로퍼티의 변화를 SwiftUI가 자동으로 감지하게 해주는 매크로",
+      "why": "@Published를 일일이 붙일 필요가 없고, 실제로 View가 읽은 프로퍼티만 다시 그려서 성능이 좋음",
+      "how": "@Observable\nclass Counter {\n    var count = 0\n}\n\nstruct CounterView: View {\n    @State private var counter = Counter()\n    var body: some View { Text(\"\\(counter.count)\") }\n}",
+      "watchOut": "iOS 17 이상에서만 동작. 이전 버전 호환이 필요하면 ObservableObject를 그대로 써야 해요"
+    },
+    "teaching_hints_en": {
+      "what": "A macro that lets SwiftUI track changes to any stored property of a class automatically",
+      "why": "No more @Published per property, and views only redraw when properties they actually read change",
+      "how": "@Observable\nclass Counter {\n    var count = 0\n}\n\nstruct CounterView: View {\n    @State private var counter = Counter()\n    var body: some View { Text(\"\\(counter.count)\") }\n}",
+      "watchOut": "iOS 17+ only. For older targets, fall back to ObservableObject"
+    },
+    "analogies_ko": [
+      "일일이 '이거 봐주세요' 손 들 필요 없이 방 안의 모든 변화를 자동 감지하는 똑똑한 비서"
+    ],
+    "analogies_en": [
+      "A smart assistant that notices every change in the room without you flagging each item"
+    ],
+    "simpler_fallback": "swift-observableobject"
+  },
+  {
+    "id": "swift-viewbuilder",
+    "title_en": "ViewBuilder",
+    "title_ko": "ViewBuilder",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 62,
+    "tip_ko": "SwiftUI의 body가 여러 뷰를 나란히 쓸 수 있는 비밀이 바로 @ViewBuilder예요",
+    "tip_en": "@ViewBuilder is the secret behind SwiftUI's body letting you list multiple views without commas",
+    "teaching_hints_ko": {
+      "what": "여러 View를 받아서 하나의 뷰 트리로 합쳐주는 결과 빌더(result builder)",
+      "why": "조건문, 분기 등을 자연스러운 문법으로 뷰 안에 쓸 수 있게 해줌. 커스텀 컨테이너 만들 때 필수",
+      "how": "struct Card<Content: View>: View {\n    @ViewBuilder let content: () -> Content\n    var body: some View {\n        VStack { content() }.padding()\n    }\n}",
+      "watchOut": "ViewBuilder 안의 if/else는 두 분기 타입이 달라도 되지만, 실행 결과가 매번 다른 타입이면 애니메이션이 끊길 수 있어요"
+    },
+    "teaching_hints_en": {
+      "what": "A result builder that combines multiple Views into a single view tree",
+      "why": "Lets you write if/else and branching naturally inside a view, and is essential for custom container views",
+      "how": "struct Card<Content: View>: View {\n    @ViewBuilder let content: () -> Content\n    var body: some View {\n        VStack { content() }.padding()\n    }\n}",
+      "watchOut": "if/else branches can have different types, but switching types frequently can break animations"
+    },
+    "analogies_ko": [
+      "레고 블록을 차곡차곡 받아서 한 모델로 조립해주는 작업대"
+    ],
+    "analogies_en": [
+      "A workbench that takes loose Lego bricks and assembles them into one model"
+    ],
+    "simpler_fallback": "swift-views"
+  },
+  {
+    "id": "swift-swiftui-charts",
+    "title_en": "SwiftUI Charts",
+    "title_ko": "SwiftUI Charts",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 63,
+    "tip_ko": "import Charts 하나면 BarMark, LineMark만 조합해서 차트가 완성돼요",
+    "tip_en": "import Charts and combine BarMark or LineMark — that's an entire chart",
+    "teaching_hints_ko": {
+      "what": "iOS 16+에서 제공하는 선언형 차트 프레임워크. Chart 컨테이너 안에 마크들을 쌓아서 만듦",
+      "why": "Core Plot 같은 외부 라이브러리 없이 SwiftUI 문법 그대로 막대/선/영역 차트를 그릴 수 있음",
+      "how": "import Charts\nChart(sales) { item in\n    BarMark(\n        x: .value(\"Day\", item.day),\n        y: .value(\"Total\", item.total)\n    )\n}",
+      "watchOut": "데이터가 Identifiable이거나 id를 명시해야 함. 너무 많은 포인트(수만 개)는 성능에 부담"
+    },
+    "teaching_hints_en": {
+      "what": "A declarative charting framework (iOS 16+) where you stack Marks inside a Chart container",
+      "why": "Build bar, line, area charts with native SwiftUI syntax — no third-party libraries needed",
+      "how": "import Charts\nChart(sales) { item in\n    BarMark(\n        x: .value(\"Day\", item.day),\n        y: .value(\"Total\", item.total)\n    )\n}",
+      "watchOut": "Data must be Identifiable or have an explicit id. Tens of thousands of points hurt performance"
+    },
+    "analogies_ko": [
+      "엑셀에서 데이터 범위 잡고 '차트 삽입' 누르는 것의 코드 버전"
+    ],
+    "analogies_en": [
+      "Like clicking 'Insert Chart' in Excel — but written as code"
+    ],
+    "simpler_fallback": "swift-views"
+  },
+  {
+    "id": "swift-geometry-reader",
+    "title_en": "GeometryReader",
+    "title_ko": "GeometryReader",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 64,
+    "tip_ko": "꼭 필요할 때만 쓰세요. 대부분의 레이아웃은 frame, GeometryReader 없이 더 깔끔하게 풀려요",
+    "tip_en": "Reach for it only when needed — most layouts are cleaner without it",
+    "teaching_hints_ko": {
+      "what": "부모가 제안한 크기와 좌표 정보(GeometryProxy)를 자식이 읽을 수 있게 해주는 컨테이너",
+      "why": "화면 비율 기반 레이아웃이나 부모 크기에 따라 동적으로 변하는 UI를 만들 때 필요",
+      "how": "GeometryReader { proxy in\n    Rectangle()\n        .frame(width: proxy.size.width * 0.5)\n}",
+      "watchOut": "GeometryReader는 가능한 모든 공간을 차지함. List나 ScrollView 안에서는 의도와 다른 크기가 나올 수 있어요"
+    },
+    "teaching_hints_en": {
+      "what": "A container that exposes the proposed size and coordinates (GeometryProxy) to its children",
+      "why": "Useful for proportional layouts or UIs that adapt to parent size",
+      "how": "GeometryReader { proxy in\n    Rectangle()\n        .frame(width: proxy.size.width * 0.5)\n}",
+      "watchOut": "GeometryReader greedily takes all available space — inside List or ScrollView it can surprise you"
+    },
+    "analogies_ko": [
+      "방의 크기를 자로 재서 그에 맞는 가구를 주문하는 것"
+    ],
+    "analogies_en": [
+      "Measuring a room with a tape so you can order furniture that fits"
+    ],
+    "simpler_fallback": "swift-views"
+  },
+  {
+    "id": "swift-swiftui-gestures",
+    "title_en": "SwiftUI Gestures",
+    "title_ko": "SwiftUI 제스처",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 65,
+    "tip_ko": "TapGesture, DragGesture, LongPressGesture를 .gesture 모디파이어에 붙이면 끝이에요",
+    "tip_en": "Attach TapGesture, DragGesture, or LongPressGesture via the .gesture modifier",
+    "teaching_hints_ko": {
+      "what": "탭, 드래그, 핀치 같은 사용자 입력을 뷰에 인식시키는 선언형 제스처 시스템",
+      "why": "버튼만으로 표현할 수 없는 풍부한 인터랙션(스와이프, 줌, 드래그 이동 등)을 구현",
+      "how": "Circle()\n    .gesture(\n        DragGesture()\n            .onChanged { value in offset = value.translation }\n    )",
+      "watchOut": "여러 제스처를 동시에 쓰려면 SimultaneousGesture, ExclusiveGesture로 묶어야 충돌이 안 남"
+    },
+    "teaching_hints_en": {
+      "what": "A declarative system for recognizing user input like taps, drags, and pinches on a view",
+      "why": "Enables rich interactions beyond buttons — swipes, zooms, drag-to-move, etc.",
+      "how": "Circle()\n    .gesture(\n        DragGesture()\n            .onChanged { value in offset = value.translation }\n    )",
+      "watchOut": "Combine multiple gestures with SimultaneousGesture or ExclusiveGesture to avoid conflicts"
+    },
+    "analogies_ko": [
+      "피아노 건반이 누르기, 미끄러뜨리기, 꾹 누르기를 각각 다른 음으로 인식하는 것"
+    ],
+    "analogies_en": [
+      "A piano that distinguishes a tap, a glide, and a held press as different notes"
+    ],
+    "simpler_fallback": "swift-views"
+  },
+  {
+    "id": "swift-swiftui-transitions",
+    "title_en": "SwiftUI Transitions",
+    "title_ko": "SwiftUI 전환 효과",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 66,
+    "tip_ko": ".transition은 뷰가 '나타나거나 사라질 때'의 애니메이션. withAnimation과 짝꿍이에요",
+    "tip_en": ".transition animates a view's appearance and disappearance — pair it with withAnimation",
+    "teaching_hints_ko": {
+      "what": "조건부로 나타나거나 사라지는 뷰에 페이드, 슬라이드, 스케일 같은 전환 애니메이션을 부여",
+      "why": "단순히 뷰가 '뿅' 나타나는 대신 부드럽게 등장/퇴장해서 사용자 경험이 자연스러워짐",
+      "how": "if isShown {\n    Text(\"Hi\")\n        .transition(.slide)\n}\n// 토글하는 곳:\nwithAnimation { isShown.toggle() }",
+      "watchOut": ".transition만 붙여도 동작하지 않음. 상태 변경이 withAnimation 블록 안이거나 .animation 모디파이어가 있어야 해요"
+    },
+    "teaching_hints_en": {
+      "what": "Adds fade, slide, or scale animations when a view conditionally appears or disappears",
+      "why": "Smooth entrance and exit instead of abrupt pop-in feels much more natural to users",
+      "how": "if isShown {\n    Text(\"Hi\")\n        .transition(.slide)\n}\n// at toggle site:\nwithAnimation { isShown.toggle() }",
+      "watchOut": ".transition alone does nothing — the state change must be wrapped in withAnimation or driven by .animation"
+    },
+    "analogies_ko": [
+      "연극 무대의 배우가 그냥 '뿅' 나타나는 게 아니라 막을 걷고 등장하는 것"
+    ],
+    "analogies_en": [
+      "A stage actor entering through a curtain instead of teleporting onto stage"
+    ],
+    "simpler_fallback": "swift-swiftui-animation"
+  },
+  {
+    "id": "swift-view-modifiers",
+    "title_en": "Custom ViewModifier",
+    "title_ko": "커스텀 ViewModifier",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 67,
+    "tip_ko": "같은 모디파이어 조합을 여러 곳에서 쓴다면 ViewModifier로 추출하세요",
+    "tip_en": "If you reuse the same modifier combo in multiple places, extract it into a ViewModifier",
+    "teaching_hints_ko": {
+      "what": "여러 모디파이어를 묶어 재사용 가능한 단일 모디파이어로 만드는 프로토콜",
+      "why": "디자인 시스템(예: 카드 스타일, 제목 스타일)을 한 곳에서 관리하고, body가 깔끔해짐",
+      "how": "struct CardStyle: ViewModifier {\n    func body(content: Content) -> some View {\n        content.padding().background(.thinMaterial).cornerRadius(12)\n    }\n}\nextension View { func cardStyle() -> some View { modifier(CardStyle()) } }",
+      "watchOut": "단순한 case라면 그냥 함수형 extension(extension View)로 충분. ViewModifier는 상태가 필요할 때 진가가 발휘돼요"
+    },
+    "teaching_hints_en": {
+      "what": "A protocol for bundling multiple modifiers into one reusable modifier",
+      "why": "Centralizes design system styles (cards, titles) and keeps body uncluttered",
+      "how": "struct CardStyle: ViewModifier {\n    func body(content: Content) -> some View {\n        content.padding().background(.thinMaterial).cornerRadius(12)\n    }\n}\nextension View { func cardStyle() -> some View { modifier(CardStyle()) } }",
+      "watchOut": "For trivial cases a plain extension on View is enough — ViewModifier shines when state is involved"
+    },
+    "analogies_ko": [
+      "요리에서 자주 쓰는 양념을 미리 섞어둔 '만능 양념장'"
+    ],
+    "analogies_en": [
+      "A pre-mixed spice blend you keep on the shelf for frequent use"
+    ],
+    "simpler_fallback": "swift-views"
+  },
+  {
+    "id": "swift-swiftui-scrollview",
+    "title_en": "ScrollView Deep Dive",
+    "title_ko": "ScrollView 심화",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 68,
+    "tip_ko": "iOS 17+의 .scrollPosition, .scrollTargetBehavior로 페이징과 스냅을 선언적으로 만들 수 있어요",
+    "tip_en": "iOS 17+ adds .scrollPosition and .scrollTargetBehavior for declarative paging and snapping",
+    "teaching_hints_ko": {
+      "what": "스크롤 가능한 영역. iOS 17부터 위치 추적, 스냅, 패럴럭스 같은 고급 기능이 추가됨",
+      "why": "단순한 ScrollView를 넘어서 인터랙티브한 갤러리, 탭바 동기화, 무한 스크롤 같은 UX를 구현",
+      "how": "ScrollView(.horizontal) {\n    LazyHStack { ForEach(items) { item in Card(item) } }\n        .scrollTargetLayout()\n}\n.scrollTargetBehavior(.viewAligned)\n.scrollPosition(id: $selectedID)",
+      "watchOut": "GeometryReader를 ScrollView 안에 넣으면 무한 크기가 나올 수 있음. LazyVStack/LazyHStack으로 큰 리스트 최적화 필수"
+    },
+    "teaching_hints_en": {
+      "what": "Scrollable region — iOS 17 adds position tracking, snapping, and parallax support",
+      "why": "Move beyond plain ScrollView to interactive galleries, tab-synced scrolls, and infinite lists",
+      "how": "ScrollView(.horizontal) {\n    LazyHStack { ForEach(items) { item in Card(item) } }\n        .scrollTargetLayout()\n}\n.scrollTargetBehavior(.viewAligned)\n.scrollPosition(id: $selectedID)",
+      "watchOut": "GeometryReader inside ScrollView can produce infinite sizes. Use LazyVStack/LazyHStack for large lists"
+    },
+    "analogies_ko": [
+      "창문 너머로 긴 두루마리 그림을 한 칸씩 밀어보는 것"
+    ],
+    "analogies_en": [
+      "Sliding a long scroll painting past a window, one frame at a time"
+    ],
+    "simpler_fallback": "swift-views"
+  },
+  {
+    "id": "swift-swiftui-toolbar",
+    "title_en": "Toolbar (ToolbarItem)",
+    "title_ko": "툴바 (ToolbarItem)",
+    "level": "basic",
+    "category": "swiftui",
+    "order": 69,
+    "tip_ko": ".toolbar에 ToolbarItem을 넣고 placement만 정해주면 위치는 SwiftUI가 알아서 잡아요",
+    "tip_en": "Add ToolbarItems with placement — SwiftUI handles positioning across iOS, iPad, and macOS",
+    "teaching_hints_ko": {
+      "what": "내비게이션 바, 하단 바 등에 버튼을 배치하는 선언형 API",
+      "why": "플랫폼별로 다른 위치(상단 우측, 하단 등)를 placement 한 줄로 처리해서 코드 한 벌로 다 됨",
+      "how": ".toolbar {\n    ToolbarItem(placement: .topBarTrailing) {\n        Button(\"Save\") { save() }\n    }\n}",
+      "watchOut": "NavigationStack(또는 NavigationView) 안에 있어야 toolbar가 표시돼요. 그 밖에서는 무시됨"
+    },
+    "teaching_hints_en": {
+      "what": "A declarative API for placing buttons in nav bars, bottom bars, and other toolbars",
+      "why": "One line of placement handles platform-specific positioning across iOS, iPad, and macOS",
+      "how": ".toolbar {\n    ToolbarItem(placement: .topBarTrailing) {\n        Button(\"Save\") { save() }\n    }\n}",
+      "watchOut": "Toolbars only render inside a NavigationStack (or NavigationView) — outside they are silently ignored"
+    },
+    "analogies_ko": [
+      "식당에서 메뉴판의 위치를 직접 정하지 않고 '입구 쪽에 둬주세요'라고 부탁하는 것"
+    ],
+    "analogies_en": [
+      "Telling the host 'put it near the entrance' instead of placing it yourself"
+    ],
+    "simpler_fallback": "swift-views"
+  },
+  {
+    "id": "swift-swiftui-environmentobject",
+    "title_en": "EnvironmentObject",
+    "title_ko": "EnvironmentObject",
+    "level": "intermediate",
+    "category": "swiftui",
+    "order": 70,
+    "tip_ko": "iOS 17+에서는 @Observable 객체를 .environment(_:)로 주입하는 방식이 권장돼요",
+    "tip_en": "On iOS 17+ prefer injecting @Observable objects via .environment(_:) over @EnvironmentObject",
+    "teaching_hints_ko": {
+      "what": "뷰 트리 어디서든 접근할 수 있는 공유 객체를 부모에서 주입하고 자식에서 꺼내 쓰는 방식",
+      "why": "props drilling(중간 뷰들에 일일이 전달) 없이 깊은 자식 뷰에서 공유 상태(로그인 정보, 테마 등)에 접근",
+      "how": "// 주입\nContentView().environmentObject(session)\n// 사용\nstruct Profile: View {\n    @EnvironmentObject var session: Session\n    var body: some View { Text(session.userName) }\n}",
+      "watchOut": "주입하지 않은 뷰에서 @EnvironmentObject를 읽으면 런타임 크래시. 프리뷰에서도 .environmentObject 꼭 붙여야 해요"
+    },
+    "teaching_hints_en": {
+      "what": "A shared object injected by an ancestor view and accessible anywhere in its subtree",
+      "why": "Avoids prop-drilling shared state (session, theme) through every intermediate view",
+      "how": "// inject\nContentView().environmentObject(session)\n// use\nstruct Profile: View {\n    @EnvironmentObject var session: Session\n    var body: some View { Text(session.userName) }\n}",
+      "watchOut": "Reading @EnvironmentObject without injection crashes at runtime — remember it in previews too"
+    },
+    "analogies_ko": [
+      "회사의 공용 와이파이 — 일일이 비밀번호 알려주지 않아도 같은 건물 안이면 모두 접속 가능"
+    ],
+    "analogies_en": [
+      "Office Wi-Fi — anyone in the building connects without being handed credentials individually"
+    ],
+    "simpler_fallback": "swift-observableobject"
+  },
+  {
+    "id": "swift-userdefaults",
+    "title_en": "UserDefaults",
+    "title_ko": "UserDefaults",
+    "level": "basic",
+    "category": "data",
+    "order": 71,
+    "tip_ko": "UserDefaults는 작은 설정값(테마, 토큰, 마지막 본 화면) 저장용이에요. 사진이나 큰 데이터는 절대 넣지 마세요",
+    "tip_en": "UserDefaults is for small settings (theme, last screen, flags). Never store images or large blobs there",
+    "teaching_hints_ko": {
+      "what": "키-값 형태로 작은 데이터를 plist 파일에 영구 저장하는 시스템 제공 저장소",
+      "why": "앱을 껐다 켜도 사용자 설정이나 마지막 상태를 기억하기 위해 필요",
+      "how": "let defaults = UserDefaults.standard\ndefaults.set(true, forKey: \"isDarkMode\")\nlet dark = defaults.bool(forKey: \"isDarkMode\")",
+      "watchOut": "Codable 객체는 JSONEncoder로 Data로 변환해서 저장. 너무 큰 값을 넣으면 앱 시작이 느려져요"
+    },
+    "teaching_hints_en": {
+      "what": "A system-provided key-value store that persists small data to a plist on disk",
+      "why": "Lets settings or last-known state survive app launches",
+      "how": "let defaults = UserDefaults.standard\ndefaults.set(true, forKey: \"isDarkMode\")\nlet dark = defaults.bool(forKey: \"isDarkMode\")",
+      "watchOut": "Encode Codable objects to Data via JSONEncoder. Storing large values slows app launch"
+    },
+    "analogies_ko": [
+      "냉장고 문에 붙이는 포스트잇 — 매일 보는 짧은 메모만"
+    ],
+    "analogies_en": [
+      "Sticky notes on a fridge — only short reminders, not whole documents"
+    ],
+    "simpler_fallback": null
+  },
+  {
+    "id": "swift-filemanager",
+    "title_en": "FileManager",
+    "title_ko": "FileManager",
+    "level": "intermediate",
+    "category": "data",
+    "order": 72,
+    "tip_ko": "사용자 데이터는 Documents, 캐시는 Caches에 저장하세요. iCloud 백업 여부가 달라요",
+    "tip_en": "Save user-created data in Documents, regenerable data in Caches — they're backed up differently",
+    "teaching_hints_ko": {
+      "what": "디스크의 파일과 폴더를 만들고 읽고 지우는 표준 API",
+      "why": "이미지, JSON, 다운로드 파일 같은 큰 데이터를 직접 다뤄야 할 때 필요",
+      "how": "let fm = FileManager.default\nlet docs = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]\nlet file = docs.appendingPathComponent(\"notes.json\")\ntry data.write(to: file)",
+      "watchOut": "Bundle 안의 파일은 읽기 전용. 쓰려면 반드시 Documents/Caches/tmp 같은 샌드박스 폴더로 옮기세요"
+    },
+    "teaching_hints_en": {
+      "what": "Standard API for creating, reading, and deleting files and directories on disk",
+      "why": "Needed when handling larger data — images, JSON, downloads — that doesn't fit UserDefaults",
+      "how": "let fm = FileManager.default\nlet docs = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]\nlet file = docs.appendingPathComponent(\"notes.json\")\ntry data.write(to: file)",
+      "watchOut": "Bundle files are read-only — copy them to Documents, Caches, or tmp before writing"
+    },
+    "analogies_ko": [
+      "집의 서랍과 선반 — 어디에 무엇을 넣을지 정해두고 관리하는 것"
+    ],
+    "analogies_en": [
+      "Drawers and shelves at home — each spot has a purpose for what you store"
+    ],
+    "simpler_fallback": "swift-userdefaults"
+  },
+  {
+    "id": "swift-swiftdata-basics",
+    "title_en": "SwiftData Basics",
+    "title_ko": "SwiftData 기초",
+    "level": "intermediate",
+    "category": "data",
+    "order": 73,
+    "tip_ko": "@Model만 붙이면 영속화가 끝나요. Core Data처럼 .xcdatamodeld 파일을 그릴 필요가 없어요",
+    "tip_en": "Just add @Model — no .xcdatamodeld file needed like in Core Data",
+    "teaching_hints_ko": {
+      "what": "Swift 코드만으로 데이터 모델을 정의하고 디스크에 저장하는 iOS 17+ 영속화 프레임워크",
+      "why": "복잡한 관계와 쿼리가 있는 앱 데이터를 타입 안전하게 저장하기 위해 필요",
+      "how": "@Model\nfinal class Note {\n    var title: String\n    var createdAt: Date\n    init(title: String) {\n        self.title = title\n        self.createdAt = .now\n    }\n}",
+      "watchOut": "iOS 17+ 전용. modelContext.insert() 후 save()는 자동이지만 마이그레이션은 직접 챙겨야 해요"
+    },
+    "teaching_hints_en": {
+      "what": "iOS 17+ persistence framework — define data models in pure Swift and store them on disk",
+      "why": "Type-safe storage for complex app data with relationships and queries",
+      "how": "@Model\nfinal class Note {\n    var title: String\n    var createdAt: Date\n    init(title: String) {\n        self.title = title\n        self.createdAt = .now\n    }\n}",
+      "watchOut": "iOS 17+ only. Inserts auto-save, but schema migrations need manual handling"
+    },
+    "analogies_ko": [
+      "Excel 시트를 그리지 않고 Python 클래스만 적으면 자동으로 DB가 생기는 느낌"
+    ],
+    "analogies_en": [
+      "Like writing a Python class and having a database appear, without designing the schema first"
+    ],
+    "simpler_fallback": "swift-filemanager"
+  },
+  {
+    "id": "swift-urlsession",
+    "title_en": "URLSession Basics",
+    "title_ko": "URLSession 기초",
+    "level": "basic",
+    "category": "networking",
+    "order": 74,
+    "tip_ko": "shared 인스턴스로 시작하고, 인증·쿠키·타임아웃 커스텀이 필요해지면 URLSessionConfiguration을 만들어요",
+    "tip_en": "Start with URLSession.shared, switch to a custom configuration when you need auth, cookies, or timeouts",
+    "teaching_hints_ko": {
+      "what": "iOS의 표준 HTTP 네트워크 API — 요청을 만들고 응답을 받는 객체",
+      "why": "서버에서 데이터를 가져오거나 보내는 모든 앱에 반드시 필요",
+      "how": "let url = URL(string: \"https://api.example.com/notes\")!\nURLSession.shared.dataTask(with: url) { data, response, error in\n    // handle data\n}.resume()",
+      "watchOut": "resume()을 호출하지 않으면 요청이 시작되지 않아요. 콜백은 백그라운드 스레드에서 실행됨"
+    },
+    "teaching_hints_en": {
+      "what": "iOS's standard HTTP networking API — an object that sends requests and receives responses",
+      "why": "Required by any app that talks to a server",
+      "how": "let url = URL(string: \"https://api.example.com/notes\")!\nURLSession.shared.dataTask(with: url) { data, response, error in\n    // handle data\n}.resume()",
+      "watchOut": "Forgetting resume() means the request never starts. Callbacks run on a background thread"
+    },
+    "analogies_ko": [
+      "편지 봉투에 주소(URL)를 적고 우체국(Session)에 맡기는 것"
+    ],
+    "analogies_en": [
+      "Mailing a letter — you address the envelope (URL), the post office (Session) delivers it"
+    ],
+    "simpler_fallback": null
+  },
+  {
+    "id": "swift-async-urlsession",
+    "title_en": "async URLSession",
+    "title_ko": "async URLSession",
+    "level": "intermediate",
+    "category": "networking",
+    "order": 75,
+    "tip_ko": "콜백 dataTask 대신 try await session.data(from:)을 쓰면 에러 처리도 do-catch로 깔끔해져요",
+    "tip_en": "Prefer try await session.data(from:) over callback dataTask — error handling becomes clean do-catch",
+    "teaching_hints_ko": {
+      "what": "URLSession의 async/await 버전. 콜백 없이 결과를 await로 받아요",
+      "why": "콜백 지옥 없이 네트워크 코드를 위에서 아래로 직선 흐름으로 작성 가능",
+      "how": "let (data, response) = try await URLSession.shared.data(from: url)\nlet notes = try JSONDecoder().decode([Note].self, from: data)",
+      "watchOut": "async 함수 안이나 Task {} 블록에서만 호출 가능. URLError와 DecodingError를 구분해서 잡으세요"
+    },
+    "teaching_hints_en": {
+      "what": "The async/await version of URLSession — no callback, just await the result",
+      "why": "Lets network code read top-to-bottom, no callback nesting",
+      "how": "let (data, response) = try await URLSession.shared.data(from: url)\nlet notes = try JSONDecoder().decode([Note].self, from: data)",
+      "watchOut": "Only callable from async functions or Task {}. Catch URLError and DecodingError separately"
+    },
+    "analogies_ko": [
+      "전화기를 들고 응답을 기다리는 것 — 답이 오기 전까진 다음 줄로 안 넘어감"
+    ],
+    "analogies_en": [
+      "Picking up a phone and waiting for the answer — the next line waits until you hear back"
+    ],
+    "simpler_fallback": "swift-urlsession"
+  },
+  {
+    "id": "swift-xctest",
+    "title_en": "XCTest Basics",
+    "title_ko": "XCTest 기초",
+    "level": "basic",
+    "category": "testing",
+    "order": 76,
+    "tip_ko": "테스트 함수 이름은 testWhenX_thenY 패턴으로 쓰면 실패했을 때 원인이 한눈에 보여요",
+    "tip_en": "Name tests testWhenX_thenY — failures become self-documenting",
+    "teaching_hints_ko": {
+      "what": "Apple의 표준 단위 테스트 프레임워크. XCTestCase를 상속해 test로 시작하는 메서드를 작성",
+      "why": "코드 변경이 기존 동작을 깨지 않았는지 자동으로 확인하기 위해 필요",
+      "how": "import XCTest\nfinal class CounterTests: XCTestCase {\n    func testIncrement() {\n        var c = 0\n        c += 1\n        XCTAssertEqual(c, 1)\n    }\n}",
+      "watchOut": "test 접두어가 없으면 함수가 실행되지 않아요. setUp/tearDown으로 공유 상태를 초기화하세요"
+    },
+    "teaching_hints_en": {
+      "what": "Apple's standard unit testing framework — subclass XCTestCase and write methods starting with 'test'",
+      "why": "Lets you verify automatically that changes don't break existing behavior",
+      "how": "import XCTest\nfinal class CounterTests: XCTestCase {\n    func testIncrement() {\n        var c = 0\n        c += 1\n        XCTAssertEqual(c, 1)\n    }\n}",
+      "watchOut": "Methods without the 'test' prefix won't run. Reset shared state in setUp/tearDown"
+    },
+    "analogies_ko": [
+      "요리 후 간을 보는 것 — 손님에게 내기 전 자동으로 맛 검사를 돌리는 셈"
+    ],
+    "analogies_en": [
+      "Tasting the soup before serving — automated checks before code goes out"
+    ],
+    "simpler_fallback": null
+  },
+  {
+    "id": "swift-testing-framework",
+    "title_en": "Swift Testing Framework",
+    "title_ko": "Swift Testing 프레임워크",
+    "level": "intermediate",
+    "category": "testing",
+    "order": 77,
+    "tip_ko": "@Test와 #expect만 알면 시작 가능. XCTAssert 30종을 외울 필요가 없어요",
+    "tip_en": "Just @Test and #expect to get started — no need to memorize 30 XCTAssert variants",
+    "teaching_hints_ko": {
+      "what": "Xcode 16의 새 테스트 프레임워크. 매크로 기반으로 더 표현력 있고 병렬 실행 친화적",
+      "why": "XCTest보다 간결한 문법, 파라미터화 테스트, 자동 병렬 실행으로 테스트 품질을 높임",
+      "how": "import Testing\n@Test func incrementAddsOne() {\n    var c = 0\n    c += 1\n    #expect(c == 1)\n}",
+      "watchOut": "XCTest와 공존 가능하지만 한 타깃 안에서 섞으면 혼란스러움. 점진적으로 마이그레이션하세요"
+    },
+    "teaching_hints_en": {
+      "what": "Xcode 16's new testing framework — macro-based, more expressive, parallel-friendly",
+      "why": "Cleaner syntax than XCTest, plus parameterized tests and automatic parallelization",
+      "how": "import Testing\n@Test func incrementAddsOne() {\n    var c = 0\n    c += 1\n    #expect(c == 1)\n}",
+      "watchOut": "Coexists with XCTest, but mixing in one target gets confusing — migrate gradually"
+    },
+    "analogies_ko": [
+      "흑백 TV에서 컬러 TV로 — 같은 방송이지만 훨씬 풍부하게 표현됨"
+    ],
+    "analogies_en": [
+      "Going from black-and-white TV to color — same broadcast, far richer to read"
+    ],
+    "simpler_fallback": "swift-xctest"
+  },
+  {
+    "id": "swift-variadic-generics",
+    "title_en": "Variadic Generics",
+    "title_ko": "가변 인자 제네릭",
+    "level": "advanced",
+    "category": "modern",
+    "order": 78,
+    "tip_ko": "SwiftUI의 TupleView처럼 임의 개수의 타입을 받을 때만 써요. 일반 코드는 그냥 배열이 더 명확해요",
+    "tip_en": "Use only for libraries (like SwiftUI's TupleView) that accept arbitrary type counts — regular code is clearer with arrays",
+    "teaching_hints_ko": {
+      "what": "Swift 5.9+ 기능. each 키워드로 임의 개수의 제네릭 타입 파라미터를 받을 수 있음",
+      "why": "TupleView, ZIP 같은 N개 타입을 다루는 라이브러리를 타입 안전하게 만들기 위해 필요",
+      "how": "func zip<each T>(_ values: repeat each T) -> (repeat each T) {\n    return (repeat each values)\n}\nlet result = zip(1, \"a\", true)",
+      "watchOut": "iOS 17+. 문법이 낯설어 학습 비용이 큼. 정말 N개 타입이 필요한지 먼저 확인하세요"
+    },
+    "teaching_hints_en": {
+      "what": "Swift 5.9+ feature — accept an arbitrary number of generic type parameters via the 'each' keyword",
+      "why": "Lets libraries like TupleView or zip handle N types in a type-safe way",
+      "how": "func zip<each T>(_ values: repeat each T) -> (repeat each T) {\n    return (repeat each values)\n}\nlet result = zip(1, \"a\", true)",
+      "watchOut": "iOS 17+. Syntax is unfamiliar — confirm you really need N heterogeneous types first"
+    },
+    "analogies_ko": [
+      "사이즈가 정해지지 않은 봉투 — 1개든 10개든 같은 양식으로 담을 수 있는 것"
+    ],
+    "analogies_en": [
+      "A flexible envelope — fits 1 item or 10, all using the same form"
+    ],
+    "simpler_fallback": "swift-generics"
+  },
+  {
+    "id": "swift-app-intents",
+    "title_en": "App Intents",
+    "title_ko": "App Intents",
+    "level": "intermediate",
+    "category": "modern",
+    "order": 79,
+    "tip_ko": "App Intents 하나를 만들면 Siri, Shortcuts, Spotlight, 위젯 동작까지 한꺼번에 연결돼요",
+    "tip_en": "One App Intent plugs into Siri, Shortcuts, Spotlight, and widget actions all at once",
+    "teaching_hints_ko": {
+      "what": "앱 기능을 시스템에 노출하는 iOS 16+ 프레임워크. AppIntent 프로토콜을 채택한 구조체",
+      "why": "사용자가 앱을 열지 않고도 Siri나 단축어로 핵심 기능을 호출할 수 있게 해줌",
+      "how": "struct AddNote: AppIntent {\n    static var title: LocalizedStringResource = \"Add Note\"\n    @Parameter(title: \"Text\") var text: String\n    func perform() async throws -> some IntentResult {\n        // save note\n        return .result()\n    }\n}",
+      "watchOut": "perform()은 async throws. 사용자에게 보여줄 텍스트는 반드시 LocalizedStringResource"
+    },
+    "teaching_hints_en": {
+      "what": "iOS 16+ framework that exposes app features to the system — a struct conforming to AppIntent",
+      "why": "Lets users invoke core actions through Siri or Shortcuts without opening the app",
+      "how": "struct AddNote: AppIntent {\n    static var title: LocalizedStringResource = \"Add Note\"\n    @Parameter(title: \"Text\") var text: String\n    func perform() async throws -> some IntentResult {\n        // save note\n        return .result()\n    }\n}",
+      "watchOut": "perform() is async throws. User-facing strings must use LocalizedStringResource"
+    },
+    "analogies_ko": [
+      "식당 메뉴판을 시스템에 등록하는 것 — Siri가 그 메뉴를 보고 손님 대신 주문해줌"
+    ],
+    "analogies_en": [
+      "Posting your menu to the system — Siri reads it and orders for the customer"
+    ],
+    "simpler_fallback": null
+  },
+  {
+    "id": "swift-widget-kit",
+    "title_en": "WidgetKit Basics",
+    "title_ko": "WidgetKit 기초",
+    "level": "intermediate",
+    "category": "modern",
+    "order": 80,
+    "tip_ko": "위젯은 살아있는 화면이 아니에요. TimelineProvider가 주는 스냅샷 시리즈를 시스템이 시간에 맞춰 보여주는 것",
+    "tip_en": "A widget isn't a live screen — it's a series of snapshots from a TimelineProvider that the system displays over time",
+    "teaching_hints_ko": {
+      "what": "홈 화면, 잠금 화면, 데스크탑에 표시되는 작은 SwiftUI 뷰를 만드는 프레임워크",
+      "why": "앱을 열지 않고도 핵심 정보를 한눈에 보여주어 재방문을 자연스럽게 유도",
+      "how": "struct CounterWidget: Widget {\n    var body: some WidgetConfiguration {\n        StaticConfiguration(kind: \"counter\", provider: Provider()) { entry in\n            Text(\"\\(entry.count)\")\n        }\n    }\n}",
+      "watchOut": "위젯은 일반 앱과 다른 프로세스에서 실행. 데이터 공유는 App Group + UserDefaults(suiteName:)으로 해야 해요"
+    },
+    "teaching_hints_en": {
+      "what": "Framework for building small SwiftUI views that appear on home screen, lock screen, or desktop",
+      "why": "Surfaces key info at a glance without opening the app, driving organic reengagement",
+      "how": "struct CounterWidget: Widget {\n    var body: some WidgetConfiguration {\n        StaticConfiguration(kind: \"counter\", provider: Provider()) { entry in\n            Text(\"\\(entry.count)\")\n        }\n    }\n}",
+      "watchOut": "Widgets run in a separate process — share data via an App Group and UserDefaults(suiteName:)"
+    },
+    "analogies_ko": [
+      "전광판에 미리 인쇄해둔 슬라이드들 — 시간표대로 한 장씩 자동으로 넘어가는 것"
+    ],
+    "analogies_en": [
+      "Pre-printed slides on a billboard — flipping automatically on a fixed schedule, not live"
+    ],
+    "simpler_fallback": "swift-swiftui-state"
   }
 ];
