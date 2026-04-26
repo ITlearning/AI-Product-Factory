@@ -90,7 +90,11 @@ struct TrackStepView: View {
                     Text(track.tagline(for: language))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        // 카피 길이 제각각이라 1줄 강제 + 자동 축소.
+                        // UIKit의 adjustsFontSizeToFitWidth + minimumScaleFactor 조합.
+                        // 0.7 = 최대 70%까지 축소. 그 이상은 truncate.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                         .multilineTextAlignment(.leading)
                 }
 

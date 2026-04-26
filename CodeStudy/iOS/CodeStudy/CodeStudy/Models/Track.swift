@@ -40,14 +40,14 @@ enum TrackType: String, Codable, CaseIterable, Identifiable {
 
     var tagline_ko: String {
         switch self {
-        case .swift: return "Swift로 iOS 앱 만들기"
-        case .backend: return "Kotlin과 Spring으로 서버 만들기"
+        case .swift: return "iOS 앱 개발과 SwiftUI를 처음부터"
+        case .backend: return "Kotlin과 Spring으로 서버를 만드는 법"
         }
     }
 
     var tagline_en: String {
         switch self {
-        case .swift: return "Build iOS apps with Swift"
+        case .swift: return "Build iOS apps with Swift and SwiftUI"
         case .backend: return "Build servers with Kotlin and Spring"
         }
     }
