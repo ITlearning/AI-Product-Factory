@@ -127,6 +127,21 @@ function manwonToWon(manwon) {
 }
 
 /**
+ * 생년월일 마스킹: 사용자가 숫자만 타이핑 → "YYYY-MM-DD" 자동 포맷.
+ * iOS Safari의 type="date" 네이티브 picker 회피 — 직접 텍스트 입력.
+ * @param {string} input
+ * @returns {string}
+ */
+function formatBirthDate(input) {
+  const digits = String(input).replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 6) return digits.slice(0, 4) + "-" + digits.slice(4);
+  return (
+    digits.slice(0, 4) + "-" + digits.slice(4, 6) + "-" + digits.slice(6)
+  );
+}
+
+/**
  * Form state → evaluator EligibilityInput.
  * 만원→원 변환, 미입력 boolean 디폴트, 신혼부부/한부모/전세사기 외엔 부가 필드 무시.
  *
@@ -518,12 +533,14 @@ function Step1({ state, set }) {
       <label className="form__label" htmlFor="birthDate">생년월일</label>
       <input
         id="birthDate"
-        type="date"
+        type="text"
+        inputMode="numeric"
         className="form__input"
         value={state.birthDate}
-        min="1980-01-01"
-        max="2010-12-31"
-        onChange={(e) => set("birthDate")(e.target.value)}
+        placeholder="1995-06-15"
+        maxLength={10}
+        autoComplete="bday"
+        onChange={(e) => set("birthDate")(formatBirthDate(e.target.value))}
       />
 
       <fieldset className="form__radio-group">
@@ -718,12 +735,16 @@ function Step3({ state, set }) {
           </label>
           <input
             id="spouseBirthDate"
-            type="date"
+            type="text"
+            inputMode="numeric"
             className="form__input"
             value={state.spouseBirthDate}
-            min="1980-01-01"
-            max="2010-12-31"
-            onChange={(e) => set("spouseBirthDate")(e.target.value)}
+            placeholder="1990-06-15"
+            maxLength={10}
+            autoComplete="bday"
+            onChange={(e) =>
+              set("spouseBirthDate")(formatBirthDate(e.target.value))
+            }
           />
 
           <fieldset className="form__radio-group">
