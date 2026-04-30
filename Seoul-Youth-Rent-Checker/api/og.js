@@ -55,7 +55,7 @@ export default async function handler(request, response) {
 }
 
 /**
- * 도구 공유 OG 카드 — "친구야, 너도 한번 해봐" 톤
+ * 도구 공유 OG 카드 — Landing 메인 카피 그대로
  */
 function buildBrandLayout() {
   return {
@@ -100,7 +100,7 @@ function buildBrandLayout() {
             ],
           },
         },
-        // 가운데: 헤드라인 + 서브카피
+        // 가운데: 헤드라인 + 서브카피 (Landing 메인 그대로)
         {
           type: "div",
           props: {
@@ -110,16 +110,17 @@ function buildBrandLayout() {
               gap: "32px",
             },
             children: [
+              // 헤드라인: 청년월세 240만원, 너 받을 수 있어?
               {
                 type: "div",
                 props: {
                   style: {
                     display: "flex",
                     flexDirection: "column",
-                    fontSize: "104px",
+                    fontSize: "92px",
                     fontWeight: 600,
-                    lineHeight: 1.1,
-                    letterSpacing: "-3px",
+                    lineHeight: 1.15,
+                    letterSpacing: "-2.5px",
                     color: "#1a1a1a",
                   },
                   children: [
@@ -128,11 +129,12 @@ function buildBrandLayout() {
                       props: {
                         style: { display: "flex" },
                         children: [
+                          "청년월세 ",
                           {
                             type: "span",
                             props: {
                               style: { color: "#ef4444" },
-                              children: "친구야",
+                              children: "240만원",
                             },
                           },
                           ",",
@@ -143,44 +145,60 @@ function buildBrandLayout() {
                       type: "div",
                       props: {
                         style: { display: "flex" },
-                        children: "너도 한번 해봐.",
+                        children: "너 받을 수 있어?",
                       },
                     },
                   ],
                 },
               },
+              // 서브카피: 5분 자가진단. 공인인증서 필요 없어요.
+              //          익명 처리, 결과는 본인만 확인 가능.
               {
                 type: "div",
                 props: {
                   style: {
                     display: "flex",
-                    fontSize: "34px",
+                    flexDirection: "column",
+                    fontSize: "30px",
                     color: "#525252",
                     fontWeight: 400,
-                    lineHeight: 1.4,
+                    lineHeight: 1.5,
+                    gap: "4px",
                   },
-                  children: "청년월세 240만원 자격, 5분 안에 확인할 수 있어.",
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex" },
+                        children: "5분 자가진단. 공인인증서 필요 없어요.",
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex" },
+                        children: "익명 처리, 결과는 본인만 확인 가능.",
+                      },
+                    },
+                  ],
                 },
               },
             ],
           },
         },
-        // 하단: 트러스트 한 줄 + 도메인
+        // 하단: 도메인
         {
           type: "div",
           props: {
             style: {
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: "flex-end",
               alignItems: "center",
               fontSize: "22px",
               color: "#71717a",
               fontWeight: 400,
             },
-            children: [
-              "공인인증서 X · 익명 자가진단",
-              BRAND_URL,
-            ],
+            children: BRAND_URL,
           },
         },
       ],

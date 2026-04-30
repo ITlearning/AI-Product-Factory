@@ -317,7 +317,11 @@ function NotifySignupForm() {
 // --- 핵심 결과 화면 -------------------------------------------------------
 
 function SuccessView({ result, onRetry, onHome }) {
-  const dday = useMemo(() => calculateDday(), []);
+  const [dday, setDday] = useState(() => calculateDday());
+  useEffect(() => {
+    const id = window.setInterval(() => setDday(calculateDday()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
   const ddayChip = formatDdayChip(dday);
   const ddayAriaLabel =
     dday.phase === "ended"

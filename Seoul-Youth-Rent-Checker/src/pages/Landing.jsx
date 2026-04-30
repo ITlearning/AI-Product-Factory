@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { calculateDday } from "../utils/dday.js";
+import { calculateDday, formatDdayCountdown } from "../utils/dday.js";
 
 export function Landing({ onStart }) {
-  // 첫 렌더 시점에 한 번 계산. v1은 자정 자동 갱신 X — 페이지 새로고침 기준.
-  const dday = useMemo(() => calculateDday(), []);
+  // 매초 카운트다운 갱신 — 시·분·초 흐르는 느낌.
+  const [dday, setDday] = useState(() => calculateDday());
+  useEffect(() => {
+    const id = window.setInterval(() => setDday(calculateDday()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
   const isClosed = dday.phase === "ended";
 
   // 페이지 로드 시 staggered fade-in 트리거.
@@ -75,9 +79,12 @@ export function Landing({ onStart }) {
             ) : (
               <>
                 <span className="landing__dday-label">{dday.label}</span>
-                <span className="landing__dday-countdown">
-                  <span className="landing__dday-num">{dday.days}</span>
-                  일 남음
+                <span
+                  className="landing__dday-countdown"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {formatDdayCountdown(dday)}
                 </span>
                 <span className="landing__dday-note">{dday.note}</span>
               </>
