@@ -13,57 +13,27 @@
  */
 
 import { ImageResponse } from "@vercel/og";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import {
+  PRETENDARD_REGULAR_BASE64,
+  PRETENDARD_BOLD_BASE64,
+} from "./og-fonts.js";
 
 export const config = { runtime: "nodejs" };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// 폰트는 warm invocation에서 재사용되도록 모듈 스코프에 캐시.
-// (og-font-readfilesync 학습 — 매 요청마다 readFileSync 호출하면 cold 외에도 비용 발생.)
-//
-// 단, module-init 시점의 readFileSync 가 production에서 throw 하면 함수 자체가
-// 매 invocation timeout 으로 죽는다 (관측됨: 504 FUNCTION_INVOCATION_TIMEOUT).
-// Vercel 은 api/ 디렉토리의 비-JS 파일을 자동 번들 안 하므로
-// vercel.json `functions["api/og.js"].includeFiles` 로 fonts/** 를 강제 포함시킨다.
-// 그래도 path resolution 실패 안전망으로 try/catch + 1회만 시도 (warm cache).
-let FONT_REGULAR = null;
-let FONT_BOLD = null;
-let FONTS_LOADED = false;
-function loadFontsOnce() {
-  if (FONTS_LOADED) return;
-  FONTS_LOADED = true;
-  try {
-    FONT_REGULAR = fs.readFileSync(
-      path.join(__dirname, "fonts", "Pretendard-Regular.subset.woff2"),
-    );
-    FONT_BOLD = fs.readFileSync(
-      path.join(__dirname, "fonts", "Pretendard-Bold.subset.woff2"),
-    );
-  } catch (err) {
-    // 폰트 로드 실패해도 OG 카드 자체는 렌더 (Satori 기본 폰트로 fallback).
-    // 한글 글리프는 □ 로 나오겠지만, 504 보다는 낫고 카톡 미리보기는 뜬다.
-    console.error("[api/og] font load failed, falling back to default:", err);
-    FONT_REGULAR = null;
-    FONT_BOLD = null;
-  }
-}
+// 폰트를 base64 inline해서 fs.readFileSync / vercel includeFiles 의존 자체 제거.
+// 함수 코드에 폰트 포함 → path resolution 실패 가능성 0 → 504 timeout 방지.
+// (이전 production에서 readFileSync가 throw하던 문제 근본 fix.)
+const FONT_REGULAR = Buffer.from(PRETENDARD_REGULAR_BASE64, "base64");
+const FONT_BOLD = Buffer.from(PRETENDARD_BOLD_BASE64, "base64");
 
 // 도메인 미정 — Tabber가 vercel.app 또는 커스텀 도메인 결정 후 교체 필요.
 const BRAND_URL = "wolse.kr";
 
 export default async function handler() {
-  loadFontsOnce();
-  const fonts = [];
-  if (FONT_REGULAR) {
-    fonts.push({ name: "Pretendard", data: FONT_REGULAR, style: "normal", weight: 400 });
-  }
-  if (FONT_BOLD) {
-    fonts.push({ name: "Pretendard", data: FONT_BOLD, style: "normal", weight: 800 });
-  }
+  const fonts = [
+    { name: "Pretendard", data: FONT_REGULAR, style: "normal", weight: 400 },
+    { name: "Pretendard", data: FONT_BOLD, style: "normal", weight: 800 },
+  ];
   return new ImageResponse(
     {
       type: "div",
