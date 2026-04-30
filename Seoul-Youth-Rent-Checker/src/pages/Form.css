@@ -423,22 +423,29 @@ select.form__input {
     rgba(250, 249, 247, 0) 0%,
     var(--color-bg) 24px
   );
-  padding: 20px 16px 24px;
+  padding: 20px 12px 24px;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
   z-index: 5;
 }
 
-.form__nav .form__back,
-.form__nav .form__next,
-.form__nav .form__cta {
-  flex: 1 1 0 !important;
-  min-width: 0 !important;
-  max-width: 240px !important;
-  width: 100% !important;
-  white-space: nowrap !important;
+.form__nav-row {
+  display: flex;
+  width: 100%;
+  max-width: 480px;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.form__nav-row > .form__back,
+.form__nav-row > .form__next,
+.form__nav-row > .form__cta {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .form__back {
@@ -474,7 +481,7 @@ select.form__input {
   background: var(--color-text-primary);
   color: #ffffff;
   border: none;
-  padding: 14px 24px;
+  padding: 14px 12px;
   border-radius: var(--radius-button);
   font-size: 15px;
   font-weight: 700;
@@ -524,7 +531,7 @@ select.form__input {
     position: sticky;
     margin: 0 auto;
     max-width: 480px;
-    padding: 16px 24px 32px;
+    padding: 16px 0 32px;
   }
 }
 

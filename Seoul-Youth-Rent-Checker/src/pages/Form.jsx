@@ -455,26 +455,28 @@ export function Form({ onComplete, onBack }) {
         )}
 
         <div className="form__nav">
-          <button
-            type="button"
-            className="form__back"
-            onClick={handlePrev}
-            disabled={submitting}
-          >
-            {state.step === 0 ? "처음으로" : "뒤로"}
-          </button>
-          <button
-            type="button"
-            className={isLast ? "form__cta" : "form__next"}
-            onClick={handleNext}
-            disabled={submitting}
-          >
-            {submitting
-              ? "확인 중…"
-              : isLast
-                ? "자격 확인하기"
-                : "다음"}
-          </button>
+          <div className="form__nav-row">
+            <button
+              type="button"
+              className="form__back"
+              onClick={handlePrev}
+              disabled={submitting}
+            >
+              {state.step === 0 ? "처음으로" : "뒤로"}
+            </button>
+            <button
+              type="button"
+              className={isLast ? "form__cta" : "form__next"}
+              onClick={handleNext}
+              disabled={submitting}
+            >
+              {submitting
+                ? "확인 중…"
+                : isLast
+                  ? "자격 확인하기"
+                  : "다음"}
+            </button>
+          </div>
         </div>
       </div>
     </main>
