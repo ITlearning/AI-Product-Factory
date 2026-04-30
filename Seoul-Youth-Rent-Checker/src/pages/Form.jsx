@@ -459,29 +459,45 @@ export function Form({ onComplete, onBack }) {
         )}
 
         <div className="form__nav">
-          <div className="form__nav-row">
-            <button
-              type="button"
-              className="form__back"
-              style={{ flex: "1 1 50%", minWidth: 0, boxSizing: "border-box" }}
-              onClick={handlePrev}
-              disabled={submitting}
-            >
-              {state.step === 0 ? "처음으로" : "뒤로"}
-            </button>
-            <button
-              type="button"
-              className={isLast ? "form__cta" : "form__next"}
-              style={{ flex: "1 1 50%", minWidth: 0, boxSizing: "border-box" }}
-              onClick={handleNext}
-              disabled={submitting}
-            >
-              {submitting
-                ? "확인 중…"
-                : isLast
-                  ? "자격 확인하기"
-                  : "다음"}
-            </button>
+          <div className="form__nav-grid">
+            {state.step === 0 ? (
+              <button
+                type="button"
+                className="form__home"
+                onClick={handlePrev}
+                disabled={submitting}
+              >
+                처음으로
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="form__back"
+                onClick={handlePrev}
+                disabled={submitting}
+              >
+                뒤로
+              </button>
+            )}
+            {isLast ? (
+              <button
+                type="button"
+                className="form__submit"
+                onClick={handleNext}
+                disabled={submitting}
+              >
+                {submitting ? "확인 중…" : "자격 확인하기"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="form__next"
+                onClick={handleNext}
+                disabled={submitting}
+              >
+                다음
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -430,92 +430,92 @@ select.form__input {
   z-index: 5;
 }
 
-.form__nav-row {
-  display: flex;
+.form__nav-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
   width: 100%;
   max-width: 480px;
-  gap: 12px;
-  align-items: stretch;
-}
-
-.form__nav-row > .form__back,
-.form__nav-row > .form__next,
-.form__nav-row > .form__cta {
-  flex: 1 1 50%;
-  min-width: 0;
-  white-space: nowrap;
-  text-align: center;
   box-sizing: border-box;
 }
 
+/* ---- 4 별개 버튼: 같은 셀렉터 공유 X. width 100%로 grid cell 채움 ---- */
+
+.form__home,
+.form__back,
+.form__next,
+.form__submit {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: var(--radius-button);
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+  transition: color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+/* 좌측 secondary (처음으로 / 뒤로) */
+.form__home,
 .form__back {
   background: transparent;
   color: var(--color-text-secondary);
   border: none;
-  padding: 14px 16px;
-  font-size: 15px;
+  padding: 14px 8px;
   font-weight: 600;
-  cursor: pointer;
-  border-radius: var(--radius-button);
-  transition: color 120ms ease, background 120ms ease;
-  font-family: inherit;
 }
 
+.form__home:hover,
 .form__back:hover {
   color: var(--color-text-primary);
   background: rgba(0, 0, 0, 0.03);
 }
 
+.form__home:disabled,
 .form__back:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
+.form__home:focus-visible,
 .form__back:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
+/* 우측 primary (다음 / 자격 확인하기) */
 .form__next,
-.form__cta {
+.form__submit {
   background: var(--color-text-primary);
   color: #ffffff;
   border: none;
-  padding: 14px 12px;
-  border-radius: var(--radius-button);
-  font-size: 15px;
+  padding: 14px 8px;
   font-weight: 700;
-  cursor: pointer;
-  transition: transform 120ms ease, background 120ms ease;
-  font-family: inherit;
   box-shadow: var(--shadow-sm);
 }
 
 .form__next:hover,
-.form__cta:hover {
+.form__submit:hover {
   background: #000000;
 }
 
 .form__next:active,
-.form__cta:active {
+.form__submit:active {
   transform: scale(0.985);
 }
 
 .form__next:disabled,
-.form__cta:disabled {
+.form__submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
 .form__next:focus-visible,
-.form__cta:focus-visible {
+.form__submit:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
-}
-
-.form__cta {
-  background: var(--color-text-primary);
 }
 
 /* ==========================================================================
