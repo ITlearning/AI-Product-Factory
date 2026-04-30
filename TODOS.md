@@ -115,6 +115,49 @@ v1.1 카드 데이터 변경 전에 URL 전략 결정 권장.
 
 ---
 
+## [TODO-9] 청년월세 체커: 다른 기기 결과 보기 (이메일 매직링크)
+
+**What:** 결과 페이지 cookie-bound 정책으로 다른 기기 접근 차단. v2에서 이메일 매직링크로 다른 기기 접근 가능하게.
+
+**Why:** v1은 같은 기기/브라우저에서만 결과 재방문 가능. 사용자가 회사에서 봤다가 집에서 다시 보고 싶을 때 못 봄. 이메일 옵트인 폼은 v1에 이미 있으니, v2에서 그 이메일로 매직링크 발송 → 다른 기기 접근.
+
+**Pros:** 사용자 retention ↑. "결과 잃어버림" 불만 해소.
+**Cons:** 이메일 SMTP/SES 셋업, 매직링크 토큰 보안 (TTL, single-use). DB 스키마 추가.
+**Context:** plan-eng-review (2026-04-30) Issue 1A 결정. cookie-bound가 P3 차별점에 정합한데, 다른 기기 접근 가치도 무시 못 함. v2에서 매직링크로 균형.
+
+**Depends on:** v1 출시 후 사용자 피드백 ("다른 기기에서 못 봐요" 빈도).
+
+---
+
+## [TODO-10] 청년월세 체커: 카카오 SDK 직접 공유
+
+**What:** v1 "친구에게도 공유하기"는 Web Share API + URL 복사. v1.5에서 Kakao JavaScript SDK로 카톡 공유 시 머리이미지+제목+설명 카드 포함.
+
+**Why:** 한국 트래픽의 절반 이상이 카톡 공유 → URL만 보내는 것보다 카드 형태가 클릭률 5~10배. 카톡에서 OG 이미지가 미리보기로 안 뜨는 경우(SPA + first-load) 직접 SDK가 안전.
+
+**Pros:** 공유 클릭률 ↑. 카톡 첫인상 개선.
+**Cons:** Kakao 디벨로퍼스 앱 등록 + 도메인 검증. SDK 번들 ~30KB 추가.
+**Context:** plan-eng-review (2026-04-30) NOT in scope. 5/5 데드라인에 우선순위 낮음.
+
+**Depends on:** v1 출시 + 카톡 공유 비중 측정.
+
+---
+
+## [TODO-11] 청년월세 체커: 다른 공공 프로그램 확장성 hook 검증
+
+**What:** P2 "platform seed" 가설 = JSON 데이터 + TypeScript evaluator 한 쌍 추가로 다른 프로그램 추가 가능. 실제 검증 = 청년도약계좌 또는 행복주택 또는 국토부 한시지원 새 차수 공고 올라왔을 때 1주 안에 추가 가능한지 측정.
+
+**Why:** office-hours에서 platform 가설을 wedge로 깎았지만, hook은 살림. 그 hook이 진짜 살아있는지 확인하지 않으면 platform 미신.
+
+**Pros:** Platform seed 가설 검증/기각. Tabber의 "공공정보 파서" 비전 진위 확인.
+**Cons:** v1 트래픽 결과에 따라 우선순위 결정. 트래픽 X면 platform 시험도 의미 X.
+
+**Context:** office-hours (2026-04-30) Q1 demand reality에서 솔직하게 platform 가설 후퇴. P2 premise = "확장성 hooks만, 다른 프로그램은 v2." plan-eng-review (2026-04-30) Issue 1B에서 JSON + TS evaluator 한 쌍 패턴 채택.
+
+**Depends on:** v1 출시 후 트래픽 1만+ 도달 + 다음 공공 프로그램 공고 release.
+
+---
+
 ## [TODO-8] CodeStudy: ConceptHistoryView "학습 계속하기" CTA
 
 **What:** ConceptHistoryView 하단에 "이 개념 다시 학습" 또는 "관련 개념 학습" CTA 버튼 추가.

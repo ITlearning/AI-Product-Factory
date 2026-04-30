@@ -1,0 +1,387 @@
+/*
+ * Seoul Youth Rent Checker — Landing 스타일.
+ * DESIGN.md 토큰 그대로 옮긴 :root + Variant A mockup의 BEM 변환.
+ */
+
+:root {
+  /* Backgrounds */
+  --color-bg: #faf9f7;
+  --color-surface: #ffffff;
+  --color-surface-border: #e5e3df;
+
+  /* Text */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #525252;
+  --color-text-tertiary: #71717a;
+  --color-text-quaternary: #a1a1aa;
+
+  /* Action / urgent */
+  --color-accent: #ef4444;
+  --color-accent-soft: #fef2f2;
+
+  /* Status */
+  --color-success: #16a34a;
+  --color-warning: #ea580c;
+  --color-danger: #dc2626;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+
+  /* Radius */
+  --radius-button: 14px;
+  --radius-card: 16px;
+  --radius-input: 12px;
+  --radius-pill: 999px;
+
+  /* Typography */
+  --font-family: "Pretendard", -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  font-family: var(--font-family);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ==========================================================================
+   Landing
+   ========================================================================== */
+
+.landing {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  display: flex;
+  justify-content: center;
+}
+
+.landing__shell {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+/* Top group ---------------------------------------------------------------- */
+
+.landing__top {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing__badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 32px;
+  white-space: nowrap;
+}
+
+.landing__badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  display: inline-block;
+}
+
+.landing__headline {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  margin-bottom: 12px;
+}
+
+.landing__headline-em {
+  color: var(--color-accent);
+}
+
+.landing__sub {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* Bottom group ------------------------------------------------------------- */
+
+.landing__bottom {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing__dday {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-card);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.landing__dday-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+
+.landing__dday-countdown {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.landing__dday-num {
+  color: var(--color-accent);
+  margin-right: 2px;
+}
+
+.landing__dday-closed {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.landing__cta {
+  background: var(--color-text-primary);
+  color: #ffffff;
+  border: none;
+  padding: 18px 24px;
+  border-radius: var(--radius-button);
+  font-size: 17px;
+  font-weight: 700;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease,
+    box-shadow 120ms ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.landing__cta:hover {
+  background: #000000;
+}
+
+.landing__cta:active {
+  transform: scale(0.985);
+}
+
+.landing__cta:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.landing__footnote {
+  margin-top: 16px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-quaternary);
+  text-align: center;
+}
+
+/* ==========================================================================
+   Animations — staggered fade-in on mount
+   ========================================================================== */
+
+@keyframes landing-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing .landing__badge,
+.landing .landing__headline,
+.landing .landing__sub,
+.landing .landing__dday,
+.landing .landing__cta,
+.landing .landing__footnote {
+  opacity: 0;
+}
+
+.landing--mounted .landing__badge,
+.landing--mounted .landing__headline,
+.landing--mounted .landing__sub,
+.landing--mounted .landing__dday,
+.landing--mounted .landing__cta,
+.landing--mounted .landing__footnote {
+  animation: landing-fade-in 200ms ease-out forwards;
+}
+
+.landing--mounted .landing__badge {
+  animation-delay: 0ms;
+}
+.landing--mounted .landing__headline {
+  animation-delay: 100ms;
+}
+.landing--mounted .landing__sub {
+  animation-delay: 200ms;
+}
+.landing--mounted .landing__dday {
+  animation-delay: 300ms;
+}
+.landing--mounted .landing__cta {
+  animation-delay: 400ms;
+}
+.landing--mounted .landing__footnote {
+  animation-delay: 500ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing .landing__badge,
+  .landing .landing__headline,
+  .landing .landing__sub,
+  .landing .landing__dday,
+  .landing .landing__cta,
+  .landing .landing__footnote {
+    opacity: 1;
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+/* 데스크탑: 가운데 카드처럼 살짝 그림자 */
+@media (min-width: 768px) {
+  .landing {
+    padding: 48px 24px;
+    align-items: flex-start;
+  }
+  .landing__shell {
+    min-height: auto;
+    border-radius: 24px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+    padding: 48px 32px;
+    min-height: 640px;
+  }
+}
+
+/* 좁은 모바일 */
+@media (max-width: 375px) {
+  .landing__shell {
+    padding: 24px 20px;
+  }
+  .landing__headline {
+    font-size: 28px;
+  }
+  .landing__sub {
+    font-size: 14px;
+  }
+}
+
+/* ==========================================================================
+   Placeholder (ComingSoon / NotFound) — App.jsx 공용
+   ========================================================================== */
+
+.placeholder {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 24px;
+}
+
+.placeholder__shell {
+  width: 100%;
+  max-width: 430px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-card);
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.placeholder__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.02em;
+}
+
+.placeholder__title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.placeholder__sub {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.placeholder__back {
+  margin-top: 8px;
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-surface-border);
+  padding: 12px 20px;
+  border-radius: var(--radius-button);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.placeholder__back:hover {
+  background: var(--color-accent-soft);
+}
+
+.placeholder__back:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
