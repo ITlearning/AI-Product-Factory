@@ -22,19 +22,48 @@ export const config = { runtime: "nodejs" };
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Module init: 폰트는 한 번만 읽어서 warm invocation에서 재사용
-// (og-font-readfilesync 학습 — 매 요청마다 readFileSync 호출하면 cold 외에도 비용 발생).
-const FONT_REGULAR = fs.readFileSync(
-  path.join(__dirname, "fonts", "Pretendard-Regular.subset.woff2"),
-);
-const FONT_BOLD = fs.readFileSync(
-  path.join(__dirname, "fonts", "Pretendard-Bold.subset.woff2"),
-);
+// 폰트는 warm invocation에서 재사용되도록 모듈 스코프에 캐시.
+// (og-font-readfilesync 학습 — 매 요청마다 readFileSync 호출하면 cold 외에도 비용 발생.)
+//
+// 단, module-init 시점의 readFileSync 가 production에서 throw 하면 함수 자체가
+// 매 invocation timeout 으로 죽는다 (관측됨: 504 FUNCTION_INVOCATION_TIMEOUT).
+// Vercel 은 api/ 디렉토리의 비-JS 파일을 자동 번들 안 하므로
+// vercel.json `functions["api/og.js"].includeFiles` 로 fonts/** 를 강제 포함시킨다.
+// 그래도 path resolution 실패 안전망으로 try/catch + 1회만 시도 (warm cache).
+let FONT_REGULAR = null;
+let FONT_BOLD = null;
+let FONTS_LOADED = false;
+function loadFontsOnce() {
+  if (FONTS_LOADED) return;
+  FONTS_LOADED = true;
+  try {
+    FONT_REGULAR = fs.readFileSync(
+      path.join(__dirname, "fonts", "Pretendard-Regular.subset.woff2"),
+    );
+    FONT_BOLD = fs.readFileSync(
+      path.join(__dirname, "fonts", "Pretendard-Bold.subset.woff2"),
+    );
+  } catch (err) {
+    // 폰트 로드 실패해도 OG 카드 자체는 렌더 (Satori 기본 폰트로 fallback).
+    // 한글 글리프는 □ 로 나오겠지만, 504 보다는 낫고 카톡 미리보기는 뜬다.
+    console.error("[api/og] font load failed, falling back to default:", err);
+    FONT_REGULAR = null;
+    FONT_BOLD = null;
+  }
+}
 
 // 도메인 미정 — Tabber가 vercel.app 또는 커스텀 도메인 결정 후 교체 필요.
 const BRAND_URL = "wolse.kr";
 
 export default async function handler() {
+  loadFontsOnce();
+  const fonts = [];
+  if (FONT_REGULAR) {
+    fonts.push({ name: "Pretendard", data: FONT_REGULAR, style: "normal", weight: 400 });
+  }
+  if (FONT_BOLD) {
+    fonts.push({ name: "Pretendard", data: FONT_BOLD, style: "normal", weight: 800 });
+  }
   return new ImageResponse(
     {
       type: "div",
@@ -168,20 +197,7 @@ export default async function handler() {
     {
       width: 1200,
       height: 630,
-      fonts: [
-        {
-          name: "Pretendard",
-          data: FONT_REGULAR,
-          style: "normal",
-          weight: 400,
-        },
-        {
-          name: "Pretendard",
-          data: FONT_BOLD,
-          style: "normal",
-          weight: 800,
-        },
-      ],
+      fonts,
       headers: {
         "cache-control":
           "public, max-age=86400, s-maxage=604800, stale-while-revalidate=3600",
