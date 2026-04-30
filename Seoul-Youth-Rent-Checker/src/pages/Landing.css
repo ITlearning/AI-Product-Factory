@@ -175,7 +175,7 @@ button {
 .landing__dday-countdown {
   font-size: 20px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--color-accent);
   font-variant-numeric: tabular-nums;
 }
 
