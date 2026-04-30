@@ -26,8 +26,8 @@ export const config = { runtime: "nodejs" };
 const FONT_REGULAR = Buffer.from(PRETENDARD_REGULAR_BASE64, "base64");
 const FONT_BOLD = Buffer.from(PRETENDARD_BOLD_BASE64, "base64");
 
-// 도메인 미정 — Tabber가 vercel.app 또는 커스텀 도메인 결정 후 교체 필요.
-const BRAND_URL = "wolse.kr";
+// 커스텀 도메인 사면 여기 교체.
+const BRAND_URL = "seoul-youth-rent-checker.vercel.app";
 
 export default async function handler() {
   const fonts = [
