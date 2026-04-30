@@ -441,11 +441,11 @@ select.form__input {
 .form__nav-row > .form__back,
 .form__nav-row > .form__next,
 .form__nav-row > .form__cta {
-  flex: 1 1 0;
+  flex: 1 1 50%;
   min-width: 0;
-  width: 100%;
   white-space: nowrap;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .form__back {

@@ -187,17 +187,21 @@ function buildInput(s) {
     receivingSeoulHousingVoucher: !!s.receivingSeoulHousingVoucher,
     inPublicHousing: !!s.inPublicHousing,
     receivingOtherSimilarProgram: !!s.receivingOtherSimilarProgram,
-  };
 
-  if (isNewlywed) {
-    input.spouseBirthDate = s.spouseBirthDate || undefined;
-    input.spouseIsVeteran = s.spouseIsVeteran === true;
-    input.spouseMilitaryMonths =
-      s.spouseIsVeteran === true ? Number(s.spouseMilitaryMonths || 0) : 0;
-    input.spouseNationalityStatus = s.spouseNationalityStatus || undefined;
-    input.spouseInFamilyRegistry = s.spouseInFamilyRegistry === true;
-    input.spouseSameAddress = s.spouseSameAddress === true;
-  }
+    // 신혼부부 전용 — isNewlywed가 아니어도 type 보존을 위해 default 포함.
+    // evaluator는 householdType !== "young-newlywed"면 무시한다.
+    spouseBirthDate: isNewlywed ? s.spouseBirthDate || undefined : undefined,
+    spouseIsVeteran: isNewlywed ? s.spouseIsVeteran === true : false,
+    spouseMilitaryMonths:
+      isNewlywed && s.spouseIsVeteran === true
+        ? Number(s.spouseMilitaryMonths || 0)
+        : 0,
+    spouseNationalityStatus: isNewlywed
+      ? s.spouseNationalityStatus || undefined
+      : undefined,
+    spouseInFamilyRegistry: isNewlywed ? s.spouseInFamilyRegistry === true : false,
+    spouseSameAddress: isNewlywed ? s.spouseSameAddress === true : false,
+  };
 
   return input;
 }
@@ -459,6 +463,7 @@ export function Form({ onComplete, onBack }) {
             <button
               type="button"
               className="form__back"
+              style={{ flex: "1 1 50%", minWidth: 0, boxSizing: "border-box" }}
               onClick={handlePrev}
               disabled={submitting}
             >
@@ -467,6 +472,7 @@ export function Form({ onComplete, onBack }) {
             <button
               type="button"
               className={isLast ? "form__cta" : "form__next"}
+              style={{ flex: "1 1 50%", minWidth: 0, boxSizing: "border-box" }}
               onClick={handleNext}
               disabled={submitting}
             >
