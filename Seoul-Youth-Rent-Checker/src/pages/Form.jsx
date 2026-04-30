@@ -24,7 +24,8 @@ const INITIAL_STATE = {
   // Step 1
   birthDate: "",
   isVeteran: null, // null | true | false
-  militaryMonths: "",
+  militaryStartDate: "",
+  militaryEndDate: "",
 
   // Step 2
   nationalityStatus: "", // 'korean' | 'foreigner' | 'overseas-korean'
@@ -38,7 +39,8 @@ const INITIAL_STATE = {
   // 신혼부부
   spouseBirthDate: "",
   spouseIsVeteran: null,
-  spouseMilitaryMonths: "",
+  spouseMilitaryStartDate: "",
+  spouseMilitaryEndDate: "",
   spouseNationalityStatus: "",
   spouseInFamilyRegistry: null,
   spouseSameAddress: null,
@@ -52,9 +54,10 @@ const INITIAL_STATE = {
   householdSize: "",
   monthlyIncomeManwon: "",
 
-  // Step 6 — 재산 / 차량
-  generalAssetManwon: "",
+  // Step 6 — 재산 / 차량 (단순화)
+  hasVehicle: null, // null | true | false
   vehicleValueManwon: "",
+  ownsLandOrBuilding: null, // null | true | false
 
   // Step 7 — 주택 소유 / 임대인 / 공동임차
   ownsHome: null,
@@ -119,6 +122,25 @@ function manwonToWon(manwon) {
 }
 
 /**
+ * 시작/종료 날짜로부터 군복무 개월 수를 계산.
+ * 잘못된 입력(빈 값, 역순, 음수)은 0으로 처리해서 의무복무 = N과 동일 효과.
+ *
+ * @param {string} start - "YYYY-MM-DD"
+ * @param {string} end - "YYYY-MM-DD"
+ * @returns {number}
+ */
+function calculateMilitaryMonths(start, end) {
+  if (!start || !end) return 0;
+  const s = new Date(start);
+  const e = new Date(end);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return 0;
+  if (e < s) return 0;
+  const months =
+    (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+  return Math.max(0, months);
+}
+
+/**
  * Form state → evaluator EligibilityInput.
  * 만원→원 변환, 미입력 boolean 디폴트, 신혼부부/한부모/전세사기 외엔 부가 필드 무시.
  *
@@ -131,10 +153,24 @@ function buildInput(s) {
   const isFraudVictim = s.householdType === "fraud-victim";
   const isYouthSafe = s.householdType === "youth-safe-housing";
 
+  const militaryMonths =
+    s.isVeteran === true
+      ? calculateMilitaryMonths(s.militaryStartDate, s.militaryEndDate)
+      : 0;
+
+  const depositWon = manwonToWon(s.depositManwon);
+  const vehicleValueWon =
+    s.hasVehicle === true ? manwonToWon(s.vehicleValueManwon) : 0;
+  // generalAssetWon = 보증금 + 차량 (사용자 직접 입력 X, 폼 자동 합산)
+  const generalAssetWon = depositWon + vehicleValueWon;
+
+  // 토지/건물 소유 = ownsHome 강제 true (Step 7 효과와 동일)
+  const ownsHome = s.ownsLandOrBuilding === true || s.ownsHome === true;
+
   const input = {
     birthDate: s.birthDate,
     isVeteran: s.isVeteran === true,
-    militaryMonths: s.isVeteran === true ? Number(s.militaryMonths || 0) : 0,
+    militaryMonths,
 
     nationalityStatus: s.nationalityStatus,
     residence: s.residence,
@@ -146,16 +182,16 @@ function buildInput(s) {
 
     hasNewlywedChildren: isNewlywed ? s.hasNewlywedChildren === true : false,
 
-    depositWon: manwonToWon(s.depositManwon),
+    depositWon,
     monthlyRentWon: manwonToWon(s.monthlyRentManwon),
 
     householdSize: Number(s.householdSize || 1),
     monthlyIncomeWon: manwonToWon(s.monthlyIncomeManwon),
 
-    generalAssetWon: manwonToWon(s.generalAssetManwon),
-    vehicleValueWon: manwonToWon(s.vehicleValueManwon),
+    generalAssetWon,
+    vehicleValueWon,
 
-    ownsHome: s.ownsHome === true,
+    ownsHome,
     landlordRelation: s.landlordRelation === "cotenant" ? "other" : s.landlordRelation,
     allCotenantsApplying:
       s.landlordRelation === "cotenant" ? s.allCotenantsApplying === true : false,
@@ -170,10 +206,14 @@ function buildInput(s) {
   };
 
   if (isNewlywed) {
+    const spouseMilitaryMonths =
+      s.spouseIsVeteran === true
+        ? calculateMilitaryMonths(s.spouseMilitaryStartDate, s.spouseMilitaryEndDate)
+        : 0;
+
     input.spouseBirthDate = s.spouseBirthDate || undefined;
     input.spouseIsVeteran = s.spouseIsVeteran === true;
-    input.spouseMilitaryMonths =
-      s.spouseIsVeteran === true ? Number(s.spouseMilitaryMonths || 0) : 0;
+    input.spouseMilitaryMonths = spouseMilitaryMonths;
     input.spouseNationalityStatus = s.spouseNationalityStatus || undefined;
     input.spouseInFamilyRegistry = s.spouseInFamilyRegistry === true;
     input.spouseSameAddress = s.spouseSameAddress === true;
@@ -198,8 +238,13 @@ function validateStep(s) {
       if (Number.isNaN(d.getTime())) return "생년월일 형식이 올바르지 않아요.";
       if (s.isVeteran === null) return "제대군인 여부를 선택해 주세요.";
       if (s.isVeteran === true) {
-        const m = Number(s.militaryMonths);
-        if (!Number.isFinite(m) || m < 1) return "복무 개월 수를 입력해 주세요.";
+        if (!s.militaryStartDate) return "복무 시작일을 입력해 주세요.";
+        if (!s.militaryEndDate) return "복무 종료일을 입력해 주세요.";
+        const start = new Date(s.militaryStartDate);
+        const end = new Date(s.militaryEndDate);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
+          return "복무 날짜 형식이 올바르지 않아요.";
+        if (end < start) return "복무 종료일이 시작일보다 빠를 수 없어요.";
       }
       return null;
     }
@@ -222,8 +267,13 @@ function validateStep(s) {
         if (!s.spouseBirthDate) return "배우자 생년월일을 입력해 주세요.";
         if (s.spouseIsVeteran === null) return "배우자 제대군인 여부를 선택해 주세요.";
         if (s.spouseIsVeteran === true) {
-          const m = Number(s.spouseMilitaryMonths);
-          if (!Number.isFinite(m) || m < 1) return "배우자 복무 개월 수를 입력해 주세요.";
+          if (!s.spouseMilitaryStartDate) return "배우자 복무 시작일을 입력해 주세요.";
+          if (!s.spouseMilitaryEndDate) return "배우자 복무 종료일을 입력해 주세요.";
+          const start = new Date(s.spouseMilitaryStartDate);
+          const end = new Date(s.spouseMilitaryEndDate);
+          if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()))
+            return "배우자 복무 날짜 형식이 올바르지 않아요.";
+          if (end < start) return "배우자 복무 종료일이 시작일보다 빠를 수 없어요.";
         }
         if (!s.spouseNationalityStatus) return "배우자 국적을 선택해 주세요.";
         if (s.spouseNationalityStatus !== "korean") {
@@ -253,11 +303,14 @@ function validateStep(s) {
       return null;
     }
     case 5: {
-      // Step 6
-      if (s.generalAssetManwon === "" || Number(s.generalAssetManwon) < 0)
-        return "일반재산 합계를 입력해 주세요.";
-      if (s.vehicleValueManwon === "" || Number(s.vehicleValueManwon) < 0)
-        return "차량 시가표준액을 입력해 주세요. (없으면 0)";
+      // Step 6 — 차량 Y/N + 토지/건물 Y/N
+      if (s.hasVehicle === null) return "차량 보유 여부를 선택해 주세요.";
+      if (s.hasVehicle === true) {
+        if (s.vehicleValueManwon === "" || Number(s.vehicleValueManwon) < 0)
+          return "차량 시가표준액을 입력해 주세요.";
+      }
+      if (s.ownsLandOrBuilding === null)
+        return "토지·건물 소유 여부를 선택해 주세요.";
       return null;
     }
     case 6: {
@@ -459,6 +512,16 @@ export function Form({ onComplete, onBack }) {
 // --- Step 컴포넌트들 ------------------------------------------------------
 
 function Step1({ state, set }) {
+  const months = calculateMilitaryMonths(
+    state.militaryStartDate,
+    state.militaryEndDate
+  );
+  const showMonthsHint =
+    state.isVeteran === true &&
+    state.militaryStartDate &&
+    state.militaryEndDate &&
+    months > 0;
+
   return (
     <>
       <h2 className="form__question">생년월일과 군복무 이력을 알려주세요.</h2>
@@ -495,22 +558,45 @@ function Step1({ state, set }) {
 
       {state.isVeteran === true && (
         <>
-          <label className="form__label" htmlFor="militaryMonths">
-            복무 개월 수
+          <label className="form__label" htmlFor="militaryStartDate">
+            복무 시작일
           </label>
           <input
-            id="militaryMonths"
-            type="number"
-            inputMode="numeric"
-            min="1"
-            max="60"
+            id="militaryStartDate"
+            type="date"
             className="form__input"
-            value={state.militaryMonths}
-            placeholder="예: 18"
-            onChange={(e) => set("militaryMonths")(e.target.value)}
+            value={state.militaryStartDate}
+            min="1990-01-01"
+            max="2030-12-31"
+            onChange={(e) => set("militaryStartDate")(e.target.value)}
           />
+
+          <label className="form__label" htmlFor="militaryEndDate">
+            복무 종료일 (전역일)
+          </label>
+          <input
+            id="militaryEndDate"
+            type="date"
+            className="form__input"
+            value={state.militaryEndDate}
+            min="1990-01-01"
+            max="2030-12-31"
+            onChange={(e) => set("militaryEndDate")(e.target.value)}
+          />
+
           <p className="form__hint">
-            1~11개월 +1년 / 12~23개월 +2년 / 24개월 이상 +3년 보정.
+            예: 2018-03-01 ~ 2019-12-31 (육군 약 21개월)
+            {showMonthsHint && (
+              <>
+                <br />
+                계산된 복무 기간: <strong>{months}개월</strong>
+                {" "}— {months < 12
+                  ? "+1년 보정"
+                  : months < 24
+                    ? "+2년 보정"
+                    : "+3년 보정"}
+              </>
+            )}
           </p>
         </>
       )}
@@ -566,6 +652,15 @@ function Step2({ state, set }) {
 
 function Step3({ state, set }) {
   const t = state.householdType;
+  const spouseMonths = calculateMilitaryMonths(
+    state.spouseMilitaryStartDate,
+    state.spouseMilitaryEndDate
+  );
+  const showSpouseMonthsHint =
+    state.spouseIsVeteran === true &&
+    state.spouseMilitaryStartDate &&
+    state.spouseMilitaryEndDate &&
+    spouseMonths > 0;
 
   return (
     <>
@@ -697,20 +792,41 @@ function Step3({ state, set }) {
 
           {state.spouseIsVeteran === true && (
             <>
-              <label className="form__label" htmlFor="spouseMilitaryMonths">
-                배우자 복무 개월 수
+              <label className="form__label" htmlFor="spouseMilitaryStartDate">
+                배우자 복무 시작일
               </label>
               <input
-                id="spouseMilitaryMonths"
-                type="number"
-                inputMode="numeric"
-                min="1"
-                max="60"
+                id="spouseMilitaryStartDate"
+                type="date"
                 className="form__input"
-                value={state.spouseMilitaryMonths}
-                placeholder="예: 18"
-                onChange={(e) => set("spouseMilitaryMonths")(e.target.value)}
+                value={state.spouseMilitaryStartDate}
+                min="1990-01-01"
+                max="2030-12-31"
+                onChange={(e) => set("spouseMilitaryStartDate")(e.target.value)}
               />
+
+              <label className="form__label" htmlFor="spouseMilitaryEndDate">
+                배우자 복무 종료일 (전역일)
+              </label>
+              <input
+                id="spouseMilitaryEndDate"
+                type="date"
+                className="form__input"
+                value={state.spouseMilitaryEndDate}
+                min="1990-01-01"
+                max="2030-12-31"
+                onChange={(e) => set("spouseMilitaryEndDate")(e.target.value)}
+              />
+
+              <p className="form__hint">
+                예: 2018-03-01 ~ 2019-12-31 (육군 약 21개월)
+                {showSpouseMonthsHint && (
+                  <>
+                    <br />
+                    계산된 복무 기간: <strong>{spouseMonths}개월</strong>
+                  </>
+                )}
+              </p>
             </>
           )}
 
@@ -894,49 +1010,77 @@ function Step5({ state, set }) {
 function Step6({ state, set }) {
   return (
     <>
-      <h2 className="form__question">재산과 차량을 확인할게요.</h2>
-
-      <label className="form__label" htmlFor="generalAssetManwon">
-        일반재산 합계
-      </label>
+      <h2 className="form__question">차량과 부동산을 확인할게요.</h2>
       <p className="form__help">
-        토지 과세표준 + 건축물 과세표준 + 임차보증금 + 차량시가표준액의 합계예요.
-        보통 청년은 토지·건축이 0이라, <strong>임차보증금과 차량 합계</strong>로 보면 돼요.
-        1.3억(13,000만원) 이하인지 확인하세요.
+        임차보증금이랑 차량 합쳐서 1.3억 넘으면 대상 아니에요. 대부분은 OK.
       </p>
-      <div className="form__input-row">
-        <input
-          id="generalAssetManwon"
-          type="number"
-          inputMode="numeric"
-          min="0"
-          step="100"
-          className="form__input form__input--with-suffix"
-          value={state.generalAssetManwon}
-          placeholder="예: 1500"
-          onChange={(e) => set("generalAssetManwon")(e.target.value)}
-        />
-        <span className="form__suffix">만원</span>
-      </div>
 
-      <label className="form__label" htmlFor="vehicleValueManwon">
-        차량 시가표준액
-      </label>
-      <p className="form__help">차량 없으면 0을 입력하세요. 2,500만원 이상이면 신청 불가.</p>
-      <div className="form__input-row">
-        <input
-          id="vehicleValueManwon"
-          type="number"
-          inputMode="numeric"
-          min="0"
-          step="10"
-          className="form__input form__input--with-suffix"
-          value={state.vehicleValueManwon}
-          placeholder="예: 0"
-          onChange={(e) => set("vehicleValueManwon")(e.target.value)}
+      <fieldset className="form__radio-group">
+        <legend className="form__label">차량 가지고 있어요?</legend>
+        <RadioCard
+          name="hasVehicle"
+          checked={state.hasVehicle === true}
+          onChange={() => set("hasVehicle")(true)}
+          label="네"
         />
-        <span className="form__suffix">만원</span>
-      </div>
+        <RadioCard
+          name="hasVehicle"
+          checked={state.hasVehicle === false}
+          onChange={() => set("hasVehicle")(false)}
+          label="아니요"
+        />
+      </fieldset>
+
+      {state.hasVehicle === true && (
+        <>
+          <label className="form__label" htmlFor="vehicleValueManwon">
+            차량 시가표준액
+          </label>
+          <div className="form__input-row">
+            <input
+              id="vehicleValueManwon"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              step="10"
+              className="form__input form__input--with-suffix"
+              value={state.vehicleValueManwon}
+              placeholder="예: 1500"
+              onChange={(e) => set("vehicleValueManwon")(e.target.value)}
+            />
+            <span className="form__suffix">만원</span>
+          </div>
+          <p className="form__hint">
+            잘 모르면 차량 등록증에 적힌 금액. 보통 5년 안 된 차는 1,500~2,500만 사이.
+            2,500만원 이상이면 신청 불가.
+          </p>
+        </>
+      )}
+
+      <fieldset className="form__radio-group">
+        <legend className="form__label">
+          토지나 건물 소유 중이에요? (분양권·오피스텔 포함)
+        </legend>
+        <RadioCard
+          name="ownsLandOrBuilding"
+          checked={state.ownsLandOrBuilding === true}
+          onChange={() => set("ownsLandOrBuilding")(true)}
+          label="네"
+        />
+        <RadioCard
+          name="ownsLandOrBuilding"
+          checked={state.ownsLandOrBuilding === false}
+          onChange={() => set("ownsLandOrBuilding")(false)}
+          label="아니요"
+        />
+      </fieldset>
+
+      {state.ownsLandOrBuilding === true && (
+        <p className="form__hint form__hint--warning">
+          이 사업은 무주택 청년 대상이라 토지·건물 소유자는 신청할 수 없어요.
+          그래도 진단을 끝까지 진행하면 다른 적합 프로그램을 안내해 드려요.
+        </p>
+      )}
     </>
   );
 }
