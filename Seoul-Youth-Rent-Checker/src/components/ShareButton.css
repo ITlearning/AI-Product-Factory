@@ -1,0 +1,58 @@
+/*
+ * ShareButton — 두 가지 variant.
+ * --secondary (Result 페이지 기본): outline + 차콜 텍스트 + 흰 배경
+ * --primary: 차콜 배경 + 흰 텍스트 (강조 시)
+ *
+ * 토큰은 DESIGN.md의 :root에 정의되어 있다고 가정 (App.jsx 또는 main.jsx에서 주입).
+ * 토큰 누락 시 안전하게 동작하도록 fallback 색상 명시.
+ */
+
+.share-btn {
+  font-family: var(--font-family, "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 14px 22px;
+  border-radius: var(--radius-button, 14px);
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.share-btn:focus-visible {
+  outline: 2px solid var(--color-text-primary, #1a1a1a);
+  outline-offset: 2px;
+}
+
+/* Secondary — Result 페이지 기본 */
+.share-btn--secondary {
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text-primary, #1a1a1a);
+  border: 1px solid var(--color-surface-border, #e5e3df);
+}
+
+.share-btn--secondary:hover {
+  background: var(--color-bg, #faf9f7);
+}
+
+.share-btn--secondary:active {
+  background: var(--color-surface-border, #e5e3df);
+}
+
+/* Primary — 강조 시 */
+.share-btn--primary {
+  background: var(--color-text-primary, #1a1a1a);
+  color: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-text-primary, #1a1a1a);
+}
+
+.share-btn--primary:hover {
+  background: #000000;
+  border-color: #000000;
+}
+
+.share-btn--primary:active {
+  background: #000000;
+}

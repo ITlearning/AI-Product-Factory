@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 
 import { Landing } from "./pages/Landing.jsx";
+import { Form } from "./pages/Form.jsx";
+import { Result } from "./pages/Result.jsx";
 import "./pages/Landing.css";
+import "./pages/Form.css";
+import "./pages/Result.css";
+
+export { navigate };
 
 /**
  * SPA 내부 이동 — history.pushState 후 popstate 디스패치해서
@@ -68,10 +74,11 @@ export function App() {
     return <Landing onStart={() => navigate("/check")} />;
   }
   if (pathname === "/check") {
-    return <ComingSoon label="폼 페이지 준비 중" />;
+    return <Form onComplete={(uuid) => navigate(`/r/${uuid}`)} onBack={() => navigate("/")} />;
   }
   if (pathname.startsWith("/r/")) {
-    return <ComingSoon label="결과 페이지 준비 중" />;
+    const uuid = pathname.slice(3);
+    return <Result uuid={uuid} onRetry={() => navigate("/check")} onHome={() => navigate("/")} />;
   }
   return <NotFound />;
 }
