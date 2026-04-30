@@ -22,7 +22,7 @@
       "militaryExtensionMaxYears": 3,
       "referenceDate": "2026-01-01",
       "label": "공고일 기준 만 19~39세 (1986.1.1 ~ 2007.12.31 출생)",
-      "description": "군복무 기간만큼 최대 3년까지 연장 가능"
+      "description": "의무복무 마친 제대군인은 복무기간만큼 최대 3년까지 연장 가능 (1년 미만 +1, 1~2년 +2, 2년 이상 +3)"
     },
     "residence": {
       "allowed": ["서울"],
@@ -53,7 +53,7 @@
       {
         "id": "young-newlywed",
         "label": "청년신혼부부",
-        "description": "혼인 7년 이내, 무자녀 신혼부부"
+        "description": "혼인 7년 이내, 무자녀 신혼부부 (본인+배우자 모두 청년 연령)"
       },
       {
         "id": "youth-safe-housing",
@@ -76,15 +76,16 @@
     "income": {
       "minPercent": 48,
       "maxPercent": 150,
+      "tier1MaxPercent": 120,
       "basis": "기준중위소득",
-      "label": "기준중위소득 48% 이상 ~ 150% 이하",
-      "description": "가구 월소득(세전) 기준 — 48% 미만은 국기초 주거급여 대상"
+      "label": "기준중위소득 48% 초과 ~ 150% 이하 (1구간은 120% 이하)",
+      "description": "가구 월소득(세전) 기준 절대값 비교 — 48% 미만은 국기초 주거급여 대상"
     },
     "asset": {
       "generalMax": 130000000,
       "vehicleMax": 25000000,
-      "label": "일반재산 1.3억원 이하 + 차량 시가 2,500만원 미만",
-      "description": "차량은 시가표준액 기준"
+      "label": "일반재산(임차보증금+차량 등 합계) 1.3억원 이하 + 차량 시가 2,500만원 미만",
+      "description": "임차보증금 + 차량 시가표준액 등의 합계가 1.3억원 이하여야 함"
     },
     "exclusions": [
       {
@@ -113,9 +114,9 @@
         "reason": "청년안심주택 민간임대 외 공공임대는 신청 불가"
       },
       {
-        "id": "landlord-is-parent",
-        "label": "임대인이 부모",
-        "reason": "부모-자녀 간 임대차계약은 신청 불가"
+        "id": "landlord-is-spouse-or-parent",
+        "label": "임대인이 배우자 또는 부모",
+        "reason": "배우자/부모-자녀 간 임대차계약은 신청 불가"
       },
       {
         "id": "all-cotenants-applying",
@@ -126,6 +127,26 @@
         "id": "newlywed-with-children",
         "label": "신혼부부 + 자녀 있음",
         "reason": "청년신혼부부 카테고리는 무자녀 조건"
+      },
+      {
+        "id": "foreigner-or-overseas-korean",
+        "label": "외국인 또는 재외국민",
+        "reason": "외국인/재외국민은 신청 불가 (단, 신혼부부 + 본인 한국인 + 배우자 외국인 + 가족관계 등재 + 주소지 동일 시 예외)"
+      },
+      {
+        "id": "receiving-district-rent",
+        "label": "자치구 청년월세지원 수혜 중",
+        "reason": "자치구 자체 청년월세 사업 수혜 중에는 중복 수령 불가"
+      },
+      {
+        "id": "receiving-seoul-youth-allowance",
+        "label": "서울시 청년수당 수혜 중",
+        "reason": "동일 목적 서울시 청년수당과 중복 수령 불가"
+      },
+      {
+        "id": "receiving-transition-youth-support",
+        "label": "자립준비청년 월세·기숙사비 지원 수혜 중",
+        "reason": "자립준비청년 지원사업과 중복 수령 불가"
       }
     ]
   },
@@ -240,6 +261,21 @@
     "label": "2026 가구원수별 기준중위소득 100%",
     "description": "가구원 수 6인 초과 시 1인 추가될 때마다 약 92만원 가산 (참고치)"
   },
+  "medianIncomeThresholds2026": {
+    "basis": "공식 공고문 가구원수별 절대값 thresholds (월 기준, 원)",
+    "currency": "KRW",
+    "byHouseholdSize": {
+      "1": { "pct48": 1230834, "pct100": 2564238, "pct120": 3077086, "pct150": 3846357 },
+      "2": { "pct48": 2015660, "pct100": 4199292, "pct120": 5039150, "pct150": 6298938 },
+      "3": { "pct48": 2572337, "pct100": 5359036, "pct120": 6430843, "pct150": 8038554 },
+      "4": { "pct48": 3117474, "pct100": 6494738, "pct120": 7793686, "pct150": 9742107 },
+      "5": { "pct48": 3627225, "pct100": 7556719, "pct120": 9068063, "pct150": 11335079 },
+      "6": { "pct48": 4106857, "pct100": 8555952, "pct120": 10267142, "pct150": 12833928 },
+      "7": { "pct48": 4567272, "pct100": 9515150, "pct120": 11418180, "pct150": 14272725 }
+    },
+    "incrementPerPersonAfter7": 959198,
+    "description": "8인 이상 가구는 7인 기준값 + (n-7) × 959,198원을 100%로 잡고 % 비례 계산"
+  },
   "alternativePrograms": {
     "ageOutOfRange": {
       "id": "national-youth-rent",
@@ -258,6 +294,12 @@
       "label": "국민기초생활보장 주거급여",
       "description": "중위소득 48% 미만 가구 대상 — 동주민센터 신청",
       "url": "https://www.bokjiro.go.kr"
+    },
+    "housingVoucher": {
+      "id": "seoul-housing-voucher",
+      "label": "서울형 주택바우처",
+      "description": "주거취약계층 월세 보조 — 동주민센터 신청",
+      "url": "https://housing.seoul.go.kr"
     }
   },
   "source": {

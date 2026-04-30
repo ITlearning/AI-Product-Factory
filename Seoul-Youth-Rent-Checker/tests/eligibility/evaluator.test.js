@@ -8,6 +8,7 @@ import { evaluateSeoulYouthRent2026 } from "../../src/eligibility/evaluator.js";
  */
 const BASE_OK_INPUT = {
   birthDate: "1995-06-15",
+  isVeteran: false,
   militaryMonths: 0,
   residence: "서울",
   householdType: "single",
@@ -16,17 +17,22 @@ const BASE_OK_INPUT = {
   hasFraudVictimCert: false,
   youthSafeHousingType: null,
   householdSize: 1,
-  monthlyIncomeWon: 2_220_000, // 1인가구 100%
+  monthlyIncomeWon: 2_220_000, // 1인가구 약 86.6% (48% 초과 ~ 120% 이하 범위)
   depositWon: 5_000_000,
   monthlyRentWon: 400_000,
   generalAssetWon: 50_000_000,
   vehicleValueWon: 0,
   ownsHome: false,
-  landlordIsParent: false,
+  landlordRelation: "other",
   allCotenantsApplying: false,
   receivingNationalYouthRent: false,
   previouslyReceivedSeoulRent: false,
   basicLivingRecipient: false,
+  nationalityStatus: "korean",
+  receivingDistrictRent: false,
+  receivingSeoulYouthAllowance: false,
+  receivingTransitionYouthSupport: false,
+  receivingSeoulHousingVoucher: false,
 };
 
 // =================================================================
@@ -34,20 +40,20 @@ const BASE_OK_INPUT = {
 // =================================================================
 
 describe("Happy path: 4 tier 매칭", () => {
-  test("Tier 1 — 보증금 500만, 월세 40만, 소득 100% → rank 1, ratio 0.35", () => {
+  test("Tier 1 — 보증금 500만, 월세 40만, 소득 1구간 → rank 1, ratio 0.35", () => {
     const result = evaluateSeoulYouthRent2026(BASE_OK_INPUT);
     assert.equal(result.eligible, true);
     assert.deepEqual(result.tier, { rank: 1, ratio: 0.35 });
     assert.equal(result.primaryReason, null);
-    assert.equal(result.incomePercent, 100);
   });
 
   test("Tier 2 — 보증금 1000만, 월세 50만, 소득 130% → rank 2, ratio 0.30", () => {
+    // 1인 130% 절대값 = 약 3,333,509원 → 120% 초과 ~ 150% 이하
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       depositWon: 10_000_000,
       monthlyRentWon: 500_000,
-      monthlyIncomeWon: 2_886_000, // 1인 130%
+      monthlyIncomeWon: 3_333_509,
     });
     assert.equal(result.eligible, true);
     assert.deepEqual(result.tier, { rank: 2, ratio: 0.30 });
@@ -75,46 +81,82 @@ describe("Happy path: 4 tier 매칭", () => {
 });
 
 // =================================================================
-// 연령 (군복무 보정 포함)
+// 연령 (군복무 계단식 보정)
 // =================================================================
 
-describe("연령", () => {
-  test("1985.6.30 출생 + 군복무 0개월 → 연령 초과 FAIL", () => {
+describe("연령 (군복무 계단식 보정)", () => {
+  test("1985.6.30 + isVeteran false + 0개월 → FAIL (보정 0년)", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       birthDate: "1985-06-30",
+      isVeteran: false,
       militaryMonths: 0,
     });
     assert.equal(result.eligible, false);
     assert.match(result.primaryReason, /연령/);
-    // 다른 지역 추천이 아닌 국토부 한시지원 추천이 와야 한다
     assert.ok(
       result.alternativeProgramSuggestions.some((s) => s.includes("국토부")),
       `expected 국토부 한시지원 안내, got ${JSON.stringify(result.alternativeProgramSuggestions)}`
     );
   });
 
-  test("1985.6.30 출생 + 군복무 36개월 → 연령 통과 (3년 연장 적용)", () => {
+  test("1985.6.30 + isVeteran true + 0개월 → FAIL (보정 0 — 의무복무 0개월)", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       birthDate: "1985-06-30",
-      militaryMonths: 36,
+      isVeteran: true,
+      militaryMonths: 0,
     });
-    // 보정 출생일 1988.6.30 → 1986.1.1 이후 → 통과
-    assert.equal(result.eligible, true);
-    // 36개월 군복무는 병적증명서 추가 필요
-    assert.ok(
-      result.requiredDocuments.some((d) => d.includes("병적증명서") || d.includes("병역")),
-      `expected 병적증명서 in documents, got ${JSON.stringify(result.requiredDocuments)}`
-    );
+    assert.equal(result.eligible, false);
+    assert.match(result.primaryReason, /연령/);
   });
 
-  test("1985.6.30 출생 + 군복무 6개월 → 연령 미달 FAIL (1년 연장 안 됨)", () => {
-    // 6개월은 1년 미만 → 보정 0년 → 1985.6.30 그대로 → ageMin(1986.1.1) 이전 → FAIL
+  test("1985.6.30 + isVeteran true + 6개월 → eligible (1년 미만 = +1, 1985.1.1 통과)", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       birthDate: "1985-06-30",
+      isVeteran: true,
       militaryMonths: 6,
+    });
+    assert.equal(result.eligible, true);
+  });
+
+  test("1985.6.30 + isVeteran true + 18개월 → eligible (+2, 1984.1.1 통과)", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      birthDate: "1985-06-30",
+      isVeteran: true,
+      militaryMonths: 18,
+    });
+    assert.equal(result.eligible, true);
+  });
+
+  test("1984.6.30 + isVeteran true + 18개월 → eligible (+2)", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      birthDate: "1984-06-30",
+      isVeteran: true,
+      militaryMonths: 18,
+    });
+    assert.equal(result.eligible, true);
+  });
+
+  test("1983.6.30 + isVeteran true + 30개월 → eligible (+3)", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      birthDate: "1983-06-30",
+      isVeteran: true,
+      militaryMonths: 30,
+    });
+    assert.equal(result.eligible, true);
+  });
+
+  test("1982.6.30 + isVeteran true + 30개월 → FAIL (+3 한도 = 1983.1.1 이후만 가능)", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      birthDate: "1982-06-30",
+      isVeteran: true,
+      militaryMonths: 30,
     });
     assert.equal(result.eligible, false);
     assert.match(result.primaryReason, /연령/);
@@ -150,7 +192,6 @@ describe("보증금/월세", () => {
       depositWon: 50_000_000,
       monthlyRentWon: 700_000,
     });
-    // 5000만 × 0.045 / 12 = 187,500 + 700,000 = 887,500 ≤ 900,000
     assert.equal(result.eligible, true);
     assert.equal(result.tier.rank, 4);
   });
@@ -161,44 +202,83 @@ describe("보증금/월세", () => {
       depositWon: 80_000_000,
       monthlyRentWon: 700_000,
     });
-    // 8000만 × 0.045 / 12 = 300,000 + 700,000 = 1,000,000 > 900,000
     assert.equal(result.eligible, false);
     assert.ok(result.allReasons.some((r) => r.includes("월세")));
   });
 });
 
 // =================================================================
-// 소득
+// 소득 (절대값 비교)
 // =================================================================
 
-describe("소득 (중위소득)", () => {
-  test("1인 + 월 100만원 → 약 45% < 48% → FAIL + 주거급여 추천", () => {
+describe("소득 (절대값)", () => {
+  test("1인 + 월 1,230,834원 (정확히 48%) → FAIL (48% 초과여야 함)", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
-      monthlyIncomeWon: 1_000_000,
+      monthlyIncomeWon: 1_230_834,
     });
     assert.equal(result.eligible, false);
-    assert.ok(result.incomePercent < 48);
-    assert.ok(result.allReasons.some((r) => r.includes("48%") || r.includes("주거급여")));
+    assert.ok(
+      result.allReasons.some((r) => r.includes("48%") || r.includes("주거급여")),
+      `expected 48% reason, got ${JSON.stringify(result.allReasons)}`
+    );
     assert.ok(
       result.alternativeProgramSuggestions.some((s) => s.includes("주거급여")),
       `expected 주거급여 alt, got ${JSON.stringify(result.alternativeProgramSuggestions)}`
     );
   });
 
-  test("1인 + 월 350만원 → 약 158% > 150% → FAIL", () => {
+  test("1인 + 월 1,230,835원 (48% + 1원) → eligible 가능 (48% 초과)", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
-      monthlyIncomeWon: 3_500_000,
+      monthlyIncomeWon: 1_230_835,
+    });
+    assert.equal(result.eligible, true);
+  });
+
+  test("1인 + 월 3,846,357원 (정확히 150%) → eligible (150% 이하)", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      depositWon: 80_000_000,
+      monthlyRentWon: 600_000,
+      monthlyIncomeWon: 3_846_357,
+    });
+    assert.equal(result.eligible, true);
+  });
+
+  test("1인 + 월 3,846,358원 (150% + 1원) → FAIL", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      monthlyIncomeWon: 3_846_358,
     });
     assert.equal(result.eligible, false);
-    assert.ok(result.incomePercent > 150);
     assert.ok(result.allReasons.some((r) => r.includes("150%")));
+  });
+
+  test("4인 + 월 9,742,107원 (정확히 4인 150%) → eligible", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      householdSize: 4,
+      monthlyIncomeWon: 9_742_107,
+    });
+    assert.equal(result.eligible, true);
+  });
+
+  test("1인 + 월 100만원 (48% 미만) → FAIL + 주거급여 추천", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      monthlyIncomeWon: 1_000_000,
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(
+      result.alternativeProgramSuggestions.some((s) => s.includes("주거급여")),
+      `expected 주거급여 alt, got ${JSON.stringify(result.alternativeProgramSuggestions)}`
+    );
   });
 });
 
 // =================================================================
-// 재산
+// 재산 (일반재산 합계 + 차량)
 // =================================================================
 
 describe("재산", () => {
@@ -209,6 +289,22 @@ describe("재산", () => {
     });
     assert.equal(result.eligible, false);
     assert.ok(result.allReasons.some((r) => r.includes("일반재산") || r.includes("1.3억")));
+  });
+
+  test("일반재산 정확히 1.3억 → eligible (이하)", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      generalAssetWon: 130_000_000,
+    });
+    assert.equal(result.eligible, true);
+  });
+
+  test("일반재산 1.3억 + 1원 → FAIL", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      generalAssetWon: 130_000_001,
+    });
+    assert.equal(result.eligible, false);
   });
 
   test("차량 시가 2,600만 → FAIL (2,500만 이상)", () => {
@@ -240,7 +336,8 @@ describe("가구형태", () => {
       householdType: "young-newlywed",
       hasNewlywedChildren: true,
       householdSize: 2,
-      monthlyIncomeWon: 3_680_000, // 2인 100%
+      monthlyIncomeWon: 3_680_000, // 2인 약 87.6%
+      spouseBirthDate: "1995-06-15",
     });
     assert.equal(result.eligible, false);
     assert.ok(result.allReasons.some((r) => r.includes("무자녀") || r.includes("자녀")));
@@ -304,17 +401,72 @@ describe("가구형태", () => {
 });
 
 // =================================================================
+// 신혼부부 배우자 청년 연령
+// =================================================================
+
+describe("신혼부부 배우자 연령", () => {
+  test("본인 1990 + 배우자 1980 → FAIL (배우자 연령 초과)", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      householdType: "young-newlywed",
+      hasNewlywedChildren: false,
+      householdSize: 2,
+      monthlyIncomeWon: 3_680_000,
+      birthDate: "1990-06-15",
+      spouseBirthDate: "1980-06-15",
+      spouseIsVeteran: false,
+      spouseMilitaryMonths: 0,
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(
+      result.allReasons.some((r) => r.includes("배우자") && r.includes("연령")),
+      `expected 배우자 연령 reason, got ${JSON.stringify(result.allReasons)}`
+    );
+  });
+
+  test("본인 1990 + 배우자 1992 → 자격 OK", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      householdType: "young-newlywed",
+      hasNewlywedChildren: false,
+      householdSize: 2,
+      monthlyIncomeWon: 3_680_000,
+      birthDate: "1990-06-15",
+      spouseBirthDate: "1992-06-15",
+    });
+    assert.equal(result.eligible, true);
+  });
+});
+
+// =================================================================
 // Exclusions
 // =================================================================
 
 describe("Exclusions", () => {
+  test("임대인 = 배우자 → FAIL", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      landlordRelation: "spouse",
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("배우자") || r.includes("부모")));
+  });
+
   test("임대인 = 부모 → FAIL", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
-      landlordIsParent: true,
+      landlordRelation: "parent",
     });
     assert.equal(result.eligible, false);
-    assert.ok(result.allReasons.some((r) => r.includes("부모")));
+    assert.ok(result.allReasons.some((r) => r.includes("부모") || r.includes("배우자")));
+  });
+
+  test("임대인 = other → eligible 가능", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      landlordRelation: "other",
+    });
+    assert.equal(result.eligible, true);
   });
 
   test("공동임차인 모두 신청 → FAIL", () => {
@@ -361,6 +513,93 @@ describe("Exclusions", () => {
     assert.equal(result.eligible, false);
     assert.ok(result.allReasons.some((r) => r.includes("주택") || r.includes("소유")));
   });
+
+  test("자치구 청년월세지원 수혜 중 → FAIL", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      receivingDistrictRent: true,
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("자치구")));
+  });
+
+  test("서울시 청년수당 수혜 중 → FAIL", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      receivingSeoulYouthAllowance: true,
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("청년수당")));
+  });
+
+  test("자립준비청년 월세·기숙사비 지원 수혜 중 → FAIL", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      receivingTransitionYouthSupport: true,
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("자립준비")));
+  });
+});
+
+// =================================================================
+// 외국인 / 재외국민
+// =================================================================
+
+describe("외국인 / 재외국민", () => {
+  test("nationalityStatus: 'foreigner' (단독 신청) → FAIL", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      nationalityStatus: "foreigner",
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("외국인") || r.includes("재외국민")));
+  });
+
+  test("1인 + nationalityStatus: 'overseas-korean' → FAIL", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      nationalityStatus: "overseas-korean",
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("외국인") || r.includes("재외국민")));
+  });
+
+  test("신혼 + 본인 korean + 배우자 foreigner + 가족관계 X → FAIL (요건 미충족)", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      householdType: "young-newlywed",
+      hasNewlywedChildren: false,
+      householdSize: 2,
+      monthlyIncomeWon: 3_680_000,
+      spouseBirthDate: "1995-06-15",
+      nationalityStatus: "korean",
+      spouseNationalityStatus: "foreigner",
+      spouseInFamilyRegistry: false,
+      spouseSameAddress: true,
+    });
+    assert.equal(result.eligible, false);
+    assert.ok(
+      result.allReasons.some((r) => r.includes("가족관계") || r.includes("주소지")),
+      `expected 가족관계/주소지 reason, got ${JSON.stringify(result.allReasons)}`
+    );
+  });
+
+  test("신혼 + 본인 korean + 배우자 foreigner + 가족관계 O + 주소지 O → eligible", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      householdType: "young-newlywed",
+      hasNewlywedChildren: false,
+      householdSize: 2,
+      monthlyIncomeWon: 3_680_000,
+      spouseBirthDate: "1995-06-15",
+      nationalityStatus: "korean",
+      spouseNationalityStatus: "foreigner",
+      spouseInFamilyRegistry: true,
+      spouseSameAddress: true,
+    });
+    assert.equal(result.eligible, true);
+  });
 });
 
 // =================================================================
@@ -368,7 +607,7 @@ describe("Exclusions", () => {
 // =================================================================
 
 describe("거주지", () => {
-  test("부산 거주 → FAIL + 다른 지역 정책 추천", () => {
+  test("부산 거주 → FAIL + 정부24 안내", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       residence: "부산",
@@ -376,8 +615,8 @@ describe("거주지", () => {
     assert.equal(result.eligible, false);
     assert.ok(result.allReasons.some((r) => r.includes("서울")));
     assert.ok(
-      result.alternativeProgramSuggestions.some((s) => s.includes("다른 지역")),
-      `expected 다른 지역 안내, got ${JSON.stringify(result.alternativeProgramSuggestions)}`
+      result.alternativeProgramSuggestions.some((s) => s.includes("정부24")),
+      `expected 정부24 안내, got ${JSON.stringify(result.alternativeProgramSuggestions)}`
     );
   });
 });
@@ -397,9 +636,10 @@ describe("서류 (requiredDocuments)", () => {
     assert.ok(result.requiredDocuments.some((d) => d.includes("행정정보")));
   });
 
-  test("자격 OK + 군복무 12개월 이상 → 병적증명서 추가", () => {
+  test("자격 OK + 군복무 보정 적용 (isVeteran true + 24개월) → 병적증명서 추가", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
+      isVeteran: true,
       militaryMonths: 24,
     });
     assert.equal(result.eligible, true);
@@ -432,7 +672,29 @@ describe("서류 (requiredDocuments)", () => {
 });
 
 // =================================================================
-// Tier 매칭 fallback (4구간 보호)
+// 주택바우처 (monthlyBenefitNote)
+// =================================================================
+
+describe("주택바우처 (monthlyBenefitNote)", () => {
+  test("자격 OK + 주택바우처 X → 기본 안내", () => {
+    const result = evaluateSeoulYouthRent2026(BASE_OK_INPUT);
+    assert.equal(result.eligible, true);
+    assert.match(result.monthlyBenefitNote, /월 최대 20만원/);
+    assert.ok(!result.monthlyBenefitNote.includes("차액"));
+  });
+
+  test("자격 OK + 주택바우처 O → 차액 지급 안내", () => {
+    const result = evaluateSeoulYouthRent2026({
+      ...BASE_OK_INPUT,
+      receivingSeoulHousingVoucher: true,
+    });
+    assert.equal(result.eligible, true);
+    assert.match(result.monthlyBenefitNote, /차액/);
+  });
+});
+
+// =================================================================
+// Tier 매칭
 // =================================================================
 
 describe("Tier 매칭", () => {
@@ -447,26 +709,26 @@ describe("Tier 매칭", () => {
     assert.equal(result.tier.ratio, 0.15);
   });
 
-  test("Tier 1 경계 — 보증금 500만 + 월세 40만 + 소득 120% → rank 1", () => {
+  test("Tier 1 경계 — 보증금 500만 + 월세 40만 + 소득 정확히 120% → rank 1", () => {
+    // 1인 120% = 3,077,086원
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       depositWon: 5_000_000,
       monthlyRentWon: 400_000,
-      monthlyIncomeWon: 2_664_000, // 1인 120%
+      monthlyIncomeWon: 3_077_086,
     });
     assert.equal(result.eligible, true);
     assert.equal(result.tier.rank, 1);
   });
 
-  test("Tier 2 경계 — 소득 121% → rank 2 (1구간 incomeRange 120% 초과)", () => {
+  test("Tier 2 경계 — 소득 120% + 1원 → rank 2 (1구간 120% 초과)", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       depositWon: 5_000_000,
       monthlyRentWon: 400_000,
-      monthlyIncomeWon: 2_686_200, // 1인 약 121%
+      monthlyIncomeWon: 3_077_087,
     });
     assert.equal(result.eligible, true);
-    // 1구간 income 한도(120%) 초과 → 2구간 매칭
     assert.equal(result.tier.rank, 2);
   });
 });
@@ -496,10 +758,10 @@ describe("다중 사유", () => {
 });
 
 // =================================================================
-// 가구원수별 중위소득 계산 검증
+// 가구원수별 중위소득 계산 검증 (UI 표시용 percent)
 // =================================================================
 
-describe("중위소득 계산", () => {
+describe("중위소득 계산 (UI %)", () => {
   test("2인가구 + 월 368만 → 100%", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
@@ -516,14 +778,5 @@ describe("중위소득 계산", () => {
       monthlyIncomeWon: 5_720_000,
     });
     assert.equal(result.incomePercent, 100);
-  });
-
-  test("1인가구 + 월 약 107만 → 약 48% 경계 통과", () => {
-    const result = evaluateSeoulYouthRent2026({
-      ...BASE_OK_INPUT,
-      monthlyIncomeWon: 1_065_600, // 정확히 48%
-    });
-    assert.equal(result.eligible, true);
-    assert.equal(result.incomePercent, 48);
   });
 });

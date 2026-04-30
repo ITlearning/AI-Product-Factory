@@ -11,6 +11,7 @@
 import program from "../../programs/seoul-youth-rent-2026.json" with { type: "json" };
 import {
   calculateMedianIncomePercent,
+  evaluateIncomeRange,
   meetsRentLimit,
   calculateAgeWithMilitary,
   matchTier,
@@ -19,6 +20,7 @@ import {
 /**
  * @typedef {object} EligibilityInput
  * @property {string} birthDate - "1995-06-15"
+ * @property {boolean} isVeteran - 의무복무 마친 제대군인 여부
  * @property {number} militaryMonths - 0~36+
  * @property {string} residence - "서울" | "경기" | etc.
  * @property {"single"|"single-parent"|"fraud-victim"|"young-newlywed"|"youth-safe-housing"} householdType
@@ -30,14 +32,25 @@ import {
  * @property {number} monthlyIncomeWon - 가구 월소득 (세전)
  * @property {number} depositWon
  * @property {number} monthlyRentWon
- * @property {number} generalAssetWon
+ * @property {number} generalAssetWon - 일반재산 (임차보증금+차량 등 합계)
  * @property {number} vehicleValueWon
  * @property {boolean} ownsHome
- * @property {boolean} landlordIsParent
+ * @property {"spouse"|"parent"|"other"|"none"} landlordRelation - 임대인 관계
  * @property {boolean} allCotenantsApplying
  * @property {boolean} receivingNationalYouthRent - 국토부 한시지원 수혜 중
  * @property {boolean} previouslyReceivedSeoulRent - 서울시 기수령
  * @property {boolean} basicLivingRecipient - 국기초 수급자
+ * @property {"korean"|"foreigner"|"overseas-korean"} nationalityStatus - 본인 국적 상태
+ * @property {"korean"|"foreigner"|"overseas-korean"} [spouseNationalityStatus] - 신혼부부 배우자 국적
+ * @property {boolean} [spouseInFamilyRegistry] - 신혼+배우자 외국인일 때 가족관계 등재 여부
+ * @property {boolean} [spouseSameAddress] - 신혼+배우자 외국인일 때 주소지 동일 여부
+ * @property {string} [spouseBirthDate] - 신혼부부 배우자 출생일
+ * @property {boolean} [spouseIsVeteran] - 신혼부부 배우자 제대군인 여부
+ * @property {number} [spouseMilitaryMonths] - 신혼부부 배우자 복무 개월
+ * @property {boolean} receivingDistrictRent - 자치구 청년월세 수혜 중
+ * @property {boolean} receivingSeoulYouthAllowance - 서울시 청년수당 수혜 중
+ * @property {boolean} receivingTransitionYouthSupport - 자립준비청년 월세·기숙사비 지원 수혜 중
+ * @property {boolean} receivingSeoulHousingVoucher - 서울형 주택바우처 수급자
  */
 
 /**
@@ -49,11 +62,56 @@ import {
  * @property {{rank: number, ratio: number}|null} tier
  * @property {string[]} requiredDocuments
  * @property {string[]} alternativeProgramSuggestions
+ * @property {string} monthlyBenefitNote - 자격 OK 시 월 지급액 안내 (주택바우처 차감 여부 반영)
  */
 
 const ELIG = program.eligibility;
-const REFERENCE_DATE = ELIG.age.referenceDate;
 const ALT = program.alternativePrograms;
+
+/**
+ * 출생일이 [oldestAllowed, youngestAllowed] 범위 안에 있는지 확인.
+ *
+ * @param {string} birthDateStr
+ * @param {string} oldestAllowedStr - "YYYY-MM-DD"
+ * @param {string} youngestAllowedStr - "YYYY-MM-DD"
+ * @returns {{ok: boolean, tooOld: boolean, tooYoung: boolean}}
+ */
+function checkBirthDateInRange(birthDateStr, oldestAllowedStr, youngestAllowedStr) {
+  const birth = new Date(birthDateStr);
+  const oldest = new Date(oldestAllowedStr);
+  const youngest = new Date(youngestAllowedStr);
+  const tooOld = birth < oldest;
+  const tooYoung = birth > youngest;
+  return { ok: !tooOld && !tooYoung, tooOld, tooYoung };
+}
+
+/**
+ * 자격 X 사유에 맞는 alternative 추천을 만들어 반환.
+ *
+ * @param {string[]} reasons
+ * @param {boolean} isResidenceFail
+ * @param {boolean} isAgeOutFail
+ * @param {boolean} isIncomeBelowFail
+ * @returns {string[]}
+ */
+function buildAlternativeSuggestions({ isResidenceFail, isAgeOutFail, isIncomeBelowFail }) {
+  /** @type {string[]} */
+  const suggestions = [];
+
+  if (isIncomeBelowFail) {
+    // 중위소득 48% 이하
+    suggestions.push("주거급여 (보건복지부) — 동주민센터 신청");
+    suggestions.push("서울형 주택바우처 — 동주민센터 신청");
+    suggestions.push("국토부 청년월세 한시 특별지원 (만 19~34세, 중위 60% 이하)");
+  } else if (isAgeOutFail) {
+    // 연령 미달/초과
+    suggestions.push(`${ALT.ageOutOfRange.label} (만 19~34세) — ${ALT.ageOutOfRange.description}`);
+  } else if (isResidenceFail) {
+    suggestions.push("정부24 청년월세 정책 검색 (지자체별)");
+  }
+
+  return suggestions;
+}
 
 /**
  * @param {EligibilityInput} input
@@ -62,15 +120,17 @@ const ALT = program.alternativePrograms;
 export function evaluateSeoulYouthRent2026(input) {
   /** @type {string[]} */
   const reasons = [];
-  /** @type {Set<string>} */
-  const altSuggestions = new Set();
+
+  let isResidenceFail = false;
+  let isAgeOutFail = false;
+  let isIncomeBelowFail = false;
 
   // --- 1. 거주지 (서울만) ---
   const allowedRegions = ELIG.residence.allowed;
   const isSeoul = allowedRegions.includes(input.residence);
   if (!isSeoul) {
     reasons.push("서울 거주자만 신청 가능해요.");
-    altSuggestions.add(`${ALT.outsideSeoul.label} — ${ALT.outsideSeoul.description}`);
+    isResidenceFail = true;
   }
 
   // --- 2. 무주택 ---
@@ -78,29 +138,24 @@ export function evaluateSeoulYouthRent2026(input) {
     reasons.push("주택을 소유 중이라 신청할 수 없어요. (오피스텔/분양권/공유지분 포함)");
   }
 
-  // --- 3. 연령 (군복무 +최대 3년 적용) ---
-  const ageEffective = calculateAgeWithMilitary(
+  // --- 3. 연령 (군복무 +최대 3년 계단식 보정) ---
+  const ageInfo = calculateAgeWithMilitary(
     input.birthDate,
-    input.militaryMonths ?? 0,
-    REFERENCE_DATE
+    input.isVeteran ?? false,
+    input.militaryMonths ?? 0
   );
-  const birth = new Date(input.birthDate);
-  const ageMin = new Date(ELIG.age.min); // 1986-01-01 (이 날 이후 출생자만)
-  const ageMax = new Date(ELIG.age.max); // 2007-12-31 (이 날 이전 출생자만)
+  const ageRange = checkBirthDateInRange(
+    input.birthDate,
+    ageInfo.oldestAllowedBirthDate,
+    ageInfo.youngestAllowedBirthDate
+  );
 
-  // 군복무 개월을 출생일에 가산해 "보정 출생일"을 만든 뒤 범위 비교 (가장 정확)
-  const militaryMonths = Math.min(36, Math.max(0, input.militaryMonths ?? 0));
-  const adjustedBirth = new Date(birth);
-  adjustedBirth.setMonth(adjustedBirth.getMonth() + militaryMonths);
-
-  const ageTooOld = adjustedBirth < ageMin; // 보정 후에도 1986.1.1보다 이른 출생 → 너무 나이 많음
-  const ageTooYoung = birth > ageMax; // 출생일이 2007.12.31보다 늦음 → 너무 어림
-
-  if (ageTooOld) {
+  if (ageRange.tooOld) {
     reasons.push("연령 기준을 초과했어요. (군복무 최대 3년 연장 적용해도 만 39세 초과)");
-    altSuggestions.add(`${ALT.ageOutOfRange.label} — ${ALT.ageOutOfRange.description}`);
-  } else if (ageTooYoung) {
+    isAgeOutFail = true;
+  } else if (ageRange.tooYoung) {
     reasons.push("아직 만 19세가 되지 않아 신청할 수 없어요.");
+    isAgeOutFail = true;
   }
 
   // --- 4. 가구형태별 분기 ---
@@ -118,6 +173,27 @@ export function evaluateSeoulYouthRent2026(input) {
     reasons.push("청년안심주택 공공임대 거주자는 신청할 수 없어요. (민간임대만 가능)");
   }
 
+  // --- 4-2. 신혼부부 배우자 청년 연령 충족 ---
+  if (householdType === "young-newlywed" && input.spouseBirthDate) {
+    const spouseAgeInfo = calculateAgeWithMilitary(
+      input.spouseBirthDate,
+      input.spouseIsVeteran ?? false,
+      input.spouseMilitaryMonths ?? 0
+    );
+    const spouseRange = checkBirthDateInRange(
+      input.spouseBirthDate,
+      spouseAgeInfo.oldestAllowedBirthDate,
+      spouseAgeInfo.youngestAllowedBirthDate
+    );
+    if (spouseRange.tooOld) {
+      reasons.push("신혼부부 배우자도 청년 연령(만 19~39세, 군복무 보정 포함)을 충족해야 해요. 배우자 연령 초과.");
+      isAgeOutFail = true;
+    } else if (spouseRange.tooYoung) {
+      reasons.push("신혼부부 배우자도 만 19세 이상이어야 해요.");
+      isAgeOutFail = true;
+    }
+  }
+
   // --- 5. 보증금 8천만원 이하 ---
   if (input.depositWon > ELIG.deposit.max) {
     reasons.push("임차보증금이 8,000만원을 초과해서 신청할 수 없어요.");
@@ -129,18 +205,20 @@ export function evaluateSeoulYouthRent2026(input) {
     reasons.push("월세 한도(60만원 이하 또는 보증금 환산 후 90만원 이하)를 초과했어요.");
   }
 
-  // --- 7. 중위소득 48~150% ---
+  // --- 7. 중위소득 48 초과 ~ 150 이하 (절대값) ---
+  const incomeRange = evaluateIncomeRange(input.householdSize, input.monthlyIncomeWon);
   const incomePercent = calculateMedianIncomePercent(input.householdSize, input.monthlyIncomeWon);
-  if (incomePercent < ELIG.income.minPercent) {
-    reasons.push("기준중위소득 48% 미만이에요. 주거급여(국기초)가 더 적합할 수 있어요.");
-    altSuggestions.add(`${ALT.incomeBelowMin.label} — ${ALT.incomeBelowMin.description}`);
-  } else if (incomePercent > ELIG.income.maxPercent) {
+
+  if (incomeRange.bucket === "below48") {
+    reasons.push("기준중위소득 48% 이하예요. 주거급여(국기초)/주택바우처가 더 적합할 수 있어요.");
+    isIncomeBelowFail = true;
+  } else if (incomeRange.bucket === "above150") {
     reasons.push("기준중위소득 150%를 초과해서 신청할 수 없어요.");
   }
 
-  // --- 8. 일반재산 1.3억 이하 ---
+  // --- 8. 일반재산(임차보증금+차량 등 합계) 1.3억 이하 ---
   if (input.generalAssetWon > ELIG.asset.generalMax) {
-    reasons.push("일반재산이 1.3억원을 초과해서 신청할 수 없어요.");
+    reasons.push("일반재산(임차보증금+차량 등 합계)이 1.3억원을 초과해서 신청할 수 없어요.");
   }
 
   // --- 9. 차량 시가 2,500만 미만 ---
@@ -148,9 +226,9 @@ export function evaluateSeoulYouthRent2026(input) {
     reasons.push("차량 시가표준액이 2,500만원 이상이라 신청할 수 없어요.");
   }
 
-  // --- 10. 임대인이 부모 ---
-  if (input.landlordIsParent) {
-    reasons.push("임대인이 부모인 경우 신청할 수 없어요.");
+  // --- 10. 임대인 = 배우자 또는 부모 ---
+  if (input.landlordRelation === "spouse" || input.landlordRelation === "parent") {
+    reasons.push("임대인이 배우자 또는 부모인 경우 신청할 수 없어요.");
   }
 
   // --- 11. 공동임차인 모두 신청 ---
@@ -173,6 +251,41 @@ export function evaluateSeoulYouthRent2026(input) {
     reasons.push("서울시 청년월세지원은 생애 1회라, 이미 받은 적이 있으면 신청할 수 없어요.");
   }
 
+  // --- 15. 외국인 / 재외국민 ---
+  // 본인이 외국인/재외국민이면 기본 FAIL.
+  // 단, 신혼부부 + 본인 한국인 + 배우자 외국인 + 가족관계 등재 + 주소지 동일 → 예외 OK.
+  if (input.nationalityStatus !== "korean") {
+    reasons.push("외국인 또는 재외국민은 신청할 수 없어요. (본인 한국인 + 신혼 배우자만 가족관계/주소지 충족 시 외국인 가능)");
+  }
+  if (
+    householdType === "young-newlywed" &&
+    input.nationalityStatus === "korean" &&
+    input.spouseNationalityStatus &&
+    input.spouseNationalityStatus !== "korean"
+  ) {
+    // 배우자 외국인이면 예외 조건 검사
+    const inRegistry = input.spouseInFamilyRegistry === true;
+    const sameAddress = input.spouseSameAddress === true;
+    if (!inRegistry || !sameAddress) {
+      reasons.push("배우자가 외국인/재외국민인 경우, 가족관계 등재 + 주소지 동일 요건을 모두 충족해야 해요.");
+    }
+  }
+
+  // --- 16. 자치구 청년월세지원 수혜 중 ---
+  if (input.receivingDistrictRent) {
+    reasons.push("자치구 청년월세지원 수혜 중에는 중복 신청할 수 없어요.");
+  }
+
+  // --- 17. 서울시 청년수당 수혜 중 ---
+  if (input.receivingSeoulYouthAllowance) {
+    reasons.push("서울시 청년수당을 받는 중에는 중복 신청할 수 없어요.");
+  }
+
+  // --- 18. 자립준비청년 월세·기숙사비 지원 수혜 중 ---
+  if (input.receivingTransitionYouthSupport) {
+    reasons.push("자립준비청년 월세·기숙사비 지원을 받는 중에는 중복 신청할 수 없어요.");
+  }
+
   // --- 결과 결정 ---
   if (reasons.length > 0) {
     return {
@@ -182,12 +295,17 @@ export function evaluateSeoulYouthRent2026(input) {
       incomePercent,
       tier: null,
       requiredDocuments: [],
-      alternativeProgramSuggestions: Array.from(altSuggestions),
+      alternativeProgramSuggestions: buildAlternativeSuggestions({
+        isResidenceFail,
+        isAgeOutFail,
+        isIncomeBelowFail,
+      }),
+      monthlyBenefitNote: "",
     };
   }
 
   // --- 자격 OK → tier 매칭 + 서류 ---
-  const tier = matchTier(input.depositWon, input.monthlyRentWon, incomePercent);
+  const tier = matchTier(input.depositWon, input.monthlyRentWon, incomeRange);
 
   // tier가 null이면 이론상 자격은 통과했지만 매트릭스 어디에도 안 맞는 케이스
   // — 공고문상 사실상 발생 불가능하지만 안전장치로 4구간 fallback 처리
@@ -200,6 +318,9 @@ export function evaluateSeoulYouthRent2026(input) {
     tier: tier ?? { rank: 4, ratio: program.selectionTiers[3].ratio },
     requiredDocuments: buildRequiredDocuments(input),
     alternativeProgramSuggestions: [],
+    monthlyBenefitNote: input.receivingSeoulHousingVoucher
+      ? "월 최대 20만원 - 주택바우처 수령액 (차액만 지급)"
+      : "월 최대 20만원 (월세금액 한도 내)",
   };
 }
 
@@ -225,8 +346,15 @@ function buildRequiredDocuments(input) {
     }
   }
 
-  // 군복무 연장 적용 시 병적증명서
-  if ((input.militaryMonths ?? 0) >= 12) {
+  // 군복무 보정 적용 시 (제대군인 + 1개월 이상) 병적증명서 필요
+  // 본인 또는 배우자 (신혼) 어느 한쪽이라도 보정 필요하면 추가
+  const selfNeedsRecord = (input.isVeteran ?? false) && (input.militaryMonths ?? 0) >= 1;
+  const spouseNeedsRecord =
+    input.householdType === "young-newlywed" &&
+    (input.spouseIsVeteran ?? false) &&
+    (input.spouseMilitaryMonths ?? 0) >= 1;
+
+  if (selfNeedsRecord || spouseNeedsRecord) {
     for (const doc of program.documents.byCondition["military-extended"]) {
       docs.push(doc.label);
     }
