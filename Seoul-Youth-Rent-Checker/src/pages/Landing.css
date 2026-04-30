@@ -150,11 +150,20 @@ button {
   border-radius: var(--radius-card);
   padding: 16px 20px;
   margin-bottom: 24px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  column-gap: 12px;
+  row-gap: 4px;
   box-shadow: var(--shadow-sm);
+}
+
+.landing__dday-note {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  letter-spacing: -0.01em;
 }
 
 .landing__dday-label {

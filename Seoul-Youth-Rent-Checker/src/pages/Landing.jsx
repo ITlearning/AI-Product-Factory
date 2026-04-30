@@ -1,26 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
-// 2026 서울 청년월세지원 신청 마감: 2026-05-19 18:00 KST.
-// KST = UTC+9 → 마감 순간 UTC: 2026-05-19T09:00:00Z
-const DEADLINE_UTC_ISO = "2026-05-19T09:00:00Z";
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-/**
- * 마감일까지 남은 일수. 마감 순간을 지나면 0 이하.
- * 일수는 ceil — '오늘 18시 마감'을 '0일 남음'이 아닌 '1일 남음' 표시 방지.
- * 이번엔 floor로 통일: 24h 단위로 자른 정수 → 사용자에게 직관적.
- */
-function daysUntil(deadlineIso, now = new Date()) {
-  const deadline = new Date(deadlineIso).getTime();
-  const diffMs = deadline - now.getTime();
-  if (diffMs <= 0) return 0;
-  return Math.floor(diffMs / MS_PER_DAY);
-}
+import { calculateDday } from "../utils/dday.js";
 
 export function Landing({ onStart }) {
   // 첫 렌더 시점에 한 번 계산. v1은 자정 자동 갱신 X — 페이지 새로고침 기준.
-  const remainingDays = useMemo(() => daysUntil(DEADLINE_UTC_ISO), []);
-  const isClosed = remainingDays <= 0;
+  const dday = useMemo(() => calculateDday(), []);
+  const isClosed = dday.phase === "ended";
 
   // 페이지 로드 시 staggered fade-in 트리거.
   // CSS animation-delay를 이미 잡아놨으니 mounted 클래스만 토글.
@@ -38,6 +23,12 @@ export function Landing({ onStart }) {
     }
     onStart?.();
   };
+
+  const ctaLabel = isClosed
+    ? "다음 차수 알림 받기"
+    : dday.phase === "upcoming"
+      ? "미리 진단해보기"
+      : "시작하기";
 
   return (
     <main
@@ -67,18 +58,30 @@ export function Landing({ onStart }) {
         </div>
 
         <div className="landing__bottom">
-          <div className="landing__dday" role="group" aria-label="신청 마감 카운트다운">
-            <span className="landing__dday-label">신청 마감까지</span>
-            <span className="landing__dday-countdown">
-              {isClosed ? (
-                <span className="landing__dday-closed">신청 마감</span>
-              ) : (
-                <>
-                  <span className="landing__dday-num">{remainingDays}</span>
+          <div
+            className="landing__dday"
+            role="group"
+            aria-label={isClosed ? "신청 마감" : dday.label}
+          >
+            {isClosed ? (
+              <>
+                <span className="landing__dday-label">{dday.label}</span>
+                <span className="landing__dday-countdown">
+                  <span className="landing__dday-closed">
+                    다음 차수 알림 받기 →
+                  </span>
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="landing__dday-label">{dday.label}</span>
+                <span className="landing__dday-countdown">
+                  <span className="landing__dday-num">{dday.days}</span>
                   일 남음
-                </>
-              )}
-            </span>
+                </span>
+                <span className="landing__dday-note">{dday.note}</span>
+              </>
+            )}
           </div>
 
           <button
@@ -86,7 +89,7 @@ export function Landing({ onStart }) {
             className="landing__cta"
             onClick={handleClick}
           >
-            {isClosed ? "다음 차수 알림 받기" : "시작하기"}
+            {ctaLabel}
           </button>
 
           <p className="landing__footnote">

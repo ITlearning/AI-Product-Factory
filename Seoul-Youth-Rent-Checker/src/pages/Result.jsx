@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ShareButton } from "../components/ShareButton.jsx";
+import { calculateDday } from "../utils/dday.js";
 
 /**
- * 2026 서울 청년월세지원 신청 마감: 2026-05-19 18:00 KST.
- * KST = UTC+9 → UTC: 2026-05-19T09:00:00Z
+ * D-day 칩 표시 문자열.
+ * - "ended":   "신청 마감"
+ * - "upcoming": "D-N (시작)" — 신청 시작까지 N일
+ * - "open":    "D-N"        — 신청 마감까지 N일
  */
-const DEADLINE_UTC_ISO = "2026-05-19T09:00:00Z";
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-function daysUntil(deadlineIso, now = new Date()) {
-  const diffMs = new Date(deadlineIso).getTime() - now.getTime();
-  if (diffMs <= 0) return 0;
-  return Math.floor(diffMs / MS_PER_DAY);
+function formatDdayChip(dday) {
+  if (dday.phase === "ended") return "신청 마감";
+  if (dday.phase === "upcoming") return `D-${dday.days} 시작`;
+  return `D-${dday.days}`;
 }
 
 /**
@@ -282,8 +282,14 @@ function NotifySignupForm() {
 // --- 핵심 결과 화면 -------------------------------------------------------
 
 function SuccessView({ result, onRetry, onHome }) {
-  const remainingDays = useMemo(() => daysUntil(DEADLINE_UTC_ISO), []);
-  const isClosed = remainingDays <= 0;
+  const dday = useMemo(() => calculateDday(), []);
+  const ddayChip = formatDdayChip(dday);
+  const ddayAriaLabel =
+    dday.phase === "ended"
+      ? "신청 마감"
+      : dday.phase === "upcoming"
+        ? `신청 시작까지 ${dday.days}일`
+        : `신청 마감까지 ${dday.days}일`;
   const tier = result.tier;
   // 1인 가구 4구간 매트릭스 — rank discriminator
   const isRankedTier = tier && typeof tier === "object" && "rank" in tier;
@@ -324,15 +330,12 @@ function SuccessView({ result, onRetry, onHome }) {
           >
             <div className="result__tier-header">
               <span className="result__tier-label">내 추첨 구간</span>
-              {!isClosed && (
-                <span
-                  className="result__tier-dday"
-                  aria-label={`마감까지 ${remainingDays}일`}
-                >
-                  D-{remainingDays}
-                </span>
-              )}
-              {isClosed && <span className="result__tier-dday">신청 마감</span>}
+              <span
+                className="result__tier-dday"
+                aria-label={ddayAriaLabel}
+              >
+                {ddayChip}
+              </span>
             </div>
             <div className="result__tier-body">
               <span className="result__tier-rank">{tier.rank}구간</span>
@@ -355,15 +358,12 @@ function SuccessView({ result, onRetry, onHome }) {
           >
             <div className="result__tier-header">
               <span className="result__tier-label">내 신청 유형</span>
-              {!isClosed && (
-                <span
-                  className="result__tier-dday"
-                  aria-label={`마감까지 ${remainingDays}일`}
-                >
-                  D-{remainingDays}
-                </span>
-              )}
-              {isClosed && <span className="result__tier-dday">신청 마감</span>}
+              <span
+                className="result__tier-dday"
+                aria-label={ddayAriaLabel}
+              >
+                {ddayChip}
+              </span>
             </div>
             <div className="result__tier-body result__tier-body--pool">
               <span className="result__tier-pool-label">

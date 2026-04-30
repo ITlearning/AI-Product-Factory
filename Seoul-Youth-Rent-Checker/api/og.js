@@ -7,6 +7,9 @@
  * P3 디자인 결정: 결과 카드 OG 절대 X. 사용자 결과(자격 OK/NO,
  * 보증금, 소득)는 OG로 노출하지 않는다. 도구 자체를 공유하는
  * "5분 안에 청년월세지원 자격 확인" 톤의 단일 카드만.
+ *
+ * 톤: "내 결과 자랑"이 아니라 "친구야 너도 해봐" 모멘트.
+ * 결과를 공유하는 게 아니라 도구를 추천하는 카드.
  */
 
 import { ImageResponse } from "@vercel/og";
@@ -75,14 +78,15 @@ export default async function handler() {
               ],
             },
           },
-          // 가운데: 헤드라인 + 서브카피
+          // 가운데: 헤드라인 + 서브카피 ("친구야, 너도 한번 해봐" 톤)
+          // 결과 자랑이 아니라 도구 추천 모멘트. "친구야"에 빨강 액센트.
           {
             type: "div",
             props: {
               style: {
                 display: "flex",
                 flexDirection: "column",
-                gap: "24px",
+                gap: "32px",
               },
               children: [
                 {
@@ -90,23 +94,37 @@ export default async function handler() {
                   props: {
                     style: {
                       display: "flex",
-                      flexWrap: "wrap",
-                      fontSize: "92px",
+                      flexDirection: "column",
+                      fontSize: "104px",
                       fontWeight: 800,
-                      lineHeight: 1.15,
-                      letterSpacing: "-0.02em",
+                      lineHeight: 1.1,
+                      letterSpacing: "-0.03em",
                       color: "#1a1a1a",
                     },
                     children: [
-                      "청년월세 ",
                       {
-                        type: "span",
+                        type: "div",
                         props: {
-                          style: { color: "#ef4444" },
-                          children: "240만원",
+                          style: { display: "flex" },
+                          children: [
+                            {
+                              type: "span",
+                              props: {
+                                style: { color: "#ef4444" },
+                                children: "친구야",
+                              },
+                            },
+                            ",",
+                          ],
                         },
                       },
-                      ", 너 받을 수 있어?",
+                      {
+                        type: "div",
+                        props: {
+                          style: { display: "flex" },
+                          children: "너도 한번 해봐.",
+                        },
+                      },
                     ],
                   },
                 },
@@ -114,17 +132,19 @@ export default async function handler() {
                   type: "div",
                   props: {
                     style: {
-                      fontSize: "32px",
+                      display: "flex",
+                      fontSize: "34px",
                       color: "#525252",
                       fontWeight: 400,
+                      lineHeight: 1.4,
                     },
-                    children: "5분 자가진단. 공인인증서 필요 없어요.",
+                    children: "청년월세 240만원 자격, 5분 안에 확인할 수 있어.",
                   },
                 },
               ],
             },
           },
-          // 하단: 마감 + 도메인
+          // 하단: 트러스트 한 줄 + 도메인
           {
             type: "div",
             props: {
@@ -137,7 +157,7 @@ export default async function handler() {
                 fontWeight: 400,
               },
               children: [
-                "신청 마감 5/19 18:00",
+                "공인인증서 X · 익명 자가진단",
                 BRAND_URL,
               ],
             },
