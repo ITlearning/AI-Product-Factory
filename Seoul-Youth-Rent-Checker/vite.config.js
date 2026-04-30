@@ -20,19 +20,16 @@ function ogMetaAbsoluteUrl() {
   return {
     name: "og-meta-absolute-url",
     transformIndexHtml(html) {
-      const explicit = process.env.VITE_PUBLIC_URL;
-      const vercelUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : null;
-      const fallback = "https://seoul-youth-rent-checker.vercel.app";
-      const url = explicit || vercelUrl || fallback;
+      // Production 도메인 고정 — VERCEL_URL은 preview마다 변하는 hash URL인데,
+      // preview는 deployment protection으로 401 반환 → 카톡/슬랙 OG fetcher 인증 못 함.
+      // 항상 production 도메인 (또는 명시적 VITE_PUBLIC_URL)을 가리켜야 OG 카드 뜸.
+      const url = process.env.VITE_PUBLIC_URL || "https://seoul-youth-rent-checker.vercel.app";
 
       let out = html.replace(
         /<meta\s+property="og:image"\s+content="[^"]*"\s*\/?>/,
         `<meta property="og:image" content="${url}/api/og" />`,
       );
 
-      // og:url 이 이미 있으면 건너뛰고, 없으면 og:type 뒤에 추가.
       if (!/<meta\s+property="og:url"/.test(out)) {
         out = out.replace(
           /(<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>)/,
