@@ -462,7 +462,7 @@ select.form__input {
   background: transparent;
   color: var(--color-text-secondary);
   border: none;
-  padding: 14px 8px;
+  padding: 14px 18px;
   font-weight: 600;
 }
 
@@ -490,7 +490,7 @@ select.form__input {
   background: var(--color-text-primary);
   color: #ffffff;
   border: none;
-  padding: 14px 8px;
+  padding: 14px 18px;
   font-weight: 700;
   box-shadow: var(--shadow-sm);
 }
