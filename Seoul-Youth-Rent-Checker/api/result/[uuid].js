@@ -20,7 +20,11 @@ import { Redis } from "@upstash/redis";
 
 export const config = { runtime: "nodejs" };
 
-const redis = Redis.fromEnv();
+// Vercel Marketplace의 Upstash Redis는 KV_* prefix로 환경변수 주입.
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN,
+});
 
 const UUID_PATTERN = /^[A-Za-z0-9_-]{8,32}$/;
 

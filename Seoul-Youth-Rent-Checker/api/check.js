@@ -22,7 +22,12 @@ import { evaluateSeoulYouthRent2026 } from "../src/eligibility/evaluator.js";
 
 export const config = { runtime: "nodejs" };
 
-const redis = Redis.fromEnv();
+// Vercel Marketplace의 Upstash Redis는 KV_* prefix로 환경변수 주입.
+// @upstash/redis v1.34는 KV_* fallback 처리하지만 명시적으로 박아 안전성 확보.
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN,
+});
 const ratelimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(10, "60 s"),
