@@ -217,23 +217,54 @@ function NotifySignupForm() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState(null);
 
   const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!valid) {
+    if (!valid || loading) {
       setTouched(true);
       return;
     }
-    // v1: 별도 백엔드 없음. localStorage에만 기록 (Sprint 1+에서 KV로 이동 예정).
+
+    setLoading(true);
+    setServerError(null);
+
+    try {
+      const res = await fetch("/api/notify-signup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || `알림 신청 실패 (${res.status})`);
+      }
+    } catch (err) {
+      // 네트워크 실패해도 localStorage엔 백업해둠 (사용자 의도 보존)
+      try {
+        window.localStorage.setItem("notify-email", email);
+        window.localStorage.setItem("notify-email-at", String(Date.now()));
+      } catch {
+        // 시크릿 모드 — 무시
+      }
+      setServerError(err?.message || "잠시 후 다시 시도해주세요.");
+      setLoading(false);
+      return;
+    }
+
+    // 백엔드 성공 + localStorage 백업도 같이
     try {
       window.localStorage.setItem("notify-email", email);
       window.localStorage.setItem("notify-email-at", String(Date.now()));
     } catch {
-      // 시크릿 모드 등 — 무시
+      // 시크릿 모드 — 무시
     }
+
     setSubmitted(true);
+    setLoading(false);
   };
 
   if (submitted) {
@@ -263,17 +294,21 @@ function NotifySignupForm() {
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => setTouched(true)}
           aria-invalid={touched && !valid}
+          disabled={loading}
         />
         <button
           type="submit"
           className="result__notify-submit"
-          disabled={!valid}
+          disabled={!valid || loading}
         >
-          알림 신청
+          {loading ? "신청 중..." : "알림 신청"}
         </button>
       </div>
       {touched && !valid && (
         <p className="result__notify-error">올바른 이메일 형식이 아니에요.</p>
+      )}
+      {serverError && (
+        <p className="result__notify-error">{serverError}</p>
       )}
     </form>
   );
