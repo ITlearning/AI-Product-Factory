@@ -431,14 +431,14 @@ select.form__input {
   z-index: 5;
 }
 
-.form__back,
-.form__next,
-.form__cta {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 240px;
-  width: 100%;
-  white-space: nowrap;
+.form__nav .form__back,
+.form__nav .form__next,
+.form__nav .form__cta {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  max-width: 240px !important;
+  width: 100% !important;
+  white-space: nowrap !important;
 }
 
 .form__back {
