@@ -182,6 +182,30 @@
   line-height: 1.5;
 }
 
+/* --- Pool tier (신혼/한부모/전세사기/청년안심주택) ---------------------- */
+/* 구간 매트릭스 X. householdLabel을 헤드라인 톤으로 강조. 숫자 강조 X. */
+
+.result__tier-card--pool {
+  /* 같은 카드 베이스, accent-soft 미세 강조로 ranked 카드와 구분 */
+  background: var(--color-accent-soft);
+  border-color: var(--color-surface-border);
+}
+
+.result__tier-body--pool {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.result__tier-pool-label {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+}
+
 /* ==========================================================================
    Section (서류 / 대안 / 사유)
    ========================================================================== */
@@ -611,6 +635,9 @@
   }
   .result__tier-ratio-num {
     font-size: 24px;
+  }
+  .result__tier-pool-label {
+    font-size: 21px;
   }
 }
 

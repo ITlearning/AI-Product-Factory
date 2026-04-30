@@ -51,6 +51,9 @@ import {
  * @property {boolean} receivingSeoulYouthAllowance - 서울시 청년수당 수혜 중
  * @property {boolean} receivingTransitionYouthSupport - 자립준비청년 월세·기숙사비 지원 수혜 중
  * @property {boolean} receivingSeoulHousingVoucher - 서울형 주택바우처 수급자
+ * @property {boolean} inPublicHousing - 일반 공공임대 거주 (영구임대/공공임대/국민임대/매입임대/행복주택/장기안심/특화형/도시형생활/희망하우징/전세임대/공무원 등). 청년안심주택은 householdType "youth-safe-housing"으로 따로.
+ * @property {boolean} bothNewlywedsApplying - 신혼부부 양측 신청 (신혼만 의미)
+ * @property {boolean} receivingOtherSimilarProgram - 기타 유사 사업 동시 수혜 (자치구/청년수당/자립준비/주택바우처 외)
  */
 
 /**
@@ -59,7 +62,7 @@ import {
  * @property {string|null} primaryReason
  * @property {string[]} allReasons
  * @property {number|null} incomePercent
- * @property {{rank: number, ratio: number}|null} tier
+ * @property {{rank: 1|2|3|4, ratio: number} | {type: "category-pool", label: string, householdLabel: string} | null} tier
  * @property {string[]} requiredDocuments
  * @property {string[]} alternativeProgramSuggestions
  * @property {string} monthlyBenefitNote - 자격 OK 시 월 지급액 안내 (주택바우처 차감 여부 반영)
@@ -114,6 +117,27 @@ function buildAlternativeSuggestions({ isResidenceFail, isAgeOutFail, isIncomeBe
 }
 
 /**
+ * householdType → tier 미적용(유형별 추첨) 라벨 매핑.
+ *
+ * @param {EligibilityInput["householdType"]} householdType
+ * @returns {string}
+ */
+function getHouseholdLabel(householdType) {
+  switch (householdType) {
+    case "single-parent":
+      return "한부모가족 추첨";
+    case "fraud-victim":
+      return "전세사기피해자 추첨";
+    case "young-newlywed":
+      return "청년 신혼부부 추첨";
+    case "youth-safe-housing":
+      return "청년안심주택(민간) 추첨";
+    default:
+      return "유형별 추첨";
+  }
+}
+
+/**
  * @param {EligibilityInput} input
  * @returns {EligibilityResult}
  */
@@ -133,12 +157,33 @@ export function evaluateSeoulYouthRent2026(input) {
     isResidenceFail = true;
   }
 
-  // --- 2. 무주택 ---
+  // --- 2. 외국인 / 재외국민 (앞으로 이동 — 다른 정보 입력해도 의미 X) ---
+  // 본인이 외국인/재외국민이면 기본 FAIL.
+  // 단, 신혼부부 + 본인 한국인 + 배우자 외국인 + 가족관계 등재 + 주소지 동일 → 예외 OK.
+  const householdType = input.householdType;
+  if (input.nationalityStatus !== "korean") {
+    reasons.push("외국인 또는 재외국민은 신청할 수 없어요. (본인 한국인 + 신혼 배우자만 가족관계/주소지 충족 시 외국인 가능)");
+  }
+  if (
+    householdType === "young-newlywed" &&
+    input.nationalityStatus === "korean" &&
+    input.spouseNationalityStatus &&
+    input.spouseNationalityStatus !== "korean"
+  ) {
+    // 배우자 외국인이면 예외 조건 검사
+    const inRegistry = input.spouseInFamilyRegistry === true;
+    const sameAddress = input.spouseSameAddress === true;
+    if (!inRegistry || !sameAddress) {
+      reasons.push("배우자가 외국인/재외국민인 경우, 가족관계 등재 + 주소지 동일 요건을 모두 충족해야 해요.");
+    }
+  }
+
+  // --- 3. 무주택 ---
   if (input.ownsHome) {
     reasons.push("주택을 소유 중이라 신청할 수 없어요. (오피스텔/분양권/공유지분 포함)");
   }
 
-  // --- 3. 연령 (군복무 +최대 3년 계단식 보정) ---
+  // --- 4. 연령 (군복무 +최대 3년 계단식 보정) ---
   const ageInfo = calculateAgeWithMilitary(
     input.birthDate,
     input.isVeteran ?? false,
@@ -158,8 +203,7 @@ export function evaluateSeoulYouthRent2026(input) {
     isAgeOutFail = true;
   }
 
-  // --- 4. 가구형태별 분기 ---
-  const householdType = input.householdType;
+  // --- 5. 가구형태별 분기 ---
   if (householdType === "young-newlywed" && input.hasNewlywedChildren) {
     reasons.push("청년신혼부부는 무자녀 조건이라, 자녀가 있으면 신청할 수 없어요.");
   }
@@ -173,7 +217,7 @@ export function evaluateSeoulYouthRent2026(input) {
     reasons.push("청년안심주택 공공임대 거주자는 신청할 수 없어요. (민간임대만 가능)");
   }
 
-  // --- 4-2. 신혼부부 배우자 청년 연령 충족 ---
+  // --- 5-2. 신혼부부 배우자 청년 연령 충족 ---
   if (householdType === "young-newlywed" && input.spouseBirthDate) {
     const spouseAgeInfo = calculateAgeWithMilitary(
       input.spouseBirthDate,
@@ -194,18 +238,23 @@ export function evaluateSeoulYouthRent2026(input) {
     }
   }
 
-  // --- 5. 보증금 8천만원 이하 ---
+  // --- 5-3. 신혼부부 부부 모두 신청 (PDF 제외사유 #14) ---
+  if (householdType === "young-newlywed" && input.bothNewlywedsApplying) {
+    reasons.push("신혼부부는 부부 중 1명만 신청할 수 있어요.");
+  }
+
+  // --- 6. 보증금 8천만원 이하 ---
   if (input.depositWon > ELIG.deposit.max) {
     reasons.push("임차보증금이 8,000만원을 초과해서 신청할 수 없어요.");
   }
 
-  // --- 6. 월세 60 이하 OR 환산식 통과 ---
+  // --- 7. 월세 60 이하 OR 환산식 통과 ---
   const rentOk = meetsRentLimit(input.depositWon, input.monthlyRentWon);
   if (!rentOk) {
     reasons.push("월세 한도(60만원 이하 또는 보증금 환산 후 90만원 이하)를 초과했어요.");
   }
 
-  // --- 7. 중위소득 48 초과 ~ 150 이하 (절대값) ---
+  // --- 8. 중위소득 48 초과 ~ 150 이하 (절대값) ---
   const incomeRange = evaluateIncomeRange(input.householdSize, input.monthlyIncomeWon);
   const incomePercent = calculateMedianIncomePercent(input.householdSize, input.monthlyIncomeWon);
 
@@ -216,59 +265,39 @@ export function evaluateSeoulYouthRent2026(input) {
     reasons.push("기준중위소득 150%를 초과해서 신청할 수 없어요.");
   }
 
-  // --- 8. 일반재산(임차보증금+차량 등 합계) 1.3억 이하 ---
+  // --- 9. 일반재산(임차보증금+차량 등 합계) 1.3억 이하 ---
   if (input.generalAssetWon > ELIG.asset.generalMax) {
     reasons.push("일반재산(임차보증금+차량 등 합계)이 1.3억원을 초과해서 신청할 수 없어요.");
   }
 
-  // --- 9. 차량 시가 2,500만 미만 ---
+  // --- 10. 차량 시가 2,500만 미만 ---
   if (input.vehicleValueWon >= ELIG.asset.vehicleMax) {
     reasons.push("차량 시가표준액이 2,500만원 이상이라 신청할 수 없어요.");
   }
 
-  // --- 10. 임대인 = 배우자 또는 부모 ---
+  // --- 11. 임대인 = 배우자 또는 부모 ---
   if (input.landlordRelation === "spouse" || input.landlordRelation === "parent") {
     reasons.push("임대인이 배우자 또는 부모인 경우 신청할 수 없어요.");
   }
 
-  // --- 11. 공동임차인 모두 신청 ---
+  // --- 12. 공동임차인 모두 신청 ---
   if (input.allCotenantsApplying) {
     reasons.push("공동임차인 중 1명만 신청할 수 있어요.");
   }
 
-  // --- 12. 국기초 수급 X ---
+  // --- 13. 국기초 수급 X ---
   if (input.basicLivingRecipient) {
     reasons.push("국민기초생활보장 수급 중에는 중복 수령이 안 돼요.");
   }
 
-  // --- 13. 국토부 한시지원 수혜 중 X ---
+  // --- 14. 국토부 한시지원 수혜 중 X ---
   if (input.receivingNationalYouthRent) {
     reasons.push("국토부 청년월세 한시지원을 받는 중에는 중복 신청할 수 없어요.");
   }
 
-  // --- 14. 서울시 기수령 X ---
+  // --- 15. 서울시 기수령 X ---
   if (input.previouslyReceivedSeoulRent) {
     reasons.push("서울시 청년월세지원은 생애 1회라, 이미 받은 적이 있으면 신청할 수 없어요.");
-  }
-
-  // --- 15. 외국인 / 재외국민 ---
-  // 본인이 외국인/재외국민이면 기본 FAIL.
-  // 단, 신혼부부 + 본인 한국인 + 배우자 외국인 + 가족관계 등재 + 주소지 동일 → 예외 OK.
-  if (input.nationalityStatus !== "korean") {
-    reasons.push("외국인 또는 재외국민은 신청할 수 없어요. (본인 한국인 + 신혼 배우자만 가족관계/주소지 충족 시 외국인 가능)");
-  }
-  if (
-    householdType === "young-newlywed" &&
-    input.nationalityStatus === "korean" &&
-    input.spouseNationalityStatus &&
-    input.spouseNationalityStatus !== "korean"
-  ) {
-    // 배우자 외국인이면 예외 조건 검사
-    const inRegistry = input.spouseInFamilyRegistry === true;
-    const sameAddress = input.spouseSameAddress === true;
-    if (!inRegistry || !sameAddress) {
-      reasons.push("배우자가 외국인/재외국민인 경우, 가족관계 등재 + 주소지 동일 요건을 모두 충족해야 해요.");
-    }
   }
 
   // --- 16. 자치구 청년월세지원 수혜 중 ---
@@ -284,6 +313,16 @@ export function evaluateSeoulYouthRent2026(input) {
   // --- 18. 자립준비청년 월세·기숙사비 지원 수혜 중 ---
   if (input.receivingTransitionYouthSupport) {
     reasons.push("자립준비청년 월세·기숙사비 지원을 받는 중에는 중복 신청할 수 없어요.");
+  }
+
+  // --- 19. 일반 공공임대 거주 (PDF 제외사유 #11) ---
+  if (input.inPublicHousing) {
+    reasons.push("공공임대주택 거주자는 신청할 수 없어요. (행복주택/영구임대/국민임대/매입임대 등 — 단 청년안심주택 민간은 OK)");
+  }
+
+  // --- 20. 기타 유사 사업 동시 수혜 (PDF 제외사유 #10) ---
+  if (input.receivingOtherSimilarProgram) {
+    reasons.push("다른 유사 청년 주거 지원 사업을 받고 있으면 신청할 수 없어요.");
   }
 
   // --- 결과 결정 ---
@@ -304,18 +343,30 @@ export function evaluateSeoulYouthRent2026(input) {
     };
   }
 
-  // --- 자격 OK → tier 매칭 + 서류 ---
-  const tier = matchTier(input.depositWon, input.monthlyRentWon, incomeRange);
+  // --- 자격 OK → tier 매칭 (단, 1인 가구만) + 서류 ---
+  // PDF: tier 4구간 매칭은 "청년 1인 가구" 한정.
+  // 신혼/한부모/전세사기/청년안심주택은 유형별 추첨 (구간 X).
+  let tier;
+  if (householdType === "single") {
+    const matched = matchTier(input.depositWon, input.monthlyRentWon, incomeRange);
+    // tier가 null이면 이론상 자격은 통과했지만 매트릭스 어디에도 안 맞는 케이스
+    // — 공고문상 사실상 발생 불가능하지만 안전장치로 4구간 fallback 처리
+    // (deposit ≤ 8천 + rent OK + income 48~150% 통과했으니 4구간 매칭 보장됨)
+    tier = matched ?? { rank: 4, ratio: program.selectionTiers[3].ratio };
+  } else {
+    tier = {
+      type: "category-pool",
+      label: "유형별 추첨 (구간 X)",
+      householdLabel: getHouseholdLabel(householdType),
+    };
+  }
 
-  // tier가 null이면 이론상 자격은 통과했지만 매트릭스 어디에도 안 맞는 케이스
-  // — 공고문상 사실상 발생 불가능하지만 안전장치로 4구간 fallback 처리
-  // (deposit ≤ 8천 + rent OK + income 48~150% 통과했으니 4구간 매칭 보장됨)
   return {
     eligible: true,
     primaryReason: null,
     allReasons: [],
     incomePercent,
-    tier: tier ?? { rank: 4, ratio: program.selectionTiers[3].ratio },
+    tier,
     requiredDocuments: buildRequiredDocuments(input),
     alternativeProgramSuggestions: [],
     monthlyBenefitNote: input.receivingSeoulHousingVoucher

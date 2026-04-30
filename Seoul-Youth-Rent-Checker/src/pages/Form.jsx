@@ -43,6 +43,7 @@ const INITIAL_STATE = {
   spouseInFamilyRegistry: null,
   spouseSameAddress: null,
   hasNewlywedChildren: null,
+  bothNewlywedsApplying: null, // 부부 양측 신청 여부 (Y면 FAIL)
 
   // Step 4 — 보증금 / 월세 (만원 단위 입력)
   depositManwon: "",
@@ -53,8 +54,11 @@ const INITIAL_STATE = {
   monthlyIncomeManwon: "",
 
   // Step 6 — 재산 / 차량
-  generalAssetManwon: "",
+  // 사용자에게는 차량 보유 Y/N + 차량 시가표준액, 토지/건물 소유 Y/N 만 받는다.
+  // generalAssetWon은 buildInput에서 depositWon + vehicleValueWon으로 자동 계산.
+  hasVehicle: null, // null | true | false
   vehicleValueManwon: "",
+  ownsLandOrBuilding: null, // null | true | false (Y면 ownsHome도 자동 true)
 
   // Step 7 — 주택 소유 / 임대인 / 공동임차
   ownsHome: null,
@@ -69,6 +73,8 @@ const INITIAL_STATE = {
   receivingTransitionYouthSupport: false,
   basicLivingRecipient: false,
   receivingSeoulHousingVoucher: false,
+  inPublicHousing: false,
+  receivingOtherSimilarProgram: false,
 };
 
 const TOTAL_STEPS = 8;
@@ -81,6 +87,8 @@ const EXCLUSION_KEYS = [
   "receivingTransitionYouthSupport",
   "basicLivingRecipient",
   "receivingSeoulHousingVoucher",
+  "inPublicHousing",
+  "receivingOtherSimilarProgram",
 ];
 
 function reducer(state, action) {
@@ -131,6 +139,15 @@ function buildInput(s) {
   const isFraudVictim = s.householdType === "fraud-victim";
   const isYouthSafe = s.householdType === "youth-safe-housing";
 
+  const depositWon = manwonToWon(s.depositManwon);
+  const vehicleValueWon =
+    s.hasVehicle === true ? manwonToWon(s.vehicleValueManwon) : 0;
+  // 일반재산 자동 계산: 임차보증금 + 차량시가표준액. 사용자에게 직접 묻지 않는다.
+  const generalAssetWon = depositWon + vehicleValueWon;
+
+  // 토지·건물 소유는 곧 무주택 요건 위반이므로 ownsHome도 자동 true 처리.
+  const ownsHome = s.ownsHome === true || s.ownsLandOrBuilding === true;
+
   const input = {
     birthDate: s.birthDate,
     isVeteran: s.isVeteran === true,
@@ -145,17 +162,18 @@ function buildInput(s) {
     youthSafeHousingType: isYouthSafe ? s.youthSafeHousingType : null,
 
     hasNewlywedChildren: isNewlywed ? s.hasNewlywedChildren === true : false,
+    bothNewlywedsApplying: isNewlywed ? s.bothNewlywedsApplying === true : false,
 
-    depositWon: manwonToWon(s.depositManwon),
+    depositWon,
     monthlyRentWon: manwonToWon(s.monthlyRentManwon),
 
     householdSize: Number(s.householdSize || 1),
     monthlyIncomeWon: manwonToWon(s.monthlyIncomeManwon),
 
-    generalAssetWon: manwonToWon(s.generalAssetManwon),
-    vehicleValueWon: manwonToWon(s.vehicleValueManwon),
+    generalAssetWon,
+    vehicleValueWon,
 
-    ownsHome: s.ownsHome === true,
+    ownsHome,
     landlordRelation: s.landlordRelation === "cotenant" ? "other" : s.landlordRelation,
     allCotenantsApplying:
       s.landlordRelation === "cotenant" ? s.allCotenantsApplying === true : false,
@@ -167,6 +185,8 @@ function buildInput(s) {
     receivingTransitionYouthSupport: !!s.receivingTransitionYouthSupport,
     basicLivingRecipient: !!s.basicLivingRecipient,
     receivingSeoulHousingVoucher: !!s.receivingSeoulHousingVoucher,
+    inPublicHousing: !!s.inPublicHousing,
+    receivingOtherSimilarProgram: !!s.receivingOtherSimilarProgram,
   };
 
   if (isNewlywed) {
@@ -233,6 +253,8 @@ function validateStep(s) {
             return "배우자와 주민등록 주소지가 같은지 선택해 주세요.";
         }
         if (s.hasNewlywedChildren === null) return "자녀 여부를 선택해 주세요.";
+        if (s.bothNewlywedsApplying === null)
+          return "배우자도 이 지원금을 신청하는지 선택해 주세요.";
       }
       return null;
     }
@@ -253,11 +275,14 @@ function validateStep(s) {
       return null;
     }
     case 5: {
-      // Step 6
-      if (s.generalAssetManwon === "" || Number(s.generalAssetManwon) < 0)
-        return "일반재산 합계를 입력해 주세요.";
-      if (s.vehicleValueManwon === "" || Number(s.vehicleValueManwon) < 0)
-        return "차량 시가표준액을 입력해 주세요. (없으면 0)";
+      // Step 6 — 차량 / 토지·건물 보유
+      if (s.hasVehicle === null) return "차량 보유 여부를 선택해 주세요.";
+      if (s.hasVehicle === true) {
+        if (s.vehicleValueManwon === "" || Number(s.vehicleValueManwon) < 0)
+          return "차량 시가표준액을 입력해 주세요.";
+      }
+      if (s.ownsLandOrBuilding === null)
+        return "토지·건물 소유 여부를 선택해 주세요.";
       return null;
     }
     case 6: {
@@ -792,6 +817,27 @@ function Step3({ state, set }) {
               label="아니요"
             />
           </fieldset>
+
+          <fieldset className="form__radio-group">
+            <legend className="form__label">
+              배우자도 이 지원금을 신청해요?
+            </legend>
+            <RadioCard
+              name="bothNewlywedsApplying"
+              checked={state.bothNewlywedsApplying === true}
+              onChange={() => set("bothNewlywedsApplying")(true)}
+              label="네, 둘 다 신청할 거예요"
+            />
+            <RadioCard
+              name="bothNewlywedsApplying"
+              checked={state.bothNewlywedsApplying === false}
+              onChange={() => set("bothNewlywedsApplying")(false)}
+              label="아니요, 저만 신청해요"
+            />
+          </fieldset>
+          <p className="form__hint">
+            부부 중 1명만 신청 가능해요. 둘 다 신청하면 자격 미달.
+          </p>
         </div>
       )}
     </>
@@ -895,48 +941,74 @@ function Step6({ state, set }) {
   return (
     <>
       <h2 className="form__question">재산과 차량을 확인할게요.</h2>
-
-      <label className="form__label" htmlFor="generalAssetManwon">
-        일반재산 합계
-      </label>
       <p className="form__help">
-        토지 과세표준 + 건축물 과세표준 + 임차보증금 + 차량시가표준액의 합계예요.
-        보통 청년은 토지·건축이 0이라, <strong>임차보증금과 차량 합계</strong>로 보면 돼요.
-        1.3억(13,000만원) 이하인지 확인하세요.
+        임차보증금이랑 차량 합쳐서 1.3억 넘으면 대상 아니에요. 대부분은 OK.
       </p>
-      <div className="form__input-row">
-        <input
-          id="generalAssetManwon"
-          type="number"
-          inputMode="numeric"
-          min="0"
-          step="100"
-          className="form__input form__input--with-suffix"
-          value={state.generalAssetManwon}
-          placeholder="예: 1500"
-          onChange={(e) => set("generalAssetManwon")(e.target.value)}
-        />
-        <span className="form__suffix">만원</span>
-      </div>
 
-      <label className="form__label" htmlFor="vehicleValueManwon">
-        차량 시가표준액
-      </label>
-      <p className="form__help">차량 없으면 0을 입력하세요. 2,500만원 이상이면 신청 불가.</p>
-      <div className="form__input-row">
-        <input
-          id="vehicleValueManwon"
-          type="number"
-          inputMode="numeric"
-          min="0"
-          step="10"
-          className="form__input form__input--with-suffix"
-          value={state.vehicleValueManwon}
-          placeholder="예: 0"
-          onChange={(e) => set("vehicleValueManwon")(e.target.value)}
+      <fieldset className="form__radio-group">
+        <legend className="form__label">차량 가지고 있어요?</legend>
+        <RadioCard
+          name="hasVehicle"
+          checked={state.hasVehicle === true}
+          onChange={() => set("hasVehicle")(true)}
+          label="네"
         />
-        <span className="form__suffix">만원</span>
-      </div>
+        <RadioCard
+          name="hasVehicle"
+          checked={state.hasVehicle === false}
+          onChange={() => set("hasVehicle")(false)}
+          label="아니요"
+        />
+      </fieldset>
+
+      {state.hasVehicle === true && (
+        <>
+          <label className="form__label" htmlFor="vehicleValueManwon">
+            차량 시가표준액
+          </label>
+          <p className="form__hint">
+            잘 모르면 차량 등록증. 보통 5년 안 된 차는 1500-2500만 사이.
+          </p>
+          <div className="form__input-row">
+            <input
+              id="vehicleValueManwon"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              step="10"
+              className="form__input form__input--with-suffix"
+              value={state.vehicleValueManwon}
+              placeholder="예: 1800"
+              onChange={(e) => set("vehicleValueManwon")(e.target.value)}
+            />
+            <span className="form__suffix">만원</span>
+          </div>
+        </>
+      )}
+
+      <fieldset className="form__radio-group">
+        <legend className="form__label">
+          토지나 건물 소유 중이에요? (분양권/오피스텔 포함)
+        </legend>
+        <RadioCard
+          name="ownsLandOrBuilding"
+          checked={state.ownsLandOrBuilding === true}
+          onChange={() => set("ownsLandOrBuilding")(true)}
+          label="네"
+        />
+        <RadioCard
+          name="ownsLandOrBuilding"
+          checked={state.ownsLandOrBuilding === false}
+          onChange={() => set("ownsLandOrBuilding")(false)}
+          label="아니요"
+        />
+      </fieldset>
+
+      {state.ownsLandOrBuilding === true && (
+        <p className="form__hint">
+          이 사업은 무주택 청년 대상이라 신청 불가예요.
+        </p>
+      )}
     </>
   );
 }
@@ -1041,6 +1113,15 @@ const EXCLUSION_OPTIONS = [
   {
     key: "receivingSeoulHousingVoucher",
     label: "서울형 주택바우처 수령 중",
+  },
+  {
+    key: "inPublicHousing",
+    label:
+      "공공임대주택 거주 (영구/공공/국민/매입/행복주택 등 — 청년안심주택은 따로)",
+  },
+  {
+    key: "receivingOtherSimilarProgram",
+    label: "기타 청년 주거지원 사업 수혜 중 (위 항목 외)",
   },
 ];
 

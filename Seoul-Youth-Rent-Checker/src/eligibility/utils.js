@@ -8,7 +8,6 @@
 
 import program from "../../programs/seoul-youth-rent-2026.json" with { type: "json" };
 
-const MEDIAN_INCOME_2026 = program.medianIncome2026.byHouseholdSize;
 const MEDIAN_INCOME_THRESHOLDS_2026 = program.medianIncomeThresholds2026.byHouseholdSize;
 const MEDIAN_INCOME_INCREMENT_AFTER_7 = program.medianIncomeThresholds2026.incrementPerPersonAfter7;
 const RENT_CONVERSION_RATE = program.eligibility.monthlyRent.conversionRate;
@@ -23,7 +22,8 @@ const INCOME_TIER1_MAX_PCT = program.eligibility.income.tier1MaxPercent;
 
 /**
  * 가구원 수와 월소득(원)을 받아 기준중위소득 대비 % 반환 (UI 표시용).
- * 6인 초과 시 1인 추가당 약 920,000원씩 가산 (참고치 — 보건복지부 고시 기준).
+ * 분모는 게이트 평가와 동일한 MEDIAN_INCOME_THRESHOLDS_2026.pct100 사용.
+ * 8인 이상은 7인 pct100 + (n-7) × 959,198원 (medianIncomeIncrementPerPersonAfter7).
  *
  * @param {number} householdSize - 가구원 수 (1 이상의 정수)
  * @param {number} monthlyIncomeWon - 가구 월소득(세전, 원)
@@ -37,13 +37,14 @@ export function calculateMedianIncomePercent(householdSize, monthlyIncomeWon) {
     throw new Error("monthlyIncomeWon must be a non-negative number");
   }
 
-  const sizeKey = Math.min(Math.floor(householdSize), 6).toString();
-  let medianIncome = MEDIAN_INCOME_2026[sizeKey];
-
-  // 6인 초과 시 1인당 약 920,000원 가산 (5→6 증가폭 = 6인 - 5인 차이를 사용)
-  if (householdSize > 6) {
-    const extraPerPerson = MEDIAN_INCOME_2026["6"] - MEDIAN_INCOME_2026["5"];
-    medianIncome = MEDIAN_INCOME_2026["6"] + extraPerPerson * (Math.floor(householdSize) - 6);
+  const size = Math.floor(householdSize);
+  let medianIncome;
+  if (size <= 7) {
+    medianIncome = MEDIAN_INCOME_THRESHOLDS_2026[size.toString()].pct100;
+  } else {
+    // 8인 이상: 7인 100% + (n-7) × 959,198
+    medianIncome =
+      MEDIAN_INCOME_THRESHOLDS_2026["7"].pct100 + MEDIAN_INCOME_INCREMENT_AFTER_7 * (size - 7);
   }
 
   const percent = (monthlyIncomeWon / medianIncome) * 100;
@@ -123,16 +124,16 @@ export function evaluateIncomeRange(householdSize, monthlyIncomeWon) {
 
 /**
  * 보증금을 월세 환산값(원)으로 변환.
- * 환산식: 보증금 × 4.5% / 12
+ * 환산식: 보증금 × 4.5% / 12, **천원 단위 절사** (PDF 명시).
  *
  * @param {number} depositWon - 보증금(원)
- * @returns {number} 월 환산금액(원, 소수 절사)
+ * @returns {number} 월 환산금액(원, 천원 단위 절사)
  */
 export function convertDepositToMonthly(depositWon) {
   if (!Number.isFinite(depositWon) || depositWon < 0) {
     throw new Error("depositWon must be a non-negative number");
   }
-  return Math.floor((depositWon * RENT_CONVERSION_RATE) / 12);
+  return Math.floor((depositWon * RENT_CONVERSION_RATE) / 12 / 1000) * 1000;
 }
 
 /**

@@ -284,8 +284,13 @@ function NotifySignupForm() {
 function SuccessView({ result, onRetry, onHome }) {
   const remainingDays = useMemo(() => daysUntil(DEADLINE_UTC_ISO), []);
   const isClosed = remainingDays <= 0;
-  const tier = result.tier || { rank: 4, ratio: 0.15 };
-  const ratioPercent = Math.round(tier.ratio * 100);
+  const tier = result.tier;
+  // 1인 가구 4구간 매트릭스 — rank discriminator
+  const isRankedTier = tier && typeof tier === "object" && "rank" in tier;
+  // 신혼/한부모/전세사기/청년안심주택 — category-pool discriminator
+  const isPoolTier =
+    tier && typeof tier === "object" && tier.type === "category-pool";
+  const ratioPercent = isRankedTier ? Math.round(tier.ratio * 100) : 0;
 
   return (
     <main className="result result--success">
@@ -312,27 +317,64 @@ function SuccessView({ result, onRetry, onHome }) {
           </p>
         </header>
 
-        <section className="result__tier-card" aria-label="추첨 구간">
-          <div className="result__tier-header">
-            <span className="result__tier-label">내 추첨 구간</span>
-            {!isClosed && (
-              <span className="result__tier-dday" aria-label={`마감까지 ${remainingDays}일`}>
-                D-{remainingDays}
+        {isRankedTier && (
+          <section
+            className="result__tier-card result__tier-card--ranked"
+            aria-label="추첨 구간"
+          >
+            <div className="result__tier-header">
+              <span className="result__tier-label">내 추첨 구간</span>
+              {!isClosed && (
+                <span
+                  className="result__tier-dday"
+                  aria-label={`마감까지 ${remainingDays}일`}
+                >
+                  D-{remainingDays}
+                </span>
+              )}
+              {isClosed && <span className="result__tier-dday">신청 마감</span>}
+            </div>
+            <div className="result__tier-body">
+              <span className="result__tier-rank">{tier.rank}구간</span>
+              <span className="result__tier-ratio">
+                <span className="result__tier-ratio-num">{ratioPercent}%</span>
+                <span className="result__tier-ratio-suffix">추첨</span>
               </span>
-            )}
-            {isClosed && <span className="result__tier-dday">신청 마감</span>}
-          </div>
-          <div className="result__tier-body">
-            <span className="result__tier-rank">{tier.rank}구간</span>
-            <span className="result__tier-ratio">
-              <span className="result__tier-ratio-num">{ratioPercent}%</span>
-              <span className="result__tier-ratio-suffix">추첨</span>
-            </span>
-          </div>
-          <p className="result__tier-note">
-            동일 구간 신청자 중 {ratioPercent}% 비율로 무작위 선정돼요.
-          </p>
-        </section>
+            </div>
+            <p className="result__tier-note">
+              청년 1인 가구 4구간 매트릭스 (보증금/월세/소득별 분배). 동일
+              구간 신청자 중 {ratioPercent}% 비율로 무작위 선정돼요.
+            </p>
+          </section>
+        )}
+
+        {isPoolTier && (
+          <section
+            className="result__tier-card result__tier-card--pool"
+            aria-label="가구형태별 추첨"
+          >
+            <div className="result__tier-header">
+              <span className="result__tier-label">내 신청 유형</span>
+              {!isClosed && (
+                <span
+                  className="result__tier-dday"
+                  aria-label={`마감까지 ${remainingDays}일`}
+                >
+                  D-{remainingDays}
+                </span>
+              )}
+              {isClosed && <span className="result__tier-dday">신청 마감</span>}
+            </div>
+            <div className="result__tier-body result__tier-body--pool">
+              <span className="result__tier-pool-label">
+                {tier.householdLabel}
+              </span>
+            </div>
+            <p className="result__tier-note">
+              {tier.label} — 가구형태별 추첨이라 구간 매칭 없이 진행돼요.
+            </p>
+          </section>
+        )}
 
         <section className="result__section" aria-label="필요 서류">
           <h2 className="result__section-title">필요 서류</h2>

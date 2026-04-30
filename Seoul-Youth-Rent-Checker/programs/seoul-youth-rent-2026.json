@@ -8,6 +8,14 @@
     "timezone": "Asia/Seoul"
   },
   "capacity": 15000,
+  "capacityTotal": 15000,
+  "capacityByHouseholdType": {
+    "single": 12000,
+    "single-parent": 1000,
+    "fraud-victim": 1000,
+    "young-newlywed": 500,
+    "youth-safe-housing": 500
+  },
   "benefit": {
     "monthlyMax": 200000,
     "months": 12,
@@ -20,7 +28,6 @@
       "min": "1986-01-01",
       "max": "2007-12-31",
       "militaryExtensionMaxYears": 3,
-      "referenceDate": "2026-01-01",
       "label": "공고일 기준 만 19~39세 (1986.1.1 ~ 2007.12.31 출생)",
       "description": "의무복무 마친 제대군인은 복무기간만큼 최대 3년까지 연장 가능 (1년 미만 +1, 1~2년 +2, 2년 이상 +3)"
     },
@@ -53,7 +60,7 @@
       {
         "id": "young-newlywed",
         "label": "청년신혼부부",
-        "description": "혼인 7년 이내, 무자녀 신혼부부 (본인+배우자 모두 청년 연령)"
+        "description": "신청인+배우자 모두 청년 연령 + 무자녀 + 주민등록 동일 + 혼인신고 후 (예비 신혼부부 제외)"
       },
       {
         "id": "youth-safe-housing",
@@ -147,9 +154,30 @@
         "id": "receiving-transition-youth-support",
         "label": "자립준비청년 월세·기숙사비 지원 수혜 중",
         "reason": "자립준비청년 지원사업과 중복 수령 불가"
+      },
+      {
+        "id": "public-housing-resident-general",
+        "label": "공공임대주택 거주",
+        "reason": "공공임대주택 거주자는 신청할 수 없어요. (영구임대/공공임대/국민임대/매입임대/행복주택/장기안심/특화형/도시형생활/희망하우징/전세임대/공무원 등 — 단, 청년안심주택 민간은 OK)"
+      },
+      {
+        "id": "both-newlyweds-applying",
+        "label": "신혼부부 부부 모두 신청",
+        "reason": "신혼부부는 부부 중 1명만 신청할 수 있어요."
+      },
+      {
+        "id": "other-similar-program",
+        "label": "기타 유사 사업 동시 수혜",
+        "reason": "다른 유사 사업 (자치구 외 청년 주거 지원 등) 수혜 중이면 신청할 수 없어요."
       }
     ]
   },
+  "selectionTierScope": {
+    "applicableHouseholdTypes": ["single"],
+    "note": "4 tier 매트릭스는 청년 1인 가구만 적용. 신혼/한부모/전세사기/청년안심주택 민간은 유형별 추첨."
+  },
+  "selectionTierFallbackOrder": [1, 2, 3, 4],
+  "selectionTierFallbackNote": "구간별 미달 시 1→4 순으로 추가 선정",
   "selectionTiers": [
     {
       "rank": 1,
@@ -247,20 +275,6 @@
       ]
     }
   },
-  "medianIncome2026": {
-    "basis": "보건복지부 2026 기준중위소득 고시 (월 기준)",
-    "currency": "KRW",
-    "byHouseholdSize": {
-      "1": 2220000,
-      "2": 3680000,
-      "3": 4720000,
-      "4": 5720000,
-      "5": 6690000,
-      "6": 7610000
-    },
-    "label": "2026 가구원수별 기준중위소득 100%",
-    "description": "가구원 수 6인 초과 시 1인 추가될 때마다 약 92만원 가산 (참고치)"
-  },
   "medianIncomeThresholds2026": {
     "basis": "공식 공고문 가구원수별 절대값 thresholds (월 기준, 원)",
     "currency": "KRW",
@@ -274,6 +288,7 @@
       "7": { "pct48": 4567272, "pct100": 9515150, "pct120": 11418180, "pct150": 14272725 }
     },
     "incrementPerPersonAfter7": 959198,
+    "incrementPerPersonAfter7Description": "8인 이상 가구는 7인 기준값에 1인 추가될 때마다 약 96만원(959,198원) 가산하여 100%로 잡고 % 비례 계산",
     "description": "8인 이상 가구는 7인 기준값 + (n-7) × 959,198원을 100%로 잡고 % 비례 계산"
   },
   "alternativePrograms": {

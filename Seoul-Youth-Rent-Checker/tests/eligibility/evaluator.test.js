@@ -33,6 +33,9 @@ const BASE_OK_INPUT = {
   receivingSeoulYouthAllowance: false,
   receivingTransitionYouthSupport: false,
   receivingSeoulHousingVoucher: false,
+  inPublicHousing: false,
+  bothNewlywedsApplying: false,
+  receivingOtherSimilarProgram: false,
 };
 
 // =================================================================
@@ -540,6 +543,36 @@ describe("Exclusions", () => {
     assert.equal(result.eligible, false);
     assert.ok(result.allReasons.some((r) => r.includes("자립준비")));
   });
+
+  test("일반 공공임대 거주 → FAIL", () => {
+    const input = { ...BASE_OK_INPUT, inPublicHousing: true };
+    const result = evaluateSeoulYouthRent2026(input);
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("공공임대")));
+  });
+
+  test("신혼부부 양측 신청 → FAIL", () => {
+    const input = {
+      ...BASE_OK_INPUT,
+      householdType: "young-newlywed",
+      spouseBirthDate: "1990-01-01",
+      spouseIsVeteran: false,
+      spouseMilitaryMonths: 0,
+      spouseNationalityStatus: "korean",
+      hasNewlywedChildren: false,
+      bothNewlywedsApplying: true,
+    };
+    const result = evaluateSeoulYouthRent2026(input);
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("신혼부부") || r.includes("부부 중")));
+  });
+
+  test("기타 유사 사업 동시 수혜 → FAIL", () => {
+    const input = { ...BASE_OK_INPUT, receivingOtherSimilarProgram: true };
+    const result = evaluateSeoulYouthRent2026(input);
+    assert.equal(result.eligible, false);
+    assert.ok(result.allReasons.some((r) => r.includes("유사")));
+  });
 });
 
 // =================================================================
@@ -762,21 +795,82 @@ describe("다중 사유", () => {
 // =================================================================
 
 describe("중위소득 계산 (UI %)", () => {
-  test("2인가구 + 월 368만 → 100%", () => {
+  test("2인가구 + 월 4,199,292원 → 100% (2026 새 분모)", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       householdSize: 2,
-      monthlyIncomeWon: 3_680_000,
+      monthlyIncomeWon: 4_199_292,
     });
     assert.equal(result.incomePercent, 100);
   });
 
-  test("4인가구 + 월 572만 → 100%", () => {
+  test("4인가구 + 월 6,494,738원 → 100% (2026 새 분모)", () => {
     const result = evaluateSeoulYouthRent2026({
       ...BASE_OK_INPUT,
       householdSize: 4,
-      monthlyIncomeWon: 5_720_000,
+      monthlyIncomeWon: 6_494_738,
     });
     assert.equal(result.incomePercent, 100);
+  });
+});
+
+// =================================================================
+// Tier union 타입 (1인 = rank/ratio, 그 외 = category-pool)
+// =================================================================
+
+describe("Tier union 타입", () => {
+  test("1인 가구 자격 OK → tier rank/ratio 형태", () => {
+    const result = evaluateSeoulYouthRent2026(BASE_OK_INPUT);
+    assert.equal(result.eligible, true);
+    assert.ok(result.tier);
+    assert.ok("rank" in result.tier, "1인은 rank 필드");
+    assert.ok(typeof result.tier.ratio === "number");
+  });
+
+  test("신혼부부 자격 OK → tier category-pool 형태", () => {
+    const input = {
+      ...BASE_OK_INPUT,
+      householdType: "young-newlywed",
+      spouseBirthDate: "1990-01-01",
+      spouseIsVeteran: false,
+      spouseMilitaryMonths: 0,
+      spouseNationalityStatus: "korean",
+      hasNewlywedChildren: false,
+      bothNewlywedsApplying: false,
+    };
+    const result = evaluateSeoulYouthRent2026(input);
+    assert.equal(result.eligible, true);
+    assert.ok(result.tier);
+    assert.equal(result.tier.type, "category-pool");
+    assert.ok(result.tier.householdLabel.includes("신혼부부"));
+  });
+
+  test("청년안심주택 민간 → tier category-pool", () => {
+    const input = {
+      ...BASE_OK_INPUT,
+      householdType: "youth-safe-housing",
+      youthSafeHousingType: "private",
+    };
+    const result = evaluateSeoulYouthRent2026(input);
+    assert.equal(result.eligible, true);
+    assert.equal(result.tier.type, "category-pool");
+  });
+});
+
+// =================================================================
+// PDF 직접 예시 boundary
+// =================================================================
+
+describe("PDF 예시 boundary", () => {
+  test("PDF 예시1 — 보증금 2천만 + 월세 80만 → eligible (환산 87.5만)", () => {
+    const input = { ...BASE_OK_INPUT, depositWon: 20_000_000, monthlyRentWon: 800_000 };
+    const result = evaluateSeoulYouthRent2026(input);
+    assert.equal(result.eligible, true);
+  });
+
+  test("PDF 예시2 — 보증금 4천만 + 월세 80만 → FAIL (환산 95만)", () => {
+    const input = { ...BASE_OK_INPUT, depositWon: 40_000_000, monthlyRentWon: 800_000 };
+    const result = evaluateSeoulYouthRent2026(input);
+    assert.equal(result.eligible, false);
   });
 });
