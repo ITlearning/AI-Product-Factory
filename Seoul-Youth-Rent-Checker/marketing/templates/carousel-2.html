@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  h2 {
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    color: var(--text);
+    margin-bottom: 48px;
+  }
+  h2 .em { color: var(--accent); }
+  .conditions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 24px;
+    margin-top: 24px;
+  }
+  .condition-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .condition-item::before {
+    content: '';
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 999px;
+    margin-top: 12px;
+  }
+  .note {
+    margin-top: 56px;
+    padding: 24px 28px;
+    background: var(--accent-soft);
+    border-radius: 16px;
+    font-size: 22px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div>
+    <div class="badge">
+      <span class="badge-dot"></span>
+      복잡한 자격조건
+    </div>
+    <h2 style="margin-top:32px;">조건이 <span class="em">16개</span>.<br>다 빠뜨리지 않아야<br>신청 가능.</h2>
+    <div class="conditions">
+      <div class="condition-item">19~39세 (군복무 +최대 3년)</div>
+      <div class="condition-item">서울 거주, 무주택</div>
+      <div class="condition-item">보증금 ≤ 8천만</div>
+      <div class="condition-item">월세 ≤ 60만 (또는 환산식)</div>
+      <div class="condition-item">중위소득 48~150%</div>
+      <div class="condition-item">일반재산 ≤ 1.3억</div>
+      <div class="condition-item">차량 시가 < 2,500만</div>
+      <div class="condition-item">국기초/한시지원 등 X</div>
+    </div>
+    <div class="note">
+      이 외에도 임대인 부모/배우자, 공동임차인 모두 신청, 외국인 등 제외 사유 있음.
+    </div>
+  </div>
+  <div class="footer">
+    <span>swipe →</span>
+    <span class="page-num">2 / 5</span>
+  </div>
+</div>
+</body>
+</html>
