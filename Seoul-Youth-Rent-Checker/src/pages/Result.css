@@ -1,0 +1,656 @@
+/*
+ * Seoul Youth Rent Checker — Result 페이지 스타일.
+ * Landing.css :root 토큰을 그대로 계승. DESIGN.md "계승 규칙" 적용:
+ * - 자격 OK/NO 헤드라인 40~48px / 800.
+ * - 자격 NO는 차콜 + 부드러운 톤 (빨강 X — 사용자 죄책감 X).
+ * - D-day 카드 형식 그대로 + tier 표시.
+ * - 서류 collapsible 4 items + 발급처 링크.
+ * - 알림 옵트인 폼 + 도구 공유 버튼 (secondary 스타일).
+ */
+
+/* ==========================================================================
+   Shell
+   ========================================================================== */
+
+.result {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  display: flex;
+  justify-content: center;
+}
+
+.result__shell {
+  width: 100%;
+  max-width: 430px;
+  padding: 32px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ==========================================================================
+   Loading
+   ========================================================================== */
+
+.result--loading .result__shell {
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.result__loading-text {
+  font-size: 15px;
+  color: var(--color-text-tertiary);
+}
+
+/* ==========================================================================
+   Hero (자격 OK / NO)
+   ========================================================================== */
+
+.result__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 24px;
+}
+
+.result__hero-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.result__hero-title {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.result__hero-sub {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+.result__hero-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+
+/* 자격 OK: 차콜 + 체크 SVG (success 컬러) */
+.result__hero--success .result__hero-title {
+  color: var(--color-text-primary);
+}
+
+/* 자격 NO: 차콜 텍스트, 빨강 X (DESIGN.md "사용자 죄책감 X") */
+.result__hero--fail .result__hero-title {
+  color: var(--color-text-primary);
+}
+.result__hero--fail .result__hero-sub {
+  color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   Tier Card (자격 OK 전용 — D-day 카드 형식)
+   ========================================================================== */
+
+.result__tier-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.result__tier-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result__tier-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+
+.result__tier-dday {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.result__tier-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result__tier-rank {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.result__tier-ratio {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--color-text-primary);
+}
+
+.result__tier-ratio-num {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.result__tier-ratio-suffix {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.result__tier-note {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+}
+
+/* --- Pool tier (신혼/한부모/전세사기/청년안심주택) ---------------------- */
+/* 구간 매트릭스 X. householdLabel을 헤드라인 톤으로 강조. 숫자 강조 X. */
+
+.result__tier-card--pool {
+  /* 같은 카드 베이스, accent-soft 미세 강조로 ranked 카드와 구분 */
+  background: var(--color-accent-soft);
+  border-color: var(--color-surface-border);
+}
+
+.result__tier-body--pool {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.result__tier-pool-label {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+}
+
+/* ==========================================================================
+   Section (서류 / 대안 / 사유)
+   ========================================================================== */
+
+.result__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result__section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ==========================================================================
+   Document List (collapsible)
+   ========================================================================== */
+
+.result__document-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result__document-item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-input);
+  overflow: hidden;
+  transition: box-shadow 120ms ease;
+}
+
+.result__document-item--open {
+  box-shadow: var(--shadow-sm);
+}
+
+.result__document-toggle {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  transition: background 120ms ease;
+}
+
+.result__document-toggle:hover {
+  background: var(--color-accent-soft);
+}
+
+.result__document-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.result__document-label {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.result__document-chevron {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.result__document-body {
+  padding: 0 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--color-surface-border);
+  padding-top: 12px;
+  margin-top: -1px; /* 상단 보더와 매끈하게 */
+}
+
+.result__document-issuer {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.result__document-note {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+}
+
+.result__document-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.result__document-link:hover {
+  text-decoration: underline;
+}
+
+.result__document-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Alternative Programs (자격 NO)
+   ========================================================================== */
+
+.result__alt-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result__alt-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.result__alt-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+.result__alt-note {
+  font-size: 12px;
+  color: var(--color-text-quaternary);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   Reason List (자격 NO — 자세한 사유)
+   ========================================================================== */
+
+.result__reason-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result__reason-item {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  padding-left: 12px;
+  position: relative;
+}
+
+.result__reason-item::before {
+  content: "·";
+  position: absolute;
+  left: 2px;
+  color: var(--color-text-tertiary);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   CTA Block (알림 + 공유 + 보조 링크)
+   ========================================================================== */
+
+.result__cta {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* 알림 옵트인 폼 ----------------------------------------------------------- */
+
+.result__notify {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result__notify-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.result__notify-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.result__notify-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-input);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 16px; /* 16px — iOS 자동 줌 방지 */
+  font-weight: 400;
+  color: var(--color-text-primary);
+  transition: border-color 120ms ease;
+}
+
+.result__notify-input:focus {
+  outline: none;
+  border-color: var(--color-text-primary);
+}
+
+.result__notify-input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.result__notify-submit {
+  background: var(--color-text-primary);
+  color: #ffffff;
+  border: none;
+  padding: 0 16px;
+  border-radius: var(--radius-input);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+}
+
+.result__notify-submit:hover:not(:disabled) {
+  background: #000000;
+}
+
+.result__notify-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.result__notify-submit:disabled {
+  background: var(--color-text-quaternary);
+  cursor: not-allowed;
+}
+
+.result__notify-submit:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.result__notify-error {
+  font-size: 12px;
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+.result__notify--done {
+  align-items: flex-start;
+}
+
+.result__notify-done-text {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+/* 공유 버튼 (ShareButton 컴포넌트에 적용되는 wrapper 클래스) ------------- */
+
+.result__share {
+  width: 100%;
+}
+
+/* 보조 링크 (다시 진단 / 처음으로) ---------------------------------------- */
+
+.result__secondary-link {
+  background: transparent;
+  border: 1px solid var(--color-surface-border);
+  color: var(--color-text-primary);
+  padding: 14px 20px;
+  border-radius: var(--radius-button);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  transition: background 120ms ease;
+}
+
+.result__secondary-link:hover {
+  background: var(--color-accent-soft);
+}
+
+.result__secondary-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* primary CTA (state 화면 — Forbidden/Expired/Error) --------------------- */
+
+.result__primary-cta {
+  background: var(--color-text-primary);
+  color: #ffffff;
+  border: none;
+  padding: 16px 24px;
+  border-radius: var(--radius-button);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  margin-top: 16px;
+  transition: background 120ms ease, transform 120ms ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.result__primary-cta:hover {
+  background: #000000;
+}
+
+.result__primary-cta:active {
+  transform: scale(0.985);
+}
+
+.result__primary-cta:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* ==========================================================================
+   State Views (Forbidden / Expired / Error)
+   ========================================================================== */
+
+.result--state .result__shell {
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.result__forbidden,
+.result__expired,
+.result__error {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-card);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  box-shadow: var(--shadow-sm);
+}
+
+.result__state-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.result__state-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.result__state-sub {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (min-width: 768px) {
+  .result {
+    padding: 48px 24px;
+    align-items: flex-start;
+  }
+  .result__shell {
+    border-radius: 24px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+    padding: 48px 32px;
+  }
+  .result--state .result__shell,
+  .result--loading .result__shell {
+    min-height: 480px;
+  }
+}
+
+/* 좁은 모바일 — 헤드라인 살짝 줄이기 */
+@media (max-width: 375px) {
+  .result__shell {
+    padding: 24px 20px 40px;
+  }
+  .result__hero-title {
+    font-size: 38px;
+  }
+  .result__tier-rank {
+    font-size: 28px;
+  }
+  .result__tier-ratio-num {
+    font-size: 24px;
+  }
+  .result__tier-pool-label {
+    font-size: 21px;
+  }
+}
+
+/* ==========================================================================
+   Reduce motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .result__document-item,
+  .result__notify-submit,
+  .result__primary-cta,
+  .result__secondary-link,
+  .result__document-toggle {
+    transition: none !important;
+  }
+}

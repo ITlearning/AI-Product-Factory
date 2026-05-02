@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  h2 {
+    font-size: 84px;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    color: var(--text);
+    margin-bottom: 32px;
+  }
+  h2 .em { color: var(--accent); }
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .step-num {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    background: var(--text);
+    color: var(--surface);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    font-weight: 800;
+  }
+  .step-text {
+    font-size: 23px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .step-time {
+    margin-left: auto;
+    font-size: 18px;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .takeaway {
+    margin-top: 28px;
+    padding: 22px 28px;
+    background: var(--text);
+    color: var(--surface);
+    border-radius: 16px;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  .takeaway .em {
+    color: #ff8a8a;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div>
+    <div class="badge">
+      <span class="badge-dot"></span>
+      자가진단 흐름
+    </div>
+    <h2 style="margin-top:28px;"><span class="em">5분</span>이면 끝.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">생년월일 + 군복무</div>
+        <div class="step-time">30초</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">가구형태 + 거주지</div>
+        <div class="step-time">30초</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">보증금 / 월세 / 소득</div>
+        <div class="step-time">90초</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">재산 + 차량</div>
+        <div class="step-time">30초</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-text">결과 + 4구간 + 서류</div>
+        <div class="step-time">즉시</div>
+      </div>
+    </div>
+    <div class="takeaway">
+      공인인증서 <span class="em">필요 없어요.</span><br>익명 처리, 결과는 본인만.
+    </div>
+  </div>
+  <div class="footer">
+    <span>swipe →</span>
+    <span class="page-num">4 / 5</span>
+  </div>
+</div>
+</body>
+</html>

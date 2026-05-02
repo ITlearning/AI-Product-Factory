@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  h2 {
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+  h2 .em { color: var(--accent); }
+  .subtitle {
+    font-size: 22px;
+    color: var(--text-2);
+    margin-bottom: 40px;
+  }
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    font-size: 22px;
+  }
+  thead th {
+    background: var(--text);
+    color: var(--surface);
+    padding: 20px 16px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 20px;
+  }
+  tbody td {
+    padding: 20px 16px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    color: var(--text);
+  }
+  tbody tr:nth-child(odd) { background: #fafaf8; }
+  .ratio {
+    font-weight: 800;
+    color: var(--accent);
+    font-size: 26px;
+  }
+  .note {
+    margin-top: 40px;
+    font-size: 20px;
+    color: var(--text-3);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div>
+    <div class="badge">
+      <span class="badge-dot"></span>
+      청년 1인 가구 추첨 매트릭스
+    </div>
+    <h2 style="margin-top:32px;">선정 <span class="em">4구간</span>.<br>어디 속하느냐가 추첨률 결정.</h2>
+    <p class="subtitle">소득·보증금·월세 기준. 본인 케이스 확인은 자가진단.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>구간</th>
+          <th>보증금</th>
+          <th>월세</th>
+          <th>소득</th>
+          <th>비율</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>1</b></td>
+          <td>≤ 500만</td>
+          <td>≤ 40만</td>
+          <td>48~120%</td>
+          <td class="ratio">35%</td>
+        </tr>
+        <tr>
+          <td><b>2</b></td>
+          <td>≤ 1000만</td>
+          <td>≤ 50만</td>
+          <td>48~150%</td>
+          <td class="ratio">30%</td>
+        </tr>
+        <tr>
+          <td><b>3</b></td>
+          <td>≤ 2000만</td>
+          <td>≤ 60만</td>
+          <td>48~150%</td>
+          <td class="ratio">20%</td>
+        </tr>
+        <tr>
+          <td><b>4</b></td>
+          <td>≤ 8000만</td>
+          <td>≤ 60만*</td>
+          <td>48~150%</td>
+          <td class="ratio">15%</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">* 4구간은 환산식 90만 이하 케이스도 OK. 신혼/한부모/전세사기/청년안심주택은 유형별 추첨 (구간 X).</div>
+  </div>
+  <div class="footer">
+    <span>swipe →</span>
+    <span class="page-num">3 / 5</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--accent);
+    color: var(--surface);
+    padding: 18px 28px;
+    border-radius: 999px;
+    font-size: 28px;
+    font-weight: 700;
+    width: fit-content;
+  }
+  .live-dot {
+    width: 14px;
+    height: 14px;
+    background: var(--surface);
+    border-radius: 999px;
+    animation: pulse 1s infinite;
+  }
+  .hook {
+    font-size: 124px;
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -4px;
+    color: var(--text);
+    margin-top: 56px;
+  }
+  .hook .em { color: var(--accent); }
+  .deadline-card {
+    margin-top: 48px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 36px 40px;
+  }
+  .deadline-label {
+    font-size: 26px;
+    color: var(--text-3);
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .deadline-row {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .deadline-date {
+    font-size: 58px;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -1.5px;
+  }
+  .deadline-date .em { color: var(--accent); }
+  .deadline-note {
+    margin-top: 14px;
+    font-size: 24px;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+  .sub {
+    font-size: 36px;
+    color: var(--text-2);
+    font-weight: 500;
+    line-height: 1.45;
+    margin-top: 36px;
+  }
+  /* 링크 스티커 안전 영역 */
+  .link-slot {
+    height: 320px;
+  }
+  .cta-hint {
+    text-align: center;
+    font-size: 30px;
+    color: var(--text-2);
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .cta-hint .em { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="story">
+  <div>
+    <div class="live-badge">
+      <span class="live-dot"></span>
+      신청 진행 중
+    </div>
+    <div class="hook">
+      자격<br>
+      <span class="em">먼저</span> 봐.
+    </div>
+    <div class="deadline-card">
+      <div class="deadline-label">신청 마감</div>
+      <div class="deadline-row">
+        <span class="deadline-date"><span class="em">5/19 18:00</span></span>
+      </div>
+      <div class="deadline-note">놓치면 1년 기다려야 해.</div>
+    </div>
+    <div class="sub">
+      5분이면 끝.<br>
+      공인인증서 X, 익명 처리, 결과는 본인만.
+    </div>
+  </div>
+  <div>
+    <div class="link-slot"></div>
+    <div class="cta-hint">👆 링크 눌러 <span class="em">자격 5분 진단</span></div>
+  </div>
+</div>
+</body>
+</html>

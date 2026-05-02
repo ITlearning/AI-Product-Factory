@@ -1,0 +1,326 @@
+{
+  "id": "seoul-youth-rent-2026",
+  "title": "2026 서울시 청년월세지원",
+  "authority": "서울특별시",
+  "applicationWindow": {
+    "start": "2026-05-06T10:00:00+09:00",
+    "end": "2026-05-19T18:00:00+09:00",
+    "timezone": "Asia/Seoul"
+  },
+  "capacity": 15000,
+  "capacityTotal": 15000,
+  "capacityByHouseholdType": {
+    "single": 12000,
+    "single-parent": 1000,
+    "fraud-victim": 1000,
+    "young-newlywed": 500,
+    "youth-safe-housing": 500
+  },
+  "benefit": {
+    "monthlyMax": 200000,
+    "months": 12,
+    "totalMax": 2400000,
+    "lifetimeOnce": true,
+    "label": "월 최대 20만원 × 12개월 = 최대 240만원 (생애 1회)"
+  },
+  "eligibility": {
+    "age": {
+      "min": "1986-01-01",
+      "max": "2007-12-31",
+      "militaryExtensionMaxYears": 3,
+      "label": "공고일 기준 만 19~39세 (1986.1.1 ~ 2007.12.31 출생)",
+      "description": "의무복무 마친 제대군인은 복무기간만큼 최대 3년까지 연장 가능 (1년 미만 +1, 1~2년 +2, 2년 이상 +3)"
+    },
+    "residence": {
+      "allowed": ["서울"],
+      "label": "서울특별시 거주",
+      "description": "신청일 기준 서울 주민등록 + 실제 거주"
+    },
+    "homeOwnership": {
+      "allowed": false,
+      "label": "무주택 청년",
+      "description": "주택, 오피스텔, 분양권, 공유지분 등 모두 미보유"
+    },
+    "householdTypes": [
+      {
+        "id": "single",
+        "label": "1인 가구 (청년)",
+        "description": "기본 청년 1인 가구"
+      },
+      {
+        "id": "single-parent",
+        "label": "한부모 가구",
+        "description": "한부모가족증명서 보유자"
+      },
+      {
+        "id": "fraud-victim",
+        "label": "전세사기 피해자",
+        "description": "전세사기피해자등 결정문 보유자"
+      },
+      {
+        "id": "young-newlywed",
+        "label": "청년신혼부부",
+        "description": "신청인+배우자 모두 청년 연령 + 무자녀 + 주민등록 동일 + 혼인신고 후 (예비 신혼부부 제외)"
+      },
+      {
+        "id": "youth-safe-housing",
+        "label": "청년안심주택 거주자 (민간임대)",
+        "description": "청년안심주택 민간임대 입주자만 신청 가능 (공공임대는 제외)"
+      }
+    ],
+    "deposit": {
+      "max": 80000000,
+      "label": "임차보증금 8,000만원 이하",
+      "description": "월세 환산 시 4.5% 적용"
+    },
+    "monthlyRent": {
+      "max": 600000,
+      "conversionRate": 0.045,
+      "conversionMonthlyCapWon": 900000,
+      "label": "월세 60만원 이하 (또는 보증금 환산 후 90만원 이하)",
+      "description": "월세 60만원 초과 시 (보증금 × 4.5% / 12) + 월세 ≤ 90만원이면 신청 가능"
+    },
+    "income": {
+      "minPercent": 48,
+      "maxPercent": 150,
+      "tier1MaxPercent": 120,
+      "basis": "기준중위소득",
+      "label": "기준중위소득 48% 초과 ~ 150% 이하 (1구간은 120% 이하)",
+      "description": "가구 월소득(세전) 기준 절대값 비교 — 48% 미만은 국기초 주거급여 대상"
+    },
+    "asset": {
+      "generalMax": 130000000,
+      "vehicleMax": 25000000,
+      "label": "일반재산(임차보증금+차량 등 합계) 1.3억원 이하 + 차량 시가 2,500만원 미만",
+      "description": "임차보증금 + 차량 시가표준액 등의 합계가 1.3억원 이하여야 함"
+    },
+    "exclusions": [
+      {
+        "id": "national-youth-rent-active",
+        "label": "국토부 청년월세 한시지원 수혜 중",
+        "reason": "동일 목적 중앙정부 지원과 중복 수령 불가"
+      },
+      {
+        "id": "seoul-rent-previously-received",
+        "label": "서울시 청년월세지원 기수령자",
+        "reason": "생애 1회 한정 — 이전 차수에서 받았으면 신청 불가"
+      },
+      {
+        "id": "owns-home",
+        "label": "주택 소유자",
+        "reason": "오피스텔, 분양권, 공유지분 포함 모든 형태 주택 소유 시 신청 불가"
+      },
+      {
+        "id": "basic-living-recipient",
+        "label": "국민기초생활보장 수급자",
+        "reason": "주거급여 등 국기초 수급 시 중복 수령 불가"
+      },
+      {
+        "id": "public-housing-resident",
+        "label": "공공임대주택 거주자",
+        "reason": "청년안심주택 민간임대 외 공공임대는 신청 불가"
+      },
+      {
+        "id": "landlord-is-spouse-or-parent",
+        "label": "임대인이 배우자 또는 부모",
+        "reason": "배우자/부모-자녀 간 임대차계약은 신청 불가"
+      },
+      {
+        "id": "all-cotenants-applying",
+        "label": "공동임차인 모두 신청",
+        "reason": "공동임차인 중 1명만 신청 가능"
+      },
+      {
+        "id": "newlywed-with-children",
+        "label": "신혼부부 + 자녀 있음",
+        "reason": "청년신혼부부 카테고리는 무자녀 조건"
+      },
+      {
+        "id": "foreigner-or-overseas-korean",
+        "label": "외국인 또는 재외국민",
+        "reason": "외국인/재외국민은 신청 불가 (단, 신혼부부 + 본인 한국인 + 배우자 외국인 + 가족관계 등재 + 주소지 동일 시 예외)"
+      },
+      {
+        "id": "receiving-district-rent",
+        "label": "자치구 청년월세지원 수혜 중",
+        "reason": "자치구 자체 청년월세 사업 수혜 중에는 중복 수령 불가"
+      },
+      {
+        "id": "receiving-seoul-youth-allowance",
+        "label": "서울시 청년수당 수혜 중",
+        "reason": "동일 목적 서울시 청년수당과 중복 수령 불가"
+      },
+      {
+        "id": "receiving-transition-youth-support",
+        "label": "자립준비청년 월세·기숙사비 지원 수혜 중",
+        "reason": "자립준비청년 지원사업과 중복 수령 불가"
+      },
+      {
+        "id": "public-housing-resident-general",
+        "label": "공공임대주택 거주",
+        "reason": "공공임대주택 거주자는 신청할 수 없어요. (영구임대/공공임대/국민임대/매입임대/행복주택/장기안심/특화형/도시형생활/희망하우징/전세임대/공무원 등 — 단, 청년안심주택 민간은 OK)"
+      },
+      {
+        "id": "both-newlyweds-applying",
+        "label": "신혼부부 부부 모두 신청",
+        "reason": "신혼부부는 부부 중 1명만 신청할 수 있어요."
+      },
+      {
+        "id": "other-similar-program",
+        "label": "기타 유사 사업 동시 수혜",
+        "reason": "다른 유사 사업 (자치구 외 청년 주거 지원 등) 수혜 중이면 신청할 수 없어요."
+      }
+    ]
+  },
+  "selectionTierScope": {
+    "applicableHouseholdTypes": ["single"],
+    "note": "4 tier 매트릭스는 청년 1인 가구만 적용. 신혼/한부모/전세사기/청년안심주택 민간은 유형별 추첨."
+  },
+  "selectionTierFallbackOrder": [1, 2, 3, 4],
+  "selectionTierFallbackNote": "구간별 미달 시 1→4 순으로 추가 선정",
+  "selectionTiers": [
+    {
+      "rank": 1,
+      "deposit": { "max": 5000000 },
+      "rent": { "max": 400000 },
+      "incomeRange": { "min": 48, "max": 120 },
+      "ratio": 0.35,
+      "label": "1구간",
+      "description": "보증금 500만 이하 + 월세 40만 이하 + 중위소득 120% 이하 → 35% 추첨 우선"
+    },
+    {
+      "rank": 2,
+      "deposit": { "max": 10000000 },
+      "rent": { "max": 500000 },
+      "incomeRange": { "min": 48, "max": 150 },
+      "ratio": 0.30,
+      "label": "2구간",
+      "description": "보증금 1,000만 이하 + 월세 50만 이하 → 30% 추첨"
+    },
+    {
+      "rank": 3,
+      "deposit": { "max": 20000000 },
+      "rent": { "max": 600000 },
+      "incomeRange": { "min": 48, "max": 150 },
+      "ratio": 0.20,
+      "label": "3구간",
+      "description": "보증금 2,000만 이하 + 월세 60만 이하 → 20% 추첨"
+    },
+    {
+      "rank": 4,
+      "deposit": { "max": 80000000 },
+      "rent": { "max": 600000 },
+      "incomeRange": { "min": 48, "max": 150 },
+      "ratio": 0.15,
+      "label": "4구간",
+      "description": "보증금 8,000만 이하 + 월세 60만 이하 (환산식 포함) → 15% 추첨"
+    }
+  ],
+  "documents": {
+    "required": [
+      {
+        "id": "lease-contract",
+        "label": "임대차계약서 (확정일자 포함)",
+        "issuer": "동주민센터 / 인터넷등기소",
+        "url": "https://www.iros.go.kr"
+      },
+      {
+        "id": "rent-payment-proof",
+        "label": "이체확인증 (최근 3개월)",
+        "issuer": "거래은행 모바일/인터넷뱅킹",
+        "alternatives": ["월차임 납부확인서"]
+      },
+      {
+        "id": "family-relation-cert",
+        "label": "가족관계증명서 (상세, 공고일 이후 발급)",
+        "issuer": "정부24",
+        "url": "https://www.gov.kr"
+      },
+      {
+        "id": "info-sharing-consent",
+        "label": "행정정보 공동이용 사전동의서",
+        "issuer": "신청 시 시스템에서 다운로드"
+      }
+    ],
+    "byHouseholdType": {
+      "single-parent": [
+        {
+          "id": "single-parent-cert",
+          "label": "한부모가족증명서",
+          "issuer": "정부24 / 동주민센터"
+        }
+      ],
+      "fraud-victim": [
+        {
+          "id": "fraud-victim-decision",
+          "label": "전세사기피해자등 결정문 사본",
+          "issuer": "국토교통부 전세사기피해지원위원회"
+        }
+      ],
+      "young-newlywed": [
+        {
+          "id": "marriage-cert",
+          "label": "혼인관계증명서",
+          "issuer": "정부24"
+        }
+      ]
+    },
+    "byCondition": {
+      "military-extended": [
+        {
+          "id": "military-record",
+          "label": "병적증명서 또는 병역사항 기재 주민등록초본",
+          "issuer": "정부24 / 병무청"
+        }
+      ]
+    }
+  },
+  "medianIncomeThresholds2026": {
+    "basis": "공식 공고문 가구원수별 절대값 thresholds (월 기준, 원)",
+    "currency": "KRW",
+    "byHouseholdSize": {
+      "1": { "pct48": 1230834, "pct100": 2564238, "pct120": 3077086, "pct150": 3846357 },
+      "2": { "pct48": 2015660, "pct100": 4199292, "pct120": 5039150, "pct150": 6298938 },
+      "3": { "pct48": 2572337, "pct100": 5359036, "pct120": 6430843, "pct150": 8038554 },
+      "4": { "pct48": 3117474, "pct100": 6494738, "pct120": 7793686, "pct150": 9742107 },
+      "5": { "pct48": 3627225, "pct100": 7556719, "pct120": 9068063, "pct150": 11335079 },
+      "6": { "pct48": 4106857, "pct100": 8555952, "pct120": 10267142, "pct150": 12833928 },
+      "7": { "pct48": 4567272, "pct100": 9515150, "pct120": 11418180, "pct150": 14272725 }
+    },
+    "incrementPerPersonAfter7": 959198,
+    "incrementPerPersonAfter7Description": "8인 이상 가구는 7인 기준값에 1인 추가될 때마다 약 96만원(959,198원) 가산하여 100%로 잡고 % 비례 계산",
+    "description": "8인 이상 가구는 7인 기준값 + (n-7) × 959,198원을 100%로 잡고 % 비례 계산"
+  },
+  "alternativePrograms": {
+    "ageOutOfRange": {
+      "id": "national-youth-rent",
+      "label": "국토부 청년월세 한시지원",
+      "description": "만 19~34세, 중위소득 60% 이하 청년 대상 중앙정부 지원",
+      "url": "https://www.myhome.go.kr"
+    },
+    "outsideSeoul": {
+      "id": "regional-youth-rent",
+      "label": "다른 지역 청년월세 정책",
+      "description": "거주 지자체별 청년월세지원 — 정부24에서 검색",
+      "url": "https://www.gov.kr"
+    },
+    "incomeBelowMin": {
+      "id": "basic-housing-benefit",
+      "label": "국민기초생활보장 주거급여",
+      "description": "중위소득 48% 미만 가구 대상 — 동주민센터 신청",
+      "url": "https://www.bokjiro.go.kr"
+    },
+    "housingVoucher": {
+      "id": "seoul-housing-voucher",
+      "label": "서울형 주택바우처",
+      "description": "주거취약계층 월세 보조 — 동주민센터 신청",
+      "url": "https://housing.seoul.go.kr"
+    }
+  },
+  "source": {
+    "notice": "https://housing.seoul.go.kr/site/main/board/notice/12667",
+    "overview": "https://housing.seoul.go.kr/site/main/content/sh01_060513",
+    "eligibility": "https://housing.seoul.go.kr/site/main/content/sh01_060513_6",
+    "documents": "https://housing.seoul.go.kr/site/main/content/sh01_060513_7"
+  }
+}

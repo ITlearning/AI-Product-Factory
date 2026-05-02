@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .countdown-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-top: 80px;
+  }
+  .dday-label {
+    font-size: 32px;
+    color: var(--text-3);
+    font-weight: 600;
+  }
+  .dday-num {
+    font-size: 280px;
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -8px;
+    color: var(--accent);
+  }
+  .dday-suffix {
+    font-size: 36px;
+    color: var(--text-2);
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .hook {
+    font-size: 96px;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -3px;
+    color: var(--text);
+    margin-top: 64px;
+  }
+  .hook .em { color: var(--accent); }
+  .sub {
+    font-size: 36px;
+    color: var(--text-2);
+    font-weight: 500;
+    line-height: 1.45;
+    margin-top: 32px;
+  }
+  /* 링크 스티커 안전 영역 — 인스타에서 이 자리 위에 링크 스티커 얹음 */
+  .link-slot {
+    height: 320px;
+  }
+  .cta-hint {
+    text-align: center;
+    font-size: 30px;
+    color: var(--text-2);
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .cta-hint .em { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="story">
+  <div>
+    <div class="badge">
+      <span class="badge-dot"></span>
+      2026 서울시 청년월세
+    </div>
+    <div class="countdown-block">
+      <div class="dday-label">신청 시작까지</div>
+      <div class="dday-num">D-4</div>
+      <div class="dday-suffix">5월 6일 9시 OPEN</div>
+    </div>
+    <div class="hook">
+      <span class="em">240만원,</span><br>
+      받을 수 있는지<br>
+      먼저 봐.
+    </div>
+    <div class="sub">
+      조건 16개 → 4구간 매트릭스 → 신청 서류까지.<br>
+      5분, 공인인증서 X, 익명 처리.
+    </div>
+  </div>
+  <div>
+    <div class="link-slot"></div>
+    <div class="cta-hint">👆 링크 눌러 <span class="em">5분 자가진단</span></div>
+  </div>
+</div>
+</body>
+</html>
