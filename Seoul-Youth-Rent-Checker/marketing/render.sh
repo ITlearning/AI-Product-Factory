@@ -40,7 +40,7 @@ render() {
   # --virtual-time-budget: 외부 자원(폰트 CDN 등) 대기 시간 ms.
   # --run-all-compositor-stages-before-draw: 레이아웃·페인트 완료 후 캡처.
   "$CHROME" \
-    --headless=new \
+    --headless \
     --disable-gpu \
     --hide-scrollbars \
     --no-default-browser-check \
@@ -50,6 +50,7 @@ render() {
     --default-background-color=00000000 \
     --virtual-time-budget=10000 \
     --run-all-compositor-stages-before-draw \
+    --force-device-scale-factor=1 \
     "file://$template" \
     > /dev/null 2>&1
 
