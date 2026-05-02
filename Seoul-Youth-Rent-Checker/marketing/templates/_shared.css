@@ -93,11 +93,11 @@ html, body {
 .page-num {
   background: var(--text);
   color: var(--surface);
-  padding: 10px 20px;
+  padding: 14px 22px;
   border-radius: 999px;
   font-size: 20px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  line-height: 1;
+  line-height: 1.2;
 }
