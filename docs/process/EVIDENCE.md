@@ -140,7 +140,7 @@ evidence trail의 목적은 **검증의 투명성**이다.
 
 | 문서 | 관계 |
 |------|------|
-| [`docs/process/CHARTER.md`](CHARTER.md) | Review Gates (evidence가 리뷰 판정의 근거) — M-2에서 추가 예정 |
+| [`docs/process/CHARTER.md`](CHARTER.md) | Review Gates (evidence가 리뷰 판정의 근거) |
 | [`docs/process/EXECUTION.md`](EXECUTION.md) | ralph loop 실행 사이클 (검증→리뷰 단계에서 evidence 생성) |
 | [`docs/QUALITY_SCORE.md`](../QUALITY_SCORE.md) | 리뷰 점수 기준 (evidence에 기록되는 점수의 출처) |
 | [`docs/RELIABILITY.md`](../RELIABILITY.md) | 검증 파이프라인 (evidence에 기록되는 검증의 출처) |
