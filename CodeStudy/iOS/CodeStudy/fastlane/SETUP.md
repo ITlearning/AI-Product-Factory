@@ -15,7 +15,28 @@ bundle install
 
 > 시스템 Ruby로 충분하다. rbenv/asdf로 별도 Ruby를 쓰고 있다면 해당 환경에서 실행.
 
-### 2. App Store Connect API key 발급 (1회)
+### 2. Apple Distribution 인증서 발급 (1회)
+
+Archive에는 Apple Distribution 인증서가 필요하다. 키체인에 없으면 fastlane이 archive 단계에서 실패한다.
+
+확인:
+
+```bash
+security find-identity -v -p codesigning | grep "Apple Distribution"
+```
+
+결과가 비어있으면 발급해야 한다. 가장 간단한 방법:
+
+1. Xcode 열기
+2. 상단 device selector를 **"Any iOS Device (arm64)"** 로 변경
+3. **Product → Archive** 클릭
+4. Xcode가 자동으로 Apple Distribution 인증서 + provisioning profile 발급
+5. Organizer가 뜨면 그대로 닫기 (이 archive 자체는 버리고 fastlane으로 다시 만들 거라)
+
+대안 (Xcode Settings에서 직접 발급):
+- Xcode → Settings → Accounts → 본인 Apple ID → **Manage Certificates** → 좌하단 `+` → **Apple Distribution**
+
+### 3. App Store Connect API key 발급 (1회)
 
 자동화 인증의 표준 방식. Apple ID + 2FA를 우회해서 안정적으로 동작.
 
@@ -26,7 +47,7 @@ bundle install
 5. 받은 파일을 안전한 위치에 보관 (예: `~/.appstoreconnect/AuthKey_XXXXXXXXXX.p8`)
 6. 화면에 표시되는 **Key ID**와 **Issuer ID**를 메모
 
-### 3. `.env` 파일 작성
+### 4. `.env` 파일 작성
 
 ```bash
 cp fastlane/.env.default fastlane/.env
