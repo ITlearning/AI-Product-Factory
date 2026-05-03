@@ -1,5 +1,9 @@
 default_platform(:ios)
 
+# fastlane이 매 실행마다 fastlane/README.md를 자동 갱신하는 걸 막는다.
+# 우리 가이드는 fastlane/SETUP.md 가 정본.
+skip_docs
+
 # 프로젝트 위치는 fastlane 디렉터리의 부모.
 XCODEPROJ = "CodeStudy.xcodeproj"
 SCHEME    = "CodeStudy"
