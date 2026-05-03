@@ -46,7 +46,7 @@ lint (check-syntax.mjs) → test (node --test) → build
 코드가 아닌 문서만 변경한 경우:
 - 자동화된 검증이 없으면 그 사실을 명시한다.
 - 링크 유효성, 문서 간 정합성을 수동으로 확인한다.
-- [`doc-lint.md`](harness/doc-lint.md)의 수동 체크리스트를 수행한다.
+- [`DOC_LINT.md`](process/DOC_LINT.md)의 수동 체크리스트를 수행한다.
 
 ---
 
@@ -155,10 +155,10 @@ lint (check-syntax.mjs) → test (node --test) → build
 |------|------|
 | [`ARCHITECTURE.md`](../ARCHITECTURE.md) | 서비스 구조, 검증 명령, 배포 모델 |
 | [`AGENTS.md`](../AGENTS.md) | Validation 테이블, Delivery 규칙 |
-| [`docs/harness/CHARTER.md`](harness/CHARTER.md) | Stop Rules, Prohibited Actions |
+| [`docs/process/CHARTER.md`](process/CHARTER.md) | Stop Rules, Non-Goals |
 | [`docs/PRODUCT_SENSE.md`](PRODUCT_SENSE.md) | 오류 메시지 문구 위임 규칙 |
 | [`docs/SECURITY.md`](SECURITY.md) | 보안 관련 신뢰성 (정보 노출 금지 등) |
-| [`docs/harness/doc-lint.md`](harness/doc-lint.md) | 문서 전용 변경 검증 규칙, 수동 체크리스트 |
+| [`docs/process/DOC_LINT.md`](process/DOC_LINT.md) | 문서 전용 변경 검증 규칙, 수동 체크리스트 |
 
 ---
 

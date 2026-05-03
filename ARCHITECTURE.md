@@ -7,22 +7,23 @@
 
 ## High-Level Structure
 
-```
+```text
 AI-Product-Factory/          ← 모노레포 루트
 ├── IBAD/app/                ← 서비스: 한국어 거절 메시지
 ├── Translate-Developer/     ← 서비스: 개발자 언어 번역
 ├── Spending-Personality/    ← 서비스: 소비 성격 진단
 ├── Date-Soragodong/         ← 서비스: 커플 데이트 코스 뽑기
-├── UGGK/                   ← 서비스: 초기 단계 (디렉토리 미생성, spec-first)
-├── docs/                   ← 설계 문서, 하네스 문서
-│   ├── harness/            ← 하네스 엔지니어링 문서
-│   ├── plans/              ← 설계/계획 문서
-│   └── superpowers/        ← 보조 문서
-├── scripts/                ← 저장소 레벨 스크립트
-├── AGENTS.md               ← 에이전트 진입점 맵
-├── ARCHITECTURE.md         ← 이 파일
-├── WORKFLOW.md             ← Symphony 오케스트레이션 계약
-└── README.md               ← 저장소 운영 안내
+├── CodeStudy/iOS/           ← 서비스: 코드 학습 iOS 앱 (CodeStudy)
+├── Seoul-Youth-Rent-Checker/ ← 서비스: 서울 청년월세지원 자격 체커
+├── UGGK/                    ← 서비스: 초기 단계 (디렉토리 미생성, spec-first)
+├── docs/                    ← 설계 문서, 프로세스 문서
+│   ├── process/             ← 프로세스 시퀀스 문서 (CHARTER / SEQUENCE / INTAKE / PRD_TEMPLATE / EXECUTION / DECOMPOSITION / EVIDENCE / DOC_LINT / COMMON)
+│   ├── plans/               ← 설계/계획 문서
+│   └── evidence/            ← PR 검증 증거 기록
+├── scripts/                 ← 저장소 레벨 스크립트
+├── AGENTS.md                ← 에이전트 진입점 맵
+├── ARCHITECTURE.md          ← 이 파일
+└── README.md                ← 저장소 운영 안내
 ```
 
 ---
@@ -34,8 +35,8 @@ AI-Product-Factory/          ← 모노레포 루트
 이 저장소는 여러 독립 서비스를 하나의 리포에 모은 모노레포다. 각 서비스는 독립된 최상위 디렉토리에 위치하고, 서비스 간 코드 공유는 없다. 공유되는 것은 하네스 문서, 운영 규칙, 배포 인프라(Vercel) 뿐이다.
 
 이 구조를 선택한 이유:
-- Symphony가 단일 Linear 프로젝트 + 단일 `WORKFLOW.md`로 동작한다
-- 서비스별 독립 리포를 두면 하네스와 운영 규칙이 분산된다
+- 모노레포 하나에 공통 프로세스 문서를 두면 모든 서비스가 같은 6단계 시퀀스로 운영된다
+- 서비스별 독립 리포를 두면 프로세스 규칙이 분산되어 일관성이 깨진다
 - 작은 실험 서비스들이므로 리포 분리의 이점보다 통합 관리의 이점이 크다
 
 ### 서비스 간 독립성
@@ -169,29 +170,20 @@ lint (check-syntax.mjs) → test (node --test) → build
 
 ## Orchestration Layer
 
-### Symphony
+### Process (Claude Code 네이티브)
 
-이 저장소는 OpenAI Symphony로 오케스트레이션된다.
+이 저장소는 Claude Code 기반 6단계 프로세스 시퀀스로 운영된다.
 
 | 항목 | 값 |
 |------|-----|
-| 설정 파일 | `WORKFLOW.md` |
-| 트래커 | Linear (단일 프로젝트) |
-| 에이전트 | Codex |
-| 최대 동시 에이전트 | 10 |
-| 최대 턴 | 20 |
-| 라우팅 | Linear 라벨 (`service:*`) 또는 이슈 제목 접두어 (`[서비스명]`) |
+| 진입점 | [`docs/process/SEQUENCE.md`](docs/process/SEQUENCE.md) |
+| 헌장 | [`docs/process/CHARTER.md`](docs/process/CHARTER.md) |
+| 입구 | 1줄 아이디어 또는 1쪽 brief (자동 분기, [`INTAKE.md`](docs/process/INTAKE.md)) |
+| 단계 | INTAKE → DISCOVERY → PRD DRAFT → PARALLEL REVIEW → DECOMPOSITION → EXECUTION |
+| 승인 | 단계마다 Tabber 승인 ([1] INTAKE는 자동 분기 + 신호 충돌 시 1회 확인) |
+| 병렬 | [4] PARALLEL REVIEW(3 에이전트), [6] EXECUTION(독립 PR 동시 dispatch + ralph loop) |
 
-### 하네스 엔지니어링
-
-에이전트 실행을 안전하게 제약하는 하네스가 `docs/harness/`에 정의되어 있다.
-
-공식 실행 경로:
-```
-PRD → admission → spec-lock → ralplan → sprint/PR 분해 → ralph 실행 → 리뷰 점수 게이트
-```
-
-상세는 [`docs/harness/CHARTER.md`](docs/harness/CHARTER.md)를 본다.
+상세는 [`docs/process/CHARTER.md`](docs/process/CHARTER.md) Execution Contract를 본다.
 
 ### CodeRabbit
 
@@ -239,9 +231,9 @@ Vercel Serverless Function (api/)
 | 문서 | 보는 이유 |
 |------|----------|
 | [`AGENTS.md`](AGENTS.md) | 에이전트 진입점, 라우팅, 검증 명령 |
-| [`docs/harness/CHARTER.md`](docs/harness/CHARTER.md) | 책임 경계, 실행 경로, 중단 규칙, 금지 조항 |
-| [`WORKFLOW.md`](WORKFLOW.md) | Symphony 런타임 설정, Linear 라우팅, 배포 규칙 |
-| [`README.md`](README.md) | 저장소 운영, Linear 설정, Symphony 실행 방법 |
+| [`docs/process/CHARTER.md`](docs/process/CHARTER.md) | 책임 경계, 실행 경로, 중단 규칙, Non-Goals |
+| [`docs/process/SEQUENCE.md`](docs/process/SEQUENCE.md) | 6단계 시퀀스 본문 |
+| [`README.md`](README.md) | 저장소 운영, 서비스 리스트, 프로세스 진입 |
 
 ---
 
@@ -250,3 +242,4 @@ Vercel Serverless Function (api/)
 | 날짜 | PR | 변경 내용 |
 |------|-----|----------|
 | 2026-03-31 | PR 0-3 | 초기 아키텍처 문서 작성 |
+| 2026-05-03 | M-3 | High-Level Structure 갱신 (docs/harness/→docs/process/, WORKFLOW.md 행 제거, CodeStudy/Seoul-Youth-Rent-Checker 추가). Orchestration Layer를 Symphony에서 Claude Code 네이티브 6단계 시퀀스로 교체. Cross-References docs/process/로 redirect |
