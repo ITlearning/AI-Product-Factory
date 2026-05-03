@@ -124,37 +124,6 @@ evidence trail의 목적은 **검증의 투명성**이다.
 | PR handoff | evidence record를 PR 본문/코멘트에 포함 |
 | Sprint 완료 | sprint 내 evidence를 요약하여 sprint summary 생성 |
 | 계획 완료 | 전체 evidence를 요약하여 plan summary 생성 |
-| spec-lock 해제 | 해제 시 기록(사유, 진행 상태, 변경 항목)을 evidence로 저장 |
-
----
-
-## Spec-Lock 해제 Evidence Record
-
-spec-lock 해제 시 다음 구조로 기록한다 (spec-lock.md 해제 시 기록 참조).
-
-```markdown
-## Evidence: Spec-Lock 해제
-
-- **날짜**: [YYYY-MM-DD]
-- **대상 PRD**: [PRD 제목]
-
-### 해제 사유
-[해제를 결정한 구체적 사유]
-
-### 해제 시점 진행 상태
-
-| PR | 상태 | 재검증 필요 |
-|----|------|------------|
-| [PR-1] | [완료/진행중/미착수] | [Y/N] |
-| [PR-2] | [완료/진행중/미착수] | [Y/N] |
-
-### 변경된 항목
-- [변경 항목 1]: [기존 → 변경]
-- [변경 항목 2]: [기존 → 변경]
-
-### 재검증 필요 PR 목록
-- [변경 항목에 의존하는 완료 PR 목록, 없으면 "없음"]
-```
 
 ---
 

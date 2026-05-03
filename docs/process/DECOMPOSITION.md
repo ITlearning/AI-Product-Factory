@@ -1,13 +1,13 @@
 # Sprint/PR 분해 규칙
 
-이 문서는 ralplan 출력을 sprint와 PR 단위로 분해할 때의 수치 기준과 세부 규칙을 정의한다.
+이 문서는 PARALLEL REVIEW를 통과한 PRD를 sprint와 PR 단위로 분해할 때의 수치 기준과 세부 규칙을 정의한다.
 PLANS.md의 Sprint/PR 분해 원칙을 구체화하며, 원칙과 충돌 시 PLANS.md가 우선한다.
 
 ---
 
 ## Purpose
 
-ralplan이 생성한 계획을 실행 가능한 sprint/PR 단위로 분해하는 기준을 제공한다.
+PRD에서 도출한 계획을 실행 가능한 sprint/PR 단위로 분해하는 기준을 제공한다.
 분해의 목표는 **리뷰 가능성, 롤백 가능성, 검증 가능성**을 보장하는 것이다.
 
 ---
@@ -15,13 +15,13 @@ ralplan이 생성한 계획을 실행 가능한 sprint/PR 단위로 분해하는
 ## Execution Path 상의 위치
 
 ```
-PRD → admission → spec-lock → ralplan → [sprint/PR 분해] → ralph 실행 → 리뷰 점수 게이트
+[1] INTAKE → [2] DISCOVERY → [3] PRD DRAFT → [4] PARALLEL REVIEW → [[5] DECOMPOSITION] → [6] EXECUTION
 ```
 
-- **입력**: ralplan 출력 (sprint 목록, PR 목록, 의존성 그래프)
-- **소유자**: 에이전트 — CHARTER.md Execution Contract 참조
-- **출력**: 실행 가능한 sprint/PR 단위 계획
-- **다음 단계**: ralph 실행 (구현→검증→리뷰→수정→재검증 루프)
+- **입력**: PARALLEL REVIEW 통과한 PRD (Goal / Success Criteria / Target Path / Allowed Touch Surface 등 11 필드)
+- **소유자**: 에이전트 — `CHARTER.md` Execution Contract 참조 (M-2에서 추가 예정)
+- **출력**: 실행 가능한 sprint/PR 단위 계획 (의존성 DAG 포함)
+- **다음 단계**: [6] EXECUTION (병렬 dispatch + ralph loop)
 
 ---
 
@@ -33,7 +33,7 @@ PRD → admission → spec-lock → ralplan → [sprint/PR 분해] → ralph 실
 |------|------|------|---------|
 | 변경 파일 수 | 1-5개 | 10개 | 분할 필수 |
 | 변경 라인 수 (추가+삭제) | 50-200줄 | 400줄 | 분할 필수 |
-| 변경 서비스 수 | 1개 | 1개 | cross-cutting 명시 시에만 예외 (admission.md 참조, ARCHITECTURE.md Invariant #6) |
+| 변경 서비스 수 | 1개 | 1개 | cross-cutting 명시 시에만 예외 (PRD_TEMPLATE.md의 Allowed Touch Surface / Disallowed Areas 참조, ARCHITECTURE.md Invariant #6) |
 
 ### 기준 적용 규칙
 
@@ -78,7 +78,7 @@ PRD → admission → spec-lock → ralplan → [sprint/PR 분해] → ralph 실
 
 ### 의존성 표현
 
-PR 간 의존성은 ralplan 출력에 명시한다.
+PR 간 의존성은 분해 결과의 DAG에 명시한다.
 
 ```
 PR-1 → PR-2 → PR-3  (순차)
@@ -138,7 +138,7 @@ PR-6 → PR-7          (PR-6 완료 후 PR-7 시작)
 | 검증 방법 | 모든 PR에 검증 방법이 명시됨 |
 | 의존성 무순환 | 의존성 그래프에 순환 없음 |
 | Sprint 목표 | 각 sprint에 명확한 단일 목표 있음 |
-| 성공 기준 커버리지 | spec-lock된 모든 성공 기준이 최소 1개 PR에 매핑됨 |
+| 성공 기준 커버리지 | PRD의 모든 성공 기준이 최소 1개 PR에 매핑됨 |
 
 검증 항목 중 하나라도 미충족이면 분해를 수정한다. 수정 불가한 경우 인간에게 보고한다.
 

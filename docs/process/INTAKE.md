@@ -59,7 +59,7 @@ DISCOVERY는 실수요·문제 정의를 거쳐 1쪽 brief를 산출하므로, 1
 | "CodeStudy에 트랙별 추천 알고리즘 붙이고 싶음" | 30자 | 0개 | 1줄 → DISCOVERY |
 | "Goal: 트랙별 추천. Non-Goals: 추천 모델 자체 학습. Success: D1 retention +5pp. Constraints: zero deps." | 90자 | 4개 | 충돌 → Tabber 확인 |
 | "서울 청년월세지원 자격 체커 v0.2. 작년 v0.1에서 자격 판정 정확도 78%였는데 정책 개정 반영 누락됨. 5월 공고 release 일정에 맞춰..." (계속) | 600자 | 1개 | 충돌 → Tabber 확인 |
-| 9필드 채워진 1쪽 brief (Goal, Non-Goals, Success Criteria, Target Path, Constraints, Dependencies, Open Questions, Owner 모두 포함) | 800자 | 8개 | brief → PRD DRAFT |
+| 11필드 채워진 1쪽 brief (Goal, Non-Goals, Success Criteria, Target Path, Allowed Touch Surface, Disallowed Areas, Constraints, Dependencies, Acceptance Evidence, Open Questions, Owner 모두 포함) | 800자 | 11개 | brief → PRD DRAFT |
 
 ## 분기 후 행동
 
@@ -79,4 +79,4 @@ DISCOVERY는 실수요·문제 정의를 거쳐 1쪽 brief를 산출하므로, 1
 ## 관련 문서
 
 - [SEQUENCE.md](SEQUENCE.md) — 6단계 흐름 본문 (INTAKE 다음 단계 [2]~[6] 참고)
-- [PRD_TEMPLATE.md](PRD_TEMPLATE.md) — [3] 단계에서 채우는 PRD 9필드 양식 (자동 분기 키워드 신호의 출처)
+- [PRD_TEMPLATE.md](PRD_TEMPLATE.md) — [3] 단계에서 채우는 PRD 11필드 양식 (자동 분기 키워드 신호의 출처)

@@ -19,7 +19,7 @@
      실수요·문제 정의             산출: 1쪽 brief
      ↓ 승인 게이트
 [3] PRD DRAFT              skill: /brainstorming (한 번에 한 질문)
-     9필드 양식                  산출: docs/plans/<date>-<topic>-prd.md
+     11필드 양식                 산출: docs/plans/<date>-<topic>-prd.md
      ↓ 승인 게이트
 [4] PARALLEL REVIEW        3 에이전트 동시:
      기획 검토                   /plan-ceo-review (스코프·10-star)
@@ -57,12 +57,12 @@
 | 승인 게이트 | "이 brief로 [3] PRD DRAFT 갈까?" → OK / 수정 / 중단 |
 | 산출물 저장 위치 | `docs/plans/<date>-<topic>-brief.md` |
 
-### [3] PRD DRAFT — 9필드 양식 작성
+### [3] PRD DRAFT — 11필드 양식 작성
 
 | 항목 | 내용 |
 |------|------|
 | 입력 | 1쪽 brief (DISCOVERY 통과분 또는 INTAKE 직진분) |
-| 출력 | 9필드 PRD 1장 (Goal / Non-Goals / Success Criteria / Target Path / Allowed Touch Surface / Disallowed Areas / Constraints / Dependencies / Acceptance Evidence / Open Questions / Owner) |
+| 출력 | 11필드 PRD 1장 (Goal / Non-Goals / Success Criteria / Target Path / Allowed Touch Surface / Disallowed Areas / Constraints / Dependencies / Acceptance Evidence / Open Questions / Owner) |
 | 사용 스킬 | `/brainstorming` (한 번에 한 질문 룰) |
 | 승인 게이트 | "이 PRD로 [4] PARALLEL REVIEW 갈까?" → OK / 수정 / 중단 |
 | 산출물 저장 위치 | `docs/plans/<date>-<topic>-prd.md` |
@@ -105,7 +105,8 @@ PRD 양식 본문은 [PRD_TEMPLATE.md](PRD_TEMPLATE.md) 참고.
 
 ## 4. 단계 사이 흐름 규칙
 
-- **단계마다 Tabber 승인 필수.** [1]→[2], [2]→[3], [3]→[4], [4]→[5], [5]→[6] 모든 전이에서 승인 게이트 통과해야 다음 단계 진입.
+- **단계마다 Tabber 승인 필수.** [2]→[3], [3]→[4], [4]→[5], [5]→[6] 모든 전이에서 승인 게이트 통과해야 다음 단계 진입.
+- **예외 — [1] INTAKE:** [1]은 자동 분기를 기본으로 한다. 분기 신호가 명확하면 [1]→[2]로 자동 진행하며, 분기 신호가 상충할 때만 Tabber에게 1회 확인한다 ([INTAKE.md](INTAKE.md) 참고). 즉 INTAKE는 "확인 게이트"이지 "승인 게이트"가 아니다.
 - **자동 진행 안 함.** 이전 단계 산출물이 완성되어도 Claude Code는 다음 단계로 자동 점프하지 않는다. 반드시 Tabber에게 확인 질문을 던지고 답을 받는다.
 - **승인 게이트 패턴.** 표준 질문 형태: "이 결과로 [다음 단계 이름] 갈까?" Tabber 답은 셋 중 하나.
   - **OK** → 다음 단계 시작
@@ -131,7 +132,7 @@ PRD 양식 본문은 [PRD_TEMPLATE.md](PRD_TEMPLATE.md) 참고.
 ## 6. 관련 문서
 
 - [INTAKE.md](INTAKE.md) — 1줄 아이디어 vs 1쪽 brief 자동 분기 룰
-- [PRD_TEMPLATE.md](PRD_TEMPLATE.md) — PRD 9필드 양식 + 작성 예시
+- [PRD_TEMPLATE.md](PRD_TEMPLATE.md) — PRD 11필드 양식 + 작성 예시
 - [DECOMPOSITION.md](DECOMPOSITION.md) — Sprint/PR 분해 수치 룰 (PR ≤10파일/400줄, Sprint ≤8PR/5일)
 - [EXECUTION.md](EXECUTION.md) — 병렬 dispatch + ralph loop 구조
 - [CHARTER.md](CHARTER.md) — 책임 경계, 멀티에이전트 원칙, gstack 스킬 라우팅 (M-2에서 추가될 예정)

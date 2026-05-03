@@ -16,7 +16,7 @@
 
 분해 결과가 PR-A, PR-B, PR-C처럼 **같은 의존성 레벨**의 PR이라면, 하나의 어시스턴트 메시지 안에 `Agent` 도구 호출을 N개 포함시켜 동시에 띄운다. 순차 dispatch는 금지다 — 그러면 그냥 단일 에이전트와 같다.
 
-```
+```text
 message:
   Agent(prompt="PR-A 구현 + ralph loop", isolation="worktree")
   Agent(prompt="PR-B 구현 + ralph loop", isolation="worktree")
@@ -51,7 +51,7 @@ PR 간 의존성은 [5] DECOMPOSITION에서 DAG로 명시된다 ([DECOMPOSITION.
 
 각 PR을 받은 Agent는 다음 미니 루프를 자율적으로 돌린다. 멈추지 않는 흐름이며 ESCAPE 조건에 도달할 때까지 반복한다.
 
-```
+```text
 1. 구현       → 2. lint/test  → 3. 검증
 ↑                                  ↓
 5. 수정       ← 4. 실패 시 분석 ←
@@ -105,7 +105,7 @@ PR 간 의존성은 [5] DECOMPOSITION에서 DAG로 명시된다 ([DECOMPOSITION.
 
 각 PR이 ESCAPE 조건 (a) PASS로 빠져나갈 때, 다음 경로에 검증 로그를 남긴다.
 
-```
+```text
 docs/evidence/<PR-id>/
   EVIDENCE.md           # 요약 (PASS 항목, 명령, 결과)
   lint.log              # 원본 로그 (선택)
