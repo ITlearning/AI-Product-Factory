@@ -1,244 +1,93 @@
 # AI-Product-Factory
 
-This repository is a collection of small product and service experiments. The recommended Symphony setup is one Linear project for the whole repository, with service routing handled by labels and issue wording instead of one Linear project per app.
+작은 AI 제품·서비스 실험들을 모아둔 모노레포다. 각 서비스는 독립 디렉터리에 위치하며, 공통 운영 규칙은 [`docs/process/`](docs/process/)에 정의되어 있다.
 
-Repository guidance files:
+이 저장소는 [Claude Code](https://claude.com/claude-code) 기반 6단계 프로세스 시퀀스로 운영된다.
 
-- [`AGENTS.md`](AGENTS.md): repo-level Codex guidance and short map
-- [`WORKFLOW.md`](WORKFLOW.md): Symphony runtime config plus orchestration prompt
+---
 
-## Recommended Linear Shape
+## Services
 
-Use one Linear project, for example `AI Product Factory`, and keep one Symphony runner attached to that project slug.
+| 경로 | 설명 | 상태 |
+|------|------|------|
+| [`IBAD/app`](IBAD/app) | 한국어 거절 메시지 웹 앱 | active |
+| [`Translate-Developer`](Translate-Developer) | 개발자 언어 → 일반 한국어 번역 웹 앱 | active |
+| [`Spending-Personality`](Spending-Personality) | 소비 성격 진단 웹 앱 | active |
+| [`Date-Soragodong`](Date-Soragodong) | 커플 데이트 코스 뽑기 웹 앱 | active |
+| [`CodeStudy/iOS`](CodeStudy/iOS) | 코드 학습 iOS 앱 (CodeStudy) | active (1.2.1 출시) |
+| [`Seoul-Youth-Rent-Checker`](Seoul-Youth-Rent-Checker) | 서울 청년월세지원 자격 체커 v0.1 | active |
+| `UGGK` | 초기 단계 (디렉토리 미생성) | spec-first |
 
-Recommended workflow states:
+각 서비스는 독립 `package.json`/빌드 파이프라인을 가지며, 다른 서비스의 코드를 import하지 않는다 (cross-cutting 명시 시에만 예외).
 
-- `Todo`
-- `In Progress`
-- `Human Review`
-- `Merging`
-- `Rework`
-- `Done`
+---
 
-Current Symphony dispatch states in the checked-in workflow draft:
+## Process (작업 시작 방법)
 
-- `Todo`
-- `In Progress`
-- `Rework`
-- `Human Review`
-- `Merging`
+새 PRD나 기능을 시작할 때는 [`docs/process/SEQUENCE.md`](docs/process/SEQUENCE.md)의 6단계를 따른다.
 
-Recommended service labels:
-
-- `service:ibad`
-- `service:translate-developer`
-- `service:uggk`
-- `service:docs`
-- `service:new-service`
-
-Recommended issue-writing rules:
-
-- Every issue should identify exactly one primary target service.
-- New service issues should name the exact directory to create.
-- Cross-cutting issues should say that they are allowed to touch multiple services.
-- Include acceptance criteria and validation notes when the task is not obvious from the title.
-
-## Why One Linear Project
-
-The current public Symphony workflow shape uses a single `tracker.project_slug` per `WORKFLOW.md`. That makes one shared Linear project the simplest operating model for this monorepo.
-
-Use labels to route work inside the single project:
-
-- `service:ibad` for [`IBAD/app`](IBAD/app)
-- `service:translate-developer` for [`Translate-Developer`](Translate-Developer)
-- `service:uggk` for [`UGGK`](UGGK)
-- `service:docs` for [`docs`](docs)
-
-If you later want independent queues, you can run multiple Symphony processes with separate workflow files and separate Linear project slugs.
-
-## Required Environment Variables
-
-Before starting Symphony, set:
-
-```bash
-export LINEAR_API_KEY="your-linear-token"
-export SOURCE_REPO_URL="git@github.com:ITlearning/AI-Product-Factory.git"
-export SYMPHONY_WORKSPACE_ROOT="$HOME/code/ai-product-factory-workspaces"
+```text
+[1] INTAKE → [2] DISCOVERY → [3] PRD DRAFT → [4] PARALLEL REVIEW → [5] DECOMPOSITION → [6] EXECUTION
 ```
 
-Notes:
+- 입구는 1줄 아이디어 또는 1쪽 brief 두 가지를 모두 받는다 ([`INTAKE.md`](docs/process/INTAKE.md))
+- 단계마다 Tabber 승인 ([1] INTAKE는 자동 분기 + 신호 충돌 시 1회 확인)
+- [4] PARALLEL REVIEW에서 3 에이전트 동시 리뷰 (CEO / Eng / Design)
+- [6] EXECUTION에서 독립 PR을 멀티 에이전트 병렬로 dispatch + 각 PR 안에서 ralph loop
 
-- Use an SSH clone URL or a credential-helper-backed remote.
-- Do not embed a GitHub personal access token in `WORKFLOW.md`.
-- The root workflow file in this repo is [`WORKFLOW.md`](WORKFLOW.md).
-- For unattended push/PR flows, the repository remote should not be a token-in-URL HTTPS remote.
+상세는 [`docs/process/CHARTER.md`](docs/process/CHARTER.md) Execution Contract를 본다. 다른 프로젝트 시드용으로 [`docs/process/COMMON.md`](docs/process/COMMON.md)를 가져갈 수 있다.
 
-## Installing Symphony
+---
 
-The easiest starting point is the OpenAI reference implementation:
+## Verification
 
-```bash
-git clone https://github.com/openai/symphony.git "$HOME/code/symphony"
-cd "$HOME/code/symphony/elixir"
-mise trust
-mise install
-mise exec -- mix setup
-mise exec -- mix build
-```
+서비스 변경 시 검증 명령:
 
-The checked-in [`WORKFLOW.md`](WORKFLOW.md) already points at the current Linear project slug:
+| 서비스 | 명령 |
+|--------|------|
+| [`IBAD/app`](IBAD/app) | `cd IBAD/app && npm run verify` |
+| [`Translate-Developer`](Translate-Developer) | `cd Translate-Developer && npm run verify` |
+| [`Spending-Personality`](Spending-Personality) | `cd Spending-Personality && npm run verify` |
+| [`Date-Soragodong`](Date-Soragodong) | `cd Date-Soragodong && npm run verify` |
+| [`CodeStudy/iOS`](CodeStudy/iOS) | Xcode build (서비스 README 참고) |
+| [`Seoul-Youth-Rent-Checker`](Seoul-Youth-Rent-Checker) | `cd Seoul-Youth-Rent-Checker && npm run verify` |
+| docs/planning 파일만 변경 | [`docs/process/DOC_LINT.md`](docs/process/DOC_LINT.md) 수동 체크리스트 |
 
-- `ai-product-factory-6ef28b56b22d`
+`main`에 직접 커밋하지 않는다. 브랜치에서 작업 후 PR로 handoff 한다.
 
-## Running Symphony For This Repo
+---
 
-After setting the environment variables:
+## Documentation
 
-```bash
-cd /path/to/symphony/elixir
-./bin/symphony /Users/tabber/AI-Product-Factory/WORKFLOW.md --port 4000 \
-  --i-understand-that-this-will-be-running-without-the-usual-guardrails
-```
+| 영역 | 문서 |
+|------|------|
+| 에이전트 진입점 / 라우팅 | [`AGENTS.md`](AGENTS.md) |
+| 기술 아키텍처 | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| 프로세스 헌장 + 실행 경로 | [`docs/process/CHARTER.md`](docs/process/CHARTER.md) |
+| 6단계 시퀀스 본문 | [`docs/process/SEQUENCE.md`](docs/process/SEQUENCE.md) |
+| PRD 11필드 양식 | [`docs/process/PRD_TEMPLATE.md`](docs/process/PRD_TEMPLATE.md) |
+| 계획 관리 규칙 | [`docs/PLANS.md`](docs/PLANS.md) |
+| 리뷰 점수 참고값 | [`docs/QUALITY_SCORE.md`](docs/QUALITY_SCORE.md) |
+| 신뢰성 기준 | [`docs/RELIABILITY.md`](docs/RELIABILITY.md) |
+| 보안 기준 | [`docs/SECURITY.md`](docs/SECURITY.md) |
+| 제품 감각 가이드 | [`docs/PRODUCT_SENSE.md`](docs/PRODUCT_SENSE.md) |
 
-On the current machine, the existing Symphony checkout is:
-
-```bash
-cd /Users/tabber/Desktop/github/symphony/elixir
-```
-
-This starts the Symphony service against the single Linear project and serves the optional dashboard on port `4000`.
-
-The current Symphony Elixir reference implementation requires this explicit acknowledgement flag because it is a low-key engineering preview intended for evaluation only.
-
-The checked-in workflow uses `approval_policy: never` for Codex. In this headless Symphony setup, `on-request` causes agent runs to fail whenever Codex asks for approval for commands like worktree creation, push, or PR creation.
-
-The checked-in workflow also overrides the default turn sandbox to keep `workspaceWrite` while enabling `networkAccess: true`. This is required for unattended `gh pr view` / `gh pr create` calls inside Symphony workers.
-
-Because the current Symphony implementation accepts the turn sandbox policy map literally, the checked-in `writableRoots` value is currently pinned to this machine's workspace root:
-
-- `/Users/tabber/code/ai-product-factory-workspaces`
-
-If the Symphony workspace root moves to a different path on another machine, update both:
-
-- `workspace.root`
-- `codex.turn_sandbox_policy.writableRoots`
-
-The checked-in workflow will also dispatch `Human Review` and `Merging` issues. Those states should be used only if your PR/review and merge process is already wired well enough for unattended handling.
-
-The current checked-in concurrency is `10` agents. This is still a fairly aggressive setting and assumes your Linear routing, local machine capacity, and Git/PR workflow are stable enough to handle multiple concurrent issue runs.
-
-## GitHub Delivery Flow
-
-The checked-in workflow now assumes `B`-level delivery for file-changing issues:
-
-1. make the change on an issue-specific branch
-2. run verification
-3. commit the work
-4. push the branch to GitHub
-5. create or update a pull request
-6. post a Linear comment with branch, commit, PR link, and verification status
-
-Important prerequisites:
-
-- `origin` should use SSH or another non-embedded credential flow
-- the runtime must have Git push permission
-- the runtime must have GitHub PR creation capability, such as `gh` auth or an equivalent GitHub tool
-
-If PR creation tooling is missing, the workflow should still push the branch and then report the exact manual follow-up needed.
-
-This PR-oriented flow is for file-changing code work. For planning, ideation, brainstorming, or recommendation-heavy tasks, the default handoff is a detailed Linear comment, not a PR.
-
-State intent:
-
-- `Human Review` is the default handoff for non-code work and for code work that still needs human feedback.
-- `Merging` is for code-changing work that should land through GitHub.
-- If an issue reaches `Merging` without an open PR, the agent should open or update the PR first instead of idling.
-- Planning or brainstorming issues should not be moved to `Merging` unless a PR-based handoff was explicitly requested.
-
-PR language rule:
-
-- PR 제목과 본문은 기본적으로 한국어로 작성합니다.
-- 이슈에서 영어를 명시적으로 요구한 경우에만 영어로 작성합니다.
-
-## How Routing Works In Practice
-
-Symphony reads the issue from one Linear project, then the prompt in [`WORKFLOW.md`](WORKFLOW.md) routes the work to the right subtree.
-
-Examples:
-
-- `[IBAD] tighten unsupported-scope messaging` + `service:ibad`
-- `[Translate-Developer] add source badge copy` + `service:translate-developer`
-- `[UGGK] write MVP design` + `service:uggk`
-- `[Docs] document deployment setup` + `service:docs`
-
-For a brand-new app, create an issue like:
-
-- title: `[New Service] create landing-page-generator`
-- label: `service:new-service`
-- body: include `Target directory: landing-page-generator`
-
-Without an explicit target directory, the workflow should stop instead of guessing.
-
-## Comment-Driven Rework Loop
-
-The workflow is set up so `Human Review` and `Rework` are not passive parking states.
-
-Recommended pattern:
-
-1. Agent finishes a first pass and leaves the issue in `Human Review`.
-2. A human leaves one or more Linear comments with feedback or follow-up direction.
-3. Move the issue to `Rework` or back to `In Progress`.
-4. Symphony should read the latest human comments, update the work, and post a fresh summary comment.
-
-Expected comment behavior:
-
-- Human-authored comments are treated as new instructions, even if the issue title did not change.
-- Agent-authored or bot-authored status comments should not override newer human feedback.
-- Comments should be readable on their own. The agent should not force the human to open a repo file just to understand the result.
-- If a doc or plan file was written, the important contents should still be summarized inline in the comment.
-- After code changes, the agent should comment with:
-  - why the change was made
-  - exact paths touched
-  - what changed in plain language
-  - expected user-visible impact
-  - verification run and result
-  - how to check the change
-  - branch name and PR link when available
-- After non-code changes, the agent should comment with:
-  - the actual recommendation, idea, or conclusion
-  - key tradeoffs or alternatives considered
-  - any open question or decision needed next
-  - updated docs/plans/artifacts as supplemental references
-
-Recommended review posture:
-
-- For planning work, respond to the recommendation and tradeoffs in the Linear comment thread.
-- For code work, use the Linear comment plus the PR together: the PR is the diff surface, and the Linear comment is the human-readable summary and test guidance.
-
-## Service-Specific Verification
-
-Current verification commands:
-
-- [`IBAD/app`](IBAD/app): `cd IBAD/app && npm run verify`
-- [`Translate-Developer`](Translate-Developer): `cd Translate-Developer && npm run verify`
-- [`UGGK`](UGGK): currently docs/spec-first; no standard app verification command yet
-
-If a new service is added, update both [`WORKFLOW.md`](WORKFLOW.md) and this README so the routing and validation rules stay explicit.
+---
 
 ## CodeRabbit
 
-This repository is configured for CodeRabbit with a root [`.coderabbit.yaml`](.coderabbit.yaml).
+PR 자동 리뷰가 [`.coderabbit.yaml`](.coderabbit.yaml)로 설정되어 있다.
 
-Current intent:
+- 모든 PR / 후속 커밋 자동 리뷰
+- 한국어로 응답
+- 생성된 `dist/**` 출력은 리뷰 대상에서 제외
+- 초기 리뷰 프로필은 `chill`
 
-- review every PR automatically
-- review follow-up commits automatically
-- respond in Korean
-- ignore generated `dist/**` output during review
-- keep the initial review profile relatively light (`chill`)
+---
 
-Setup notes:
+## Conventions
 
-1. Install the CodeRabbit GitHub App on this repository or organization.
-2. Leave automatic PR review enabled.
-3. The repository-local [`.coderabbit.yaml`](.coderabbit.yaml) will define the default behavior for this repo.
+- PR 제목/본문, 커밋 메시지는 기본적으로 **한국어**로 작성한다 (이슈에서 영어를 명시적으로 요구한 경우에만 영어).
+- 토큰 / API 키 / 자격증명을 리포에 저장하지 않는다.
+- `origin`은 SSH 또는 credential helper 기반 remote를 사용한다.
+- 새 서비스를 추가하면 이 README와 [`AGENTS.md`](AGENTS.md) Source of Truth 표를 같이 갱신한다.

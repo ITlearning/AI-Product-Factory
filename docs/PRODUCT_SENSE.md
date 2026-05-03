@@ -111,7 +111,7 @@
 |--------|----------|
 | 기술 아키텍처 결정 | [`ARCHITECTURE.md`](../ARCHITECTURE.md) |
 | 리뷰 점수 기준 | [`docs/QUALITY_SCORE.md`](QUALITY_SCORE.md) |
-| 실행 경로/중단 규칙 | [`docs/harness/CHARTER.md`](harness/CHARTER.md) |
+| 실행 경로/중단 규칙 | [`docs/process/CHARTER.md`](process/CHARTER.md) |
 | 보안 기준 | [`docs/SECURITY.md`](SECURITY.md) |
 | 신뢰성 기준 | [`docs/RELIABILITY.md`](RELIABILITY.md) |
 
@@ -121,9 +121,9 @@
 
 | 문서 | 관계 |
 |------|------|
-| [`docs/harness/CHARTER.md`](harness/CHARTER.md) | Ownership (인간 소유: 목표/비목표/성공 기준), Stop Rules |
+| [`docs/process/CHARTER.md`](process/CHARTER.md) | Ownership (인간 소유: 목표/비목표/성공 기준), Stop Rules |
 | [`AGENTS.md`](../AGENTS.md) | Ownership Boundary 요약 |
-| [`docs/harness/admission.md`](harness/admission.md) | PRD 필수 필드, 자동 반려 조건 |
+| [`docs/process/PRD_TEMPLATE.md`](process/PRD_TEMPLATE.md) | PRD 11필드 양식 (admission 필드 흡수) |
 
 ---
 

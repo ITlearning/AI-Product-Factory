@@ -158,7 +158,7 @@
 | 문서 | 관계 |
 |------|------|
 | [`docs/RELIABILITY.md`](RELIABILITY.md) | 오류 처리 (정보 노출 금지), 배포 안전성 |
-| [`docs/harness/CHARTER.md`](harness/CHARTER.md) | Prohibited Actions (blocker 은폐 금지), Stop Rules |
+| [`docs/process/CHARTER.md`](process/CHARTER.md) | Stop Rules (blocker 은폐 금지 등), Non-Goals |
 | [`ARCHITECTURE.md`](../ARCHITECTURE.md) | Invariants (비밀 금지), 배포 모델, Data Flow (AI API 호출 구조) |
 | [`AGENTS.md`](../AGENTS.md) | Delivery 규칙 |
 | [`docs/QUALITY_SCORE.md`](QUALITY_SCORE.md) | 보안 리뷰 역할 후보 (향후 추가 시 이 문서가 기준) |
