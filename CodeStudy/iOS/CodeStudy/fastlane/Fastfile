@@ -1,0 +1,82 @@
+default_platform(:ios)
+
+# 프로젝트 위치는 fastlane 디렉터리의 부모.
+XCODEPROJ = "CodeStudy.xcodeproj"
+SCHEME    = "CodeStudy"
+
+platform :ios do
+
+  before_all do
+    # .env / .env.default 자동 로드는 fastlane이 처리.
+    # API key 환경변수가 비었으면 lane 진입 전에 즉시 실패시키는 게 디버깅에 유리.
+    next if ENV["FASTLANE_SKIP_ENV_CHECK"] == "true"
+    %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].each do |k|
+      UI.user_error!("환경변수 #{k} 가 설정되지 않았습니다. fastlane/.env.default 참고해서 fastlane/.env 를 만들어주세요.") if ENV[k].to_s.empty?
+    end
+  end
+
+  desc "TestFlight에 새 베타 빌드 업로드 (build number 자동 +1)"
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: ENV["ASC_KEY_PATH"],
+      duration: 1200,
+      in_house: false,
+    )
+
+    # 빌드 번호 자동 증가 (App Store Connect의 마지막 빌드 번호 +1).
+    # 로컬 pbxproj 충돌을 피하려고 latest 기준으로 가져온 뒤 set.
+    latest = latest_testflight_build_number(
+      app_identifier: "com.itlearning.codestudy",
+      api_key: api_key,
+      initial_build_number: 0,
+    )
+    increment_build_number(
+      xcodeproj: XCODEPROJ,
+      build_number: (latest + 1).to_s,
+    )
+
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "build",
+      output_name: "CodeStudy.ipa",
+      include_symbols: true,
+      include_bitcode: false,
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      changelog: changelog_from_git_commits(
+        commits_count: 10,
+        pretty: "- %s",
+        merge_commit_filtering: "exclude_merges",
+      ),
+    )
+
+    UI.success("✅ TestFlight 업로드 완료. App Store Connect에서 처리 상태 확인 후 테스터에 배포하세요.")
+  end
+
+  desc "로컬에서 release 빌드 검증만 (업로드 X)"
+  lane :build_only do
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "build",
+      output_name: "CodeStudy.ipa",
+      skip_package_ipa: false,
+    )
+  end
+
+  error do |lane, exception|
+    UI.error("Lane #{lane} 실패: #{exception.message}")
+  end
+end

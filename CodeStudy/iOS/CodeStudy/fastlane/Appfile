@@ -1,0 +1,5 @@
+app_identifier("com.itlearning.codestudy")
+team_id("DBH83BGY7G")
+
+# App Store Connect API key는 .env 파일에서 ASC_* 환경변수로 주입한다
+# (Fastfile이 app_store_connect_api_key 액션으로 읽음).

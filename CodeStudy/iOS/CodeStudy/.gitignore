@@ -1,0 +1,21 @@
+# Fastlane secrets — 절대 커밋 금지
+fastlane/.env
+fastlane/.env.local
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/screenshots.html
+fastlane/test_output
+
+# Build artifacts
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Bundler
+vendor/bundle/
+.bundle/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
