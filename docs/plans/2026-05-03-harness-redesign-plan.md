@@ -231,7 +231,7 @@ git checkout -b chore/harness-redesign-m2-charter-meta
 2. Ownership (인간 = PRD/승인, 에이전트 = 시퀀스 실행)
 3. Multi-Agent Execution Principle (기존 본문 거의 유지)
 4. Pre-Task Review Condition Protocol (기존 본문 거의 유지)
-5. Execution Contract (새 6단계 시퀀스 표, [SEQUENCE.md](SEQUENCE.md) 본문 링크)
+5. Execution Contract (새 6단계 시퀀스 표, [`SEQUENCE.md`](../process/SEQUENCE.md) 본문 링크)
 6. gstack 스킬 라우팅 표 (각 단계 → 스킬 매핑)
 7. Stop Rules (단계마다 승인 흐름과 정합)
 8. Review Gates (병렬 리뷰 [4]단계 기준)

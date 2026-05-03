@@ -13,6 +13,8 @@
 | [`Translate-Developer`](Translate-Developer) | 개발자 언어 → 일반 한국어 번역 웹 앱 | active |
 | [`Spending-Personality`](Spending-Personality) | 소비 성격 진단 웹 앱 | active |
 | [`Date-Soragodong`](Date-Soragodong) | 커플 데이트 코스 뽑기 웹 앱 | active |
+| [`CodeStudy/iOS`](CodeStudy/iOS) | 코드 학습 iOS 앱 (CodeStudy) | active (1.2.1 출시) |
+| [`Seoul-Youth-Rent-Checker`](Seoul-Youth-Rent-Checker) | 서울 청년월세지원 자격 체커 v0.1 | active |
 | `UGGK` | 초기 단계; 디렉토리 미생성, 명시적 구현 요청이 없으면 docs/spec-first | spec-first |
 | [`docs`](docs) | 계획, 설계 노트, 프로세스 문서 | active |
 
@@ -80,16 +82,32 @@
 
 ## Routing
 
+라우팅은 두 층이다. (1) 새 작업의 입구 라우팅, (2) 기존 코드 변경의 서비스 라우팅.
+
+### (1) 입구 라우팅 (새 PRD 시작 시)
+
+새 작업은 [`docs/process/INTAKE.md`](docs/process/INTAKE.md)의 자동 분기 룰을 따른다.
+
+- **1줄 아이디어** → [2] DISCOVERY (`/office-hours`)
+- **1쪽 brief** → [3] PRD DRAFT (`/brainstorming`)
+- 분기 신호 상충 시 Tabber에게 1회 확인
+
+이후 단계는 [`docs/process/SEQUENCE.md`](docs/process/SEQUENCE.md)를 본다.
+
+### (2) 서비스 라우팅 (기존 코드 변경 시)
+
 태스크당 하나의 primary target path를 기본으로 한다.
 
 - `IBAD/app`
 - `Translate-Developer`
 - `Spending-Personality`
 - `Date-Soragodong`
+- `CodeStudy/iOS`
+- `Seoul-Youth-Rent-Checker`
 - `UGGK`
 - `docs`
 
-태스크가 명시적으로 cross-cutting이라고 하지 않는 한 여러 서비스에 걸쳐 범위를 넓히지 않는다.
+태스크가 명시적으로 cross-cutting이라고 하지 않는 한 여러 서비스에 걸쳐 범위를 넓히지 않는다. cross-cutting 판정 기준은 [`docs/process/PRD_TEMPLATE.md`](docs/process/PRD_TEMPLATE.md)의 Allowed Touch Surface / Disallowed Areas 필드 + [`ARCHITECTURE.md`](ARCHITECTURE.md) Invariant #6을 본다.
 
 ---
 
@@ -101,6 +119,8 @@
 | [`Translate-Developer`](Translate-Developer) | `cd Translate-Developer && npm run verify` |
 | [`Spending-Personality`](Spending-Personality) | `cd Spending-Personality && npm run verify` |
 | [`Date-Soragodong`](Date-Soragodong) | `cd Date-Soragodong && npm run verify` |
+| [`CodeStudy/iOS`](CodeStudy/iOS) | Xcode build (서비스 README 참고) |
+| [`Seoul-Youth-Rent-Checker`](Seoul-Youth-Rent-Checker) | `cd Seoul-Youth-Rent-Checker && npm run verify` |
 | `UGGK` | 표준 검증 명령 없음 (디렉토리 미생성) |
 | docs/planning 파일만 변경 | [`docs/process/DOC_LINT.md`](docs/process/DOC_LINT.md) 수동 체크리스트 수행 |
 
