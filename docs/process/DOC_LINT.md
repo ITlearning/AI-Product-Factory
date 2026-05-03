@@ -50,15 +50,15 @@ doc-lint 검증은 멀티 에이전트 리뷰 이전에 실행한다. 검증 실
 
 | 규칙 | 설명 |
 |------|------|
-| Cross-References 테이블 | 모든 하네스 문서(`docs/harness/*.md`)와 공통 가이드(`docs/*.md`)는 `## Cross-References` 섹션을 가져야 한다 |
+| Cross-References 테이블 | 모든 process 문서(`docs/process/*.md`)와 공통 가이드(`docs/*.md`)는 `## Cross-References` 섹션을 가져야 한다 |
 | 양방향 참조 | 문서 A가 문서 B를 Cross-References에 포함하면, 문서 B도 문서 A를 포함해야 한다 |
-| Source of Truth Map 동기화 | `docs/harness/CHARTER.md`의 Source of Truth Map에 등록된 모든 문서가 실제로 존재해야 한다 |
+| Source of Truth Map 동기화 | `docs/process/CHARTER.md`의 Source of Truth Map에 등록된 모든 문서가 실제로 존재해야 한다 (M-2 머지 후 적용) |
 | AGENTS.md 동기화 | `AGENTS.md`의 Source of Truth 테이블에 등록된 모든 문서가 실제로 존재해야 한다 |
 | 링크 형식 통일 | Cross-References 테이블의 문서 참조는 마크다운 링크 형식을 사용한다. plain text 경로를 허용하지 않는다 |
 
 ### 4. 필수 섹션 검증
 
-하네스 문서(`docs/harness/*.md`)와 공통 가이드(`docs/*.md`)는 다음 섹션을 포함해야 한다.
+process 문서(`docs/process/*.md`)와 공통 가이드(`docs/*.md`)는 다음 섹션을 포함해야 한다.
 
 | 필수 섹션 | 설명 |
 |-----------|------|
@@ -69,15 +69,15 @@ doc-lint 검증은 멀티 에이전트 리뷰 이전에 실행한다. 검증 실
 
 예외:
 - `AGENTS.md`, `ARCHITECTURE.md`는 루트 문서이므로 이 규칙을 적용하지 않는다.
-- `WORKFLOW.md`는 하네스 외부 문서이므로 이 규칙을 적용하지 않는다.
+<!-- WORKFLOW.md 예외 행 제거: M-3에서 WORKFLOW.md 자체가 삭제됨 -->
 - `docs/plans/*.md`는 계획 문서이므로 이 규칙을 적용하지 않는다.
 
 ### 5. Glossary 용어 일관성
 
 | 규칙 | 설명 |
 |------|------|
-| 공식 용어 사용 | `docs/harness/CHARTER.md`의 Glossary에 정의된 용어는 모든 문서에서 동일한 표기로 사용한다 |
-| 용어 변형 금지 | Glossary 정의와 다른 표기(예: "spec lock" vs "spec-lock", "ral-plan" vs "ralplan")를 사용하지 않는다 |
+| 공식 용어 사용 | `docs/process/CHARTER.md`의 Glossary에 정의된 용어는 모든 문서에서 동일한 표기로 사용한다 (M-2 머지 후 적용) |
+| 용어 변형 금지 | Glossary 정의와 다른 표기를 사용하지 않는다 (예: "INTAKE" vs "intake", "PRD DRAFT" vs "PRD draft") |
 | 신규 용어 | Glossary에 없는 전문 용어를 도입하면 Glossary 추가를 제안한다 |
 
 ### 6. Change Log 정합성
@@ -164,11 +164,11 @@ doc-lint 검증은 멀티 에이전트 리뷰 이전에 실행한다. 검증 실
 
 | 문서 | 관계 |
 |------|------|
-| [`docs/harness/CHARTER.md`](CHARTER.md) | Glossary (용어 일관성 기준), Source of Truth Map (동기화 검증 대상) |
+| [`docs/process/CHARTER.md`](CHARTER.md) | Glossary (용어 일관성 기준), Source of Truth Map (동기화 검증 대상) — M-2에서 추가 예정 |
 | [`AGENTS.md`](../../AGENTS.md) | Source of Truth 테이블 (동기화 검증 대상), Validation 테이블 (향후 검증 명령 등록) |
 | [`docs/RELIABILITY.md`](../RELIABILITY.md) | 검증 파이프라인 (문서 전용 변경 규칙), 핵심 원칙 (검증 없이 배포하지 않는다) |
 | [`docs/QUALITY_SCORE.md`](../QUALITY_SCORE.md) | 리뷰 점수 기준 (doc-lint 검증은 리뷰 이전 단계) |
-| [`docs/harness/evidence-trail.md`](evidence-trail.md) | 검증 결과 기록 포맷 |
+| [`docs/process/EVIDENCE.md`](EVIDENCE.md) | 검증 결과 기록 포맷 |
 
 ---
 

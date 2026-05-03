@@ -157,10 +157,9 @@ PR-6 → PR-7          (PR-6 완료 후 PR-7 시작)
 
 | 문서 | 관계 |
 |------|------|
-| [`docs/PLANS.md`](../PLANS.md) | Sprint/PR 분해 원칙 (이 문서가 구체화), ralplan 출력 |
-| [`docs/harness/CHARTER.md`](CHARTER.md) | Execution Contract (sprint/PR 분해 단계), Non-Goals (이 문서로 위임) |
-| [`docs/harness/admission.md`](admission.md) | cross-cutting 판정 기준 |
-| [`docs/harness/spec-lock.md`](spec-lock.md) | 잠긴 요구사항 (분해의 입력 범위 제한) |
+| [`docs/PLANS.md`](../PLANS.md) | Sprint/PR 분해 원칙 (이 문서가 구체화) |
+| [`docs/process/CHARTER.md`](CHARTER.md) | Execution Contract (sprint/PR 분해 단계), Non-Goals (이 문서로 위임) — M-2에서 추가 예정 |
+| [`docs/process/PRD_TEMPLATE.md`](PRD_TEMPLATE.md) | PRD 양식 (분해의 입력) — Allowed Touch Surface / Disallowed Areas 필드가 cross-cutting 판정 기준 |
 | [`ARCHITECTURE.md`](../../ARCHITECTURE.md) | Invariants (단일 서비스 변경, 검증 필수) |
 | [`docs/QUALITY_SCORE.md`](../QUALITY_SCORE.md) | 리뷰 게이트 (PR 완료 판정) |
 | [`docs/RELIABILITY.md`](../RELIABILITY.md) | 검증 파이프라인, 롤백 기준 |
