@@ -158,6 +158,46 @@ struct ChatViewModelTests {
         #expect(vm.state.messages[1].content == "Here's a hint: ...")
     }
 
+    @Test("sendAction uses English prompt when user language is English")
+    func testSendActionEnglishLanguage() async throws {
+        // Build a context seeded with an English-language profile.
+        let schema = Schema([
+            UserProfile.self,
+            StudySession.self,
+            ChatMessage.self,
+            ConceptProgress.self,
+            DailyStreak.self,
+        ])
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = ModelContext(container)
+        let profile = UserProfile(
+            hasDevelopmentExperience: false,
+            swiftLevel: .beginner,
+            preferredLanguage: .english
+        )
+        context.insert(profile)
+        try context.save()
+
+        let mock = MockAIService()
+        mock.responses = ["Sure!"]
+        let (vm, _, _) = try makeSUT(mockService: mock, modelContext: context)
+
+        await vm.handle(.sendAction(.simpler))
+
+        #expect(vm.state.messages[0].content == "Could you explain that more simply?")
+    }
+
+    @Test("actionPromptText returns localized strings per language")
+    func testActionPromptTextLocalization() {
+        #expect(ChatViewModel.actionPromptText(for: .simpler, language: .korean) == "좀 더 쉽게 설명해주세요")
+        #expect(ChatViewModel.actionPromptText(for: .simpler, language: .english) == "Could you explain that more simply?")
+        #expect(ChatViewModel.actionPromptText(for: .hint, language: .korean) == "힌트를 주세요")
+        #expect(ChatViewModel.actionPromptText(for: .hint, language: .english) == "Can you give me a hint?")
+        #expect(ChatViewModel.actionPromptText(for: .quiz, language: .korean) == "퀴즈를 내주세요")
+        #expect(ChatViewModel.actionPromptText(for: .quiz, language: .english) == "Quiz me on this.")
+    }
+
     @Test("turn count increments per exchange")
     func testTurnCount() async throws {
         let mock = MockAIService()

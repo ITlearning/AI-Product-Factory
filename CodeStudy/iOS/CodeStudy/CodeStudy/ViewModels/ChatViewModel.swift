@@ -297,32 +297,29 @@ final class ChatViewModel {
     }
 
     private func sendActionMessage(_ hint: ActionHint) async {
-        let actionText: String
-        switch hint {
-        case .simpler:
-            actionText = "[ACTION:simpler] 좀 더 쉽게 설명해주세요"
-        case .hint:
-            actionText = "[ACTION:hint] 힌트를 주세요"
-        case .quiz:
-            actionText = "[ACTION:quiz] 퀴즈를 내주세요"
-        }
-
-        // Append visible user message with friendly text
-        let displayText: String
-        switch hint {
-        case .simpler:
-            displayText = "좀 더 쉽게 설명해주세요"
-        case .hint:
-            displayText = "힌트를 주세요"
-        case .quiz:
-            displayText = "퀴즈를 내주세요"
-        }
+        // Honor the user's in-app language setting (Settings → Language) so
+        // both the chat bubble and the prompt sent to the AI match what the
+        // user selected — independent of device locale.
+        let language = AppLanguage(rawValue: fetchUserProfileSnapshot().preferredLanguage) ?? .korean
+        let displayText = Self.actionPromptText(for: hint, language: language)
+        let actionText = "[ACTION:\(hint.rawValue)] " + displayText
 
         let userMessage = ChatMessageUI(role: .user, content: displayText)
         messages.append(userMessage)
 
         // Send the action-tagged message to AI (includes hint metadata)
         await sendMessageWithActionHint(actionText, hint: hint)
+    }
+
+    static func actionPromptText(for hint: ActionHint, language: AppLanguage) -> String {
+        switch (hint, language) {
+        case (.simpler, .korean):  return "좀 더 쉽게 설명해주세요"
+        case (.simpler, .english): return "Could you explain that more simply?"
+        case (.hint, .korean):     return "힌트를 주세요"
+        case (.hint, .english):    return "Can you give me a hint?"
+        case (.quiz, .korean):     return "퀴즈를 내주세요"
+        case (.quiz, .english):    return "Quiz me on this."
+        }
     }
 
     private func sendMessageWithActionHint(_ text: String, hint: ActionHint) async {
