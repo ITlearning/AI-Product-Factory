@@ -63,7 +63,9 @@ ASC_KEY_PATH=/Users/tabber/.appstoreconnect/AuthKey_ABC1234567.p8
 
 > `.env`는 `.gitignore`되어 있어 커밋되지 않는다.
 
-## 매 배포마다
+## 매 배포마다 — 두 가지 방법
+
+### A. 빌드 번호만 올리고 즉시 배포 (마케팅 버전 유지)
 
 ```bash
 cd CodeStudy/iOS/CodeStudy
@@ -78,13 +80,23 @@ bundle exec fastlane beta
 
 업로드 후 App Store Connect에서 처리(processing) 완료까지 5~15분 정도 걸리고, 완료되면 테스터에게 자동/수동 배포할 수 있다.
 
-## 마케팅 버전 (1.x → 1.y) 올릴 때
+### B. 마케팅 버전도 같이 올려서 배포 (1.1.0 → 1.2.0)
 
-빌드 번호는 자동이지만 **마케팅 버전은 수동**으로 올린다 (의도적 결정 — 큰 릴리즈에만 올리는 게 자연스러움):
+대화형 헬퍼 스크립트:
 
-1. Xcode에서 CodeStudy target → General → **Version** 수정 (예: 1.1.0 → 1.2.0)
-2. 커밋
-3. `bundle exec fastlane beta`
+```bash
+./scripts/release.sh                      # 대화형
+./scripts/release.sh 1.2.0                # 버전 인자
+./scripts/release.sh 1.2.0 -y             # confirm 생략
+./scripts/release.sh 1.2.0 --no-deploy    # 버전만 올리고 배포 X
+```
+
+스크립트가 자동으로 처리:
+1. 현재 버전 표시
+2. 새 버전 입력 받기 (검증 포함)
+3. `pbxproj` 수정
+4. `chore(CodeStudy): bump version to X.Y.Z` 커밋
+5. `fastlane beta` 호출 (`--no-deploy`면 생략)
 
 ## 빌드만 검증하고 싶을 때 (업로드 X)
 
@@ -132,12 +144,21 @@ claude mcp list
 
 `ios-simulator`가 목록에 떠야 한다.
 
-### 사용 흐름
+### 사용 흐름 — 한 명령으로 happy path QA
 
-1. Xcode/터미널에서 시뮬레이터 부팅 (예: `xcrun simctl boot "iPhone 17"` 또는 Xcode → Open Developer Tool → Simulator)
-2. Claude Code 세션에서 자연어로 요청:
-   > "시뮬레이터에서 CodeStudy 앱 띄우고 Settings → Language를 English로 바꾼 다음 첫 학습 세션 시작해서 'Simpler' 버튼 눌러봐. 표시되는 텍스트가 영어인지 확인."
-3. Claude가 MCP 도구로 스크린샷 + UI 트리 검사 + tap/swipe/type을 직접 수행
+```bash
+./scripts/qa-happy-path.sh                    # 기본: iPhone 17
+./scripts/qa-happy-path.sh "iPhone 16 Pro"   # 다른 시뮬레이터
+```
+
+스크립트가 자동으로:
+1. 지정 시뮬레이터 부팅
+2. Debug 빌드 + 앱 설치
+3. Claude Code에 줄 자연어 호출 명령 출력
+
+출력된 명령을 Claude Code 세션에 그대로 붙여넣으면, MCP 도구로 시나리오 진행. 시나리오 명세는 [`scripts/qa-happy-path.md`](../scripts/qa-happy-path.md)에 정의되어 있다 (한국어 사용자 7단계 + 영어 사용자 보너스).
+
+**주의**: 실제 AI 호출이 발생하므로 비용 발생 (세션당 수 센트 수준). 백엔드 다운이면 모든 step fail.
 
 [joshuayoes/ios-simulator-mcp](https://github.com/joshuayoes/ios-simulator-mcp) — Anthropic Claude Code 베스트 프랙티스에 인용된 도구.
 
