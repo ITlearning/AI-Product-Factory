@@ -1,0 +1,36 @@
+{
+  "configurations" : [
+    {
+      "id" : "9F4D6B2E-1A2B-4C3D-8E5F-1234567890AB",
+      "name" : "Default",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:CodeStudy.xcodeproj",
+      "identifier" : "F54F693D2F82CA230061170D",
+      "name" : "CodeStudy"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:CodeStudy.xcodeproj",
+        "identifier" : "F54F694C2F82CA250061170D",
+        "name" : "CodeStudyTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:CodeStudy.xcodeproj",
+        "identifier" : "F54F69562F82CA250061170D",
+        "name" : "CodeStudyUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -1,0 +1,115 @@
+default_platform(:ios)
+
+# fastlane이 매 실행마다 fastlane/README.md를 자동 갱신하는 걸 막는다.
+# 우리 가이드는 fastlane/SETUP.md 가 정본.
+skip_docs
+
+# 프로젝트 위치는 fastlane 디렉터리의 부모.
+XCODEPROJ = "CodeStudy.xcodeproj"
+SCHEME    = "CodeStudy"
+
+platform :ios do
+
+  # ASC env 검증. .env.default의 placeholder("XXXX...", "0000...", "/absolute/path/...")가
+  # 실수로 그대로 통과하지 않도록 명시적으로 거른다. build_only는 업로드를 안 하므로
+  # 면제 — TestFlight 업로드가 실제로 필요한 lane에서만 호출.
+  def assert_asc_env!
+    placeholders = ["XXXXXXXXXX", "00000000-0000-0000-0000-000000000000", "/absolute/path/to/AuthKey_XXXXXXXXXX.p8"]
+    %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].each do |k|
+      v = ENV[k].to_s
+      if v.empty?
+        UI.user_error!("환경변수 #{k} 가 설정되지 않았습니다. fastlane/.env.default 참고해서 fastlane/.env 를 만들어주세요.")
+      end
+      if placeholders.include?(v)
+        UI.user_error!("환경변수 #{k} 가 placeholder 값(#{v})입니다. fastlane/.env 에 실제 값을 채워주세요.")
+      end
+    end
+    unless File.exist?(ENV["ASC_KEY_PATH"])
+      UI.user_error!("ASC_KEY_PATH(#{ENV["ASC_KEY_PATH"]}) 파일이 존재하지 않습니다. App Store Connect에서 받은 .p8 파일 경로를 확인해주세요.")
+    end
+  end
+
+  desc "TestFlight에 새 베타 빌드 업로드 (build number 자동 +1)"
+  lane :beta do
+    assert_asc_env!
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: ENV["ASC_KEY_PATH"],
+      duration: 1200,
+      in_house: false,
+    )
+
+    # 빌드 번호 자동 증가 (App Store Connect의 마지막 빌드 번호 +1).
+    # 로컬 pbxproj 충돌을 피하려고 latest 기준으로 가져온 뒤 set.
+    latest = latest_testflight_build_number(
+      app_identifier: "com.itlearning.codestudy",
+      api_key: api_key,
+      initial_build_number: 0,
+    )
+    increment_build_number(
+      xcodeproj: XCODEPROJ,
+      build_number: (latest + 1).to_s,
+    )
+
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "build",
+      output_name: "CodeStudy.ipa",
+      include_symbols: true,
+      include_bitcode: false,
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      changelog: changelog_from_git_commits(
+        commits_count: 10,
+        pretty: "- %s",
+        merge_commit_filtering: "exclude_merges",
+      ),
+    )
+
+    UI.success("✅ TestFlight 업로드 완료. App Store Connect에서 처리 상태 확인 후 테스터에 배포하세요.")
+  end
+
+  desc "시뮬레이터에서 XCTest + XCUITest 자동 실행 (TestPlan 기반)"
+  lane :test do |options|
+    device = options[:device] || "iPhone 17"
+    run_tests(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      testplan: "TestPlan",
+      devices: [device],
+      clean: true,
+      code_coverage: false,
+      output_directory: "fastlane/test_output",
+      output_types: "html,junit",
+      result_bundle: true,
+      fail_build: true,
+    )
+    UI.success("✅ 모든 테스트 통과. 리포트: fastlane/test_output/")
+  end
+
+  desc "로컬에서 release 빌드 검증만 (업로드 X)"
+  lane :build_only do
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "build",
+      output_name: "CodeStudy.ipa",
+      skip_package_ipa: false,
+    )
+  end
+
+  error do |lane, exception|
+    UI.error("Lane #{lane} 실패: #{exception.message}")
+  end
+end

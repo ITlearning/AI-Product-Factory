@@ -43,7 +43,7 @@ enum ActionHint: String, Sendable {
 
 // MARK: - Errors
 
-enum AIServiceError: LocalizedError {
+enum AIServiceError: LocalizedError, Equatable {
     case networkUnavailable
     case serverError(statusCode: Int)
     case rateLimited
