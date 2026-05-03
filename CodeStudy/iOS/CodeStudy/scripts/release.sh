@@ -99,15 +99,14 @@ fi
 # pbxproj 수정 (메인 앱의 정확한 현재 값만 치환 — Tests의 "1.0"은 패턴 매칭 안 됨).
 sed -i '' "s/MARKETING_VERSION = $CURRENT;/MARKETING_VERSION = $NEW;/g" "$PBXPROJ"
 
-# 변경 검증.
-NEW_COUNT=$(grep -c "MARKETING_VERSION = $NEW;" "$PBXPROJ" || true)
-if [[ "$NEW_COUNT" -eq 0 ]]; then
+# 변경 검증 — grep exit code만 사용 (변수 안 거치는 게 set -u 환경에서 안전).
+if ! grep -qF "MARKETING_VERSION = $NEW;" "$PBXPROJ"; then
   echo "❌ 버전 치환이 적용되지 않음. 롤백." >&2
   git checkout -- "$PBXPROJ"
   exit 1
 fi
 
-echo "✅ pbxproj 수정 완료 ($NEW_COUNT개 위치 갱신)"
+echo "✅ pbxproj 수정 완료"
 
 # 커밋.
 git add "$PBXPROJ"
