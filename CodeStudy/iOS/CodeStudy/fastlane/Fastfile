@@ -77,6 +77,24 @@ platform :ios do
     UI.success("✅ TestFlight 업로드 완료. App Store Connect에서 처리 상태 확인 후 테스터에 배포하세요.")
   end
 
+  desc "시뮬레이터에서 XCTest + XCUITest 자동 실행 (TestPlan 기반)"
+  lane :test do |options|
+    device = options[:device] || "iPhone 17"
+    run_tests(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      testplan: "TestPlan",
+      devices: [device],
+      clean: true,
+      code_coverage: false,
+      output_directory: "fastlane/test_output",
+      output_types: "html,junit",
+      result_bundle: true,
+      fail_build: true,
+    )
+    UI.success("✅ 모든 테스트 통과. 리포트: fastlane/test_output/")
+  end
+
   desc "로컬에서 release 빌드 검증만 (업로드 X)"
   lane :build_only do
     build_app(

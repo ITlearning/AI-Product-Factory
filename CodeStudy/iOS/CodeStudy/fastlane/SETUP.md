@@ -94,6 +94,53 @@ bundle exec fastlane build_only
 
 `build/CodeStudy.ipa`가 생성됨. App Store Connect에는 아무것도 올라가지 않음.
 
+## 자동 테스트 — 시뮬레이터에서 XCTest + XCUITest 실행
+
+```bash
+bundle exec fastlane test                   # 기본: iPhone 17
+bundle exec fastlane test device:"iPhone 16 Pro"   # 다른 시뮬레이터 지정
+```
+
+`TestPlan.xctestplan`에 등록된 두 target(`CodeStudyTests`, `CodeStudyUITests`)을 시뮬레이터에서 자동 실행한다. 실패하면 lane도 fail.
+
+리포트 위치 (gitignored):
+- `fastlane/test_output/report.html` — 사람이 읽는 결과
+- `fastlane/test_output/report.junit` — CI에서 파싱
+- `fastlane/test_output/*.xcresult` — Xcode에서 직접 열어보는 result bundle
+
+> `TestPlan.xctestplan`은 신규 test target 추가 시 손으로 갱신해야 한다 (Xcode → Product → Scheme → Edit Scheme → Test 탭에서 GUI로도 편집 가능).
+
+## AI 시뮬레이터 자동화 — `ios-simulator-mcp`
+
+Claude Code에서 시뮬레이터를 직접 조작하면서 탐색적 QA를 돌릴 수 있다. fastlane test가 "기존 회귀 검증"이라면 이건 "AI가 새 기능 직접 써보고 시각/UX 버그 찾기".
+
+### 1회 셋업
+
+```bash
+# Facebook IDB (iOS Development Bridge) 설치 — MCP 서버 의존성
+brew tap facebook/fb
+brew install idb-companion
+
+# Claude Code에 MCP 서버 등록
+claude mcp add ios-simulator -- npx -y ios-simulator-mcp
+```
+
+등록 확인:
+```bash
+claude mcp list
+```
+
+`ios-simulator`가 목록에 떠야 한다.
+
+### 사용 흐름
+
+1. Xcode/터미널에서 시뮬레이터 부팅 (예: `xcrun simctl boot "iPhone 17"` 또는 Xcode → Open Developer Tool → Simulator)
+2. Claude Code 세션에서 자연어로 요청:
+   > "시뮬레이터에서 CodeStudy 앱 띄우고 Settings → Language를 English로 바꾼 다음 첫 학습 세션 시작해서 'Simpler' 버튼 눌러봐. 표시되는 텍스트가 영어인지 확인."
+3. Claude가 MCP 도구로 스크린샷 + UI 트리 검사 + tap/swipe/type을 직접 수행
+
+[joshuayoes/ios-simulator-mcp](https://github.com/joshuayoes/ios-simulator-mcp) — Anthropic Claude Code 베스트 프랙티스에 인용된 도구.
+
 ## 트러블슈팅
 
 | 증상 | 원인 / 해결 |
