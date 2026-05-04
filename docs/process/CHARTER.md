@@ -213,7 +213,8 @@ INTAKE → DISCOVERY → PRD DRAFT → PARALLEL REVIEW → DECOMPOSITION → EXE
 | DECOMPOSITION.md | Sprint/PR 분해 수치 룰 | [`docs/process/DECOMPOSITION.md`](DECOMPOSITION.md) |
 | EVIDENCE.md | PR 검증 증거 포맷 | [`docs/process/EVIDENCE.md`](EVIDENCE.md) |
 | DOC_LINT.md | 문서 변경 검증 룰 | [`docs/process/DOC_LINT.md`](DOC_LINT.md) |
-| AGENTS.md | 저장소 진입점 맵 | [`AGENTS.md`](../../AGENTS.md) |
+| CLAUDE.md | 저장소 진입점 (Claude Code 자동 로드) | [`CLAUDE.md`](../../CLAUDE.md) |
+| AGENTS.md | redirect → CLAUDE.md (외부 호환성용) | [`AGENTS.md`](../../AGENTS.md) |
 | ARCHITECTURE.md | 기술 아키텍처 | [`ARCHITECTURE.md`](../../ARCHITECTURE.md) |
 | PRODUCT_SENSE.md | 제품 감각 가이드 | [`docs/PRODUCT_SENSE.md`](../PRODUCT_SENSE.md) |
 | RELIABILITY.md | 신뢰성 기준 | [`docs/RELIABILITY.md`](../RELIABILITY.md) |
@@ -272,7 +273,7 @@ INTAKE → DISCOVERY → PRD DRAFT → PARALLEL REVIEW → DECOMPOSITION → EXE
 - [DECOMPOSITION.md](DECOMPOSITION.md) — Sprint/PR 분해 수치 룰
 - [EVIDENCE.md](EVIDENCE.md) — PR 검증 증거 포맷
 - [DOC_LINT.md](DOC_LINT.md) — 문서 변경 검증 룰
-- [AGENTS.md](../../AGENTS.md) — 저장소 진입점 맵
+- [CLAUDE.md](../../CLAUDE.md) — 저장소 진입점 (Claude Code 자동 로드). AGENTS.md는 redirect로 유지.
 - [ARCHITECTURE.md](../../ARCHITECTURE.md) — 기술 아키텍처
 
 ---
@@ -282,3 +283,4 @@ INTAKE → DISCOVERY → PRD DRAFT → PARALLEL REVIEW → DECOMPOSITION → EXE
 | 날짜 | PR | 변경 내용 |
 |------|-----|----------|
 | 2026-05-03 | M-2 PR (TBD) | `docs/harness/CHARTER.md`를 변형 흡수하여 `docs/process/CHARTER.md` 신규 생성. codex/Symphony 가정 제거, gstack 라우팅 추가, Multi-Agent + Pre-Task Review 유지 |
+| 2026-05-04 | claude-md-merge | Source of Truth Map의 진입점을 AGENTS.md → CLAUDE.md로 갱신. AGENTS.md는 redirect 행으로 유지. |
