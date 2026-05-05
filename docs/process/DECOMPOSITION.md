@@ -18,7 +18,7 @@ PRD에서 도출한 계획을 실행 가능한 sprint/PR 단위로 분해하는 
 [1] INTAKE → [2] DISCOVERY → [3] PRD DRAFT → [4] PARALLEL REVIEW → [[5] DECOMPOSITION] → [6] EXECUTION
 ```
 
-- **입력**: PARALLEL REVIEW 통과한 PRD (Goal / Success Criteria / Target Path / Allowed Touch Surface 등 11 필드)
+- **입력**: PARALLEL REVIEW 통과한 PRD (Goal / Success Criteria / Target Path / Allowed Touch Surface 등 13 필드 — Wireframe / As-Is → To-Be 시각화 2필드 포함)
 - **소유자**: 에이전트 — `CHARTER.md` Execution Contract 참조 (M-2에서 추가 예정)
 - **출력**: 실행 가능한 sprint/PR 단위 계획 (의존성 DAG 포함)
 - **다음 단계**: [6] EXECUTION (병렬 dispatch + ralph loop)

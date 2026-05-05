@@ -61,7 +61,7 @@ draft → review → executing → completed
 - Constraints / Dependencies
 - Acceptance Evidence
 
-(11필드 PRD 양식의 실행 관련 필드. 자세한 양식은 [`docs/process/PRD_TEMPLATE.md`](process/PRD_TEMPLATE.md) 참고.)
+(13필드 PRD 양식의 실행 관련 필드. 시각화 2필드(Wireframe / As-Is → To-Be)는 분해 단계에서 직접 쓰진 않지만 PR 단위 검증 기준의 참고 자료로 쓴다. 자세한 양식은 [`docs/process/PRD_TEMPLATE.md`](process/PRD_TEMPLATE.md) 참고.)
 
 ### 출력 ([5] DECOMPOSITION이 생성하는 것)
 
@@ -174,7 +174,7 @@ Tabber의 사전 승인은 불필요하다. 단, PRD 핵심 항목 영향 없음
 | [`docs/process/CHARTER.md`](process/CHARTER.md) | 실행 경로, 중단 규칙, Non-Goals |
 | [`AGENTS.md`](../AGENTS.md) | 프로세스 경로 맵, 라우팅 |
 | [`docs/process/SEQUENCE.md`](process/SEQUENCE.md) | 6단계 흐름 본문 (이 문서는 그 중 [5] DECOMPOSITION 상세) |
-| [`docs/process/PRD_TEMPLATE.md`](process/PRD_TEMPLATE.md) | PRD 11필드 양식 ([5] 단계 입력) |
+| [`docs/process/PRD_TEMPLATE.md`](process/PRD_TEMPLATE.md) | PRD 13필드 양식 ([5] 단계 입력) |
 | [`docs/process/DECOMPOSITION.md`](process/DECOMPOSITION.md) | Sprint/PR 분해 수치 기준 |
 | [`docs/process/EXECUTION.md`](process/EXECUTION.md) | [6] EXECUTION 단계 본문 (병렬 + ralph loop) |
 

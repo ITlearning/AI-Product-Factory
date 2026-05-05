@@ -65,7 +65,7 @@
 | 기술 아키텍처 | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | 프로세스 헌장 + 실행 경로 | [`docs/process/CHARTER.md`](docs/process/CHARTER.md) |
 | 6단계 시퀀스 본문 | [`docs/process/SEQUENCE.md`](docs/process/SEQUENCE.md) |
-| PRD 11필드 양식 | [`docs/process/PRD_TEMPLATE.md`](docs/process/PRD_TEMPLATE.md) |
+| PRD 13필드 양식 (시각화 2필드 포함) | [`docs/process/PRD_TEMPLATE.md`](docs/process/PRD_TEMPLATE.md) |
 | 계획 관리 규칙 | [`docs/PLANS.md`](docs/PLANS.md) |
 | 리뷰 점수 참고값 | [`docs/QUALITY_SCORE.md`](docs/QUALITY_SCORE.md) |
 | 신뢰성 기준 | [`docs/RELIABILITY.md`](docs/RELIABILITY.md) |

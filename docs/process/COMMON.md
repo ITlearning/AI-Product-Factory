@@ -51,7 +51,7 @@
 
 | 항목 | 설명 |
 |------|------|
-| PRD 정리 보조 | 인간의 brief를 11필드 PRD 양식으로 정리한다 |
+| PRD 정리 보조 | 인간의 brief를 13필드 PRD 양식으로 정리한다 (시각화 2필드 — Wireframe / As-Is → To-Be 포함) |
 | 계획 분해 | sprint/PR 단위 분해와 의존성 DAG를 산출한다 |
 | 구현 | 코드, 테스트, 문서, 스크립트를 작성한다 |
 | 검증 | 자동화된 검증과 evidence 수집을 수행한다 |
@@ -122,7 +122,7 @@
 |------|--------|------|--------------|
 | [1] INTAKE | 자동 분기 | [2] 또는 [3]으로 라우팅 결정 | 분기 신호 상충 시에만 1회 확인 |
 | [2] DISCOVERY | 1 에이전트 + 인간 | 1쪽 brief | full 대화: "이 brief로 [3] 갈까?" |
-| [3] PRD DRAFT | 1 에이전트 + 인간 | 11필드 PRD | full 대화: "이 PRD로 [4] 갈까?" |
+| [3] PRD DRAFT | 1 에이전트 + 인간 | 13필드 PRD (Wireframe / As-Is → To-Be 포함) | full 대화: "이 PRD로 [4] 갈까?" |
 | [4] PARALLEL REVIEW | 3 에이전트 병렬 + 인간 | 3개 리뷰 보고서 + 합의 액션 | full 대화: "이 결과 반영해 [5] 갈까?" |
 | [5] DECOMPOSITION | 1 에이전트 + 인간 | Sprint 표 + PR 표 (DAG) | full 대화: "이 분해로 [6] 갈까?" |
 | [6] EXECUTION | N 에이전트 병렬 | 머지된 PR + evidence trail | PR 단위로 인간이 결과 확인 |
@@ -297,7 +297,7 @@
 
 | 용어 | 정의 |
 |------|------|
-| PRD | Product Requirements Document. 인간이 작성하고 [3]에서 11필드로 정리되는 문서 |
+| PRD | Product Requirements Document. 인간이 작성하고 [3]에서 13필드 (핵심 11 + 시각화 2)로 정리되는 문서 |
 | brief | DISCOVERY 단계에서 만들어지는 1쪽 요약 (Goal / Non-Goals / Success Criteria 후보) |
 | 승인 게이트 | 단계 사이에서 인간이 OK / 수정 / 중단을 결정하는 지점 |
 | ralph loop | 한 PR 안에서 구현→검증→수정을 자율 반복하는 미니 루프 패턴 |

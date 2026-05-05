@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Wireframe — 추천 화면 (트랙 선택 완료)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif;
+      background: #f5f5f7;
+      margin: 0;
+      padding: 24px;
+      color: #1d1d1f;
+    }
+    .meta {
+      max-width: 380px;
+      margin: 0 auto 16px;
+      padding: 12px 16px;
+      background: #fff;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .meta dt { font-weight: 600; color: #6e6e73; display: inline; }
+    .meta dd { display: inline; margin: 0 12px 0 4px; }
+    .device {
+      max-width: 380px;
+      margin: 0 auto;
+      background: #fff;
+      border: 2px solid #1d1d1f;
+      border-radius: 32px;
+      overflow: hidden;
+      min-height: 720px;
+      display: flex;
+      flex-direction: column;
+    }
+    .nav {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e5ea;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav h1 { font-size: 17px; margin: 0; font-weight: 600; }
+    .nav .track-pill {
+      font-size: 12px;
+      padding: 4px 10px;
+      background: #007aff15;
+      color: #007aff;
+      border-radius: 12px;
+    }
+    main { padding: 20px; flex: 1; }
+    .section-label {
+      font-size: 11px;
+      color: #6e6e73;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 16px 0 8px;
+    }
+    .card {
+      border: 1px solid #d2d2d7;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+    .card.primary { border-color: #007aff; background: #f0f7ff; }
+    .card .title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .card .reason { font-size: 12px; color: #6e6e73; }
+    .card .meta-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 11px;
+    }
+    .tag {
+      padding: 2px 8px;
+      background: #e5e5ea;
+      border-radius: 8px;
+      color: #1d1d1f;
+    }
+    .tag.diff { background: #ffd60a40; }
+    .cta {
+      margin-top: 8px;
+      padding: 10px 16px;
+      background: #007aff;
+      color: #fff;
+      text-align: center;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .tab-bar {
+      border-top: 1px solid #e5e5ea;
+      display: flex;
+      padding: 12px 0 24px;
+    }
+    .tab { flex: 1; text-align: center; font-size: 11px; color: #6e6e73; }
+    .tab.active { color: #007aff; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <dl class="meta">
+    <dt>화면</dt><dd>추천 화면 (Recommend / Home)</dd><br />
+    <dt>진입 경로</dt><dd>홈 탭 → 자동</dd><br />
+    <dt>핵심 액션</dt><dd>추천 1번 카드 탭 → 문제 풀기 진입</dd>
+  </dl>
+
+  <div class="device">
+    <div class="nav">
+      <h1>오늘의 추천</h1>
+      <span class="track-pill">Swift</span>
+    </div>
+    <main>
+      <div class="section-label">다음 문제</div>
+
+      <div class="card primary">
+        <div class="title">Optional Chaining 연습</div>
+        <div class="reason">최근 7일 정답률 62% — 약점 보강용</div>
+        <div class="meta-row">
+          <span class="tag">난이도 ★★☆</span>
+          <span class="tag">5분</span>
+          <span class="tag diff">약점</span>
+        </div>
+        <div class="cta">시작하기</div>
+      </div>
+
+      <div class="section-label">다른 추천</div>
+
+      <div class="card">
+        <div class="title">Closure Capture List</div>
+        <div class="reason">학습 진도상 다음 단계</div>
+        <div class="meta-row">
+          <span class="tag">난이도 ★★★</span>
+          <span class="tag">8분</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">Result 타입 패턴 매칭</div>
+        <div class="reason">최근 푼 문제와 연관</div>
+        <div class="meta-row">
+          <span class="tag">난이도 ★★☆</span>
+          <span class="tag">6분</span>
+        </div>
+      </div>
+    </main>
+    <div class="tab-bar">
+      <div class="tab active">홈</div>
+      <div class="tab">기록</div>
+      <div class="tab">설정</div>
+    </div>
+  </div>
+</body>
+</html>

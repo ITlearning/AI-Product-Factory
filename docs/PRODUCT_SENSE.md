@@ -123,7 +123,7 @@
 |------|------|
 | [`docs/process/CHARTER.md`](process/CHARTER.md) | Ownership (인간 소유: 목표/비목표/성공 기준), Stop Rules |
 | [`AGENTS.md`](../AGENTS.md) | Ownership Boundary 요약 |
-| [`docs/process/PRD_TEMPLATE.md`](process/PRD_TEMPLATE.md) | PRD 11필드 양식 (admission 필드 흡수) |
+| [`docs/process/PRD_TEMPLATE.md`](process/PRD_TEMPLATE.md) | PRD 13필드 양식 (admission 필드 흡수 + 시각화 2필드) |
 
 ---
 

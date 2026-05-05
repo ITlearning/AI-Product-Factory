@@ -6,7 +6,7 @@
 |------|------|
 | [SEQUENCE.md](SEQUENCE.md) | 6단계 흐름 본문 |
 | [INTAKE.md](INTAKE.md) | 1줄/1쪽 입구 자동 분기 |
-| [PRD_TEMPLATE.md](PRD_TEMPLATE.md) | PRD 11필드 양식 |
+| [PRD_TEMPLATE.md](PRD_TEMPLATE.md) | PRD 13필드 양식 (시각화 2필드 포함) |
 | [EXECUTION.md](EXECUTION.md) | 병렬 + ralph loop 패턴 |
 | [DECOMPOSITION.md](DECOMPOSITION.md) | Sprint/PR 분해 수치 |
 | [EVIDENCE.md](EVIDENCE.md) | PR 검증 증거 포맷 |
