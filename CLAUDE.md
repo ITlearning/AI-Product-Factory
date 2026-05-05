@@ -37,7 +37,7 @@
 | SECURITY.md | 보안 기준 | [`docs/SECURITY.md`](docs/SECURITY.md) |
 | SEQUENCE | 6단계 실행 시퀀스 본문 | [`docs/process/SEQUENCE.md`](docs/process/SEQUENCE.md) |
 | INTAKE | 1줄/1쪽 입구 자동 분기 | [`docs/process/INTAKE.md`](docs/process/INTAKE.md) |
-| PRD_TEMPLATE | PRD 11필드 양식 | [`docs/process/PRD_TEMPLATE.md`](docs/process/PRD_TEMPLATE.md) |
+| PRD_TEMPLATE | PRD 13필드 양식 (시각화 2필드 포함) | [`docs/process/PRD_TEMPLATE.md`](docs/process/PRD_TEMPLATE.md) |
 | EXECUTION | 병렬 dispatch + ralph loop 패턴 | [`docs/process/EXECUTION.md`](docs/process/EXECUTION.md) |
 | DECOMPOSITION | Sprint/PR 분해 수치 기준 | [`docs/process/DECOMPOSITION.md`](docs/process/DECOMPOSITION.md) |
 | EVIDENCE | 검증 증거 포맷 | [`docs/process/EVIDENCE.md`](docs/process/EVIDENCE.md) |

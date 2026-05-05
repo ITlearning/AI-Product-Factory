@@ -79,4 +79,4 @@ DISCOVERY는 실수요·문제 정의를 거쳐 1쪽 brief를 산출하므로, 1
 ## 관련 문서
 
 - [SEQUENCE.md](SEQUENCE.md) — 6단계 흐름 본문 (INTAKE 다음 단계 [2]~[6] 참고)
-- [PRD_TEMPLATE.md](PRD_TEMPLATE.md) — [3] 단계에서 채우는 PRD 11필드 양식 (자동 분기 키워드 신호의 출처)
+- [PRD_TEMPLATE.md](PRD_TEMPLATE.md) — [3] 단계에서 채우는 PRD 13필드 양식 (자동 분기 키워드 신호의 출처. 시각화 2필드는 [3] 단계에서 PRD가 무르익으면 채우므로 INTAKE 분기 신호에는 들어가지 않는다)
