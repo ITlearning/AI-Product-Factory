@@ -45,6 +45,11 @@ enum ActionHint: String, Sendable {
 
 enum AIServiceError: LocalizedError, Equatable {
     case networkUnavailable
+    /// 기기 인터넷은 살아있는데 연결이 중간에 끊긴 경우.
+    /// SSE 롱커넥션이 서버·중계장비·네트워크 전환(WiFi↔셀룰러)으로 잘릴 때 발생.
+    /// `networkUnavailable`("인터넷 연결을 확인해주세요")로 뭉개면 인터넷이
+    /// 멀쩡한 사용자에게 틀린 안내를 하게 되므로 따로 둔다.
+    case connectionInterrupted
     case serverError(statusCode: Int)
     case rateLimited
     case dailyLimitExceeded
@@ -57,6 +62,8 @@ enum AIServiceError: LocalizedError, Equatable {
         switch self {
         case .networkUnavailable:
             return String(localized: "인터넷 연결을 확인해주세요")
+        case .connectionInterrupted:
+            return String(localized: "연결이 잠시 끊겼어요. 다시 시도해주세요")
         case .serverError(let code):
             return "서버 오류가 발생했습니다 (\(code))"
         case .rateLimited:

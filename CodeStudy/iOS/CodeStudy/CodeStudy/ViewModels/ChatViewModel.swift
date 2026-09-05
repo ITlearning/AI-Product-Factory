@@ -37,11 +37,17 @@ final class ChatViewModel {
         case dismissError
     }
 
+    /// 세션의 진행 상태.
+    ///
+    /// 네트워크·스트리밍 실패는 여기에 들어오지 않는다. 그건 `error` 배너로만
+    /// 표현하고 세션은 `.active`를 유지한다. 예전엔 실패 시 `.error` 상태로
+    /// 넘겼는데, ChatView가 `.active`일 때만 입력창을 그리는 탓에 입력창이
+    /// 통째로 사라지고 `sendMessage`의 `guard sessionState == .active`가
+    /// 재시도까지 막아서 일시적 오류 한 번이 세션을 영구히 죽였다.
     enum SessionState: Equatable {
         case active
         case mastered
         case manualComplete
-        case error
     }
 
     // MARK: - Observed State (top-level for SwiftUI Observation compatibility)
@@ -105,6 +111,11 @@ final class ChatViewModel {
             error = nil
             if let lastUserMsg = messages.last(where: { $0.role == .user }) {
                 await sendMessage(lastUserMsg.content, isRetry: true)
+            } else {
+                // 개념에 막 들어와 첫 인사 스트림이 실패한 경우 — 되돌릴 user
+                // 메시지가 없다. 실패한 placeholder는 이미 제거됐으므로
+                // 처음부터 다시 시작한다. (이게 없으면 "다시 시도"가 무반응)
+                await sendInitialMessage()
             }
         case .dismissError:
             error = nil
@@ -278,7 +289,7 @@ final class ChatViewModel {
             messages = updatedMessages
             isStreaming = false
             error = serviceError
-            sessionState = .error
+            // 세션은 .active로 유지 — 배너의 "다시 시도"가 살아있어야 한다.
             // Remove the empty assistant placeholder on error
             if messages[assistantIndex].content.isEmpty {
                 messages.remove(at: assistantIndex)
@@ -292,7 +303,6 @@ final class ChatViewModel {
             messages = updatedMessages
             isStreaming = false
             self.error = .streamingFailed
-            sessionState = .error
         }
     }
 
@@ -376,7 +386,7 @@ final class ChatViewModel {
             messages = updatedMessages
             isStreaming = false
             error = serviceError
-            sessionState = .error
+            // 세션은 .active로 유지 — 배너의 "다시 시도"가 살아있어야 한다.
         } catch {
             var updatedMessages = messages
             updatedMessages[assistantIndex].isStreaming = false
@@ -386,7 +396,6 @@ final class ChatViewModel {
             messages = updatedMessages
             isStreaming = false
             self.error = .streamingFailed
-            sessionState = .error
         }
     }
 

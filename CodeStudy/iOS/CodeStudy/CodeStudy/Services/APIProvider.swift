@@ -59,6 +59,13 @@ final class APIProvider: AIService, @unchecked Sendable {
                     continuation.finish()
                 } catch is CancellationError {
                     continuation.finish()
+                } catch let urlError as URLError {
+                    if urlError.code == .cancelled {
+                        // Task 취소가 URLError로 올라오는 경로 — 오류가 아니다.
+                        continuation.finish()
+                    } else {
+                        continuation.finish(throwing: Self.mapURLError(urlError))
+                    }
                 } catch {
                     continuation.finish(throwing: error)
                 }
@@ -106,6 +113,26 @@ final class APIProvider: AIService, @unchecked Sendable {
 
         request.httpBody = try JSONEncoder().encode(body)
         return request
+    }
+
+    /// URLError를 사용자에게 보여줄 AIServiceError로 옮긴다.
+    ///
+    /// 이걸 안 하면 모든 네트워크 오류가 `.streamingFailed`("응답을 받는 중
+    /// 오류가 발생했습니다")로 뭉개져서, 기기 인터넷이 끊긴 건지 SSE 연결만
+    /// 잘린 건지 사용자도 로그도 구분하지 못한다.
+    static func mapURLError(_ error: URLError) -> AIServiceError {
+        switch error.code {
+        case .notConnectedToInternet, .dataNotAllowed, .internationalRoamingOff:
+            // 기기가 실제로 오프라인 — "인터넷 연결을 확인해주세요"가 맞는 안내.
+            return .networkUnavailable
+        case .networkConnectionLost, .timedOut, .cannotConnectToHost,
+             .cannotFindHost, .dnsLookupFailed, .secureConnectionFailed,
+             .resourceUnavailable:
+            // 인터넷은 살아있는데 이 연결만 끊긴 경우. 재시도로 대개 복구된다.
+            return .connectionInterrupted
+        default:
+            return .streamingFailed
+        }
     }
 
     private func mapHTTPResponse(_ response: URLResponse) throws {
