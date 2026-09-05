@@ -50,4 +50,66 @@ struct APIProviderTests {
         #expect(interrupted != nil)
         #expect(offline != interrupted)
     }
+
+    /// 취소된 요청을 정상 종료(`finish()`)로 흘리면 ChatViewModel이 "빈 응답이
+    /// 성공적으로 끝났다"고 보고 빈 말풍선을 저장한 뒤 turnCount까지 올린다.
+    /// 취소는 CancellationError로 올라와야 한다.
+    @Test("a request cancelled mid-flight reports cancellation, not a clean finish")
+    func testCancelledRequestThrowsCancellation() async throws {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [HangingURLProtocol.self]
+        let session = URLSession(configuration: config)
+        let provider = APIProvider(
+            baseURL: URL(string: "https://codestudy.test")!,
+            session: session,
+            bundleID: "com.itlearning.codestudy.tests"
+        )
+
+        let consumer = Task { () -> Error? in
+            do {
+                for try await _ in provider.sendMessage("hi", context: Self.makeContext()) {}
+                return nil
+            } catch {
+                return error
+            }
+        }
+
+        // 요청이 응답 대기에 들어갈 시간을 준 뒤 연결을 끊는다.
+        try await Task.sleep(nanoseconds: 300_000_000)
+        session.invalidateAndCancel()
+
+        let observed = await consumer.value
+        guard let observed else {
+            Issue.record("취소된 스트림이 오류 없이 정상 종료했다")
+            return
+        }
+        #expect(observed is CancellationError)
+    }
+
+    // MARK: - Helpers
+
+    private static func makeContext() -> ConversationContext {
+        ConversationContext(
+            conceptID: "swift-optionals",
+            conceptTitle: "Optionals",
+            sessionId: UUID().uuidString,
+            userProfile: UserProfileSnapshot(
+                hasDevelopmentExperience: false,
+                swiftLevel: "beginner",
+                preferredLanguage: "ko",
+                track: "swift"
+            ),
+            previousMessages: [],
+            actionHint: nil
+        )
+    }
+}
+
+/// 응답을 영원히 주지 않는 URLProtocol. 요청이 대기 중인 동안 세션을
+/// 끊어서 "전송 도중 취소"를 결정적으로 재현한다.
+private final class HangingURLProtocol: URLProtocol {
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {}
+    override func stopLoading() {}
 }

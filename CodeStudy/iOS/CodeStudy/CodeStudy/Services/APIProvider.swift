@@ -58,11 +58,15 @@ final class APIProvider: AIService, @unchecked Sendable {
 
                     continuation.finish()
                 } catch is CancellationError {
-                    continuation.finish()
+                    continuation.finish(throwing: CancellationError())
                 } catch let urlError as URLError {
                     if urlError.code == .cancelled {
-                        // Task 취소가 URLError로 올라오는 경로 — 오류가 아니다.
-                        continuation.finish()
+                        // Task 취소가 URLError로 올라오는 경로 — 사용자에게 보일
+                        // 오류는 아니지만 정상 종료로 흘려서도 안 된다. 그러면
+                        // ChatViewModel이 "빈 응답이 성공적으로 끝났다"고 보고
+                        // 빈 말풍선을 저장한 뒤 turnCount까지 올린다.
+                        // 취소는 취소로 알린다.
+                        continuation.finish(throwing: CancellationError())
                     } else {
                         continuation.finish(throwing: Self.mapURLError(urlError))
                     }

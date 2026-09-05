@@ -166,6 +166,66 @@ struct ChatViewModelTests {
         #expect(vm.state.messages.last?.content == "이어서 설명할게요")
     }
 
+    @Test("retry replaces a half-received answer instead of stacking a second one")
+    func testRetryAfterPartialStreamLeavesOneAnswer() async throws {
+        let mock = MockAIService()
+        mock.shouldError = .connectionInterrupted
+        mock.chunksBeforeInterruption = ["옵셔널은 값이 "]
+        let (vm, _, _) = try makeSUT(mockService: mock)
+
+        await vm.handle(.sendMessage("옵셔널이 뭐예요?"))
+
+        // 반쪽짜리 답은 남기지 않는다. 남기면 아래 재시도가 답을 하나 더 붙인다.
+        #expect(vm.state.error == .connectionInterrupted)
+        #expect(vm.state.messages.count == 1)
+        #expect(vm.state.messages[0].role == .user)
+
+        mock.shouldError = nil
+        mock.chunksBeforeInterruption = []
+        mock.responses = ["옵셔널은 값이 있을 수도, 없을 수도 있는 타입이에요."]
+
+        await vm.handle(.retry)
+
+        // user 하나 + 온전한 assistant 하나. 잘린 답이 끼어들면 안 된다.
+        #expect(vm.state.messages.count == 2)
+        #expect(vm.state.messages[0].role == .user)
+        #expect(vm.state.messages[1].role == .assistant)
+        #expect(vm.state.messages[1].content == "옵셔널은 값이 있을 수도, 없을 수도 있는 타입이에요.")
+        #expect(vm.state.turnCount == 1)
+    }
+
+    @Test("action hint stream failure drops its partial answer too")
+    func testActionHintPartialFailureDropsPartial() async throws {
+        let mock = MockAIService()
+        mock.shouldError = .connectionInterrupted
+        mock.chunksBeforeInterruption = ["힌트를 드리자면 "]
+        let (vm, _, _) = try makeSUT(mockService: mock)
+
+        await vm.handle(.sendAction(.hint))
+
+        #expect(vm.state.error == .connectionInterrupted)
+        #expect(vm.state.sessionState == .active)
+        #expect(vm.state.messages.count == 1)
+        #expect(vm.state.messages[0].role == .user)
+        #expect(vm.state.turnCount == 0)
+    }
+
+    @Test("a cancelled stream is not counted as a finished turn")
+    func testCancelledStreamDoesNotCountTurn() async throws {
+        let mock = MockAIService()
+        mock.shouldCancel = true
+        let (vm, _, _) = try makeSUT(mockService: mock)
+
+        await vm.handle(.sendMessage("옵셔널이 뭐예요?"))
+
+        // 취소는 실패가 아니라 배너를 띄우지 않는다. 동시에 빈 응답을
+        // 성공으로 저장해 turnCount를 까먹어서도 안 된다.
+        #expect(vm.state.error == nil)
+        #expect(vm.state.turnCount == 0)
+        #expect(vm.state.messages.count == 1)
+        #expect(vm.state.messages[0].role == .user)
+    }
+
     @Test("dismissError clears error")
     func testDismissError() async throws {
         let mock = MockAIService()

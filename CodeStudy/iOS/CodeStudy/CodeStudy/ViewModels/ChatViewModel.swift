@@ -168,6 +168,9 @@ final class ChatViewModel {
                 messages = updatedMessages
             }
             print("[ChatVM] stream ended. total chunks=\(chunkCount)")
+            // 취소로 끊긴 스트림은 throw 없이 그냥 끝나기도 한다. 그대로 두면
+            // 아래 성공 경로가 돌아 반쪽 인사말을 저장해버린다.
+            try Task.checkCancellation()
 
             // Mark streaming complete — also via full re-assign
             var finalMessages = messages
@@ -245,6 +248,9 @@ final class ChatViewModel {
                 updatedMessages[assistantIndex].content += chunk
                 messages = updatedMessages
             }
+            // 취소로 끊긴 스트림은 throw 없이 그냥 끝나기도 한다. 그대로 두면
+            // 아래 성공 경로가 돌아 반쪽 응답에 turnCount를 올리고 저장까지 한다.
+            try Task.checkCancellation()
 
             // 6. Check for mastery marker + strip from displayed text
             var finalMessages = messages
@@ -284,26 +290,29 @@ final class ChatViewModel {
             messages = updatedMessages
             isStreaming = false
         } catch let serviceError as AIServiceError {
-            var updatedMessages = messages
-            updatedMessages[assistantIndex].isStreaming = false
-            messages = updatedMessages
             isStreaming = false
             error = serviceError
             // 세션은 .active로 유지 — 배너의 "다시 시도"가 살아있어야 한다.
-            // Remove the empty assistant placeholder on error
-            if messages[assistantIndex].content.isEmpty {
-                messages.remove(at: assistantIndex)
-            }
+            discardFailedAssistantMessage(at: assistantIndex)
         } catch {
-            var updatedMessages = messages
-            updatedMessages[assistantIndex].isStreaming = false
-            if updatedMessages[assistantIndex].content.isEmpty {
-                updatedMessages.remove(at: assistantIndex)
-            }
-            messages = updatedMessages
             isStreaming = false
             self.error = .streamingFailed
+            discardFailedAssistantMessage(at: assistantIndex)
         }
+    }
+
+    /// 실패한 assistant 응답을 부분 수신분까지 통째로 지운다.
+    ///
+    /// 빈 placeholder만 지우고 반쪽 응답은 남겨두면, 이제 세션이 `.active`로
+    /// 유지되는 탓에 "다시 시도"가 같은 질문에 답을 하나 더 붙인다. 화면에도
+    /// 다음 요청의 대화 컨텍스트에도 잘린 답과 새 답이 같이 남는다.
+    private func discardFailedAssistantMessage(at index: Int) {
+        guard messages.indices.contains(index),
+              messages[index].role == .assistant else { return }
+        // @Observable이 SwiftUI 갱신을 잡도록 배열을 통째로 재할당한다.
+        var updatedMessages = messages
+        updatedMessages.remove(at: index)
+        messages = updatedMessages
     }
 
     private func sendActionMessage(_ hint: ActionHint) async {
@@ -354,6 +363,7 @@ final class ChatViewModel {
                 updatedMessages[assistantIndex].content += chunk
                 messages = updatedMessages
             }
+            try Task.checkCancellation()
 
             var finalMessages = messages
             finalMessages[assistantIndex].isStreaming = false
@@ -377,25 +387,26 @@ final class ChatViewModel {
                 await completeSession(type: .mastered)
             }
 
-        } catch let serviceError as AIServiceError {
+        } catch is CancellationError {
+            // 잠금화면/백그라운드 전환 — 실패가 아니므로 배너를 띄우지 않는다.
             var updatedMessages = messages
-            updatedMessages[assistantIndex].isStreaming = false
-            if updatedMessages[assistantIndex].content.isEmpty {
+            if updatedMessages.indices.contains(assistantIndex),
+               updatedMessages[assistantIndex].content.isEmpty {
                 updatedMessages.remove(at: assistantIndex)
+            } else if updatedMessages.indices.contains(assistantIndex) {
+                updatedMessages[assistantIndex].isStreaming = false
             }
             messages = updatedMessages
+            isStreaming = false
+        } catch let serviceError as AIServiceError {
             isStreaming = false
             error = serviceError
             // 세션은 .active로 유지 — 배너의 "다시 시도"가 살아있어야 한다.
+            discardFailedAssistantMessage(at: assistantIndex)
         } catch {
-            var updatedMessages = messages
-            updatedMessages[assistantIndex].isStreaming = false
-            if updatedMessages[assistantIndex].content.isEmpty {
-                updatedMessages.remove(at: assistantIndex)
-            }
-            messages = updatedMessages
             isStreaming = false
             self.error = .streamingFailed
+            discardFailedAssistantMessage(at: assistantIndex)
         }
     }
 
