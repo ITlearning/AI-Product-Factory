@@ -9,13 +9,17 @@
 
 ## 지금 상태
 
-Next Steps **0번(시드)** 까지. DB·엔드포인트·화면은 아직 없다.
+Next Steps **1번(스키마)** 까지. 엔드포인트·화면은 아직 없다.
 
 | Next Step | 상태 |
 |---|---|
 | 0. 시드 | 데이터·검증·로더 완료 / **유튜브 영상 ID 9곡 미정** |
-| 1. Neon + 스키마 마이그레이션 | 미착수 |
-| 2~11 | 미착수 |
+| 1. 스키마 마이그레이션 | SQL·러너·인덱스 결론 완료 / **Neon 프로젝트 생성은 Tabber 몫** |
+| 2. 공통 모듈 3개 | `identity.hashKey` 만 (시드 로더가 써서 먼저 뺐다) |
+| 3~11 | 미착수 |
+
+**미해결이던 인덱스 설계는 실측으로 닫았다** — `migrations/001_init.sql` 의 주석에 근거가 있다.
+`docs/designs/norae-galpi.md` 의 나머지 미해결(동시 등록 경합 화면, Neon CU 소진 경로 등)은 그대로다.
 
 ## 구조
 
@@ -25,6 +29,9 @@ seed/validate.js      DB 없이 스키마 제약·PII를 재현 검사
 seed/check.js         위 검사 CLI
 seed/check-videos.js  적힌 유튜브 영상이 살아있는지 oEmbed로 확인
 seed/load.js          멱등 로더. 마이그레이션 뒤에 돌린다
+migrations/001_init.sql  테이블 4 + 인덱스 4. 인덱스를 왜 그렇게 잡았는지 주석에 실측이 있다
+migrations/run.js     멱등 러너. -- 주석을 먼저 지우고 ;로 쪼갠다 (순서가 반대면 깨진다)
+src/feed.js           ⑤ 피드 쿼리 2번 + 곡 단위 접기
 src/identity.js       기기 비밀키 → SHA-256. 해시는 반드시 서버에서 계산한다
 src/labels.js         계절 4 · 시절 6. 스키마 CHECK와 화면 칩이 같이 본다
 src/moderation.js     PII 정규식 — v1 모더레이션의 유일한 자동 층
@@ -37,11 +44,15 @@ npm run verify         # lint + test
 npm run seed:validate  # 시드가 스키마·PII를 통과하는지 (DB 불필요)
 npm run seed:videos    # 시드의 유튜브 영상이 살아있는지 (네트워크 필요)
 npm run seed:dry-run   # 무엇이 들어갈지 미리보기 (DB 불필요)
-npm run migrate        # 스키마 (Next Step 1에서 생김)
+npm run migrate        # 스키마 적용. DATABASE_URL 필요
 npm run seed:load      # 실제 적재. DATABASE_URL 필요
 ```
 
 `seed:validate`의 종료 코드 — 0 통과 / 1 에러 / 2 사람이 채울 칸이 남음.
+
+테스트는 PGlite(WASM Postgres)에 **실제 마이그레이션을 적용해서** 돌린다. Neon 없이도 스키마·제약·
+피드 쿼리·실행 계획을 확인할 수 있다. 단 PGlite는 PostgreSQL 18, Neon은 보통 17이라
+**실행 계획은 Neon에서 다를 수 있다.**
 
 ## 시드를 채우는 법
 
