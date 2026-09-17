@@ -184,7 +184,8 @@ export async function writeScreen(root, query) {
     document.body.append(node);
 
     function close() {
-      node.remove();
+      // 올라온 것과 같은 방식으로 내려간다.
+      node.dismiss();
     }
   }
 

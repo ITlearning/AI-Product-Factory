@@ -166,26 +166,61 @@ time, .tabular { font-variant-numeric: tabular-nums; }
 
 ## Motion
 
-**연출된 순간은 하나뿐이다** — 곡 카드를 탭해 ⑥ 상세로 들어갈 때, 플레이어가 상단에 자리를 잡는 동작.
-모든 섹션에 같은 등장 효과를 주지 않고, 모든 요소에 호버를 걸지 않는다.
+> **rev.2 (2026-09-17) — Tabber 결정으로 확대.** 원래 이 절은 "연출된 순간은 하나뿐"이었고
+> ♡ 에 바운스를 금지했다. 실제 화면을 만들어 보니 모션이 네 곳(pill 색·♡ 색·플레이어·시트)뿐이라
+> 전부 컷으로 끊겨 투박하게 읽혔다. GetStream `purposeful-ios-animations` 의 분류를 대보고
+> **일을 하는 모션 7가지**를 넣기로 했다. 판단 기준은 그대로다 — 장식은 여전히 넣지 않는다.
+
+**모션은 일을 할 때만 넣는다.** 장식으로는 넣지 않는다. 모든 섹션에 같은 등장 효과를 주지 않고,
+모든 요소에 호버를 걸지 않는다.
 
 ```css
 --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 --dur-enter: 240ms;
---dur-quick: 120ms;   /* ♡ 토글, pill 전환 */
+--dur-quick: 120ms;
+
+/* 스프링 — "iOS 같다"는 느낌의 거의 전부가 여기서 온다.
+   ease-out 은 목표에 도달하고 멈추지만 스프링은 살짝 지나쳤다가 자리를 잡는다.
+   CSS linear() 로 곡선을 직접 쓴다. JS 애니메이션 라이브러리를 들이지 않는다. */
+--ease-spring: linear(0, 0.006, …, 1.017 63.9%, 1.001 79%, 1);
+--ease-spring-soft: linear(…);   /* 오버슈트가 더 큰 쪽. ♡ 에만 쓴다 */
+--dur-spring: 520ms;
 ```
 
-- 이미 보이는 기본 상태에서 ease-out으로 나간다. **콘텐츠가 애니메이션 타이밍 뒤에 숨지 않는다** —
-  모션이 실패해도 글은 즉시 읽을 수 있어야 한다.
+`linear()` 를 모르는 브라우저에는 `@supports` 밖에 둔 `cubic-bezier` 폴백이 간다 —
+커스텀 속성은 값 검증을 하지 않아서 그냥 넣으면 `ease` 로 떨어진다.
+
+### 넣은 것 일곱
+
+| | 무엇 | 하는 일 |
+|---|---|---|
+| A | 곡 카드 → ⑥ 앨범아트가 이어진다 (FLIP) | 연속성·방향감. iOS `matchedGeometryEffect` |
+| B | 로딩 스켈레톤 | Neon 콜드스타트가 실재한다. 레이아웃이 안 튀고 기다림이 짧게 느껴진다 |
+| C | ♡ 눌림 (420ms, `--ease-spring-soft`) | 손끝 피드백 |
+| D | 정렬 인디케이터 슬라이드 | 내가 방금 무엇을 바꿨는지가 남는다 |
+| E | 더 보기 높이 보간 | 읽던 자리를 잃지 않는다 |
+| F | 시트 스프링 + 백드롭 페이드 | 어디서 왔는지 보인다 |
+| G | 스프링 이징 토큰 | A·D·E·F 가 전부 이 위에 얹힌다 |
+
+- 이미 보이는 기본 상태에서 나간다. **콘텐츠가 애니메이션 타이밍 뒤에 숨지 않는다** —
+  모션이 실패해도 글은 즉시 읽을 수 있어야 한다. A 는 도착 화면이 이미 그려진 뒤에 되감는다.
 - 피드 카드에는 스크롤 등장 애니메이션을 넣지 않는다. 읽는 흐름을 끊는다.
-- ♡ 토글은 `--dur-quick`, 바운스 이징을 쓰지 않는다.
+- **C 는 트위터처럼 파티클을 튀기지 않는다.** 이 제품은 좋아요 개수를 숨기므로
+  요란해지면 거짓말이 된다. 되돌리기(실패) 때는 튀기지 않는다.
+- 안 넣은 것 — 폭죽·컨페티(Intrinsic Motivation), 누적 박수(Express Gratitude),
+  Duolingo 식 바운스(Delight/Whimsy). 새벽에 울면서 들었다는 글에 폭죽이 터지면 안 되고,
+  누적 리액션은 개수를 숨기는 설계와 정면으로 부딪힌다.
 
 ```css
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    /* 반복 횟수를 같이 끊지 않으면 shimmer 처럼 infinite 인 애니메이션이
+       0.01ms 마다 다시 도는 바쁜 루프가 된다. */
+    animation-iteration-count: 1 !important;
   }
+  .sk { animation: none; background: var(--color-surface-raised); }
 }
 ```
 

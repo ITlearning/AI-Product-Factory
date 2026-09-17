@@ -45,7 +45,32 @@
   --dur-enter: 240ms;
   --dur-quick: 120ms;
 
+  /* 스프링 — "iOS 같다"는 느낌의 거의 전부가 여기서 온다.
+     ease-out 은 목표에 도달하고 멈추지만 스프링은 살짝 지나쳤다가 자리를 잡는다.
+     아래 @supports 가 실제 곡선으로 덮어쓴다. 이 값은 linear() 를 모르는 브라우저의 폴백이다. */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-spring: 520ms;
+
   scrollbar-color: var(--color-line) transparent;
+}
+
+/* linear() 를 지원할 때만 진짜 스프링으로 덮는다. 커스텀 속성은 값 검증을 하지 않아서
+   지원하지 않는 브라우저에 그냥 넣으면 var() 치환 뒤에 무효가 되고 `ease` 로 떨어진다. */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: linear(
+      0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%,
+      0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%,
+      1.001 79%, 1
+    );
+    --ease-spring-soft: linear(
+      0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017,
+      1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%,
+      1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.98 57.1%,
+      0.998 69.8%, 1.004 76.9%, 1
+    );
+  }
 }
 
 /* ── 브라우저 표면 ─────────────────────────────────────────────────────────
@@ -151,32 +176,52 @@ button {
    pill 은 여기에만 쓴다. */
 
 .sorts {
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-4) 0 var(--space-3);
-  flex-wrap: wrap;
+  position: relative;
+  display: inline-flex;
+  margin: var(--space-4) 0 var(--space-3);
+  padding: 3px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  max-width: 100%;
 }
 
+/* 선택 표시가 **미끄러진다.** 색만 바뀌면 어느 쪽에서 어느 쪽으로 옮겨갔는지 흔적이 없다.
+   인디케이터가 이동하면 내가 방금 무엇을 바꿨는지가 남는다 — iOS 세그먼트 컨트롤이 하는 일. */
+.sorts__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-text);
+  transition: transform var(--dur-spring) var(--ease-spring),
+              width var(--dur-spring) var(--ease-spring);
+  pointer-events: none;
+}
+
+/* 첫 그림에서는 애니메이션하지 않는다 — 화면에 들어오자마자 미끄러지면 뭘 바꾼 건지 헷갈린다. */
+.sorts__thumb--settled { transition: none; }
+
 .sorts__item {
+  position: relative;
+  z-index: 1;
   font-size: 13px;
   font-weight: 500;
   line-height: 1;
   color: var(--color-text-tertiary);
-  border: 1px solid var(--color-line);
   border-radius: var(--radius-pill);
   padding: 0 var(--space-4);
   /* 시각적으로 작아도 히트 영역은 44px 이상이어야 한다 */
   min-height: var(--touch-min);
   display: inline-flex;
   align-items: center;
-  transition: color var(--dur-quick) var(--ease-out),
-              border-color var(--dur-quick) var(--ease-out);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color var(--dur-enter) var(--ease-out);
 }
 
-.sorts__item[aria-pressed='true'] {
-  color: var(--color-text);
-  border-color: var(--color-text-tertiary);
-}
+/* 선택된 항목은 인디케이터 위에 얹히므로 글자가 바탕색이 된다. */
+.sorts__item[aria-pressed='true'] { color: var(--color-bg); }
 
 /* ── 곡 카드 ───────────────────────────────────────────────────────────────
    피드에는 플레이어가 없다. 재생은 ⑥에서만. */
@@ -251,6 +296,11 @@ button {
   overflow: hidden;
 }
 
+/* 펼칠 때 **높이가 자란다.** 세 줄이 갑자기 열 줄이 되면 아래 카드가 툭 밀려서
+   읽던 자리를 잃는다. line-clamp 자체는 트랜지션이 안 되므로 감싼 높이를 보간한다. */
+.memory__clip { overflow: hidden; }
+.memory__clip--animating { transition: height 420ms var(--ease-spring); }
+
 .memory__more {
   font-size: 13px;
   color: var(--color-text-secondary);
@@ -287,6 +337,16 @@ button {
 }
 
 .heart[aria-pressed='true'] { color: var(--color-accent); }
+
+/* 트위터처럼 파티클을 튀기지 않는다. 이 제품 톤이 아니고, 무엇보다 **개수를 숨기는 제품**이라
+   요란해지면 거짓말이 된다. 손끝이 눌렸다는 것만 돌려준다. */
+.heart--punch { animation: heart-punch 420ms var(--ease-spring-soft); }
+
+@keyframes heart-punch {
+  0% { transform: scale(1); }
+  22% { transform: scale(0.86); }
+  100% { transform: scale(1); }
+}
 
 .card__add {
   display: block;
@@ -419,6 +479,18 @@ button {
 .hit__title { font-size: 15px; font-weight: 600; line-height: 1.35; }
 .hit__sub { font-size: 13px; color: var(--color-text-secondary); line-height: 1.4; }
 
+/* ── 앨범아트 연속성 ──────────────────────────────────────────────────────
+   곡 카드를 탭해 ⑥ 으로 들어갈 때 앨범아트가 그 자리에서 이어진다.
+   iOS 의 matchedGeometryEffect 와 같은 것 — 위치를 재서(FLIP) 도착지에서 되감는다.
+   덮어 그리는 유령 요소를 만들지 않고 도착지 요소 자체를 움직이므로 깜빡임이 없다. */
+.art-flip {
+  transform-origin: top left;
+  transition: transform var(--dur-spring) var(--ease-spring);
+  /* 이동하는 동안 옆 요소 위로 지나가야 한다 */
+  position: relative;
+  z-index: 2;
+}
+
 /* ── ⑥ 상단 고정 플레이어 ──────────────────────────────────────────────────
    RMF: 최소 200×200px, 위에 아무것도 덮지 않는다(옆·아래는 가능).
    연출된 모션은 이 하나뿐 — 진입할 때 플레이어가 자리를 잡는 동작. */
@@ -491,7 +563,14 @@ button {
   align-items: flex-end;
   justify-content: center;
   z-index: 50;
+  /* 시트가 올라오는 동안 배경이 **같이** 어두워진다. 즉시 검게 깔리면 툭 끊긴다. */
+  animation: backdrop-in var(--dur-enter) var(--ease-out);
 }
+
+@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+.sheet-backdrop--out { animation: backdrop-out var(--dur-enter) var(--ease-out) forwards; }
+@keyframes backdrop-out { to { opacity: 0; } }
 
 .sheet {
   width: 100%;
@@ -500,10 +579,14 @@ button {
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   padding: var(--space-5) var(--space-4) var(--space-6);
-  animation: sheet-in var(--dur-enter) var(--ease-out);
+  animation: sheet-in var(--dur-spring) var(--ease-spring);
 }
 
-@keyframes sheet-in { from { transform: translateY(12px); } to { transform: none; } }
+/* 12px 만 움직이면 "어디서 왔는지"가 안 보인다. 아래에서 통째로 올라온다. */
+@keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+
+.sheet-backdrop--out .sheet { animation: sheet-out var(--dur-enter) var(--ease-out) forwards; }
+@keyframes sheet-out { to { transform: translateY(100%); } }
 
 .sheet__title { font-size: 17px; font-weight: 600; margin: 0 0 var(--space-3); }
 .sheet__body { font-size: 15px; line-height: 1.7; color: var(--color-text-secondary); margin: 0; }
@@ -558,6 +641,32 @@ button {
   clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
+/* ── 스켈레톤 ──────────────────────────────────────────────────────────────
+   Neon 이 5분 비활성이면 잠들어서 **콜드스타트가 실재한다.** 글자 한 줄만 띄우면
+   그 시간이 통째로 빈 화면이다. 카드 모양 그대로 자리를 잡아두면 레이아웃이 안 튀고
+   기다림이 짧게 느껴진다. */
+
+.sk {
+  border-radius: var(--radius-thumb);
+  background: linear-gradient(
+    100deg,
+    var(--color-surface-raised) 30%,
+    #262220 48%,
+    var(--color-surface-raised) 66%
+  );
+  background-size: 280% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 180% 0; }
+  to { background-position: -80% 0; }
+}
+
+.sk--art { width: 52px; height: 52px; flex: 0 0 52px; }
+.sk--line { height: 12px; }
+.sk--player { width: 100%; aspect-ratio: 16 / 9; min-height: 200px; border-radius: var(--radius-thumb); }
+
 /* 첫 방문자에게는 서비스 자체 카피를 한 줄씩. **가사는 쓰지 않는다**(KOMCA 관리 저작물). */
 .loading {
   padding: var(--space-8) var(--space-4);
@@ -572,5 +681,12 @@ button {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    /* 반복 횟수를 같이 끊지 않으면 shimmer 처럼 infinite 인 애니메이션이
+       0.01ms 마다 다시 도는 바쁜 루프가 된다. 모션을 줄여달라고 한 사람에게
+       오히려 CPU 를 태우는 꼴이라, 여기서 한 번만 돌게 막는다. */
+    animation-iteration-count: 1 !important;
   }
+
+  /* 스켈레톤은 반짝임 없이 자리만 잡는다. */
+  .sk { animation: none; background: var(--color-surface-raised); }
 }

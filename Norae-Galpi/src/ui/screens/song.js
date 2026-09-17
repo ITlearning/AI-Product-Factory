@@ -19,9 +19,10 @@
  */
 
 import { el, replace } from '../dom.js';
-import { songHead, memoryBlock, emptyState } from '../components.js';
+import { songHead, memoryBlock, emptyState, skeletonMemories } from '../components.js';
 import { getSong, report } from '../../client/api.js';
 import { setNoindex } from '../head.js';
+import { takeSongTransition, flipFrom } from '../transition.js';
 
 /**
  * @param {HTMLElement} root
@@ -29,7 +30,23 @@ import { setNoindex } from '../head.js';
  */
 export async function songScreen(root, songId) {
   setNoindex(true);
-  replace(root, el('p', { className: 'loading', text: '불러오는 중이에요…' }));
+
+  // 피드에서 넘어왔다면 곡 요약과 아트워크 위치를 들고 온다.
+  // 곡 요약이 있으면 **fetch 를 기다리지 않고** 곡 머리와 플레이어를 즉시 그린다 —
+  // 모션이 이어질 뿐 아니라 유튜브 iframe 이 왕복 한 번 먼저 뜬다.
+  const hint = takeSongTransition(songId);
+
+  const memoriesSlot = el('div', {});
+  let shell = null;
+
+  if (hint?.song) {
+    shell = renderShell(hint.song);
+    replace(memoriesSlot, skeletonMemories(2));
+    // 도착지 아트를 떠나온 자리에서 되감았다가 푼다.
+    flipFrom(hint.rect, shell.querySelector('.song-head__art'));
+  } else {
+    replace(root, el('div', { className: 'screen shell' }, [skeletonMemories(3)]));
+  }
 
   let data;
   try {
@@ -43,26 +60,12 @@ export async function songScreen(root, songId) {
 
   const { song, memories } = data;
 
-  const player = el('div', { className: 'player' }, [
-    el('iframe', {
-      className: 'player__frame',
-      src: `https://www.youtube-nocookie.com/embed/${song.youtube_video_id}`,
-      attrs: {
-        // 스크린리더가 "프레임"이라고만 읽지 않게 한다.
-        title: `${song.title} — ${song.artist} 영상`,
-        allow: 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
-        allowfullscreen: 'true',
-        referrerpolicy: 'strict-origin-when-cross-origin',
-        loading: 'eager',
-      },
-    }),
-    el('p', {
-      className: 'player__count',
-      text: memories.length > 0 ? `기억 ${memories.length}편 · 아래만 스크롤됩니다` : '',
-    }),
-  ]);
+  // 요약으로 먼저 그려둔 게 없으면 여기서 처음 그린다.
+  if (!shell) shell = renderShell(song);
 
-  const body =
+  // 기억만 채워 넣는다. 플레이어를 다시 그리면 재생이 끊긴다.
+  replace(
+    memoriesSlot,
     memories.length === 0
       ? emptyState({
           line: '아직 이 곡의 기억이 없어요.\n첫 사람이 되어볼래요?',
@@ -78,17 +81,50 @@ export async function songScreen(root, songId) {
             href: `#/write?songId=${song.id}`,
             text: '나도 적기',
           }),
-        ]);
-
-  replace(
-    root,
-    el('div', { className: 'screen shell' }, [
-      player,
-      el('div', { style: 'margin: 12px 0 16px' }, [songHead(song, { size: 150 })]),
-      body,
-      reportRow(song),
-    ]),
+        ]),
   );
+
+  const count = shell.querySelector('.player__count');
+  if (count) {
+    count.textContent = memories.length > 0 ? `기억 ${memories.length}편 · 아래만 스크롤됩니다` : '';
+  }
+
+  /**
+   * 플레이어 + 곡 머리 + 기억 자리. 곡 요약만 있으면 그릴 수 있다.
+   *
+   * @param {object} s - 곡 (피드 요약 또는 상세 응답)
+   * @returns {HTMLElement}
+   */
+  function renderShell(s) {
+    const videoId = s.youtube_video_id ?? s.youtubeVideoId;
+
+    const player = el('div', { className: 'player' }, [
+      videoId
+        ? el('iframe', {
+            className: 'player__frame',
+            src: `https://www.youtube-nocookie.com/embed/${videoId}`,
+            attrs: {
+              // 스크린리더가 "프레임"이라고만 읽지 않게 한다.
+              title: `${s.title} — ${s.artist} 영상`,
+              allow: 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+              allowfullscreen: 'true',
+              referrerpolicy: 'strict-origin-when-cross-origin',
+              loading: 'eager',
+            },
+          })
+        : el('div', { className: 'sk sk--player' }),
+      el('p', { className: 'player__count' }),
+    ]);
+
+    const view = el('div', { className: 'screen shell' }, [
+      player,
+      el('div', { style: 'margin: 12px 0 16px' }, [songHead(s, { size: 150 })]),
+      memoriesSlot,
+      reportRow(s),
+    ]);
+    replace(root, view);
+    return view;
+  }
 }
 
 /**

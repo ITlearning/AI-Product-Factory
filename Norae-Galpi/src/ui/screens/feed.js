@@ -7,7 +7,7 @@
  */
 
 import { el, replace } from '../dom.js';
-import { songCard, emptyState } from '../components.js';
+import { songCard, emptyState, skeletonFeed } from '../components.js';
 import { SORT_LABELS, SEASON_LABELS, currentSeason } from '../labels.js';
 import { getFeed } from '../../client/api.js';
 import { readCachedFeed, writeCachedFeed } from '../../client/feed-cache.js';
@@ -34,7 +34,17 @@ export function feedScreen(root, query) {
     render(cached);
   } else {
     // 첫 방문자에게는 서비스 자체 카피를 한 줄씩. **가사는 쓰지 않는다**(KOMCA 관리 저작물).
-    replace(list, el('p', { className: 'loading', text: '노래마다 그때가 한 편씩 붙어 있어요.' }));
+    // 그 아래로 카드 모양 스켈레톤 — Neon 콜드스타트가 실재해서 이 시간이 진짜로 있다.
+    replace(
+      list,
+      el('p', {
+        className: 'loading',
+        // 스켈레톤과 나란히 서므로 위아래 여백을 줄인다. 혼자일 때의 --space-8 은 너무 멀다.
+        style: 'padding: var(--space-5) var(--space-4) 0',
+        text: '노래마다 그때가 한 편씩 붙어 있어요.',
+      }),
+      skeletonFeed(2),
+    );
   }
 
   getFeed({ sort, season: pinnedSeason ?? undefined })
@@ -65,8 +75,18 @@ export function feedScreen(root, query) {
 }
 
 /**
+ * 직전에 어느 정렬이었는지. 화면이 통째로 다시 그려지므로 모듈이 기억한다 —
+ * 이게 없으면 인디케이터가 매번 제자리에서 태어나 미끄러질 곳이 없다.
+ *
+ * @type {string|null}
+ */
+let lastSort = null;
+
+/**
  * 정렬 pill 3개. `지금 계절`이 기본값인 게 핵심이다 —
  * 겨울이 오면 홈이 저절로 바뀐다. **푸시도 스트릭도 없이 계절이 사람을 부른다.**
+ *
+ * 선택 표시가 **미끄러진다.** 색만 바뀌면 어디서 어디로 옮겨갔는지 흔적이 없다.
  */
 function sortBar(active, pinnedSeason) {
   const items = SORTS.map((s) =>
@@ -77,7 +97,41 @@ function sortBar(active, pinnedSeason) {
       attrs: { 'aria-pressed': String(s === active) },
     }),
   );
-  return el('nav', { className: 'sorts', attrs: { 'aria-label': '정렬' } }, items);
+
+  const thumb = el('span', { className: 'sorts__thumb', attrs: { 'aria-hidden': 'true' } });
+  const nav = el('nav', { className: 'sorts', attrs: { 'aria-label': '정렬' } }, [thumb, ...items]);
+
+  const from = SORTS.indexOf(lastSort);
+  const to = SORTS.indexOf(active);
+  lastSort = active;
+
+  // 레이아웃이 잡힌 뒤에 재야 한다. 붙기 전에는 offsetWidth 가 0이다.
+  requestAnimationFrame(() => {
+    const place = (i) => {
+      const it = items[i];
+      thumb.style.width = `${it.offsetWidth}px`;
+      thumb.style.transform = `translateX(${it.offsetLeft - 3}px)`;
+    };
+
+    if (from < 0 || from === to) {
+      // 첫 그림이거나 같은 정렬 — 제자리에 놓고 끝낸다.
+      // 화면에 들어오자마자 미끄러지면 내가 뭘 바꾼 건지 헷갈린다.
+      thumb.classList.add('sorts__thumb--settled');
+      place(to);
+      requestAnimationFrame(() => thumb.classList.remove('sorts__thumb--settled'));
+      return;
+    }
+
+    // 직전 자리에 놓았다가 한 프레임 뒤에 새 자리로 보낸다.
+    thumb.classList.add('sorts__thumb--settled');
+    place(from);
+    requestAnimationFrame(() => {
+      thumb.classList.remove('sorts__thumb--settled');
+      place(to);
+    });
+  });
+
+  return nav;
 }
 
 /**
