@@ -9,7 +9,7 @@
 
 ## 지금 상태
 
-Next Steps **4번(쓰기 경로)** 까지. 화면은 아직 없다.
+**엔드포인트 9개 전부 완료.** 화면(Next Steps 5~10의 UI 절반)만 남았다.
 
 | Next Step | 상태 |
 |---|---|
@@ -18,7 +18,27 @@ Next Steps **4번(쓰기 경로)** 까지. 화면은 아직 없다.
 | 2. 공통 모듈 3개 | `identity` · `itunes` · `db` 완료 |
 | 3. 골든 테스트 | 드라이런 20곡 — `titleKey` 19/19, 원곡 1순위 19/19 |
 | 4. `POST /api/memories` | 완료. 순서 못 박음 — 본문 → PII → 레이트리밋 → 곡 upsert → 글 → 퍼지 2키 |
-| 5~11 | 미착수 |
+| 5~10 (API 절반) | 곡 검색·영상 후보·피드·곡 상세·내 갈피·좋아요·신고·운영자 숨김 완료 |
+| 5~10 (화면) | **미착수 — 프런트엔드 스택 결정 필요** |
+| 11. 출시 | 미착수 |
+
+### 엔드포인트 9개
+
+| | |
+|---|---|
+| `GET  /api/song-search?q=` | ① 곡 검색. 자동 선택 없음 |
+| `GET  /api/video-search?q=` · `?url=` | ② 영상 후보. 키 없으면 직접 링크만 |
+| `POST /api/memories` | ③④ 기억 올리기 |
+| `GET  /api/feed?sort=&season=&page=` | ⑤ 피드. 캐시 + SWR |
+| `GET  /api/song?id=` | ⑥ 곡 상세 |
+| `GET  /api/mine` | ⑦ 내 갈피. `X-Device-Key` 헤더 |
+| `POST /api/likes` | 좋아요 토글. 개수는 응답에 없다 |
+| `POST /api/reports` | 신고 |
+| `POST /api/admin-hide` | 운영자 숨김. `X-Admin-Token` |
+
+**기기 비밀키는 절대 쿼리스트링으로 받지 않는다.** URL은 프록시 로그·리퍼러·브라우저
+히스토리에 남는 자리라, 거기 키가 실리면 서버에 해시만 저장하는 설계가 통째로 무의미해진다.
+GET은 `X-Device-Key` 헤더, POST는 본문으로 받는다.
 
 **미해결이던 인덱스 설계는 실측으로 닫았다** — `migrations/001_init.sql` 의 주석에 근거가 있다.
 `docs/designs/norae-galpi.md` 의 나머지 미해결(동시 등록 경합 화면, Neon CU 소진 경로 등)은 그대로다.
@@ -42,7 +62,12 @@ src/cache.js          피드 캐시 3키. **퍼지 대상이 트리거마다 다
 src/ratelimit.js      작성 분당 1편·일 20편, 유튜브 검색 일 100회(태평양 자정 리셋)
 src/songs.js          곡 upsert. 시드 로더와 API가 같은 경로를 쓴다
 src/memories.js       기억 올리기. 순서가 못 박혀 있다
-api/memories.js       POST /api/memories. Pages 스타일 (req, res)
+src/youtube.js        ② 영상 후보. 키 없음·쿼터 소진·403이 전부 같은 폴백을 탄다
+src/read.js           피드·곡 상세·내 갈피·좋아요
+src/moderation-actions.js  신고·자동 숨김·운영자 숨김
+src/http.js           핸들러 공통. 본문·헤더를 로그에 안 남긴다
+api/*.js              엔드포인트 9개. 전부 Pages 스타일 (req, res)
+DESIGN.md             토큰·컴포넌트 사양 (docs/designs/norae-galpi-DESIGN.md 사본)
 src/labels.js         계절 4 · 시절 6. 스키마 CHECK와 화면 칩이 같이 본다
 src/moderation.js     PII 정규식 — v1 모더레이션의 유일한 자동 층
 tests/fixtures/itunes-dryrun.json  드라이런 20곡의 실제 iTunes 응답. 테스트는 네트워크를 안 탄다

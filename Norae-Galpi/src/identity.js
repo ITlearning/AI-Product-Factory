@@ -70,3 +70,39 @@ export function requireKey(body) {
 export function newDeviceKey() {
   return randomBytes(24).toString('base64url');
 }
+
+/**
+ * 요청에서 기기 키를 찾는다 — 헤더 우선, 없으면 본문.
+ *
+ * **키를 쿼리스트링으로 받지 않는다.** URL은 프록시·액세스 로그·리퍼러·브라우저 히스토리에
+ * 그대로 남는 자리라, 거기에 키를 실으면 서버에 해시만 저장하는 설계가 통째로 무의미해진다.
+ * 그래서 GET 경로는 `X-Device-Key` 헤더로 받는다.
+ *
+ * @param {{headers?: Record<string, unknown>}} req
+ * @param {object} [body] - 파싱된 요청 본문 (POST 경로)
+ * @returns {string} SHA-256 16진 64자
+ * @throws {Error} `.status = 400`
+ */
+export function keyFromRequest(req, body) {
+  const header = req?.headers?.['x-device-key'] ?? req?.headers?.['X-Device-Key'];
+  if (typeof header === 'string' && header.trim().length > 0) {
+    return requireKey({ deviceKey: header });
+  }
+  return requireKey(body ?? {});
+}
+
+/**
+ * 키가 없어도 되는 경로용 — 있으면 해시, 없으면 null.
+ * ⑥ 곡 상세처럼 로그인 안 한 사람도 읽을 수 있어야 하는 화면에서 쓴다.
+ *
+ * @param {{headers?: Record<string, unknown>}} req
+ * @param {object} [body]
+ * @returns {string|null}
+ */
+export function optionalKeyFromRequest(req, body) {
+  try {
+    return keyFromRequest(req, body);
+  } catch {
+    return null;
+  }
+}
