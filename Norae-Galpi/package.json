@@ -1,0 +1,19 @@
+{
+  "name": "norae-galpi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node scripts/check-syntax.mjs",
+    "test": "node --test 'tests/**/*.test.js'",
+    "verify": "npm run lint && npm test",
+    "seed:validate": "node seed/check.js",
+    "seed:load": "node --env-file=.env.local seed/load.js",
+    "seed:dry-run": "node seed/load.js --dry-run",
+    "migrate": "node --env-file=.env.local migrations/run.js",
+    "seed:videos": "node seed/check-videos.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0"
+  }
+}
