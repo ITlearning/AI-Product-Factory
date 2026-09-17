@@ -9,14 +9,15 @@
 
 ## 지금 상태
 
-Next Steps **1번(스키마)** 까지. 엔드포인트·화면은 아직 없다.
+Next Steps **3번(골든 테스트)** 까지. 엔드포인트·화면은 아직 없다.
 
 | Next Step | 상태 |
 |---|---|
 | 0. 시드 | 데이터·검증·로더 완료 / **유튜브 영상 ID 9곡 미정** |
 | 1. 스키마 마이그레이션 | SQL·러너·인덱스 결론 완료 / **Neon 프로젝트 생성은 Tabber 몫** |
-| 2. 공통 모듈 3개 | `identity.hashKey` 만 (시드 로더가 써서 먼저 뺐다) |
-| 3~11 | 미착수 |
+| 2. 공통 모듈 3개 | `identity` · `itunes` · `db` 완료 |
+| 3. 골든 테스트 | 드라이런 20곡 — `titleKey` 19/19, 원곡 1순위 19/19 |
+| 4~11 | 미착수 |
 
 **미해결이던 인덱스 설계는 실측으로 닫았다** — `migrations/001_init.sql` 의 주석에 근거가 있다.
 `docs/designs/norae-galpi.md` 의 나머지 미해결(동시 등록 경합 화면, Neon CU 소진 경로 등)은 그대로다.
@@ -33,8 +34,11 @@ migrations/001_init.sql  테이블 4 + 인덱스 4. 인덱스를 왜 그렇게 �
 migrations/run.js     멱등 러너. -- 주석을 먼저 지우고 ;로 쪼갠다 (순서가 반대면 깨진다)
 src/feed.js           ⑤ 피드 쿼리 2번 + 곡 단위 접기
 src/identity.js       기기 비밀키 → SHA-256. 해시는 반드시 서버에서 계산한다
+src/itunes.js         검색(us) → 표기(kr) → 한글 재정렬 → MR 하향. titleKey 정규화
+src/db.js             Neon 클라이언트. 트랜잭션도 multi-statement도 없다
 src/labels.js         계절 4 · 시절 6. 스키마 CHECK와 화면 칩이 같이 본다
 src/moderation.js     PII 정규식 — v1 모더레이션의 유일한 자동 층
+tests/fixtures/itunes-dryrun.json  드라이런 20곡의 실제 iTunes 응답. 테스트는 네트워크를 안 탄다
 ```
 
 ## 명령

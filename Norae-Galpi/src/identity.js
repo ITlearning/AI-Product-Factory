@@ -8,11 +8,9 @@
  * **원본 키를 로그에 남기지 않는다.** 요청 본문 로깅도 마찬가지다.
  * 원본 키가 IP와 같은 자리에 남으면 Whisper 유출이 재식별로 이어진 조합이 재현된다.
  *
- * v1 착수 시점에는 `hashKey`만 있다. 요청에서 키를 꺼내 검증하는 `requireKey`는
- * 엔드포인트가 생기는 Next Step 2에서 이 파일에 함께 들어간다.
  */
 
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 /** 무한 길이 입력으로 해시 계산을 밀어붙이지 못하게 하는 상한. */
 const MAX_KEY_LENGTH = 512;
@@ -36,4 +34,39 @@ export function hashKey(rawKey) {
     throw new TypeError(`rawKey must be at most ${MAX_KEY_LENGTH} characters`);
   }
   return createHash('sha256').update(key, 'utf8').digest('hex');
+}
+
+/**
+ * 요청 본문에서 기기 비밀키를 꺼내 해시로 바꾼다.
+ *
+ * **원본 키를 반환하지 않는다.** 호출 측이 실수로 로그에 남기지 못하게, 이 함수 밖으로는
+ * 해시만 나간다. 요청 본문 전체를 로깅하는 미들웨어도 두지 않는다 —
+ * 원본 키가 IP와 같은 자리에 남으면 Whisper 유출이 재식별로 이어진 조합이 재현된다.
+ *
+ * @param {{deviceKey?: unknown}} body - 파싱된 요청 본문
+ * @returns {string} SHA-256 16진 64자
+ * @throws {Error} 키가 없거나 모양이 아닐 때. `.status = 400` 이 붙는다
+ */
+export function requireKey(body) {
+  const raw = body?.deviceKey;
+  try {
+    return hashKey(typeof raw === 'string' ? raw : '');
+  } catch {
+    // 어떤 값이 왔는지 메시지에 싣지 않는다 — 그 값이 곧 키다.
+    const err = new Error('기기 키가 없거나 올바르지 않습니다');
+    err.status = 400;
+    throw err;
+  }
+}
+
+/**
+ * 새 기기 비밀키를 만든다. 클라이언트가 첫 방문에 한 번 부르고 localStorage에 넣는다.
+ *
+ * 서버는 이걸 저장하지 않는다 — 해시만 갖는다. 그래서 이 값의 유일한 사본이 사용자 기기에 있고,
+ * 브라우저 데이터를 지우면 ⑦ 내 갈피와 수정·삭제권이 증발한다. 복구 코드가 그 대가다.
+ *
+ * @returns {string} base64url 32자
+ */
+export function newDeviceKey() {
+  return randomBytes(24).toString('base64url');
 }
