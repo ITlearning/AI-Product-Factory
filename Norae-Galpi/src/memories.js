@@ -138,9 +138,15 @@ export async function createMemory(sql, authorHash, payload) {
     });
   }
 
-  // 4) 곡 upsert — 여기까지 와야 유령 곡이 안 생긴다
-  const songInput = validateSongInput(payload?.song);
-  const song = await upsertSong(sql, songInput);
+  // 4) 곡 — 이미 있는 곡이면 id 만 받는다
+  //
+  // ⑥ 곡 상세의 "나도 적기"로 들어온 사람은 곡을 새로 만드는 게 아니다. 그때 클라이언트가
+  // 곡 정보를 통째로 되돌려 보내게 하면, 화면이 갖고 있지도 않은 값(title_key 등)까지
+  // 들고 다녀야 하고 남의 곡 필드를 손댈 여지가 생긴다. **id 하나면 충분하다.**
+  const song = payload?.songId != null
+    ? await useExistingSong(sql, payload.songId)
+    // 새 곡이면 upsert. 여기까지 와야 유령 곡이 안 생긴다.
+    : await upsertSong(sql, validateSongInput(payload?.song));
 
   // 5) 글 INSERT
   const rows = await sql`
@@ -161,5 +167,27 @@ export async function createMemory(sql, authorHash, payload) {
     videoWasAlreadySet: song.videoWasAlreadySet,
     existingVideoId: song.existingVideoId,
     purgedKeys,
+  };
+}
+
+/**
+ * 이미 있는 곡을 쓴다. 없는 id 면 거부한다 — FK 위반으로 500이 나는 대신
+ * 무엇이 잘못됐는지 말해준다.
+ *
+ * @param {any} sql
+ * @param {unknown} songId
+ * @returns {Promise<{songId: unknown, inserted: boolean, videoWasAlreadySet: boolean,
+ *                    existingVideoId: string|null}>}
+ */
+async function useExistingSong(sql, songId) {
+  if (!/^\d+$/.test(String(songId))) fail(400, '곡을 찾을 수 없습니다');
+  const rows = await sql`SELECT id, youtube_video_id FROM songs WHERE id = ${String(songId)} LIMIT 1`;
+  if (rows.length === 0) fail(404, '곡을 찾을 수 없습니다');
+  return {
+    songId: rows[0].id,
+    inserted: false,
+    // 이미 있는 곡을 고른 것이지 경합에서 진 게 아니다.
+    videoWasAlreadySet: false,
+    existingVideoId: rows[0].youtube_video_id,
   };
 }

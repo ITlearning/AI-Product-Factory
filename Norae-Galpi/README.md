@@ -9,7 +9,7 @@
 
 ## 지금 상태
 
-**엔드포인트 9개 전부 완료.** 화면(Next Steps 5~10의 UI 절반)만 남았다.
+**화면 일곱 + 엔드포인트 아홉 전부 완료.** 남은 건 시드의 유튜브 영상 ID 9곡과 Neon 프로젝트다.
 
 | Next Step | 상태 |
 |---|---|
@@ -19,8 +19,8 @@
 | 3. 골든 테스트 | 드라이런 20곡 — `titleKey` 19/19, 원곡 1순위 19/19 |
 | 4. `POST /api/memories` | 완료. 순서 못 박음 — 본문 → PII → 레이트리밋 → 곡 upsert → 글 → 퍼지 2키 |
 | 5~10 (API 절반) | 곡 검색·영상 후보·피드·곡 상세·내 갈피·좋아요·신고·운영자 숨김 완료 |
-| 5~10 (화면) | **미착수 — 프런트엔드 스택 결정 필요** |
-| 11. 출시 | 미착수 |
+| 5~10 (화면) | 화면 일곱 완료. 바닐라 JS + `scripts/build.mjs` (IBAD·Spending-Personality 방식) |
+| 11. 출시 | **미착수 — 영상 ID 9곡 + Neon 프로젝트가 선행** |
 
 ### 엔드포인트 9개
 
@@ -68,6 +68,12 @@ src/moderation-actions.js  신고·자동 숨김·운영자 숨김
 src/http.js           핸들러 공통. 본문·헤더를 로그에 안 남긴다
 api/*.js              엔드포인트 9개. 전부 Pages 스타일 (req, res)
 DESIGN.md             토큰·컴포넌트 사양 (docs/designs/norae-galpi-DESIGN.md 사본)
+index.html            진입. 번들러 없이 브라우저가 ES 모듈을 그대로 읽는다
+src/styles.css        DESIGN.md 토큰
+src/app.js            앱 셸 — 공통 헤더 + 해시 라우팅
+src/ui/               dom·components·screens/ (화면 일곱)
+src/client/           device(복구 코드)·api·draft·feed-cache
+scripts/build.mjs     정적 빌드 + **서버 전용 모듈이 브라우저로 새는지 검사**
 src/labels.js         계절 4 · 시절 6. 스키마 CHECK와 화면 칩이 같이 본다
 src/moderation.js     PII 정규식 — v1 모더레이션의 유일한 자동 층
 tests/fixtures/itunes-dryrun.json  드라이런 20곡의 실제 iTunes 응답. 테스트는 네트워크를 안 탄다
@@ -80,11 +86,17 @@ npm run verify         # lint + test
 npm run seed:validate  # 시드가 스키마·PII를 통과하는지 (DB 불필요)
 npm run seed:videos    # 시드의 유튜브 영상이 살아있는지 (네트워크 필요)
 npm run seed:dry-run   # 무엇이 들어갈지 미리보기 (DB 불필요)
+npm run build          # dist/ 정적 빌드
+npm run dev:local      # **Neon 없이** 앱 전체를 띄운다 → http://localhost:5173
 npm run migrate        # 스키마 적용. DATABASE_URL 필요
 npm run seed:load      # 실제 적재. DATABASE_URL 필요
 ```
 
 `seed:validate`의 종료 코드 — 0 통과 / 1 에러 / 2 사람이 채울 칸이 남음.
+
+`dev:local` 은 PGlite(WASM Postgres)를 메모리에 띄우고 시드까지 넣는다. Neon·Redis·유튜브 키
+없이 화면 일곱을 전부 눌러볼 수 있다. 영상 ID 가 아직 없는 곡은 자리표시자라 그 곡의 ⑥ 상세는
+플레이어가 에러를 보여주는데, 그건 정상이다.
 
 테스트는 PGlite(WASM Postgres)에 **실제 마이그레이션을 적용해서** 돌린다. Neon 없이도 스키마·제약·
 피드 쿼리·실행 계획을 확인할 수 있다. 단 PGlite는 PostgreSQL 18, Neon은 보통 17이라

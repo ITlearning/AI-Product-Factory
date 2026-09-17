@@ -185,3 +185,28 @@ test('운영자 숨김 — 토큰이 없거나 틀리면 못 들어온다', asyn
     else process.env.ADMIN_TOKEN = saved;
   }
 });
+
+test('복구 코드에 한글이 있어도 헤더로 오간다', () => {
+  // 실제로 터졌던 버그. 복구 코드가 `갈피-…`로 시작하는데 HTTP 헤더 값은 ISO-8859-1 만
+  // 담을 수 있어, 한글을 그대로 넣으면 fetch 가 통째로 던진다
+  // (`String contains non ISO-8859-1 code point`). ⑦ 내 갈피와 ⑥ 좋아요 상태가 전부 죽는다.
+  const key = '갈피-4F7K-2M9Q-8XZP';
+  const encoded = encodeURIComponent(key);
+
+  // 브라우저가 실제로 헤더에 넣을 수 있는 값인지 — 여기서 던지면 클라이언트에서도 던진다.
+  assert.doesNotThrow(() => new Headers({ 'X-Device-Key': encoded }));
+  assert.throws(() => new Headers({ 'X-Device-Key': key }), '전제 확인 — 원본은 헤더에 못 넣는다');
+
+  // 인코드해서 보내도 POST 본문으로 보낸 것과 **같은 해시**가 나와야 한다.
+  // 안 그러면 같은 기기가 GET 과 POST 에서 서로 다른 사람이 된다.
+  assert.equal(
+    keyFromRequest({ headers: { 'x-device-key': encoded } }),
+    keyFromRequest({ headers: {} }, { deviceKey: key }),
+  );
+
+  // 인코딩 안 된 ASCII 키도 그대로 통과한다.
+  assert.equal(
+    keyFromRequest({ headers: { 'x-device-key': 'plain-ascii-key' } }),
+    hashKey('plain-ascii-key'),
+  );
+});

@@ -6,12 +6,15 @@
   "scripts": {
     "lint": "node scripts/check-syntax.mjs",
     "test": "node --test 'tests/**/*.test.js'",
-    "verify": "npm run lint && npm test",
+    "verify": "npm run lint && npm test && npm run build",
     "seed:validate": "node seed/check.js",
     "seed:load": "node --env-file=.env.local seed/load.js",
     "seed:dry-run": "node seed/load.js --dry-run",
     "migrate": "node --env-file=.env.local migrations/run.js",
-    "seed:videos": "node seed/check-videos.js"
+    "seed:videos": "node seed/check-videos.js",
+    "build": "node scripts/build.mjs",
+    "dev": "vercel dev",
+    "dev:local": "node scripts/dev-server.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

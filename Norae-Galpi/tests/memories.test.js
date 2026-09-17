@@ -303,3 +303,35 @@ test('핸들러 — 본문을 로그에 남기지 않는다', async () => {
     console.log = orig;
   }
 });
+
+test('이미 있는 곡이면 songId 하나만 보내면 된다 — "나도 적기" 경로', async () => {
+  // 실제로 터졌던 버그. ⑥ 곡 상세의 "나도 적기"로 들어오면 화면은 곡의 title_key 를
+  // 갖고 있지 않다(곡 상세 응답에 없다). 곡 정보를 통째로 되돌려 보내게 만들면
+  // "곡 정보가 모자랍니다"로 막힌다.
+  const { db, sql } = await freshDb();
+  _setKv(fakeKv());
+
+  const first = await createMemory(sql, 'a', { song: SONG, body: '첫 글' });
+  const second = await createMemory(sql, 'b', { songId: String(first.songId), body: '나도 적기' });
+
+  assert.equal(String(second.songId), String(first.songId));
+  assert.equal(second.videoWasAlreadySet, false, '이미 있는 곡을 고른 건 경합에서 진 게 아니다');
+
+  const n = await db.query('SELECT (SELECT count(*)::int FROM songs) s, (SELECT count(*)::int FROM memories) m');
+  assert.equal(n.rows[0].s, 1, '곡이 새로 생겼다');
+  assert.equal(n.rows[0].m, 2);
+});
+
+test('없는 songId 는 FK 위반 500이 아니라 404로 막는다', async () => {
+  const { sql } = await freshDb();
+  _setKv(fakeKv());
+  await assert.rejects(
+    () => createMemory(sql, 'a', { songId: '999999', body: 'x' }),
+    (err) => err.status === 404,
+  );
+  // 작성자를 나눈다 — 같은 해시로 연달아 부르면 분당 1편 제한이 먼저 걸린다.
+  await assert.rejects(
+    () => createMemory(sql, 'b', { songId: 'not-a-number', body: 'x' }),
+    (err) => err.status === 400,
+  );
+});

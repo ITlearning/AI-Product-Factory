@@ -86,7 +86,9 @@ export function newDeviceKey() {
 export function keyFromRequest(req, body) {
   const header = req?.headers?.['x-device-key'] ?? req?.headers?.['X-Device-Key'];
   if (typeof header === 'string' && header.trim().length > 0) {
-    return requireKey({ deviceKey: header });
+    // 헤더 값은 ISO-8859-1 만 담을 수 있어 클라이언트가 퍼센트 인코딩해서 보낸다
+    // (복구 코드가 `갈피-…`로 시작한다). 디코드해야 POST 본문으로 온 것과 같은 해시가 나온다.
+    return requireKey({ deviceKey: safeDecode(header) });
   }
   return requireKey(body ?? {});
 }
@@ -104,5 +106,20 @@ export function optionalKeyFromRequest(req, body) {
     return keyFromRequest(req, body);
   } catch {
     return null;
+  }
+}
+
+/**
+ * 퍼센트 디코드. 인코딩 안 된 값이 와도 그대로 돌려준다 —
+ * 여기서 던지면 멀쩡한 ASCII 키를 쓰는 사람이 막힌다.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function safeDecode(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
   }
 }

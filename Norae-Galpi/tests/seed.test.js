@@ -109,3 +109,21 @@ test('현재 계절 — 북반구 기준', () => {
   assert.equal(currentSeason(new Date('2026-04-01')), 'spring');
   assert.equal(currentSeason(new Date('2026-07-20')), 'summer');
 });
+
+test('복구 코드 형식 — 헷갈리는 글자가 없고 옮겨적을 수 있다', async () => {
+  // 손으로 옮겨적는 게 이 코드의 유일한 용도라 `0`과 `O`가 섞이면 코드가 제 일을 못 한다.
+  const { normalizeKey } = await import('../src/client/device.js');
+
+  assert.equal(normalizeKey('갈피-4F7K-2M9Q-8XZP'), '갈피-4F7K-2M9Q-8XZP');
+  // 하이픈을 빼먹거나, 소문자로 쓰거나, 접두사를 안 쓰거나, 공백을 섞어도 받는다.
+  assert.equal(normalizeKey('4F7K2M9Q8XZP'), '갈피-4F7K-2M9Q-8XZP');
+  assert.equal(normalizeKey('갈피-4f7k-2m9q-8xzp'), '갈피-4F7K-2M9Q-8XZP');
+  assert.equal(normalizeKey('  갈피 4F7K 2M9Q 8XZP  '), '갈피-4F7K-2M9Q-8XZP');
+
+  // 알파벳 밖 글자가 섞이면 받지 않는다 — 조용히 틀린 키로 복원하면 글을 못 찾는다.
+  assert.equal(normalizeKey('갈피-4F7K-2M9Q-8XZ0'), null, '0 은 알파벳에 없다');
+  assert.equal(normalizeKey('갈피-4F7K-2M9Q-8XZI'), null, 'I 는 알파벳에 없다');
+  assert.equal(normalizeKey('짧음'), null);
+  assert.equal(normalizeKey(''), null);
+  assert.equal(normalizeKey(null), null);
+});
