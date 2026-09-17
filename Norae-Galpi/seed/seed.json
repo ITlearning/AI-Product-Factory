@@ -219,9 +219,10 @@
       "song_ref": "noraebangeseo",
       "body": "대학생때 이 노래를 들으면서 애들이랑 산책했던 기억이 난다.\n보통 기억은 밤에 이뤄지는 것 같은데, 밤공기와 친구들과 떠들던 그 공간이 좋아서 그런지도 모르겠다.",
       "season": null,
-      "era": null,
+      "era": "university",
       "is_public": true,
-      "_source_heading": "9. 노래방에서 — 장범준"
+      "_source_heading": "9. 노래방에서 — 장범준",
+      "_label_note": "본문 \"대학생때 이 노래를 들으면서\" 근거. 시드 문서엔 라벨이 미기록이었다"
     },
     {
       "song_ref": "feel-my-rhythm",
@@ -234,10 +235,11 @@
     {
       "song_ref": "epilogue",
       "body": "여름의 화창한 햇빛이 떠오르는 노래다.\n작은 취미가 코노 혼자가서 노래 부르기인데, 그때 이 노래를 열창하면 참 좋았던 기억이 난다.\n\n---",
-      "season": null,
+      "season": "summer",
       "era": null,
       "is_public": true,
-      "_source_heading": "11. 에필로그 — 정승환"
+      "_source_heading": "11. 에필로그 — 정승환",
+      "_label_note": "본문 \"여름의 화창한 햇빛이 떠오르는 노래다\" 근거. 시드 문서엔 라벨이 미기록이었다"
     }
   ]
 }
