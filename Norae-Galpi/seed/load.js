@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import { hashKey } from '../src/identity.js';
+import { upsertSong } from '../src/songs.js';
 import { validateSeed } from './validate.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -86,6 +87,8 @@ async function main() {
   let songsInserted = 0;
 
   for (const s of seed.songs) {
+    // API(`POST /api/memories`)와 **같은 upsert 경로**를 쓴다.
+    // 시드만 다른 길로 넣으면 시드에서 안 터지는 버그가 사용자에게서 터진다.
     const id = await upsertSong(sql, s);
     songIds.set(s.ref, id.songId);
     if (id.inserted) songsInserted += 1;
@@ -120,50 +123,6 @@ async function main() {
     console.log('(전부 이미 있었다 — 멱등 재실행)');
   }
   console.log('피드 캐시를 쓰고 있다면 feed:* 3키를 퍼지할 것.');
-}
-
-/**
- * 곡 하나를 넣거나 이미 있는 것을 찾는다.
- *
- * 출처마다 유일성 열쇠가 다르다 — itunes는 (artist_id, title_key), youtube는 video_id.
- * 그래서 ON CONFLICT 대상도 갈린다.
- *
- * @param {ReturnType<typeof neon>} sql
- * @param {object} s - seed.json 의 song 항목
- * @returns {Promise<{songId: number, inserted: boolean}>}
- */
-async function upsertSong(sql, s) {
-  const inserted = await sql`
-    INSERT INTO songs
-      (source, itunes_artist_id, itunes_track_id, title_key, title_key_rev,
-       title, artist, artwork_url, youtube_video_id)
-    VALUES
-      (${s.source}, ${s.itunes_artist_id}, ${s.itunes_track_id}, ${s.title_key}, ${s.title_key_rev},
-       ${s.title}, ${s.artist}, ${s.artwork_url}, ${s.youtube_video_id})
-    ON CONFLICT DO NOTHING
-    RETURNING id
-  `;
-  if (inserted.length > 0) return { songId: inserted[0].id, inserted: true };
-
-  // 충돌 — DO NOTHING은 빈 결과를 준다. 반드시 다시 찾아야 한다.
-  const found =
-    s.source === 'itunes'
-      ? await sql`
-          SELECT id FROM songs
-           WHERE source = 'itunes' AND itunes_artist_id = ${s.itunes_artist_id}
-             AND title_key = ${s.title_key}
-           LIMIT 1
-        `
-      : await sql`
-          SELECT id FROM songs
-           WHERE source = 'youtube' AND youtube_video_id = ${s.youtube_video_id}
-           LIMIT 1
-        `;
-
-  if (found.length === 0) {
-    throw new Error(`곡 upsert 실패 — 넣지도 찾지도 못했다: ${s.ref}`);
-  }
-  return { songId: found[0].id, inserted: false };
 }
 
 main().catch((err) => {

@@ -9,7 +9,7 @@
 
 ## 지금 상태
 
-Next Steps **3번(골든 테스트)** 까지. 엔드포인트·화면은 아직 없다.
+Next Steps **4번(쓰기 경로)** 까지. 화면은 아직 없다.
 
 | Next Step | 상태 |
 |---|---|
@@ -17,7 +17,8 @@ Next Steps **3번(골든 테스트)** 까지. 엔드포인트·화면은 아직 
 | 1. 스키마 마이그레이션 | SQL·러너·인덱스 결론 완료 / **Neon 프로젝트 생성은 Tabber 몫** |
 | 2. 공통 모듈 3개 | `identity` · `itunes` · `db` 완료 |
 | 3. 골든 테스트 | 드라이런 20곡 — `titleKey` 19/19, 원곡 1순위 19/19 |
-| 4~11 | 미착수 |
+| 4. `POST /api/memories` | 완료. 순서 못 박음 — 본문 → PII → 레이트리밋 → 곡 upsert → 글 → 퍼지 2키 |
+| 5~11 | 미착수 |
 
 **미해결이던 인덱스 설계는 실측으로 닫았다** — `migrations/001_init.sql` 의 주석에 근거가 있다.
 `docs/designs/norae-galpi.md` 의 나머지 미해결(동시 등록 경합 화면, Neon CU 소진 경로 등)은 그대로다.
@@ -36,6 +37,12 @@ src/feed.js           ⑤ 피드 쿼리 2번 + 곡 단위 접기
 src/identity.js       기기 비밀키 → SHA-256. 해시는 반드시 서버에서 계산한다
 src/itunes.js         검색(us) → 표기(kr) → 한글 재정렬 → MR 하향. titleKey 정규화
 src/db.js             Neon 클라이언트. 트랜잭션도 multi-statement도 없다
+src/kv.js             Upstash Redis. 없어도 서비스는 돈다(캐시 미스·레이트리밋 통과)
+src/cache.js          피드 캐시 3키. **퍼지 대상이 트리거마다 다르다**
+src/ratelimit.js      작성 분당 1편·일 20편, 유튜브 검색 일 100회(태평양 자정 리셋)
+src/songs.js          곡 upsert. 시드 로더와 API가 같은 경로를 쓴다
+src/memories.js       기억 올리기. 순서가 못 박혀 있다
+api/memories.js       POST /api/memories. Pages 스타일 (req, res)
 src/labels.js         계절 4 · 시절 6. 스키마 CHECK와 화면 칩이 같이 본다
 src/moderation.js     PII 정규식 — v1 모더레이션의 유일한 자동 층
 tests/fixtures/itunes-dryrun.json  드라이런 20곡의 실제 iTunes 응답. 테스트는 네트워크를 안 탄다
