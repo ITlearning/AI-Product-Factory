@@ -15,10 +15,19 @@
  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--color-line);vertical-align:top}
  th{color:var(--color-text-tertiary);font-weight:500;font-size:12px;letter-spacing:.02em}
- .shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin:16px 0}
- .shot{border:1px solid var(--color-line);border-radius:10px;overflow:hidden;background:var(--color-surface)}
- .shot img{width:100%;display:block;max-height:280px;object-fit:cover;object-position:top}
- .shot figcaption{font-size:12px;color:var(--color-text-tertiary);padding:8px 10px;line-height:1.5}
+ .shots{display:grid;gap:16px;margin:16px 0}
+ /* 폰 스크린샷(375x812)과 데스크톱 캡처(1280x860)는 비율이 완전히 달라 한 격자에 못 담는다.
+    잘라내면(object-fit:cover) 둘 다 알아볼 수 없게 된다 — 원래 비율 그대로 둔다. */
+ /* 폰 스크린샷은 4장이다. auto-fill 로 두면 3열이 잡혀 둘째 줄에 1장만 남고
+    2칸이 검게 비어, 스크롤하다 빈 화면을 만나게 된다. 열 수를 고정한다. */
+ .shots--phone{grid-template-columns:repeat(2,1fr)}
+ @media (min-width:760px){ .shots--phone{grid-template-columns:repeat(4,1fr)} }
+ .shot{border:1px solid var(--color-line);border-radius:10px;overflow:hidden;background:var(--color-surface);margin:0}
+ .shot a{display:block;text-decoration:none}
+ .shot img{width:100%;display:block;height:auto}
+ .shot figcaption{font-size:12px;color:var(--color-text-tertiary);padding:9px 11px;line-height:1.55}
+ .shot figcaption b{color:var(--color-text-secondary)}
+ .hint{font-size:12px;color:var(--color-text-tertiary);margin:0 0 10px}
  .verdict{border-left:2px solid var(--color-accent);padding:2px 0 2px 14px;margin:14px 0}
  .bad{border-left-color:var(--color-danger)}
  .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--color-line);color:var(--color-text-tertiary);margin-right:5px}
@@ -32,22 +41,33 @@
 </p>
 
 <h2>지금 상태</h2>
-<div class="shots">
- <figure class="shot"><img src="./refs/now-feed.png" alt=""><figcaption>⑤ 피드</figcaption></figure>
- <figure class="shot"><img src="./refs/now-song.png" alt=""><figcaption>⑥ 곡 상세</figcaption></figure>
- <figure class="shot"><img src="./refs/now-write.png" alt=""><figcaption>③ 기억 적기</figcaption></figure>
- <figure class="shot"><img src="./refs/now-mine.png" alt=""><figcaption>⑦ 내 갈피</figcaption></figure>
+<p class="hint">iPhone 폭(375&times;812)에서 캡처. 클릭하면 원본 크기로 열립니다.</p>
+<div class="shots shots--phone">
+ <figure class="shot"><a href="./refs/now-feed.png" target="_blank"><img src="./refs/now-feed.png" alt="피드 화면"></a><figcaption><b>⑤ 피드</b></figcaption></figure>
+ <figure class="shot"><a href="./refs/now-song.png" target="_blank"><img src="./refs/now-song.png" alt="곡 상세 화면"></a><figcaption><b>⑥ 곡 상세</b> — 상단 고정 플레이어</figcaption></figure>
+ <figure class="shot"><a href="./refs/now-write.png" target="_blank"><img src="./refs/now-write.png" alt="기억 적기 화면"></a><figcaption><b>③ 기억 적기</b> — 칩·예시 없음</figcaption></figure>
+ <figure class="shot"><a href="./refs/now-mine.png" target="_blank"><img src="./refs/now-mine.png" alt="내 갈피 화면"></a><figcaption><b>⑦ 내 갈피</b></figcaption></figure>
 </div>
 
 <h2>레퍼런스</h2>
-<div class="shots">
- <figure class="shot"><img src="./refs/ref-letterboxd.png" alt=""><figcaption><b>Letterboxd</b> — 작품 + 여러 사람의 짧은 글. 구조적 정답지</figcaption></figure>
- <figure class="shot"><img src="./refs/ref-nts.png" alt=""><figcaption><b>NTS Radio</b> — 유채색 1개만 허용, 나머지는 아트워크</figcaption></figure>
- <figure class="shot"><img src="./refs/ref-arena.png" alt=""><figcaption><b>Are.na</b> — 5px 기반 비선형 간격, radius 3px</figcaption></figure>
- <figure class="shot"><img src="./refs/ref-emil.png" alt=""><figcaption><b>Emil Kowalski</b> — 모션 지속시간·이징의 기준선</figcaption></figure>
- <figure class="shot"><img src="./refs/ref-rauno.png" alt=""><figcaption><b>rauno.me/craft</b> — 읽기 집중 모드·미니맵</figcaption></figure>
- <figure class="shot"><img src="./refs/ref-bearblog.png" alt=""><figcaption><b>Bear Blog</b> — 최소 읽기 (렌더 실패, 참고만)</figcaption></figure>
-</div>
+<p class="hint">
+헤드리스 브라우저로 찍어봤는데 <b>쓸 만한 게 안 나왔습니다</b> — Letterboxd는 Cloudflare 봇 검사가 화면을 덮고,
+NTS는 이미지가 지연 로딩이라 검은 박스만 남고, Emil 사이트는 텍스트 목록뿐입니다.
+억지로 넣지 않고 링크로 둡니다. 직접 열어보세요. <b>아래 수치는 전부 배포된 CSS를 받아 뽑은 실측값</b>이라 스크린샷 없이도 그대로 씁니다.
+</p>
+<table>
+<tr><th>레퍼런스</th><th>무엇을 볼 것</th></tr>
+<tr><td><a href="https://letterboxd.com/film/past-lives/" target="_blank">Letterboxd</a> — 영화 감상 기록</td><td>곡(작품) 하나에 여러 사람의 짧은 글. <b>구조적으로 노래갈피와 같습니다.</b> Popular Reviews 구간을 보세요 — 인기 리뷰가 전부 한두 줄입니다</td></tr>
+<tr><td><a href="https://glass.photo/highlights/designing-appreciations" target="_blank">Glass</a> — 유료 사진 커뮤니티</td><td><b>“숫자 없는 ♡”를 실제로 운영한 유일한 사례.</b> 왜 그랬는지 직접 써 뒀습니다</td></tr>
+<tr><td><a href="https://www.nts.live/" target="_blank">NTS Radio</a></td><td>419KB CSS 전체에서 유채색이 딱 하나. 나머지는 전부 아트워크가 담당</td></tr>
+<tr><td><a href="https://herman.bearblog.dev/grow-slowly-stay-small/" target="_blank">Bear Blog</a></td><td>다크 본문 대비 <b>11.96:1</b>. 글이 끝나면 관련글·다음글 <b>아무것도 안 붙입니다</b></td></tr>
+<tr><td><a href="https://brunch.co.kr/@typecode/10" target="_blank">브런치 「글줄길이」</a></td><td>한글 measure에 숫자가 있는 <b>유일한 국문 출처.</b> 그리고 브런치 자신이 모바일 1.615 / 데스크톱 2.00으로 행간을 바꿉니다</td></tr>
+<tr><td><a href="https://www.are.na/explore" target="_blank">Are.na</a></td><td>5px 기반 <b>비선형</b> 간격(5·10·15·20·25·35·45·65·80·100·130), radius 3px 하나</td></tr>
+<tr><td><a href="https://postsecret.com/" target="_blank">PostSecret</a></td><td>글 아래 메타데이터 <b>0개</b>. 날짜·작성자·댓글·좋아요 전무. 주 1회 닫힌 묶음</td></tr>
+<tr><td><a href="https://emilkowal.ski/ui/great-animations" target="_blank">Emil Kowalski — Great Animations</a></td><td>모션 지속시간·이징의 기준선. <i>“UI에 ease-in을 절대 쓰지 마라”</i></td></tr>
+<tr><td><a href="https://rauno.me/craft" target="_blank">rauno.me/craft</a></td><td>읽기 집중 모드·미니맵. 읽기 중심 제품과 직결되는 몇 안 되는 패턴</td></tr>
+<tr><td><a href="https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale" target="_blank">Radix <code>sand-dark</code></a></td><td>노래갈피와 <b>같은 좌표</b>(따뜻한 회색 다크)를 엔지니어링으로 푼 유일한 공개 사례</td></tr>
+</table>
 
 <h2>1. 구조 — Letterboxd가 이미 푼 문제</h2>
 <p>노래갈피의 곡 카드(곡 + 기억 2~3편)와 <b>같은 구조</b>를 이미 운영 중이고, CSS를 받아보면 구현이 다 들어 있습니다. <span class="tag">실측</span></p>
