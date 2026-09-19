@@ -362,6 +362,12 @@ test('foldIntoCards 는 1번 쿼리가 정한 순서를 지킨다', async () => 
   assert.deepEqual(cards.map((c) => c.song.title), ['B', 'A']);
   assert.equal(cards[1].memories.length, 3, '곡별 미리보기 편수가 안 잘렸다');
   assert.deepEqual(cards[1].memories.map((m) => m.body), ['a4', 'a3', 'a2'], '최신 3편이 아니다');
+
+  // `기억 N편 모두 보기` 꼬리가 쓰는 값. **잘린 뒤의 수가 아니라 그 곡이 가진 전부**다.
+  // 여기서 3이 나오면 4편짜리 카드가 "기억 3편"이라고 말하게 되고, 눌러 들어간 사람이
+  // 세었던 것보다 한 편을 더 보게 된다.
+  assert.equal(cards[1].total, 4, 'A 는 4편을 가졌는데 total 이 미리보기 수를 따라갔다');
+  assert.equal(cards[0].total, 1, 'B 는 1편뿐이라 꼬리가 붙으면 안 된다');
 });
 
 test('시드가 실제 스키마에 그대로 들어간다', async () => {

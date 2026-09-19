@@ -10,13 +10,14 @@
  */
 
 import { SEASONS, ERAS } from './labels.js';
-import { detectPII } from './moderation.js';
+import { detectPII, BODY_MAX, bodyLength } from './moderation.js';
 import { checkWriteLimit } from './ratelimit.js';
 import { upsertSong } from './songs.js';
 import { purgeFeed, PURGE_ON_NEW_MEMORY } from './cache.js';
 
 /** 서버측 본문 상한. 화면에는 글자수도 카운트다운도 두지 않는다 — 길게 쓰는 사람을 막지 않는다. */
-export const BODY_MAX = 5000;
+// 상한과 세는 법은 쓰기 화면과 공유한다. 정본은 `moderation.js`.
+export { BODY_MAX };
 
 const VIDEO_ID_RE = /^[A-Za-z0-9_-]{11}$/;
 
@@ -49,7 +50,7 @@ export function validateMemoryInput(payload) {
   if (body.length === 0) fail(400, '기억을 적어주세요');
 
   // Postgres char_length 와 같은 기준으로 센다. JS .length 는 이모지를 2로 센다.
-  const length = [...body].length;
+  const length = bodyLength(body);
   if (length > BODY_MAX) {
     fail(400, `${BODY_MAX}자까지 쓸 수 있어요`, { length, max: BODY_MAX });
   }

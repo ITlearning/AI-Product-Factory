@@ -148,9 +148,14 @@ export function foldIntoCards(songIds, rows, perSong = FEED_MEMORIES_PER_SONG) {
           youtube_video_id: r.youtube_video_id,
         },
         memories: [],
+        // 카드가 보여주는 편수가 아니라 **그 곡이 가진 전부**. 2번 쿼리가 이미 전부를
+        // 들고 오므로 세는 데 드는 값이 0 이다. `기억 5편 모두 보기` 한 줄을 위해
+        // 쿼리를 하나 더 치는 일은 없어야 한다.
+        total: 0,
       });
     }
     const card = bySong.get(key);
+    card.total += 1;
     if (card.memories.length < perSong) {
       card.memories.push({
         id: r.id,

@@ -96,3 +96,38 @@ export function artwork(url, className, size = 300) {
   });
   return img;
 }
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * 아이콘. `el` 은 `createElement` 라 SVG 를 만들지 못한다 — 네임스페이스가 필요하다.
+ *
+ * 색은 `currentColor` 로 받는다. 탭바가 눌린 탭만 밝히는 일이 CSS 한 줄로 끝나고,
+ * 아이콘마다 색 토큰을 박아둘 필요가 없다.
+ *
+ * `d` 는 이 파일이 아는 상수만 들어온다. 남이 쓴 글은 여기로 오지 않는다.
+ *
+ * @param {string|string[]} d - path 의 `d` 속성
+ * @param {{size?: number}} [opts]
+ * @returns {SVGElement}
+ */
+export function icon(d, opts = {}) {
+  const { size = 24 } = opts;
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('fill', 'none');
+  // 옆에 글자 레이블이 항상 같이 있다. 스크린리더에 같은 말을 두 번 읽힐 이유가 없다.
+  svg.setAttribute('aria-hidden', 'true');
+
+  for (const spec of [].concat(d)) {
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', spec);
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.append(path);
+  }
+  return svg;
+}

@@ -21,7 +21,7 @@
 import { el, replace } from '../dom.js';
 import { songHead, sheet } from '../components.js';
 import { SEASONS, SEASON_LABELS, ERAS, ERA_LABELS } from '../labels.js';
-import { detectPII } from '../../moderation.js';
+import { detectPII, BODY_MAX, bodyLength } from '../../moderation.js';
 import { getDraft, setDraft, clearDraft } from '../../client/draft.js';
 import { ensureKey, readKey, hasSeenRecovery, markRecoverySeen } from '../../client/device.js';
 import { postMemory, getSong } from '../../client/api.js';
@@ -60,7 +60,35 @@ export async function writeScreen(root, query) {
     value: draft.body ?? '',
     attrs: { 'aria-label': '기억', placeholder: '' },
   });
-  body.addEventListener('input', () => setDraft({ body: body.value }));
+
+  // 상한이 가까워질 때만 나타난다. **상시 카운터가 아니다** — X 의 진행 링이 정당한 건
+  // 280자가 제품의 정체성이기 때문이고, 5,000자는 형식이 아니라 방어선이라
+  // 늘 보이면 채워야 할 목표로 읽힌다.
+  //
+  // `maxlength` 를 안 쓰는 이유는 따로 있다: HTML 은 UTF-16 단위로 세서
+  // 이모지를 2로 잡는다. 서버는 코드포인트로 세므로 그대로 걸면
+  // 이모지를 쓰는 사람만 절반에서 막힌다.
+  const cap = el('p', { className: 'cap', hidden: true, attrs: { role: 'status' } });
+
+  // 마지막 100자에 들어설 때 알린다. 다 쓰고 나서가 아니라 **쓰는 도중에** 보여야
+  // 문단을 접든 줄이든 사람이 고를 수 있다.
+  const CAP_WARN_AT = BODY_MAX - 100;
+
+  function paintCap() {
+    const n = bodyLength(body.value);
+    const over = n > BODY_MAX;
+    cap.hidden = n < CAP_WARN_AT;
+    cap.classList.toggle('cap--over', over);
+    cap.textContent = over
+      ? `${BODY_MAX.toLocaleString()}자까지 쓸 수 있어요 · 지금 ${n.toLocaleString()}자`
+      : `${(BODY_MAX - n).toLocaleString()}자 남았어요`;
+  }
+
+  body.addEventListener('input', () => {
+    setDraft({ body: body.value });
+    paintCap();
+  });
+  paintCap();
 
   const submit = el('button', {
     className: 'btn btn--primary btn--block',
@@ -74,6 +102,7 @@ export async function writeScreen(root, query) {
     el('div', { className: 'screen shell stack' }, [
       songHead(draft.song, { size: 300 }),
       body,
+      cap,
       // 라벨은 올리기 버튼 **바로 위**에. 질문 형태로 묻지 않는다 —
       // 질문이면 답해야 할 것 같은 압박이 생긴다. 칩만 조용히 놓는다.
       chipRow('계절', SEASONS, SEASON_LABELS, () => season, (v) => { season = v; setDraft({ season }); }),
@@ -117,6 +146,16 @@ export async function writeScreen(root, query) {
   function openConfirm() {
     const text = body.value.trim();
     if (text.length === 0) {
+      body.focus();
+      return;
+    }
+
+    // **시트를 열기 전에** 막는다. 예전에는 상한을 넘겨도 공개 확인 시트가 뜨고
+    // `올리기`를 누른 뒤에야 서버가 거부해서, 마음을 정한 다음에 퇴짜를 맞았다.
+    // (글이 날아가진 않았지만 알림이 한참 늦었다.)
+    if (bodyLength(text) > BODY_MAX) {
+      paintCap();
+      cap.hidden = false;
       body.focus();
       return;
     }

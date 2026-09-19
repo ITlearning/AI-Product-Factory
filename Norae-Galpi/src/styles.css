@@ -128,6 +128,41 @@ button {
 
 .screen { padding-bottom: var(--space-8); }
 
+/* 탭바가 뜨는 화면에서만 바닥을 비운다. 쓰기 화면에는 탭바가 없으므로
+   그 여백도 같이 사라져야 `올리기` 버튼 밑이 휑해지지 않는다. */
+body.has-tabbar .screen {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-6));
+}
+
+/* ── 누름 피드백 ───────────────────────────────────────────────────────────
+   **비대칭 타이밍이 전부다.** 눌릴 때 80ms 로 즉시 수축하고, 뗄 때 스프링으로 돌아온다.
+   양쪽을 같은 시간으로 맞추면 고무처럼 물렁하게 읽히고, 반대로 걸면 굼떠 보인다.
+   iOS 가 부드럽게 느껴지는 건 이징이 예뻐서가 아니라 **손가락이 닿는 순간** 반응하기
+   때문이다. 그 전까지 이 제품은 전부 손을 뗀 뒤에 색만 바뀌었다.
+
+   선택자 목록은 `src/ui/press.js` 의 `PRESSABLE` 과 **같아야 한다** —
+   한쪽에만 추가하면 수축은 하는데 안 돌아오거나 그 반대가 된다. */
+/* 정렬 필터(`.sorts__item`)는 일부러 뺐다. 슬라이딩 썸이 이미 누름의 답이고,
+   그 위에 수축을 얹으면 한 번의 탭에 모션이 둘 뜬다. */
+.btn, .chip, .tabbar__item, .card__link, .card__rest, .card__add, .memory__more {
+  transition: transform var(--dur-spring) var(--ease-spring),
+              color var(--dur-enter) var(--ease-out);
+  /* 길게 눌렀을 때 뜨는 시스템 메뉴·파란 선택 블록이 누름 연출을 덮는다. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.press--down {
+  transform: scale(0.972);
+  transition-duration: 80ms;
+  transition-timing-function: ease-out;
+}
+
+/* 폭이 꽉 찬 것은 같은 비율로 줄이면 가장자리가 눈에 띄게 들어온다.
+   바닥에 붙은 탭바도 마찬가지라 조금만 움직인다. */
+.btn--block.press--down, .card__add.press--down, .card__rest.press--down { transform: scale(0.986); }
+.tabbar__item.press--down { transform: scale(0.9); }
+
 /* ── 공통 헤더 (일곱 화면 전부) ─────────────────────────────────────────────
    ←를 쓰지 않는다. 워드마크가 **항상** 홈으로 가는 명시적 경로다.
    피드↔상세 왕복이 헷갈리면 상세로 안 들어가고, 상세에 안 들어가면 노래를 아예 안 듣는다. */
@@ -162,15 +197,66 @@ button {
   padding-right: var(--space-2);
 }
 
-.header__galpi {
+/* ── 하단 탭바 ─────────────────────────────────────────────────────────────
+   넣은 진짜 이유는 엄지가 아니라 CTA 다. `나도 적기`가 카드마다 붙어서 피드 한 화면에
+   같은 버튼이 열한 번 반복됐다 — 적기로 가는 전역 입구가 없어서 생긴 일이다.
+   가운데 ⊕ 하나가 그 자리를 전부 대신하고, 카드는 읽는 일만 하는 물건이 된다.
+   덤으로 `🔖`가 812px 화면의 우측 최상단(엄지가 가장 안 닿는 자리)에서 내려왔다. */
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--color-line);
+  /* 홈 인디케이터 위로 올린다. 안 하면 마지막 탭이 제스처 바에 먹힌다. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.tabbar[hidden] { display: none; }
+
+.tabbar__inner {
+  max-width: var(--layout-measure);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+  height: 56px;
   display: flex;
+  align-items: stretch;
+}
+
+.tabbar__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: var(--touch-min);
-  min-height: var(--touch-min);
-  font-size: 18px;
+  gap: 3px;
   text-decoration: none;
+  /* 아이콘·글자 둘 다 `currentColor` 를 받는다. 상태가 색 한 군데로 모인다. */
+  color: var(--color-text-tertiary);
+  /* `transition` 을 여기서 다시 선언하지 않는다. 축약형은 `transition-property` 를
+     통째로 갈아엎어서, `color` 만 적으면 **transform 이 트랜지션 대상에서 빠진다** —
+     누름 수축이 튕겨 돌아오지 않고 툭 끊긴다. 색 전환은 위의 공통 규칙이 이미 한다. */
 }
+
+.tabbar__label {
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+.tabbar__item svg path {
+  stroke-width: 1.6;
+  transition: stroke-width var(--dur-enter) var(--ease-out);
+}
+
+/* 지금 있는 칸. 색을 올리고 선을 굵혀서 **두 가지 신호**로 말한다 —
+   색맹인 사람에게 색 하나만으로 "여기"를 알릴 수 없다. */
+.tabbar__item[aria-current='page'] { color: var(--color-text); }
+.tabbar__item[aria-current='page'] svg path { stroke-width: 2.1; }
 
 /* ── 정렬 필터 ─────────────────────────────────────────────────────────────
    pill 은 여기에만 쓴다. */
@@ -226,12 +312,16 @@ button {
 /* ── 곡 카드 ───────────────────────────────────────────────────────────────
    피드에는 플레이어가 없다. 재생은 ⑥에서만. */
 
+/* 안쪽 16 / 바깥쪽 24. **바깥이 안쪽보다 넓어야** 뇌가 카드를 하나의 덩어리로 읽는다
+   (게슈탈트 근접성). 둘 다 16 이던 동안은 여백이 묶는 일을 못 해서 테두리선에만 의존했는데,
+   그 테두리가 `#2a2624` on `#161413` — 대비 1.23:1 이라 묶는 신호가 양쪽 다 약했다.
+   20곡 기준 총 높이는 1.9% 만 늘어난다. */
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   padding: var(--space-4);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .card__link {
@@ -254,22 +344,27 @@ button {
   background: var(--color-surface-raised);
 }
 
+/* 곡 제목이 15px/600 이고 본문이 17px/400 이라 **앵커가 부속처럼 보였다.** 색까지 같아서
+   구분이 굵기 하나뿐이었다. 본문을 줄일 수는 없으니(읽는 게 본체다) 제목을 올린다.
+   위계가 셋으로 선다 — 본문 17/400 · 제목 16/600 · 가수·라벨 13/12 tertiary. */
 .song-head__title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.35;
+  letter-spacing: -0.01em;
   margin: 0;
 }
 
 .song-head__artist {
   font-size: 13px;
   line-height: 1.4;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
   margin: 0;
+  margin-top: 1px;
 }
 
-/* 헤딩 위 여백이 아래보다 넓다 — 제목을 그 아래 내용의 것으로 묶어 보게 된다 */
-.card__memories { margin-top: var(--space-3); }
+/* 곡 머리(앵커)와 기억(본체)은 다른 덩어리다. 위 여백을 벌려 둘을 떼어 놓는다. */
+.card__memories { margin-top: var(--space-4); }
 
 .memory {
   border-top: 1px solid var(--color-line);
@@ -285,7 +380,15 @@ button {
   letter-spacing: -0.003em;
   margin: 0;
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
+
+  /* 한글은 **어절 단위로** 끊는다. `keep-all` 이 없으면 브라우저가 한글을 음절문자로 보고
+     아무 글자 사이에서나 줄을 바꾼다 — 실제로 `겨/울때쯤`, `노래/를` 로 쪼개지고 있었다.
+     모바일 한 줄이 24.5자밖에 안 되는 좁은 단에서 어절이 끊기면 짧은 글의 호흡이 그대로 깨진다.
+
+     `anywhere` 가 아니라 `break-word` 인 이유 — 한 어절이 한 줄보다 길 때만(긴 URL 같은)
+     양보한다. `anywhere` 는 그 양보를 모든 줄에 상시로 허용해서 `keep-all` 을 무력화한다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* 카드에서는 3줄 미리보기 + 더 보기로 접는다. 화면에 글자수는 두지 않는다. */
@@ -348,10 +451,13 @@ button {
   100% { transform: scale(1); }
 }
 
+/* ⑥ 곡 상세에만 남은 `나도 적기`. 피드 카드에서는 걷어냈다 —
+   한 화면에 같은 버튼이 열한 번 반복되던 자리이고, 이제 탭바 `⊕` 가 그 일을 한다.
+   여기서는 화면당 한 번이고, 곡이 정해진 유일한 액션이라 점선 테두리가 맞다. */
 .card__add {
   display: block;
   width: 100%;
-  margin-top: var(--space-4);
+  margin-top: var(--space-5);
   padding: var(--space-3);
   min-height: var(--touch-min);
   font-size: 13px;
@@ -361,6 +467,42 @@ button {
   text-align: center;
   text-decoration: none;
 }
+
+/* 카드 꼬리 — `기억 5편 모두 보기 →`. 보여준 것보다 더 있을 때만 붙는다.
+   **분량 정보이지 인기 지표가 아니다.** `♡ 705` 는 경쟁을 만들지만
+   `기억 5편` 은 들어가기 전 탐색 비용만 알려준다. */
+.card__rest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  min-height: var(--touch-min);
+  border-top: 1px solid var(--color-line);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.card__rest-chev {
+  color: var(--color-text-tertiary);
+  transition: transform var(--dur-spring) var(--ease-spring);
+}
+
+/* 손가락이 닿으면 화살표가 가려는 쪽으로 먼저 움직인다. */
+.card__rest.press--down .card__rest-chev { transform: translateX(3px); }
+
+/* 본문 상한 알림. **상한 근처에서만 나타난다** — 상시 카운터가 아니다.
+   5,000자는 형식이 아니라 방어선이라, 늘 보이면 채워야 할 목표로 읽힌다. */
+.cap {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-tertiary);
+}
+
+.cap--over { color: var(--color-danger); }
 
 /* `지금 계절` 우선순위 정렬의 경계. 조용한 구분선 하나만 둔다. */
 .season-divider {
@@ -564,13 +706,11 @@ button {
   justify-content: center;
   z-index: 50;
   /* 시트가 올라오는 동안 배경이 **같이** 어두워진다. 즉시 검게 깔리면 툭 끊긴다. */
-  animation: backdrop-in var(--dur-enter) var(--ease-out);
+  opacity: 0;
+  transition: opacity var(--dur-enter) var(--ease-out);
 }
 
-@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
-
-.sheet-backdrop--out { animation: backdrop-out var(--dur-enter) var(--ease-out) forwards; }
-@keyframes backdrop-out { to { opacity: 0; } }
+.sheet-backdrop--open { opacity: 1; }
 
 .sheet {
   width: 100%;
@@ -579,14 +719,25 @@ button {
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   padding: var(--space-5) var(--space-4) var(--space-6);
-  animation: sheet-in var(--dur-spring) var(--ease-spring);
+
+  /* 12px 만 움직이면 "어디서 왔는지"가 안 보인다. 아래에서 통째로 올라온다.
+     **`@keyframes` 가 아니라 `transition` 인 것이 핵심이다.** keyframes 는 시작값이
+     0 으로 고정돼 있어서, 올라오는 도중에 닫으면 "닫기"가 **완전히 열린 위치에서**
+     다시 시작한다 — 실제로 Y=177 에서 끊으면 Y=0 까지 튀어올랐다가 내려갔다.
+     transition 은 지금 값에서 재조준하므로 어디서 끊든 그 자리에서 이어진다.
+     인터럽터블이 iOS 감각의 절반인데 여기가 정확히 반대로 동작하고 있었다. */
+  transform: translateY(100%);
+  transition: transform var(--dur-spring) var(--ease-spring);
 }
 
-/* 12px 만 움직이면 "어디서 왔는지"가 안 보인다. 아래에서 통째로 올라온다. */
-@keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+.sheet-backdrop--open .sheet { transform: none; }
 
-.sheet-backdrop--out .sheet { animation: sheet-out var(--dur-enter) var(--ease-out) forwards; }
-@keyframes sheet-out { to { transform: translateY(100%); } }
+/* 닫을 때는 빠르게. 열 때의 스프링은 "도착"을 보여주는 것이고,
+   닫기는 이미 마음을 정한 뒤라 오래 끌면 기다림이 된다. */
+.sheet-backdrop:not(.sheet-backdrop--open) .sheet {
+  transition-duration: var(--dur-enter);
+  transition-timing-function: var(--ease-out);
+}
 
 .sheet__title { font-size: 17px; font-weight: 600; margin: 0 0 var(--space-3); }
 .sheet__body { font-size: 15px; line-height: 1.7; color: var(--color-text-secondary); margin: 0; }

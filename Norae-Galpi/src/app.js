@@ -11,9 +11,10 @@
  */
 
 import { el } from './ui/dom.js';
-import { header } from './ui/components.js';
+import { header, tabBar } from './ui/components.js';
 import { currentRoute, onRouteChange } from './ui/router.js';
 import { setNoindex, setTitle } from './ui/head.js';
+import { installPress } from './ui/press.js';
 
 import { feedScreen } from './ui/screens/feed.js';
 import { startScreen } from './ui/screens/start.js';
@@ -26,16 +27,43 @@ import { mineScreen } from './ui/screens/mine.js';
 /**
  * @param {HTMLElement} root
  */
+/**
+ * 라우트 → 탭바에서 밝힐 칸.
+ *
+ * `song` 이 `home` 인 것이 중요하다 — ⑥ 곡 상세는 피드에서 들어간 **아래층**이지
+ * 따로 선 화면이 아니다. 여기서 아무 칸도 안 밝히면 상세에 들어가는 순간
+ * 탭바가 통째로 꺼진 것처럼 보여서 "내가 어디 있는지"를 잃는다.
+ *
+ * 없는 키(`start`·`video`·`name`·`write`)는 **탭바 자체를 감춘다.** 쓰는 중에
+ * 다른 데로 새는 길을 깔아둘 이유가 없고, `적기` 탭이 자기 자신을 가리키게 된다.
+ */
+const TAB_OF = { '': 'home', song: 'home', mine: 'mine' };
+
+/**
+ * @param {HTMLElement} root
+ */
 export function createApp(root) {
   const main = el('main', { attrs: { id: 'main' } });
-  // 헤더는 일곱 화면 전부에 있으므로 한 번 그리고 두고, 아래만 갈아끼운다.
-  root.replaceChildren(header(), main);
+  // 탭바도 한 번만 만든다. 라우트마다 새로 그리면 화면이 갈릴 때 **바닥이 같이 깜빡인다.**
+  const tabs = tabBar();
+  // 헤더는 일곱 화면 전부에 있으므로 한 번 그리고 두고, 가운데만 갈아끼운다.
+  root.replaceChildren(header(), main, tabs);
+
+  // 누름 피드백은 문서 하나에 위임으로 건다. fetch 뒤에 생기는 것까지 전부 걸린다.
+  installPress(document);
 
   render();
   onRouteChange(render);
 
   function render() {
     const { name, param, query } = currentRoute();
+
+    const tab = TAB_OF[name];
+    tabs.hidden = !tab;
+    tabs.setCurrent(tab ?? null);
+    // 화면 바닥이 탭바에 가리지 않게 자리를 비운다. 탭바가 없는 쓰기 화면에서는
+    // 그 여백도 같이 사라져야 `올리기` 버튼 밑이 휑해지지 않는다.
+    document.body.classList.toggle('has-tabbar', Boolean(tab));
 
     // ⑥ 말고는 전부 색인 허용. 화면이 바뀔 때마다 되돌려 놓지 않으면
     // 상세를 한 번 열었다는 이유로 홈까지 noindex 가 된다.

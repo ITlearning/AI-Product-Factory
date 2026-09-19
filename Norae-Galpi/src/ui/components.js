@@ -2,7 +2,7 @@
  * 화면들이 같이 쓰는 조각들.
  */
 
-import { el, artwork } from './dom.js';
+import { el, artwork, icon } from './dom.js';
 import { labelLine } from './labels.js';
 import { setLike } from '../client/api.js';
 import { markSongTransition } from './transition.js';
@@ -15,20 +15,68 @@ import { ensureKey } from '../client/device.js';
  * 피드↔상세 왕복이 헷갈리면 상세로 안 들어가고, **상세에 안 들어가면 노래를 아예 안 듣는다**
  * (재생이 ⑥에만 있으므로).
  *
+ * 내 갈피는 탭바로 내려갔다 — 812px 화면의 우측 최상단은 엄지가 가장 안 닿는 자리다.
+ * 워드마크만 남으니 헤더가 "지금 어디"를 말하는 일만 한다.
+ *
  * @returns {HTMLElement}
  */
 export function header() {
   return el('header', { className: 'header' }, [
     el('div', { className: 'header__inner' }, [
       el('a', { className: 'header__wordmark', href: '#/', text: '노래갈피' }),
-      el('a', {
-        className: 'header__galpi',
-        href: '#/mine',
-        text: '🔖',
-        attrs: { 'aria-label': '내 갈피' },
-      }),
     ]),
   ]);
+}
+
+const ICON_HOME = 'M4 10.3 12 4l8 6.3V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z';
+const ICON_WRITE = ['M12 3.6a8.4 8.4 0 1 1 0 16.8 8.4 8.4 0 0 1 0-16.8z', 'M12 8.3v7.4M8.3 12h7.4'];
+const ICON_MARK = 'M7 3.6h10a1.4 1.4 0 0 1 1.4 1.4v15.4L12 16.3l-6.4 4.1V5A1.4 1.4 0 0 1 7 3.6z';
+
+/**
+ * 하단 탭바.
+ *
+ * **넣은 진짜 이유는 엄지가 아니라 CTA 다.** `나도 적기`가 카드마다 붙어서 피드 한 화면에
+ * 같은 버튼이 열한 번 반복됐다. 적기로 가는 전역 입구가 없어서 생긴 일이다.
+ * 가운데 `⊕` 하나가 그 자리를 전부 대신하고, 카드는 **읽는 일만 하는 물건**이 된다.
+ *
+ * 칸은 셋뿐이다. 인스타그램·네이버블로그가 다섯인 건 그만큼의 진입점이 있어서지
+ * 다섯이 정답이라서가 아니다. 노래갈피의 진입점은 피드·적기·내 갈피 셋이고,
+ * 빈 칸을 채우려고 없는 화면을 만들지 않는다.
+ *
+ * `setCurrent(tab)` 으로 갱신한다 — 다시 그리지 않는다. 라우트가 바뀔 때마다 새로 만들면
+ * 탭바가 매번 처음부터 나타나서, 화면만 갈리는 게 아니라 **바닥이 같이 깜빡인다.**
+ *
+ * @returns {HTMLElement & {setCurrent: (tab: string|null) => void}}
+ */
+export function tabBar() {
+  const items = [
+    { tab: 'home', href: '#/', label: '홈', d: ICON_HOME },
+    { tab: 'write', href: '#/start', label: '적기', d: ICON_WRITE },
+    { tab: 'mine', href: '#/mine', label: '내 갈피', d: ICON_MARK },
+  ];
+
+  const links = items.map((it) =>
+    el('a', { className: 'tabbar__item', href: it.href }, [
+      icon(it.d, { size: 24 }),
+      el('span', { className: 'tabbar__label', text: it.label }),
+    ]),
+  );
+
+  const nav = el('nav', {
+    className: 'tabbar',
+    attrs: { 'aria-label': '주요 화면' },
+  }, [el('div', { className: 'tabbar__inner' }, links)]);
+
+  nav.setCurrent = (tab) => {
+    links.forEach((a, i) => {
+      const on = items[i].tab === tab;
+      // `aria-current` 는 스크린리더용이면서 CSS 선택자이기도 하다. 상태를 한 군데만 둔다.
+      if (on) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+  };
+
+  return nav;
 }
 
 /**
@@ -134,7 +182,11 @@ export function memoryBlock(memory, opts = {}) {
     // 시드 11편 중 6편이 100자 안쪽이라 흔한 경우다.
     more.hidden = true;
     queueMicrotask(() => {
-      more.hidden = body.scrollHeight <= body.clientHeight + 1;
+      // **최소 한 줄은 더 나올 때만** 탭을 요구한다. `+ 1` 이면 세 줄을 한 글자만 넘겨도
+      // `더 보기`가 붙어서, 눌러봐야 두 글자가 더 나온다. 모바일 세 줄이 약 73자인데
+      // 시드 하한이 70자라 드문 경우가 아니다.
+      const line = parseFloat(getComputedStyle(body).lineHeight) || 0;
+      more.hidden = body.scrollHeight <= body.clientHeight + line;
     });
   }
 
@@ -199,15 +251,30 @@ export function songCard(card) {
     markSongTransition(card.song.id, head.querySelector('.song-head__art'), card.song);
   });
 
+  // 카드가 보여주는 것보다 기억이 더 있을 때만 꼬리를 단다.
+  // **`♡ 705` 와 `기억 5편`은 다른 종류의 숫자다.** 앞은 경쟁을 만들고 뒤는 분량만 알려준다 —
+  // 들어가기 전에 "이건 긴 거구나"를 아는 것은 읽는 사람의 편의지 인기 지표가 아니다.
+  const hidden = (card.total ?? card.memories.length) - card.memories.length;
+  const rest = hidden > 0
+    ? el('a', { className: 'card__rest', href }, [
+        el('span', { text: `기억 ${card.total}편 모두 보기` }),
+        el('span', { className: 'card__rest-chev', attrs: { 'aria-hidden': 'true' }, text: '→' }),
+      ])
+    : null;
+
+  if (rest) {
+    rest.addEventListener('click', () => {
+      markSongTransition(card.song.id, head.querySelector('.song-head__art'), card.song);
+    });
+  }
+
+  // `나도 적기`는 여기 없다. 피드 한 화면에 같은 버튼이 열한 번 반복되던 자리이고,
+  // 이제 탭바 `⊕` 가 그 일을 한다. 곡을 정해 쓰는 입구는 ⑥ 에 하나만 있다 —
+  // **노래를 듣고 나서 쓰게 되는 순서**가 설계 의도이기도 하다.
   return el('section', { className: 'card' }, [
     head,
     el('div', { className: 'card__memories' }, card.memories.map((m) => memoryBlock(m))),
-    // 재방문 유도가 아니라 **새 사람의 첫 글**을 받는 입구다.
-    el('a', {
-      className: 'card__add',
-      href: `#/write?songId=${card.song.id}`,
-      text: '나도 적기',
-    }),
+    rest,
   ]);
 }
 
@@ -303,6 +370,26 @@ export function sheet(spec) {
   const backdrop = el('div', { className: 'sheet-backdrop' }, [panel]);
 
   /**
+   * 열기. **`@keyframes` 가 아니라 `transition` 이다.**
+   *
+   * keyframes 는 시작값이 0 으로 고정돼 있어서, 올라오는 도중에 닫으면
+   * "닫기" 애니메이션이 **완전히 열린 위치에서 다시 시작**한다. 실제로 Y=177 에서 끊으면
+   * 시트가 Y=0 까지 튀어올랐다가 내려갔다. transition 은 지금 값에서 재조준하므로
+   * 어디서 끊든 그 자리에서 이어진다 — iOS 가 부드럽게 느껴지는 이유의 절반이 이거다.
+   * (Sonner 를 만든 Emil Kowalski 가 정확히 이 이유로 keyframes 를 걷어냈다.)
+   *
+   * 켜는 시점이 까다롭다. 이 함수는 시트를 **만들기만** 하고 붙이는 건 부르는 쪽이라,
+   * 여기서 바로 켜면 아직 문서에 없어서 시작값이 없다. 그렇다고 `requestAnimationFrame`
+   * 한 번으로는 모자란다 — rAF 콜백은 스타일 계산 **앞**에 돌아서 "붙는 것"과 "켜는 것"이
+   * 한 프레임에 합쳐지고, 시트가 트랜지션 없이 툭 나타난다.
+   * 강제로 한 번 계산시켜 닫힌 상태를 확정한 뒤에 켠다.
+   */
+  requestAnimationFrame(() => {
+    void backdrop.offsetWidth;
+    backdrop.classList.add('sheet-backdrop--open');
+  });
+
+  /**
    * 내려가는 것도 보여준다. 올라올 때만 애니메이션하고 사라질 때 툭 없어지면
    * 절반만 만든 것처럼 읽힌다.
    *
@@ -310,13 +397,20 @@ export function sheet(spec) {
    */
   backdrop.dismiss = () =>
     new Promise((resolve) => {
-      backdrop.classList.add('sheet-backdrop--out');
+      backdrop.classList.remove('sheet-backdrop--open');
+      let settled = false;
       const done = () => {
+        if (settled) return;
+        settled = true;
         backdrop.remove();
         resolve();
       };
-      backdrop.addEventListener('animationend', done, { once: true });
-      // prefers-reduced-motion 이면 0.01ms 라 animationend 를 못 받을 수 있다.
+      // 백드롭 opacity 와 시트 transform 이 같이 끝난다. **시트 쪽만** 듣는다 —
+      // 둘 중 짧은 쪽이 먼저 끝나면 시트가 아직 내려가는 중에 DOM 에서 사라진다.
+      panel.addEventListener('transitionend', (e) => {
+        if (e.propertyName === 'transform') done();
+      });
+      // prefers-reduced-motion 이면 0.01ms 라 transitionend 를 못 받을 수 있다.
       setTimeout(done, 600);
     });
 
