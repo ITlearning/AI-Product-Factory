@@ -183,8 +183,29 @@ body.has-tabbar .screen {
   height: 52px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-1);
 }
+
+/* ⑥ 에만 뜬다. 워드마크가 홈으로 가는 길인 건 그대로고, 이건 **읽던 자리로** 돌아간다.
+   왼쪽 패딩을 음수로 당겨 아이콘의 시각적 왼끝이 워드마크와 같은 선에 서게 한다 —
+   44px 히트 영역은 그대로 두면서 아이콘만 제자리로 보낸다. */
+.header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  margin-left: calc(-1 * var(--space-3));
+  color: var(--color-text-secondary);
+  transition: transform var(--dur-spring) var(--ease-spring),
+              color var(--dur-enter) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.header__back[hidden] { display: none; }
+.header__back svg path { stroke-width: 1.8; }
+/* 누르면 가려는 쪽으로 먼저 움직인다. */
+.header__back.press--down { transform: translateX(-2px) scale(0.92); transition-duration: 80ms; }
 
 .header__wordmark {
   font-size: 15px;

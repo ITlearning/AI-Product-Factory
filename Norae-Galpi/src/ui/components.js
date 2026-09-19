@@ -18,15 +18,41 @@ import { ensureKey } from '../client/device.js';
  * 내 갈피는 탭바로 내려갔다 — 812px 화면의 우측 최상단은 엄지가 가장 안 닿는 자리다.
  * 워드마크만 남으니 헤더가 "지금 어디"를 말하는 일만 한다.
  *
- * @returns {HTMLElement}
+ * ## `←` 를 붙였다 (설계 rev.7 의 "←를 쓰지 않는다"를 뒤집는다)
+ * 원래 근거는 "워드마크가 항상 홈으로 가는 명시적 경로"였다. 그건 **여전히 맞지만
+ * 충분하지 않다** — ⑥ 에서 워드마크를 누르면 피드 맨 위로 떨어진다. 여덟 번째 카드에서
+ * 들어간 사람에게 그건 돌아가기가 아니라 처음부터 다시다. `←` 는 읽던 자리로 되돌린다.
+ *
+ * @returns {HTMLElement & {setBack: (onClick: (() => void)|null) => void}}
  */
 export function header() {
-  return el('header', { className: 'header' }, [
+  const back = el('button', {
+    className: 'header__back',
+    type: 'button',
+    hidden: true,
+    attrs: { 'aria-label': '뒤로' },
+  }, [icon(ICON_BACK, { size: 22 })]);
+
+  const hdr = el('header', { className: 'header' }, [
     el('div', { className: 'header__inner' }, [
+      back,
       el('a', { className: 'header__wordmark', href: '#/', text: '노래갈피' }),
     ]),
   ]);
+
+  /** @type {(() => void)|null} */
+  let handler = null;
+  back.addEventListener('click', () => handler?.());
+
+  hdr.setBack = (onClick) => {
+    handler = onClick;
+    back.hidden = !onClick;
+  };
+
+  return hdr;
 }
+
+const ICON_BACK = 'M15 4.8 7.8 12l7.2 7.2';
 
 const ICON_HOME = 'M4 10.3 12 4l8 6.3V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z';
 const ICON_WRITE = ['M12 3.6a8.4 8.4 0 1 1 0 16.8 8.4 8.4 0 0 1 0-16.8z', 'M12 8.3v7.4M8.3 12h7.4'];

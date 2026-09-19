@@ -20,7 +20,7 @@
  * 한쪽에만 추가하면 수축은 하는데 안 돌아오거나, 그 반대가 된다.
  */
 export const PRESSABLE =
-  '.btn, .chip, .tabbar__item, .card__link, .card__rest, .card__add, .memory__more';
+  '.btn, .chip, .tabbar__item, .card__link, .card__rest, .card__add, .memory__more, .header__back';
 
 /**
  * @param {Document|HTMLElement} [root]
