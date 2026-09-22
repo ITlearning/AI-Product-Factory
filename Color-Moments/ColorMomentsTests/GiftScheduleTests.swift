@@ -103,3 +103,43 @@ final class CeremonyCopyTests: XCTestCase {
         XCTAssertEqual(BadgeCeremony.openingLine(for: [], now: Date()), "하루가 담겼어요")
     }
 }
+
+/// 수집물 줄에 오늘이 끼면 안 된다. 색 고치기 입구가 그 줄이라, 오늘이 있으면
+/// 자정 전에 오늘 색을 볼 수 있게 된다 — 「자정에 열린다」가 그 자리에서 깨진다.
+final class FinishedDayKeysTests: XCTestCase {
+
+    private var tempFile: URL!
+    private var store: DayStore!
+
+    override func setUp() {
+        super.setUp()
+        tempFile = FileManager.default.temporaryDirectory
+            .appendingPathComponent("days-\(UUID().uuidString).json")
+        store = DayStore(fileURL: tempFile)
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: tempFile)
+        super.tearDown()
+    }
+
+    private func add(daysAgo: Int) {
+        store.add(Moment(capturedAt: Date().addingTimeInterval(Double(-86_400 * daysAgo)),
+                         colorHex: "#112233", fileName: "f\(daysAgo)-\(UUID().uuidString).jpg",
+                         source: .app))
+    }
+
+    func testTodayIsNotInTheRow() {
+        add(daysAgo: 0)
+        XCTAssertEqual(store.dayKeys.count, 1, "오늘은 기록에는 있어야 한다")
+        XCTAssertTrue(store.finishedDayKeys.isEmpty, "오늘이 수집물 줄에 올라왔다")
+    }
+
+    func testFinishedDaysAreInTheRowNewestFirst() {
+        add(daysAgo: 0); add(daysAgo: 1); add(daysAgo: 3)
+        let keys = store.finishedDayKeys
+        XCTAssertEqual(keys.count, 2)
+        XCTAssertEqual(keys, keys.sorted(by: >), "최근 날짜부터가 아니다")
+        XCTAssertFalse(keys.contains(Moment.dayKey(for: Date())))
+    }
+}

@@ -1,3 +1,4 @@
+import CoreImage
 import Foundation
 import Observation
 
@@ -36,6 +37,15 @@ public final class DayStore {
         Array(Set(moments.map(\.dayKey))).sorted(by: >)
     }
 
+    /// 끝난 하루들. 최근 날짜부터. **오늘은 빠진다.**
+    ///
+    /// 수집물로 보여줄 수 있는 것과 아직 아닌 것을 가른다. 오늘은 자정에 증정되면서
+    /// 비로소 수집물이 된다 — 그 전에 줄에 얹으면 색을 미리 볼 수 있게 된다.
+    public var finishedDayKeys: [String] {
+        let today = Moment.dayKey(for: Date())
+        return dayKeys.filter { $0 < today }
+    }
+
     // MARK: 쓰기
 
     public func add(_ moment: Moment) {
@@ -51,6 +61,22 @@ public final class DayStore {
         let old = moments[i]
         moments[i] = Moment(id: old.id, capturedAt: old.capturedAt, colorHex: hex,
                             fileName: old.fileName, source: old.source, colorWasChosen: true)
+        save()
+    }
+
+    /// 탭 보정을 물린다. 색을 자동값으로 다시 뽑고 «직접 고름» 표시를 지운다.
+    ///
+    /// 저장된 색을 되돌리는 게 아니라 **사진에서 다시 뽑는다** — 추출기가 결정론적이라
+    /// 같은 사진은 항상 같은 색을 내므로, 자동값을 따로 보관할 필요가 없다.
+    public func revertColor(_ id: Moment.ID) {
+        guard let i = moments.firstIndex(where: { $0.id == id }) else { return }
+        let old = moments[i]
+        let url = ShotStore.directory.appendingPathComponent(old.fileName)
+        guard let data = try? Data(contentsOf: url),
+              let image = CIImage(data: data) else { return }
+        let hex = ColorExtractor.symbolicColor(for: image).hex
+        moments[i] = Moment(id: old.id, capturedAt: old.capturedAt, colorHex: hex,
+                            fileName: old.fileName, source: old.source, colorWasChosen: false)
         save()
     }
 

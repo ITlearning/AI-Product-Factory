@@ -188,19 +188,35 @@ public struct DayBadgeView: View {
 }
 
 /// 뱃지들이 이어붙은 줄. **격자가 아니다** — 빈 날이 보이지 않는다.
+///
+/// **오늘은 여기 없다.** 아직 끝나지 않은 하루라 조약돌이 아니다 — 자정에 증정되면서
+/// 비로소 줄에 붙는다. 오늘을 여기 얹으면 조약돌을 눌러 색을 볼 수 있게 되어
+/// 「자정에 열린다」가 그 자리에서 깨진다(색 고치기 입구가 이 줄이기 때문).
 public struct BadgeRowView: View {
     private let store: DayStore
+    /// 열어본 하루. 색을 고치러 들어가는 유일한 입구다.
+    @State private var opened: OpenedDay?
+
+    /// `sheet(item:)` 이 Identifiable 을 요구해서 두는 껍데기.
+    /// `String` 에 직접 Identifiable 을 달면 앱 전체의 모든 문자열에 영향을 준다.
+    private struct OpenedDay: Identifiable { let id: String }
 
     public init(store: DayStore) { self.store = store }
 
     public var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: 14) {
-                ForEach(store.dayKeys, id: \.self) { key in
-                    DayBadgeView(moments: store.moments(on: key), size: 84)
+                ForEach(store.finishedDayKeys, id: \.self) { key in
+                    Button { opened = OpenedDay(id: key) } label: {
+                        DayBadgeView(moments: store.moments(on: key), size: 84)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 4).padding(.vertical, 8)
+        }
+        .sheet(item: $opened) { day in
+            DayMomentsView(dayKey: day.id, store: store)
         }
     }
 }

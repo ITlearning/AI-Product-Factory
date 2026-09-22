@@ -207,12 +207,19 @@ struct SpikeView: View {
             .fullScreenCover(item: $ceremony) { subject in
                 switch subject {
                 case .gift(let key):
+                    // **사용자가 실제로 닫았을 때만 이력에 남긴다.**
+                    //
+                    // 처음엔 `.onDisappear` 에 걸었는데, 그건 사용자가 닫을 때만이 아니라
+                    // **앱이 내려갈 때도 불린다**(실기기에서 잡았다 — 증정 화면을 띄워둔 채
+                    // 프로세스를 죽였더니 그 하루가 «증정 완료»로 기록됐다).
+                    // 하루에 한 번뿐인 것을 보지도 못하고 잃는다. 닫기 동작에만 건다.
                     BadgeCeremony(moments: store.moments(on: key),
                                   isPresented: Binding(get: { ceremony != nil },
-                                                       set: { if !$0 { ceremony = nil } }))
-                        // **닫을 때 남긴다.** 띄우는 순간에 남기면 보다가 앱이 죽었을 때
-                        // 그 하루를 통째로 잃는다.
-                        .onDisappear { gifts.markGifted(key) }
+                                                       set: { shown in
+                                                           guard !shown else { return }
+                                                           gifts.markGifted(key)
+                                                           ceremony = nil
+                                                       }))
                 case .preview:
                     BadgeCeremony(moments: store.today,
                                   isPresented: Binding(get: { ceremony != nil },
