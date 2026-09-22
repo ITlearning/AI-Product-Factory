@@ -21,14 +21,29 @@ struct PebbleSilhouette {
         // 바이트를 직접 접어서 만들면 언제 어디서 돌려도 같은 값이 나온다.
         var h: UInt64 = 5381
         for b in dayKey.utf8 { h = (h &* 33) &+ UInt64(b) }
+
+        // **djb2 만으로는 부족하다.** 날짜는 마지막 한두 글자만 다른데, djb2 는 그 차이가
+        // 하위 8비트에만 남는다 — shift 8·16·24 로 뽑는 값들이 인접한 날끼리 **전부 같아진다.**
+        // 예전엔 폭을 하위 비트(shift 0)에서 뽑아 폭만 달라 보였고, 나머지는 원래 다 같았다.
+        // 폭을 고정(DESIGN §2.3)하는 순간 모든 조약돌이 같은 모양이 됐다(테스트가 잡음).
+        // 아래는 MurmurHash3 의 fmix64 — 결정론적이면서 한 비트 차이가 전 비트로 번진다.
+        h ^= h >> 33
+        h = h &* 0xff51_afd7_ed55_8ccd
+        h ^= h >> 33
+        h = h &* 0xc4ce_b9fe_1a85_ec53
+        h ^= h >> 33
+
         func pick(_ shift: UInt64, _ range: ClosedRange<Double>) -> Double {
             let v = Double((h >> shift) & 0xFF) / 255
             return range.lowerBound + v * (range.upperBound - range.lowerBound)
         }
-        widthRatio = pick(0, 0.58...0.76)
-        topRounding = pick(8, 0.38...0.52)
-        bottomRounding = pick(16, 0.34...0.50)
-        tilt = pick(24, -4...4)
+        // **폭 비율은 고정이다** (`DESIGN.md` §2.3 — 0.70).
+        // 폭까지 날마다 달라지면 세로로 쌓이는 홈에서 줄이 들쭉날쭉해 보인다.
+        // 「날마다 다르다」는 둥글기와 기울임이 담고, 범위를 넓혀 «눈에 띄게» 다르게 한다(§2.4).
+        widthRatio = Shape2.pebbleRatio
+        topRounding = pick(8, 0.32...0.54)
+        bottomRounding = pick(16, 0.28...0.52)
+        tilt = pick(24, -7...7)
     }
 }
 
@@ -106,58 +121,11 @@ public struct DayBadgeView: View {
 
     public var body: some View {
         VStack(spacing: 7) {
-            let shape = PebbleShape(top: silhouette.topRounding, bottom: silhouette.bottomRounding)
-            ZStack {
-                DayGradientView(moments: moments, axis: .vertical)
-                // 돌 표면의 광택. 위쪽에서 비스듬히 들어온다.
-                LinearGradient(colors: [.white.opacity(0.26), .clear, .black.opacity(0.10)],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .blendMode(.plusLighter)
-                sheenLayer(progress: sheen)
-                shape.strokeBorder(.white.opacity(0.22), lineWidth: 1)
-            }
-            .frame(width: size * silhouette.widthRatio, height: size * 1.2)
-            .clipShape(shape)
-            .rotationEffect(.degrees(silhouette.tilt))
-            .shadow(color: .black.opacity(0.24), radius: 5, y: 3)
-
+            // 표면 처리는 전부 `PebbleView`(DESIGN §2.4 여섯 겹)가 한다.
+            // 기존 「그라데이션 + 대각 광택 한 겹」은 평면으로 보여서 버렸다.
+            PebbleView(moments: moments, height: size * 1.2, sheen: sheen)
             if showsCaption { caption }
         }
-    }
-
-    /// 비스듬히 훑고 지나가는 띠.
-    ///
-    /// 띠를 조약돌만 하게 잡으면 **끝에서 모서리가 드러나 사각형이 지나간 것처럼 보인다**
-    /// (실측). 반대로 너무 넓게 잡으면 지나가는 내내 조약돌을 통째로 덮어
-    /// 스침이 아니라 «전체가 뿌옇게 떴다 돌아오는» 것처럼 보인다(이것도 실측).
-    /// 폭은 조약돌보다 조금 넓게 두되 **흰 심지만 좁게**, 양 끝은 완전히 투명하게.
-    private func sheenLayer(progress: Double) -> some View {
-        let w = size * silhouette.widthRatio
-        let h = size * 1.2
-        let band = w * 1.15
-        // **이동 폭이 곧 «언제 보이나»다.** ±1.7w 로 잡았더니 흰 심지가 앞 40% 동안 조약돌
-        // 바깥에 있다가 한복판에서 불쑥 나타났다(렌더 실측). 20° 기운 심지가 조약돌을
-        // 벗어나는 지점이 약 ±1.02w 라서, 그 언저리까지만 움직여야 0→1 내내 고르게 지나간다.
-        let travel = w * 1.05
-        // 들고 날 때 잘리지 않게 진행도 양 끝에서 스스로 잦아든다. 0 과 1 에서는 완전히 투명하므로
-        // 평소(진행도 0)에는 아무것도 안 그린 것과 **픽셀 단위로 같다**(SheenTests 가 못 박는다).
-        let fade = min(1, min(progress, 1 - progress) / 0.20)
-        return LinearGradient(
-            stops: [
-                .init(color: .clear, location: 0),
-                .init(color: .white.opacity(0.07), location: 0.36),
-                .init(color: .white.opacity(0.30), location: 0.50),
-                .init(color: .white.opacity(0.07), location: 0.64),
-                .init(color: .clear, location: 1),
-            ],
-            startPoint: .leading, endPoint: .trailing
-        )
-        .frame(width: band, height: h * 2.2)
-        .rotationEffect(.degrees(20))
-        .offset(x: -travel + progress * (travel * 2))
-        .opacity(fade)
-        .blendMode(.plusLighter)
-        .allowsHitTesting(false)
     }
 
     private var caption: some View {
