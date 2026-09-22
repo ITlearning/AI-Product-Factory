@@ -1,0 +1,106 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>몽돌 홈 화면 — 3안 비교</title><style>
+:root{--bg:#f5f5f7;--ink:#1d1d1f;--sub:#6e6e73;--line:#d2d2d7;--face:#fff}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Pretendard",sans-serif;background:var(--bg);margin:0;padding:24px;color:var(--ink)}
+.meta{max-width:380px;margin:0 auto 16px;padding:12px 16px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.7}
+.meta dt{font-weight:600;color:var(--sub);display:inline}
+.meta dd{display:inline;margin:0 12px 0 4px}
+.device{max-width:380px;margin:0 auto;background:#0b0b0d;border:2px solid var(--ink);border-radius:32px;overflow:hidden;min-height:720px;display:flex;flex-direction:column;color:#fff}
+.statusbar{padding:10px 22px 0;font-size:11px;color:#8e8e93;display:flex;justify-content:space-between}
+.note{max-width:380px;margin:16px auto 0;font-size:12px;line-height:1.7;color:var(--sub)}
+.note b{color:var(--ink)}
+.pebble{border-radius:44% 44% 42% 42%/38% 38% 46% 46%;box-shadow:0 3px 10px rgba(0,0,0,.45)}
+.sealed{border:1px dashed #48484a;background:repeating-linear-gradient(135deg,#1c1c1e,#1c1c1e 6px,#232326 6px,#232326 12px)}
+.shutter{width:70px;height:70px;border-radius:50%;border:3px solid rgba(255,255,255,.9);background:#fff;margin:0 auto}
+.row{display:flex;gap:14px;overflow:hidden;padding:4px 0}
+.cap{font-size:10px;color:#8e8e93;text-align:center;margin-top:6px}
+
+.head{padding:26px 22px 6px}
+.head h1{font-size:26px;margin:0;font-weight:600;letter-spacing:-.4px}
+.today{margin:14px 22px 0;padding:13px 16px;border:1px solid #2c2c2e;border-radius:12px;font-size:13px;color:#c7c7cc;background:#141416}
+.today .dim{color:#8e8e93;font-size:11px;margin-top:3px}
+.body{flex:1;padding:26px 0 0 22px;overflow:hidden}
+.label{font-size:11px;color:#8e8e93;margin-bottom:12px}
+.foot{padding:18px 22px 30px}
+.hint{font-size:11px;color:#636366;text-align:center;margin-top:12px}
+
+body{padding:28px 20px}
+h1{max-width:1240px;margin:0 auto 6px;font-size:22px}
+.lead{max-width:1240px;margin:0 auto 26px;font-size:13px;line-height:1.8;color:var(--sub)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:26px;max-width:1240px;margin:0 auto;align-items:start}
+.col h2{font-size:15px;margin:0 0 4px}
+.col .file{font-size:11px;color:var(--sub);font-family:ui-monospace,monospace;margin-bottom:12px}
+.device{max-width:none;min-height:640px}
+.col .note{max-width:none;margin-top:14px;font-size:12px}
+.rec{max-width:1240px;margin:28px auto 0;padding:16px 18px;background:#fff;border:1px solid var(--line);border-left:3px solid #1d1d1f;border-radius:8px;font-size:13px;line-height:1.8}
+@media (prefers-color-scheme:dark){:root{--bg:#161618;--ink:#f5f5f7;--sub:#98989d;--line:#38383a}
+ .meta,.rec{background:#1f1f22}}
+</style></head><body>
+<h1>몽돌 — 홈 화면 3안</h1>
+<p class="lead"><code>SpikeView</code>(Gate 0 계측기)를 버리고 제품 진입점을 세운다.
+설계 문서에 <b>제품 화면 설계가 없어서</b> 여기서 처음 짠다.
+지켜야 하는 제약: 오늘 색은 안 보여준다 · 격자 금지 · 스트릭 영구 비목표 · 재촉 금지 ·
+주 진입은 잠금화면 1초이지 앱 열기가 아니다.</p>
+<div class="grid"><div class="col"><h2>A. 수집물 우선</h2><div class="file">home-a-collection.html</div><div class="device">
+  <div class="statusbar"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="head"><h1>몽돌</h1></div>
+  <div class="today">오늘 3개 담겼어요<div class="dim">색은 자정에 열려요</div></div>
+  <div class="body">
+    <div class="label">모은 하루</div>
+    <div class="row">
+      <div><div class="pebble" style="width:92px;height:112px;background:linear-gradient(#3a4a7a,#b1452e)"></div><div class="cap">노을 · 9월 21일</div></div>
+      <div><div class="pebble" style="width:84px;height:104px;background:linear-gradient(#2a3550,#6a5a7a)"></div><div class="cap">어스름 · 9월 20일</div></div>
+      <div><div class="pebble" style="width:88px;height:108px;background:linear-gradient(#5a7f5b,#8fa36b)"></div><div class="cap">풀빛 · 9월 18일</div></div>
+    </div>
+  </div>
+  <div class="foot"><div class="shutter"></div><div class="hint">잠금화면에서 카메라 컨트롤로도 담을 수 있어요</div></div>
+</div><div class="note"><b>오늘은 조약돌이 아니다.</b> 아직 안 끝난 하루라 줄에 없고, 한 줄 텍스트로만 「담겼다」를 알린다 —
+찍혔는지조차 모르면 불안하지만, 색을 보여주면 축이 깨진다.<br><br>
+<b>줄은 끝난 하루만.</b> 빈 날은 조약돌이 없을 뿐 구멍이 아니다(격자 금지).</div></div><div class="col"><h2>B. 오늘 우선</h2><div class="file">home-b-today.html</div><div class="device">
+  <div class="statusbar"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="head">오늘</div>
+  <div class="hero">
+    <div class="pebble sealed" style="width:150px;height:184px"></div>
+    <div class="t">3개 담겼어요</div>
+    <div class="d">자정에 열려요</div>
+  </div>
+  <div class="past">
+    <div class="label">지난 하루</div>
+    <div class="row">
+      <div><div class="pebble" style="width:62px;height:76px;background:linear-gradient(#3a4a7a,#b1452e)"></div></div>
+      <div><div class="pebble" style="width:58px;height:72px;background:linear-gradient(#2a3550,#6a5a7a)"></div></div>
+      <div><div class="pebble" style="width:60px;height:74px;background:linear-gradient(#5a7f5b,#8fa36b)"></div></div>
+    </div>
+  </div>
+  <div class="foot"><div class="shutter"></div></div>
+</div><div class="note"><b>위험:</b> 봉인된 오늘을 크게 두면 「열렸나」 확인하러 매일 오게 된다.
+그건 세지 않는 스트릭이다 — 문서가 스트릭을 <b>영구 비목표</b>로 못 박았다.<br><br>
+<b>이점:</b> 기다림이 시각화돼 「자정에 열린다」가 한눈에 이해된다. Q4(첫날 온보딩)를 이 화면이 일부 대신한다.</div></div><div class="col"><h2>C. 카메라 우선</h2><div class="file">home-c-camera.html</div><div class="device">
+  <div class="statusbar"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="preview">카메라 프리뷰</div>
+  <div class="foot">
+    <div class="pills"><div class="pill">.5</div><div class="pill on">1×</div><div class="pill">5</div></div>
+    <div class="shutter"></div>
+  </div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="label">위로 쓸면 모은 하루</div>
+    <div class="row">
+      <div><div class="pebble" style="width:54px;height:66px;background:linear-gradient(#3a4a7a,#b1452e)"></div></div>
+      <div><div class="pebble" style="width:52px;height:64px;background:linear-gradient(#2a3550,#6a5a7a)"></div></div>
+      <div><div class="pebble" style="width:52px;height:64px;background:linear-gradient(#5a7f5b,#8fa36b)"></div></div>
+    </div>
+  </div>
+</div><div class="note"><b>위험:</b> 주 진입은 <b>잠금화면 1초</b>다. 앱을 열었을 때도 카메라가 뜨면
+「담.은 앱을 열어 회고하고 우리는 잠금화면에서 알아차린다」는 차별점이 흐려진다 — 그냥 카메라 앱이 하나 더 있는 것이 된다.<br><br>
+<b>이점:</b> 카메라 컨트롤이 없는 iPhone 15 이하(Q7)에서는 이 구조가 진입을 메운다.</div></div></div>
+<div class="rec"><b>추천: A (수집물 우선).</b>
+주 진입이 잠금화면이라 앱을 여는 행위는 «찍으러»가 아니라 «보러» 오는 것이다.
+C 는 그 차별점을 지우고(카메라 앱이 하나 더 있는 게 된다),
+B 는 봉인된 오늘을 크게 둬서 매일 확인하러 오게 만든다 — 세지 않는 스트릭이다.
+A 는 오늘을 한 줄 텍스트로만 두어 «담겼다»는 안심만 주고 색은 자정까지 잠가둔다.
+<br><br>다만 <b>B 의 이점 하나는 A 에 가져올 수 있다</b> — 첫날(수집물 0개)에는 A 의 줄이 비어 있어
+Q4 가 그대로 남는다. 빈 상태 화면은 따로 짠다.</div>
+</body></html>

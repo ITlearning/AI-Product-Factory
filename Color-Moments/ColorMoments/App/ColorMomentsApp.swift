@@ -8,7 +8,7 @@ struct ColorMomentsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SpikeView(inbox: inbox, store: store, gifts: gifts)
+            HomeView(store: store, inbox: inbox, gifts: gifts)
                 .task {
                     inbox.dayStore = store
                     inbox.loadExisting()

@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/>
+<title>몽돌 와이어프레임 — C. 카메라 우선</title>
+<style>
+:root{--bg:#f5f5f7;--ink:#1d1d1f;--sub:#6e6e73;--line:#d2d2d7;--face:#fff}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Pretendard",sans-serif;background:var(--bg);margin:0;padding:24px;color:var(--ink)}
+.meta{max-width:380px;margin:0 auto 16px;padding:12px 16px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.7}
+.meta dt{font-weight:600;color:var(--sub);display:inline}
+.meta dd{display:inline;margin:0 12px 0 4px}
+.device{max-width:380px;margin:0 auto;background:#0b0b0d;border:2px solid var(--ink);border-radius:32px;overflow:hidden;min-height:720px;display:flex;flex-direction:column;color:#fff}
+.statusbar{padding:10px 22px 0;font-size:11px;color:#8e8e93;display:flex;justify-content:space-between}
+.note{max-width:380px;margin:16px auto 0;font-size:12px;line-height:1.7;color:var(--sub)}
+.note b{color:var(--ink)}
+.pebble{border-radius:44% 44% 42% 42%/38% 38% 46% 46%;box-shadow:0 3px 10px rgba(0,0,0,.45)}
+.sealed{border:1px dashed #48484a;background:repeating-linear-gradient(135deg,#1c1c1e,#1c1c1e 6px,#232326 6px,#232326 12px)}
+.shutter{width:70px;height:70px;border-radius:50%;border:3px solid rgba(255,255,255,.9);background:#fff;margin:0 auto}
+.row{display:flex;gap:14px;overflow:hidden;padding:4px 0}
+.cap{font-size:10px;color:#8e8e93;text-align:center;margin-top:6px}
+
+.preview{flex:1;background:linear-gradient(#26262a,#141417);display:flex;align-items:center;justify-content:center;color:#48484a;font-size:12px}
+.foot{padding:16px 22px 22px;text-align:center}
+.pills{display:flex;gap:10px;justify-content:center;margin-bottom:14px}
+.pill{width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.45);font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center}
+.pill.on{color:#ffd640;width:44px;border-radius:15px}
+.sheet{border-top:1px solid #2c2c2e;padding:12px 22px 26px;background:#141416}
+.grab{width:36px;height:4px;border-radius:2px;background:#3a3a3c;margin:0 auto 12px}
+.label{font-size:11px;color:#8e8e93;margin-bottom:10px}
+</style></head><body>
+<div class="meta"><dl>
+<dt>화면</dt><dd>홈 — C. 카메라 우선</dd><br>
+<dt>진입</dt><dd>앱 아이콘 → 바로 촬영 가능 상태</dd><br>
+<dt>핵심 액션</dt><dd>찍는다 / 위로 쓸어 수집물</dd>
+</dl></div>
+<div class="device">
+  <div class="statusbar"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="preview">카메라 프리뷰</div>
+  <div class="foot">
+    <div class="pills"><div class="pill">.5</div><div class="pill on">1×</div><div class="pill">5</div></div>
+    <div class="shutter"></div>
+  </div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="label">위로 쓸면 모은 하루</div>
+    <div class="row">
+      <div><div class="pebble" style="width:54px;height:66px;background:linear-gradient(#3a4a7a,#b1452e)"></div></div>
+      <div><div class="pebble" style="width:52px;height:64px;background:linear-gradient(#2a3550,#6a5a7a)"></div></div>
+      <div><div class="pebble" style="width:52px;height:64px;background:linear-gradient(#5a7f5b,#8fa36b)"></div></div>
+    </div>
+  </div>
+</div>
+<div class="note"><b>위험:</b> 주 진입은 <b>잠금화면 1초</b>다. 앱을 열었을 때도 카메라가 뜨면
+「담.은 앱을 열어 회고하고 우리는 잠금화면에서 알아차린다」는 차별점이 흐려진다 — 그냥 카메라 앱이 하나 더 있는 것이 된다.<br><br>
+<b>이점:</b> 카메라 컨트롤이 없는 iPhone 15 이하(Q7)에서는 이 구조가 진입을 메운다.</div>
+</body></html>

@@ -8,32 +8,19 @@ import SwiftUI
 /// 3) sessionContentUpdates 로 본 앱에 넘어오는가
 /// 4) 원본 무효화가 되는가 (안 되면 같은 사진을 반복해서 받는다)
 ///
-/// 이 화면은 제품 UI가 아니라 계측기다. 게이트 통과 후 버린다.
+/// **이 화면은 제품 UI가 아니라 계측기다.** 제품 진입점은 `HomeView` 로 넘어갔고(2026-09-22),
+/// 여기는 DEBUG 빌드에서 홈의 공구 아이콘 뒤에만 남아 있다. 버리지 않고 물린 이유는
+/// 잠금화면 수신 로그가 사진첩 B 경로 작업에 아직 필요해서다. B 가 끝나면 지운다.
+///
+/// **증정은 여기서 띄우지 않는다.** 홈이 `.dayGift` 로 띄우는데 여기서도 띄우면 두 번 뜬다.
 struct SpikeView: View {
     @Bindable var inbox: CaptureInbox
     @Bindable var store: DayStore
     private let gifts: GiftLog
-    @Environment(\.scenePhase) private var scenePhase
     @State private var camera: CaptureEngine
     @State private var confirmingWipe = false
-    /// 지금 띄울 증정 장면. nil 이면 안 띄운다.
-    @State private var ceremony: CeremonySubject?
-
-    /// 증정 장면을 띄우는 두 경로. 하나는 이력에 남고 하나는 안 남는다.
-    private enum CeremonySubject: Identifiable {
-        /// 자정이 지나 실제로 증정되는 하루. 닫으면 이력에 남는다.
-        case gift(String)
-        /// 개발자가 눌러 보는 미리 보기(오늘 것). **이력에 남기지 않는다** —
-        /// 여기서 남기면 진짜 증정이 영영 안 온다.
-        case preview
-
-        var id: String {
-            switch self {
-            case .gift(let key): "gift-\(key)"
-            case .preview: "preview"
-            }
-        }
-    }
+    /// 미리 보기 중인가. **이력에 남기지 않는다** — 여기서 남기면 진짜 증정이 영영 안 온다.
+    @State private var previewing = false
 
     init(inbox: CaptureInbox, store: DayStore, gifts: GiftLog) {
         self.inbox = inbox
@@ -137,7 +124,7 @@ struct SpikeView: View {
 
                     Section {
                         Button {
-                            ceremony = .preview
+                            previewing = true
                         } label: {
                             Label("증정 미리 보기", systemImage: "sparkles")
                         }
@@ -204,32 +191,8 @@ struct SpikeView: View {
             }
             .navigationTitle("Gate · 잠금화면 촬영")
             .navigationBarTitleDisplayMode(.inline)
-            .fullScreenCover(item: $ceremony) { subject in
-                switch subject {
-                case .gift(let key):
-                    // **사용자가 실제로 닫았을 때만 이력에 남긴다.**
-                    //
-                    // 처음엔 `.onDisappear` 에 걸었는데, 그건 사용자가 닫을 때만이 아니라
-                    // **앱이 내려갈 때도 불린다**(실기기에서 잡았다 — 증정 화면을 띄워둔 채
-                    // 프로세스를 죽였더니 그 하루가 «증정 완료»로 기록됐다).
-                    // 하루에 한 번뿐인 것을 보지도 못하고 잃는다. 닫기 동작에만 건다.
-                    BadgeCeremony(moments: store.moments(on: key),
-                                  isPresented: Binding(get: { ceremony != nil },
-                                                       set: { shown in
-                                                           guard !shown else { return }
-                                                           gifts.markGifted(key)
-                                                           ceremony = nil
-                                                       }))
-                case .preview:
-                    BadgeCeremony(moments: store.today,
-                                  isPresented: Binding(get: { ceremony != nil },
-                                                       set: { if !$0 { ceremony = nil } }))
-                }
-            }
-            .task { presentPendingGift() }
-            // 자정을 넘겨 다시 돌아온 경우. 앱을 껐다 켜지 않아도 그날이 건네진다.
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active { presentPendingGift() }
+            .fullScreenCover(isPresented: $previewing) {
+                BadgeCeremony(moments: store.today, isPresented: $previewing)
             }
             .confirmationDialog("전부 지울까요?", isPresented: $confirmingWipe, titleVisibility: .visible) {
                 Button("지우기", role: .destructive) {
@@ -244,18 +207,6 @@ struct SpikeView: View {
             }
 
         }
-    }
-
-    /// 아직 안 건넨 하루가 있으면 띄운다.
-    ///
-    /// 이미 뭔가 띄워져 있으면 건드리지 않는다 — 미리 보기를 보는 중에 진짜 증정이
-    /// 밑에서 치고 들어오면 둘 다 망가진다.
-    private func presentPendingGift() {
-        guard ceremony == nil else { return }
-        guard let key = GiftSchedule.pending(dayKeys: store.dayKeys,
-                                             lastGifted: gifts.lastGiftedDayKey,
-                                             today: Moment.dayKey(for: Date())) else { return }
-        ceremony = .gift(key)
     }
 
     private func step(_ n: Int, _ text: String) -> some View {
