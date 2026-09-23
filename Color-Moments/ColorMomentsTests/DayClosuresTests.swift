@@ -35,6 +35,21 @@ final class DayClosuresTests: XCTestCase {
         XCTAssertNil(closures.closedAt("2026-09-22"))
         XCTAssertNil(DayClosures(defaults: d).closedAt("2026-09-22"))
     }
+
+    func testApplyRemoteTakesEarlierAndDoesNotNotify() {
+        let d = UserDefaults(suiteName: UUID().uuidString)!
+        let c = DayClosures(defaults: d)
+        var got: [String] = []
+        c.onLocalChange = { got.append($0) }
+        let t = Date(timeIntervalSince1970: 1_790_000_000)
+        c.close("2026-09-22", at: t)
+        c.applyRemote(dayKey: "2026-09-22", closedAt: t.addingTimeInterval(60))
+        XCTAssertEqual(c.closedAt("2026-09-22"), t)
+        c.applyRemote(dayKey: "2026-09-22", closedAt: t.addingTimeInterval(-60))
+        XCTAssertEqual(c.closedAt("2026-09-22"), t.addingTimeInterval(-60))
+        XCTAssertEqual(got, ["2026-09-22"])
+        XCTAssertEqual(DayClosures(defaults: d).closedAt("2026-09-22"), t.addingTimeInterval(-60))
+    }
 }
 
 final class DayStoreClosureIntegrationTests: XCTestCase {

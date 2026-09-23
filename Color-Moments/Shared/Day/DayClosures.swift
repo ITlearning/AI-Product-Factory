@@ -6,6 +6,10 @@ import Observation
 public final class DayClosures {
     public private(set) var closedDays: [String: Date] = [:]
 
+    /// 이 기기에서 실제로 바뀐 것만 — applyRemote 는 부르지 않는다(되돌아 올라가면 끝없이 돈다).
+    @ObservationIgnored
+    public var onLocalChange: ((String) -> Void)?
+
     private let defaults: UserDefaults
     private static let storageKey = "dayClosures"
 
@@ -21,6 +25,14 @@ public final class DayClosures {
         // 이미 닫힌 날을 다시 닫으면 닫힌 시각이 늦춰져 나중 사진이 조약돌에 섞일 수 있다.
         guard closedDays[dayKey] == nil else { return }
         closedDays[dayKey] = date
+        persist()
+        onLocalChange?(dayKey)
+    }
+
+    /// 다른 기기에서 온 마무리 — 이른 쪽을 남기고, 여기서도 알리지 않는다(되돌아 올라가면 끝없이 돈다).
+    public func applyRemote(dayKey: String, closedAt: Date) {
+        if let mine = closedDays[dayKey], mine <= closedAt { return }
+        closedDays[dayKey] = closedAt
         persist()
     }
 
