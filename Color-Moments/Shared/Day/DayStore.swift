@@ -116,9 +116,18 @@ public final class DayStore {
 
     /// 받은 기록(assetID 없음)에 이 기기 사진을 다시 찾아 붙인다. adopt 와 달리 알리지 않는다 — assetID 는 이 기기 전용.
     public func resolveAsset(_ id: Moment.ID, assetID: String) {
-        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].assetID == nil else { return }
-        moments[i] = reassetted(moments[i], assetID: assetID)
-        save()
+        resolveAssets([(id, assetID)])
+    }
+
+    public func resolveAssets(_ pairs: [(Moment.ID, String)]) {
+        let index = Dictionary(moments.indices.map { (moments[$0].id, $0) }, uniquingKeysWith: { a, _ in a })
+        var changed = false
+        for (id, assetID) in pairs {
+            guard let i = index[id], moments[i].assetID == nil else { continue }
+            moments[i] = reassetted(moments[i], assetID: assetID)
+            changed = true
+        }
+        if changed { save() }
     }
 
     private func reassetted(_ m: Moment, assetID: String) -> Moment {

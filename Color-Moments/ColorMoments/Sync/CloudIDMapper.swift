@@ -14,9 +14,7 @@ enum CloudIDMapper {
             let map = PHPhotoLibrary.shared().cloudIdentifierMappings(forLocalIdentifiers: locals)
             return map.compactMapValues { try? $0.get().stringValue }
         }.value
-        for m in pending {
-            if let local = m.assetID, let cloud = found[local] { store.setCloudID(m.id, cloud) }
-        }
+        store.setCloudIDs(pending.compactMap { m in m.assetID.flatMap { found[$0] }.map { (m.id, $0) } })
     }
 
     /// 다른 기기에서 받은 기록의 cloudID 를 이 기기 에셋으로 찾는다. 못 찾으면 그대로 둔다(다음 기회).
@@ -33,9 +31,7 @@ enum CloudIDMapper {
             for (cloud, result) in map { if let local = try? result.get() { out[cloud.stringValue] = local } }
             return out
         }.value
-        for m in pending {
-            if let cloud = m.cloudID, let local = found[cloud] { store.resolveAsset(m.id, assetID: local) }
-        }
+        store.resolveAssets(pending.compactMap { m in m.cloudID.flatMap { found[$0] }.map { (m.id, $0) } })
     }
 
     @MainActor
