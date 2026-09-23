@@ -156,7 +156,7 @@ var word: PhotoWord?     // wordID, word, meaning, line?, ending?, attempts
 
 | # | 내용 | 외부 의존 |
 |---|---|---|
-| 1 | 단어 목록 구조 · WordPicker · 화면 A(단어+뜻풀이+시각) · 닫기 방식 | 없음 (목록은 spike 초안 32개로 시작) |
+| 1 | 단어 목록 구조 · WordPicker · 화면 A(단어+뜻풀이+시각) · 닫기 방식 | 없음 (목록은 spike 초안 31개로 시작 — 「어스름」은 조약돌 이름이라 뺀다) |
 | 2 | 한 줄 — 중계(Vercel) · RelayPhraseService · 하네스 · 끝말 회전 | Vercel 프로젝트, OpenRouter 키·한도 |
 | 3 | 위치(앱 안 촬영) · 동네 이름 · 그림 지도 · 권한 | — |
 | 4 | 날씨 | WeatherKit capability |
