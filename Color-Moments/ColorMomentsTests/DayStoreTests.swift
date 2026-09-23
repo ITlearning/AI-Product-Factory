@@ -13,6 +13,8 @@ final class DayStoreTests: XCTestCase {
             .appendingPathComponent("days-\(UUID().uuidString).json")
         closures = DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!)
         store = DayStore(fileURL: tempFile, closures: closures)
+        // 구독 전 변경은 쌓였다가 구독 순간 넘어온다 — 각 테스트는 그 뒤 변경만 보려고 먼저 구독해 둔다.
+        store.onLocalChange = { _ in }
     }
 
     override func tearDown() {
@@ -321,6 +323,41 @@ final class DayStoreTests: XCTestCase {
         store.setLabels(a.id, ["sky"])
         store.remove(assetIDs: [])  // 아무것도 안 지우면 알림 없음
         XCTAssertEqual(got, [.upsert(a.id), .upsert(a.id)])
+    }
+
+    func testChangesBeforeSubscriberAreDeliveredOnSubscribe() {
+        let fresh = DayStore(fileURL: FileManager.default.temporaryDirectory
+            .appendingPathComponent("days-\(UUID().uuidString).json"), closures: closures)
+        let a = Moment(capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-1",
+                       source: .library, assetID: "L/1")
+        fresh.add(a)
+        fresh.setCloudIDs([(a.id, "C1")])
+        fresh.remove(assetIDs: ["L/1"])
+        var calls: [[StoreChange]] = []
+        fresh.onLocalChange = { calls.append($0) }
+        XCTAssertEqual(calls, [[.upsert(a.id), .upsert(a.id), .delete(a.id)]],
+                       "동기화가 켜지기 전 변경을 버리면 다음 실행부터는 영영 안 올라간다")
+        fresh.onLocalChange = { calls.append($0) }
+        XCTAssertEqual(calls.count, 1, "쌓인 것은 한 번만 넘긴다")
+        let b = moment(date(2026, 9, 20, 13))
+        fresh.add(b)
+        XCTAssertEqual(calls.last, [.upsert(b.id)])
+    }
+
+    func testReassignAssetsSwapsAssetWithoutNotifying() {
+        let a = Moment(capturedAt: date(2026, 9, 20, 12), colorHex: "#111111",
+                       fileName: Moment.assetFileName(for: "L/1"), source: .library, assetID: "L/1", cloudID: "C1")
+        let b = Moment(capturedAt: date(2026, 9, 20, 13), colorHex: "#111111", fileName: "b.jpg", source: .app)
+        store.add(a)
+        store.add(b)
+        var got: [StoreChange] = []
+        store.onLocalChange = { got += $0 }
+        store.reassignAssets([(a.id, "L/9"), (b.id, "L/8")])
+        XCTAssertEqual(store.moment(a.id)?.assetID, "L/9")
+        XCTAssertEqual(store.moment(a.id)?.fileName, Moment.assetFileName(for: "L/9"))
+        XCTAssertNil(store.moment(b.id)?.assetID, "assetID 가 없던 기록은 바꿔 끼울 대상이 아니다(resolveAssets 몫)")
+        XCTAssertTrue(got.isEmpty, "assetID 는 이 기기 전용 — 올릴 것 없음")
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moment(a.id)?.assetID, "L/9")
     }
 
     func testRemoveByAssetNotifiesDelete() {

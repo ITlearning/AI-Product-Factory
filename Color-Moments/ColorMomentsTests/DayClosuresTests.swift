@@ -36,6 +36,16 @@ final class DayClosuresTests: XCTestCase {
         XCTAssertNil(DayClosures(defaults: d).closedAt("2026-09-22"))
     }
 
+    func testCloseBeforeSubscriberIsDeliveredOnSubscribe() {
+        let c = DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        c.close("2026-09-22")
+        var got: [String] = []
+        c.onLocalChange = { got.append($0) }
+        XCTAssertEqual(got, ["2026-09-22"], "동기화가 켜지기 전 마무리도 올라가야 한다")
+        c.onLocalChange = { got.append($0) }
+        XCTAssertEqual(got, ["2026-09-22"])
+    }
+
     func testApplyRemoteTakesEarlierAndDoesNotNotify() {
         let d = UserDefaults(suiteName: UUID().uuidString)!
         let c = DayClosures(defaults: d)

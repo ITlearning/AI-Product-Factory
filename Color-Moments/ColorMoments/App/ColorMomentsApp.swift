@@ -24,6 +24,13 @@ struct ColorMomentsApp: App {
         WindowGroup {
             HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures)
                 .task {
+                    // 모든 저장소 쓰기보다 먼저 켠다 — 구독 전 변경은 저장소가 쌓아 두지만 그건 이중 안전장치일 뿐이다.
+                    // 유닛 테스트는 앱을 호스트로 띄운다 — 권한 없는 CKContainer 는 크래시하므로 테스트 중엔 켜지 않는다.
+                    if sync == nil, ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+                        let s = CloudSync(store: store, closures: closures, gifts: gifts)
+                        s.start()
+                        sync = s
+                    }
                     inbox.dayStore = store
                     inbox.loadExisting()
                     inbox.start()
@@ -33,17 +40,11 @@ struct ColorMomentsApp: App {
                         await AssetAdopter.adoptAll(store: store)
                     }
 
-                    AssetReconciler.reconcile(store: store)
+                    await AssetReconciler.reconcile(store: store)
                     if reconcilerObserver == nil {
                         reconcilerObserver = AssetReconcilerObserver(store: store)
                     }
 
-                    // 유닛 테스트는 앱을 호스트로 띄운다 — 권한 없는 CKContainer 는 크래시하므로 테스트 중엔 켜지 않는다.
-                    if sync == nil, ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
-                        let s = CloudSync(store: store, closures: closures, gifts: gifts)
-                        s.start()
-                        sync = s
-                    }
                     await CloudIDMapper.refresh(store: store)
                 }
         }
@@ -53,8 +54,10 @@ struct ColorMomentsApp: App {
             if status == .authorized || status == .limited {
                 Task { await AssetAdopter.adoptAll(store: store) }
             }
-            AssetReconciler.reconcile(store: store)
-            Task { await CloudIDMapper.refresh(store: store) }
+            Task {
+                await AssetReconciler.reconcile(store: store)
+                await CloudIDMapper.refresh(store: store)
+            }
         }
     }
 }

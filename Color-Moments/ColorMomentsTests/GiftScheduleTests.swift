@@ -197,6 +197,15 @@ final class GiftScheduleTests: XCTestCase {
         XCTAssertEqual(gifts.giftedDayKeys, ["2026-09-21"])
     }
 
+    func testGiftBeforeSubscriberIsDeliveredOnSubscribe() {
+        let log = GiftLog(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        log.markGifted("2026-09-21")
+        log.applyRemote(gifted: "2026-09-22")
+        var got: [String] = []
+        log.onLocalChange = { got.append($0) }
+        XCTAssertEqual(got, ["2026-09-21"], "동기화가 켜지기 전 증정도 올라가야 한다")
+    }
+
     func testGiftLogNotifiesLocalOnlyAndPersists() {
         let d = UserDefaults(suiteName: UUID().uuidString)!
         let log = GiftLog(defaults: d)

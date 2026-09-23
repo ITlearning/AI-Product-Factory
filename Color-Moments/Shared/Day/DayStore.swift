@@ -7,8 +7,22 @@ public final class DayStore {
     public private(set) var moments: [Moment] = []
 
     /// 이 기기에서 실제로 바뀐 것만 — applyRemote 는 부르지 않는다(되돌아 올라가면 끝없이 돈다).
+    /// 구독 전에 생긴 변경은 모아 두었다가 설정되는 순간 한 번에 넘긴다.
     @ObservationIgnored
-    public var onLocalChange: (([StoreChange]) -> Void)?
+    public var onLocalChange: (([StoreChange]) -> Void)? {
+        didSet {
+            guard let onLocalChange, !unsent.isEmpty else { return }
+            let changes = unsent
+            unsent = []
+            onLocalChange(changes)
+        }
+    }
+    @ObservationIgnored private var unsent: [StoreChange] = []
+
+    private func notify(_ changes: [StoreChange]) {
+        guard let onLocalChange else { unsent += changes; return }
+        onLocalChange(changes)
+    }
 
     private let fileURL: URL
     private let closures: DayClosures
@@ -62,7 +76,7 @@ public final class DayStore {
         }) else { return false }
         moments.append(moment)
         save()
-        onLocalChange?([.upsert(moment.id)])
+        notify([.upsert(moment.id)])
         return true
     }
 
@@ -70,14 +84,14 @@ public final class DayStore {
         guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].word == nil else { return }
         moments[i].word = word
         save()
-        onLocalChange?([.upsert(id)])
+        notify([.upsert(id)])
     }
 
     public func setLabels(_ id: Moment.ID, _ labels: [String]) {
         guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].labels == nil else { return }
         moments[i].labels = labels
         save()
-        onLocalChange?([.upsert(id)])
+        notify([.upsert(id)])
     }
 
     public func moment(_ id: Moment.ID) -> Moment? { moments.first { $0.id == id } }
@@ -130,6 +144,18 @@ public final class DayStore {
         if changed { save() }
     }
 
+    /// 복원 등으로 바뀐 에셋 ID 로 갈아 끼운다. 알리지 않는다 — assetID 는 이 기기 전용.
+    public func reassignAssets(_ pairs: [(Moment.ID, String)]) {
+        let index = Dictionary(moments.indices.map { (moments[$0].id, $0) }, uniquingKeysWith: { a, _ in a })
+        var changed = false
+        for (id, assetID) in pairs {
+            guard let i = index[id], let old = moments[i].assetID, old != assetID else { continue }
+            moments[i] = reassetted(moments[i], assetID: assetID)
+            changed = true
+        }
+        if changed { save() }
+    }
+
     private func reassetted(_ m: Moment, assetID: String) -> Moment {
         m.withDeviceFields(fileName: Moment.assetFileName(for: assetID), assetID: assetID, originalName: m.originalName)
     }
@@ -140,7 +166,7 @@ public final class DayStore {
         guard !removed.isEmpty else { return }
         moments.removeAll { $0.assetID.map(assetIDs.contains) ?? false }
         save()
-        onLocalChange?(removed.map { .delete($0.id) })
+        notify(removed.map { .delete($0.id) })
     }
 
     public func setCloudID(_ id: Moment.ID, _ cloudID: String) {
@@ -179,7 +205,7 @@ public final class DayStore {
         moments = moments.enumerated().filter { !dropped.contains($0.offset) }.map(\.element)
         changes.removeAll { if case .upsert(let id) = $0 { return droppedIDs.contains(id) } else { return false } }
         save()
-        onLocalChange?(changes)
+        notify(changes)
     }
 
     /// upserts 먼저, deletes 나중 — 다른 기기의 delete(a)+upsert(b)(같은 cloudID)를 받을 때 a 의 사진 연결을 b 로 넘기려고.

@@ -21,8 +21,22 @@ public final class GiftLog {
     private var legacyLast: String?
 
     /// 이 기기에서 실제로 바뀐 것만 — applyRemote 는 부르지 않는다(되돌아 올라가면 끝없이 돈다).
+    /// 구독 전에 생긴 변경은 모아 두었다가 설정되는 순간 넘긴다.
     @ObservationIgnored
-    public var onLocalChange: ((String) -> Void)?
+    public var onLocalChange: ((String) -> Void)? {
+        didSet {
+            guard let onLocalChange else { return }
+            let keys = unsent
+            unsent = []
+            keys.forEach(onLocalChange)
+        }
+    }
+    @ObservationIgnored private var unsent: [String] = []
+
+    private func notify(_ dayKey: String) {
+        guard let onLocalChange else { unsent.append(dayKey); return }
+        onLocalChange(dayKey)
+    }
 
     private let defaults: UserDefaults
     private static let storageKey = "giftedDayKeys"
@@ -52,7 +66,7 @@ public final class GiftLog {
         guard !isGifted(dayKey) else { return }
         giftedDayKeys.insert(dayKey)
         defaults.set(Array(giftedDayKeys), forKey: Self.storageKey)
-        onLocalChange?(dayKey)
+        notify(dayKey)
     }
 
     /// 다른 기기에서 이미 받은 증정 — 여기서도 받았다고만 표시하고 알리지 않는다.
