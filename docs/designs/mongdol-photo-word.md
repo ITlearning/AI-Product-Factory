@@ -139,6 +139,10 @@ protocol PhraseService { func phrase(for req: PhraseRequest) async throws -> Phr
 - 상태·DB 없음. 로그는 console 만.
 - 키 `OPENROUTER_API_KEY` 는 Vercel 환경변수. **OpenRouter 키에 월 지출 한도**를 건다(Tabber, 대시보드).
 
+**AI 표시 뱃지** (Tabber 2026-09-23): AI가 지은 한 줄에는 작은 뱃지를 붙인다 — 알약, `hairline` 테두리, 11 `tertiary`, 예 「✦ AI가 지은 문장」.
+사진·단어보다 조용하게. 단어·뜻풀이는 사람이 고른 목록에서 나오므로 뱃지를 붙이지 않는다(붙이면 거짓이다).
+하네스에 걸려 한 줄이 없는 사진에는 뱃지도 없다. 모양은 2단계 착수 때 시안 2~3개로 고른다.
+
 **비용** (실측 건당 ≈ $0.00015, 사진 한 장당 1회): 꾸준히 쓰는 1,000명이 하루 5장 → 월 약 $22.
 
 ## 7. 저장
