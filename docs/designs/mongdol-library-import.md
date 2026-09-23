@@ -85,7 +85,8 @@ let assets = PHAsset.fetchAssets(with: o)
 3. `Moment(capturedAt: asset.creationDate, colorHex:, fileName:, source: .library)` + 새 필드
    - `assetID: String?` — `asset.localIdentifier`. **같은 사진 두 번 담기 방지**
    - `place: Place?` — `asset.location` 이 있으면 좌표·정확도 (사진 한 단어 3단계가 이 필드를 그대로 쓴다)
-   - `addedAt: Date?` — 담은 시각
+   - `addedAt: Date?` — 담은 시각 (카메라로 찍은 사진은 nil)
+   - `batchID: UUID?` — 한 번의 「담기」에 같이 들어온 사진들의 묶음
 4. `DayStore.add` (파일 이름 중복은 이미 막고 있다)
 
 - 다 담기까지 선택 화면에 머물고, 끝나면 닫힌다. 10장 넘게 고르면 진행 막대 한 줄.
@@ -95,10 +96,13 @@ let assets = PHAsset.fetchAssets(with: o)
 
 조약돌·이름·하루 그라데이션은 **「그 하루가 열린 시점까지 있던 사진」** 으로만 계산한다.
 
-- 하루가 열리는 시점 = 그 하루의 자정 증정 시각(`GiftLog`), 증정 기록이 없으면(지난 날) 그 하루 경계(다음 날 04:00).
-- `addedAt` 이 그 시점 **뒤** 인 사진은 조약돌 계산에서 뺀다. 하루 상세 시간축·사진 한 단어에는 들어간다.
-- 조약돌이 없던 지난 날은 열린 시점 전에 사진이 없으므로, 처음 담긴 사진들로 조약돌을 만든다 — 그 뒤에 더한 사진부터 빠진다.
-  - 한 번의 「담기」로 같은 날에 여러 장이 들어가면 **그 묶음 전체**가 조약돌을 만든다 (묶음 id 로 판정).
+- 조약돌에 들어가는 사진 = 그 하루의 **봉인 시점** 전에 있던 사진.
+  - 카메라로 찍은 사진(`addedAt == nil`)은 늘 들어간다.
+  - 봉인 시점 = 그 하루가 처음 조약돌이 된 때: 자정 증정 시각(`GiftLog`). 증정 기록이 없으면 그 하루 경계(다음 날 04:00).
+  - 담은 사진은 `addedAt ≤ 봉인 시점` 이면 들어간다.
+- **조약돌이 없던 지난 날**(봉인 시점 전에 사진이 하나도 없던 날): 그 하루에 **가장 먼저 담긴 묶음**(`batchID`)이 조약돌을 만든다. 그 뒤 묶음부터 빠진다.
+  한 번에 여러 장을 고르면 그 묶음 전체가 하루가 된다.
+- 빠진 사진도 하루 상세 시간축·사진 한 단어에는 들어간다.
 - 계산 함수 하나(`DayStore.pebbleMoments(on:)`)로 모으고, 조약돌·이름·그라데이션·홈 배경이 모두 이 함수를 쓴다.
 
 ## 7. 권한 문구
@@ -110,8 +114,8 @@ let assets = PHAsset.fetchAssets(with: o)
 
 - 날짜 섹션: 새벽 4시 경계, 최신순, 빈 날 없음 (순수 함수 `LibrarySections.make(dates:)`)
 - 중복: 같은 `assetID` 두 번 → 한 번만
-- 열린 조약돌 고정: 열린 뒤 `addedAt` 사진은 `pebbleMoments` 에서 빠지고 `moments(on:)` 에는 남는다 · 증정 기록 없는 지난 날은 첫 묶음으로 만든다
-- 옛 기록 디코딩(`assetID`·`place`·`addedAt` 없는 JSON)
+- 열린 조약돌 고정: 열린 뒤 `addedAt` 사진은 `pebbleMoments` 에서 빠지고 `moments(on:)` 에는 남는다 · 조약돌 없던 지난 날은 첫 묶음 전체로 만들고 두 번째 묶음은 뺀다
+- 옛 기록 디코딩(`assetID`·`place`·`addedAt`·`batchID` 없는 JSON)
 - 실기기 수동: 전체/선택한 사진만 두 권한, 위치 있는 사진의 `place`, 오늘 사진의 색 숨김
 
 ## 9. 요확인
