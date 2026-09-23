@@ -62,7 +62,9 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
     func photoLibraryDidChange(_ changeInstance: PHChange) {
         Task { @MainActor [weak self] in
             guard let self else { return }
-            if let fetchResult = self.fetchResult,
+            // 제한 접근에서는 선택 해제도 removedObjects 로 온다 — 지운 게 아니므로 전체 접근일 때만 반영.
+            if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized,
+               let fetchResult = self.fetchResult,
                let details = changeInstance.changeDetails(for: fetchResult) {
                 let removedIDs = Set(details.removedObjects.map(\.localIdentifier))
                 if !removedIDs.isEmpty {
