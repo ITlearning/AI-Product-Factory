@@ -8,21 +8,21 @@ public enum DayGradient {
     }
 
     public static func stops(for moments: [Moment]) -> [Stop] {
+        positions(for: moments).map { Stop(location: $0.location, hex: $0.moment.colorHex) }
+    }
+
+    public static func positions(for moments: [Moment]) -> [(moment: Moment, location: Double)] {
         let sorted = moments.sorted { $0.capturedAt < $1.capturedAt }
         guard let first = sorted.first, let last = sorted.last else { return [] }
 
-        guard sorted.count > 1 else { return [Stop(location: 0, hex: first.colorHex)] }
+        guard sorted.count > 1 else { return [(first, 0)] }
 
         let span = last.capturedAt.timeIntervalSince(first.capturedAt)
 
         guard span > 0 else {
-            return sorted.enumerated().map {
-                Stop(location: Double($0.offset) / Double(sorted.count - 1), hex: $0.element.colorHex)
-            }
+            return sorted.enumerated().map { ($0.element, Double($0.offset) / Double(sorted.count - 1)) }
         }
-        return sorted.map {
-            Stop(location: $0.capturedAt.timeIntervalSince(first.capturedAt) / span, hex: $0.colorHex)
-        }
+        return sorted.map { ($0, $0.capturedAt.timeIntervalSince(first.capturedAt) / span) }
     }
 
     public static func span(for moments: [Moment]) -> (from: Date, to: Date)? {

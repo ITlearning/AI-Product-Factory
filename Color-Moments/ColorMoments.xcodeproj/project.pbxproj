@@ -67,6 +67,7 @@
 		7376A941B553C659D52DAE4A /* ShotViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */; };
 		76AADA98FD5F2F767CDE36DA /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		7A5576FFA328861B7F1FE6AE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 770DB2BE29FFF678EF2949F8 /* Assets.xcassets */; };
+		7DF8236D94540E4E4AC11388 /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		8015ACB59A07B863B0AD5348 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
 		839143816019CFB52E8335B2 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B689D73DBFBD16C7B857686 /* Tokens.swift */; };
 		851F47DC9109F3E17C510A45 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
@@ -76,6 +77,7 @@
 		9350B45953F4B84683162C30 /* BadgeCeremony.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */; };
 		936F5FD2B12A592FC1339B20 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B689D73DBFBD16C7B857686 /* Tokens.swift */; };
 		949E6A04EB1AAF5A89ABF42D /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
+		97BEEB530BE9186A6F1A872A /* DayTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */; };
 		9AB9D80B4EDB7FC049E73713 /* DayMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E880EA384921F9A97C79A87 /* DayMomentsView.swift */; };
 		9EB023C629B1882BE6E7995C /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		A03E0083AE26CB4CCB4A9434 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
@@ -98,6 +100,7 @@
 		C5345168432CE41677778207 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
 		C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		C6592BFBDEAAB5F814989180 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
+		C6B84EDC7E5B3C86DD325A3C /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		C6F53A70ADED30A0C697C6C7 /* DayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */; };
 		CDD6D930AE9E6FC142AB4E09 /* ShotViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */; };
 		CF0F9BAAA1D2412A2B0E61E3 /* subset-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 311898EF3262DE92643FB442 /* subset-chars.txt */; };
@@ -107,6 +110,7 @@
 		CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
 		DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
+		DBB09AAD1137F1515A685A4D /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		E6B7D3BF033CC827B367D4F7 /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		E9FF039B8236CAA8424CC6D6 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
@@ -204,6 +208,7 @@
 		8747F82BBC5889D32A11161B /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8B7CF198D349DCFEDDBE122C /* TapCorrection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapCorrection.swift; sourceTree = "<group>"; };
 		915F51F76D8105385A924494 /* SpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpikeView.swift; sourceTree = "<group>"; };
+		926BDBAFE04F7B17464F627E /* DayTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimeline.swift; sourceTree = "<group>"; };
 		927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeCeremony.swift; sourceTree = "<group>"; };
 		953A1415A221B2ED1198C5E8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		9D560E148CF707BADEB351E9 /* DayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreTests.swift; sourceTree = "<group>"; };
@@ -224,6 +229,7 @@
 		F0539FB03BB33151F171D2BD /* HomeShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeShell.swift; sourceTree = "<group>"; };
 		F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "NanumMyeongjo-OFL.txt"; sourceTree = "<group>"; };
 		F1ED0B6B00F288E843C5C783 /* DayBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayBlock.swift; sourceTree = "<group>"; };
+		F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimelineTests.swift; sourceTree = "<group>"; };
 		F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotViewer.swift; sourceTree = "<group>"; };
 		F941673D190732D3ADB0055C /* ShotThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotThumbnail.swift; sourceTree = "<group>"; };
 		FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftScheduleTests.swift; sourceTree = "<group>"; };
@@ -289,6 +295,7 @@
 				EDA4609189EEBA41333EE662 /* DayGradient.swift */,
 				3E880EA384921F9A97C79A87 /* DayMomentsView.swift */,
 				DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */,
+				926BDBAFE04F7B17464F627E /* DayTimeline.swift */,
 				2CECA91205032542A8E6CBAD /* GiftSchedule.swift */,
 				79FEE28AD42D812B8F599EBC /* Moment.swift */,
 				343D1F9744F120B40EEDE985 /* PebbleName.swift */,
@@ -305,6 +312,7 @@
 				B3676D77CA8F72C6175CC066 /* ColorExtractorTests.swift */,
 				001315A7B5573B9974966AF7 /* DayGradientTests.swift */,
 				9D560E148CF707BADEB351E9 /* DayStoreTests.swift */,
+				F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */,
 				219FB2ED514DBE95A9AFAB53 /* Fixtures */,
 				08FA4218B93874BE76730863 /* FontSubsetTests.swift */,
 				FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */,
@@ -611,6 +619,7 @@
 				1D2767C95B157B92C97CF81B /* DayGradient.swift in Sources */,
 				A402E4FF34F4790F0EC2F752 /* DayMomentsView.swift in Sources */,
 				8015ACB59A07B863B0AD5348 /* DayStore.swift in Sources */,
+				C6B84EDC7E5B3C86DD325A3C /* DayTimeline.swift in Sources */,
 				6060F1DE8838469C19F3C6BE /* GiftSchedule.swift in Sources */,
 				CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */,
 				B75D6C90A80171E5FF633B14 /* HorizontalPan.swift in Sources */,
@@ -634,6 +643,7 @@
 				A6B7C20174D02F20249A5B7F /* ColorExtractorTests.swift in Sources */,
 				3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */,
 				1996A6A10339037B3A5CCC8F /* DayStoreTests.swift in Sources */,
+				97BEEB530BE9186A6F1A872A /* DayTimelineTests.swift in Sources */,
 				2D2DCAAA1704F58B8D38A822 /* FontSubsetTests.swift in Sources */,
 				5C46EE00CA3DADB1F2965E39 /* GiftScheduleTests.swift in Sources */,
 				12C3CD61E7A606425EFD41CA /* PebbleNameTests.swift in Sources */,
@@ -662,6 +672,7 @@
 				036A5A204DA00E6E1F8E4DB3 /* DayGradient.swift in Sources */,
 				14B086E929DB0210F2450CFF /* DayMomentsView.swift in Sources */,
 				A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */,
+				7DF8236D94540E4E4AC11388 /* DayTimeline.swift in Sources */,
 				46AD1F7A020AA01BF62EEBEC /* GiftSchedule.swift in Sources */,
 				37BEA1D1B07AEF6FF452A7E3 /* Haptics.swift in Sources */,
 				AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */,
@@ -697,6 +708,7 @@
 				2106F212ED450D8F5C0130AB /* DayGradient.swift in Sources */,
 				9AB9D80B4EDB7FC049E73713 /* DayMomentsView.swift in Sources */,
 				5D9A1CD34D9C0E0CEBDF2AF6 /* DayStore.swift in Sources */,
+				DBB09AAD1137F1515A685A4D /* DayTimeline.swift in Sources */,
 				AE0857AF5EDACD9DBF05DC32 /* GiftSchedule.swift in Sources */,
 				4A6EE87BD3B7C2217011154B /* Haptics.swift in Sources */,
 				C6592BFBDEAAB5F814989180 /* HorizontalPan.swift in Sources */,

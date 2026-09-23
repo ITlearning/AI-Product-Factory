@@ -7,6 +7,15 @@ public struct DayMomentsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var editing: Moment?
 
+    private static let axisHeight: CGFloat = 360
+    private static let photo = CGSize(width: 190, height: 127)
+    private static let labelWidth: CGFloat = 36
+    private static let bandX: CGFloat = 44
+    private static let photoX: CGFloat = 66
+    private static let shiftStep: CGFloat = 28
+    private static let maxShift = 3
+    private static let tick: CGFloat = 13
+
     public init(dayKey: String, store: DayStore) {
         self.dayKey = dayKey
         self.store = store
@@ -15,66 +24,131 @@ public struct DayMomentsView: View {
     private var moments: [Moment] { store.moments(on: dayKey) }
 
     public var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 18) {
-                    DayBadgeView(moments: moments, size: 120, showsCaption: false)
-                        .padding(.top, 12)
+        ZStack(alignment: .topLeading) {
+            Tone.base.ignoresSafeArea()
+            DayGradientView(moments: moments, axis: .vertical)
+                .blur(radius: 60)
+                .opacity(0.26)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
 
-                    if let named = PebbleNaming.name(for: moments) {
-                        Text(named.name)
-                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        closeButton
+                        Spacer().frame(height: 24)
+                        header
+                        Spacer().frame(height: 30)
+                        timeline(width: geo.size.width - 56)
+                        Spacer().frame(height: 28)
+                        Text("사진을 눌러 그 순간의 색을 고를 수 있어요.")
+                            .font(Face.guide).foregroundStyle(Tone.tertiary)
+                        Spacer().frame(height: 40)
                     }
-
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 10)], spacing: 10) {
-                        ForEach(moments) { m in
-                            Button { editing = m } label: { thumbnail(m) }
-                                .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-
-                    Text("사진을 눌러 그 순간의 색을 고를 수 있어요.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .padding(.bottom, 20)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 12)
                 }
+                .scrollIndicators(.hidden)
             }
-            .navigationTitle(dateText)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("닫기") { dismiss() } }
-            }
-            .sheet(item: $editing) { m in
-                ShotColorPicker(
-                    moment: m,
-                    onPick: { store.updateColor(m.id, to: $0) },
-                    onRevert: { store.revertColor(m.id) }
-                )
+        }
+        .presentationDragIndicator(.hidden)
+        .sheet(item: $editing) { m in
+            ShotColorPicker(
+                moment: m,
+                onPick: { store.updateColor(m.id, to: $0) },
+                onRevert: { store.revertColor(m.id) }
+            )
+        }
+    }
+
+    private var closeButton: some View {
+        Button { dismiss() } label: {
+            Text("닫기")
+                .font(.system(size: 13))
+                .foregroundStyle(Tone.primary)
+                .padding(.horizontal, 16)
+                .frame(minHeight: Shape2.minTouch)
+                .background(.white.opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 20) {
+            PebbleView(moments: moments, height: 130)
+            VStack(alignment: .leading, spacing: 8) {
+                if let named = PebbleNaming.name(for: moments) {
+                    Text(named.name).font(Face.nameDay).foregroundStyle(Tone.primary)
+                    Text(named.line).font(Face.line).foregroundStyle(Tone.secondary)
+                }
+                Text(caption).font(Face.caption).foregroundStyle(Tone.tertiary).monospacedDigit()
             }
         }
     }
 
-    private func thumbnail(_ m: Moment) -> some View {
+    private func timeline(width: CGFloat) -> some View {
+        let room = width - Self.photoX - Self.photo.width
+        let step = max(0, min(Self.shiftStep, room / CGFloat(Self.maxShift)))
+        let placements = DayTimeline.place(moments, height: Self.axisHeight,
+                                           photoHeight: Self.photo.height, maxShift: Self.maxShift)
+        let bandCenter = Self.bandX + 1.5
 
-        return ZStack(alignment: .bottomTrailing) {
-            ShotThumbnail(moment: m, maxPixel: 400)
+        return ZStack(alignment: .topLeading) {
+            DayGradientView(moments: moments, axis: .vertical)
+                .frame(width: 3, height: Self.axisHeight)
+                .clipShape(Capsule())
+                .offset(x: Self.bandX)
 
+            ForEach(Array(placements.enumerated()), id: \.element.moment.id) { i, p in
+                if p.showsTime {
+                    Text(DayGradient.timeText(p.moment.capturedAt))
+                        .font(.system(size: 10, design: .rounded)).monospacedDigit()
+                        .foregroundStyle(Tone.tertiary)
+                        .frame(width: Self.labelWidth, alignment: .trailing)
+                        .frame(height: Self.tick)
+                        .offset(x: -6, y: p.y - Self.tick / 2)
+                }
+
+                Circle()
+                    .fill(Color(hex: p.moment.colorHex))
+                    .overlay(Circle().strokeBorder(Tone.base.opacity(0.6), lineWidth: 2))
+                    .frame(width: Self.tick, height: Self.tick)
+                    .offset(x: bandCenter - Self.tick / 2, y: p.y - Self.tick / 2)
+                    .zIndex(Double(placements.count + i))
+
+                Button { editing = p.moment } label: { photoCard(p.moment) }
+                    .buttonStyle(.plain)
+                    .offset(x: Self.photoX + CGFloat(p.shift) * step, y: p.y - Self.tick / 2)
+                    .zIndex(Double(i))
+            }
+        }
+        .frame(width: width, height: Self.axisHeight + Self.photo.height, alignment: .topLeading)
+    }
+
+    private func photoCard(_ m: Moment) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            ShotThumbnail(moment: m, maxPixel: 600)
+                .frame(width: Self.photo.width, height: Self.photo.height)
+                .clipped()
             Circle()
                 .fill(Color(hex: m.colorHex))
-                .frame(width: 20, height: 20)
-                .overlay(Circle().strokeBorder(.white, lineWidth: 2))
-                .padding(6)
+                .overlay(Circle().strokeBorder(.white.opacity(0.9), lineWidth: 1.5))
+                .frame(width: 13, height: 13)
+                .padding(8)
         }
-        .frame(height: 96)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .frame(width: Self.photo.width, height: Self.photo.height)
+        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .shadow(color: .black.opacity(0.5), radius: 14, y: 8)
     }
 
-    private var dateText: String {
-        guard let first = moments.first else { return dayKey }
+    private var caption: String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "ko_KR")
         f.dateFormat = "M월 d일"
-        return f.string(from: first.capturedAt)
+        guard let span = DayGradient.span(for: moments) else { return dayKey }
+        let from = DayGradient.timeText(span.from), to = DayGradient.timeText(span.to)
+        let time = from == to ? from : "\(from)–\(to)"
+        return "\(f.string(from: span.from)) · \(time) · \(moments.count)개"
     }
 }
