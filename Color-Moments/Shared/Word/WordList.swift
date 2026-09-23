@@ -11,6 +11,7 @@ public struct WordEntry: Codable, Equatable, Sendable {
     public let times: [TimeBand]
     public let weathers: [Weather]
     public let seasons: [Season]
+    public let subjects: [String]
 }
 
 public struct WordList: Codable, Sendable {

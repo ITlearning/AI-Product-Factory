@@ -3,8 +3,8 @@ import XCTest
 
 final class WordPickerTests: XCTestCase {
 
-    private func w(_ id: String, times: [TimeBand] = [], weathers: [Weather] = [], seasons: [Season] = []) -> WordEntry {
-        WordEntry(id: id, word: id, meaning: "뜻 \(id)", times: times, weathers: weathers, seasons: seasons)
+    private func w(_ id: String, times: [TimeBand] = [], weathers: [Weather] = [], seasons: [Season] = [], subjects: [String] = []) -> WordEntry {
+        WordEntry(id: id, word: id, meaning: "뜻 \(id)", times: times, weathers: weathers, seasons: seasons, subjects: subjects)
     }
 
     private let duskCalendar: Calendar = {

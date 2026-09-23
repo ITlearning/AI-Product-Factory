@@ -1,4 +1,5 @@
 import XCTest
+import Vision
 @testable import ColorMoments
 
 final class WordListTests: XCTestCase {
@@ -40,5 +41,19 @@ final class WordListTests: XCTestCase {
     func testSourceReturnsTheSameWords() async throws {
         let a = await BundledWordSource().words()
         XCTAssertEqual(a, try list().words)
+    }
+
+    func testMostWordsHaveSubjects() throws {
+        let words = try list().words
+        XCTAssertGreaterThan(words.filter { !$0.subjects.isEmpty }.count, 40,
+                             "대상이 없는 단어는 쉰다 — 대부분은 대상이 있어야 한다")
+    }
+
+    func testEverySubjectIsARealVisionLabel() throws {
+        let supported: Set<String>
+        do { supported = Set(try VNClassifyImageRequest().supportedIdentifiers()) }
+        catch { throw XCTSkip("이 환경에서 Vision 분류 목록을 못 읽는다: \(error)") }
+        let bad = try list().words.flatMap { w in w.subjects.filter { !supported.contains($0) }.map { "\(w.word):\($0)" } }
+        XCTAssertTrue(bad.isEmpty, "Vision 에 없는 분류 이름 — 이 단어는 영영 안 나온다: \(bad)")
     }
 }
