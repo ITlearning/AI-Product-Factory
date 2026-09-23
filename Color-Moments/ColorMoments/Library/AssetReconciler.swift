@@ -73,6 +73,8 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
             }
             // 추적 목록을 지금 저장소 기준으로 다시 세운다 — 새로 입양된 assetID 도 다음 변경부터 잡힌다.
             self.refreshFetchResult()
+            // iCloud 사진이 늦게 내려와도 여기서 cloudID 를 다시 찾는다.
+            Task { await CloudIDMapper.refresh(store: self.store) }
         }
     }
 }

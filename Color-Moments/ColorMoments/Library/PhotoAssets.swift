@@ -66,12 +66,19 @@ enum AssetAdopter {
 
     @MainActor
     static func adopt(_ m: Moment, store: DayStore) async {
-        guard !adopting.contains(m.id) else { return }
+        guard await adoptWithoutMapping(m, store: store) else { return }
+        await CloudIDMapper.assignMissing(store: store)
+    }
+
+    /// adopt 의 본체 — cloudID 매핑은 호출부가 결정한다(adoptAll 은 루프 끝에 한 번만 하고 싶어서).
+    @MainActor
+    private static func adoptWithoutMapping(_ m: Moment, store: DayStore) async -> Bool {
+        guard !adopting.contains(m.id) else { return false }
         // 전달받은 스냅샷은 낡았을 수 있다(다른 경로가 먼저 입양했거나 그사이 지워졌을 수 있음) —
         // 지금 저장소에서 다시 읽어 확인한다.
-        guard let current = store.moments.first(where: { $0.id == m.id }), current.assetID == nil else { return }
+        guard let current = store.moments.first(where: { $0.id == m.id }), current.assetID == nil else { return false }
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-        guard status == .authorized || status == .limited else { return }
+        guard status == .authorized || status == .limited else { return false }
 
         adopting.insert(m.id)
         defer { adopting.remove(m.id) }
@@ -79,7 +86,7 @@ enum AssetAdopter {
         let fileURL = ShotImage.url(current.fileName)
         let location = current.place.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
         guard let assetID = await AssetSaver.save(fileURL: fileURL, creationDate: current.capturedAt, location: location) else {
-            return
+            return false
         }
 
         // 저장은 성공했어도 그사이 다른 경로가 먼저 입양했을 수 있다 — store.adopt 가 true 일 때만 지운다.
@@ -87,9 +94,10 @@ enum AssetAdopter {
         // 유일한 사본이 아니게 된 것뿐이라 다음 정리에서 자연히 지워진다).
         guard store.adopt(current.id, assetID: assetID) else {
             print("AssetAdopter: \(current.id) 는 저장 중 이미 입양돼 파일을 지우지 않음")
-            return
+            return false
         }
         try? FileManager.default.removeItem(at: fileURL)
+        return true
     }
 
     @MainActor
@@ -116,7 +124,8 @@ enum AssetAdopter {
             }
         }
         for m in store.fileBacked {
-            await adopt(m, store: store)
+            _ = await adoptWithoutMapping(m, store: store)
         }
+        await CloudIDMapper.assignMissing(store: store)
     }
 }

@@ -41,6 +41,7 @@ final class LibraryImporter {
                               source: .library, assetID: id, place: place, addedAt: Date(), batchID: batch))
             if store.moments.count > before { count += 1 } // add 가 파일 이름 중복으로 조용히 무시했을 수 있다
         }
+        await CloudIDMapper.assignMissing(store: store)
         return count
     }
 

@@ -145,6 +145,7 @@
 		D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */; };
 		DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
 		DBB09AAD1137F1515A685A4D /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
+		DE9A46A0F358B2CDCB9B89F9 /* CloudIDMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD91667DFE3E8160A212B1DA /* CloudIDMapper.swift */; };
 		E0A11DC00DADAE32564950AC /* LibrarySectionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */; };
 		E6B7D3BF033CC827B367D4F7 /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
@@ -294,6 +295,7 @@
 		F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotViewer.swift; sourceTree = "<group>"; };
 		F941673D190732D3ADB0055C /* ShotThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotThumbnail.swift; sourceTree = "<group>"; };
 		FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftScheduleTests.swift; sourceTree = "<group>"; };
+		FD91667DFE3E8160A212B1DA /* CloudIDMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudIDMapper.swift; sourceTree = "<group>"; };
 		FFFAD57FEE541A2BCBE917E6 /* PhotoLabeler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLabeler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -435,6 +437,14 @@
 			path = ColorMomentsCapture;
 			sourceTree = "<group>";
 		};
+		9C03CCFAB58103589012E7FB /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				FD91667DFE3E8160A212B1DA /* CloudIDMapper.swift */,
+			);
+			path = Sync;
+			sourceTree = "<group>";
+		};
 		A367C7D09D3B5E69C8A79847 /* Design */ = {
 			isa = PBXGroup;
 			children = (
@@ -530,6 +540,7 @@
 				C3CD0D033658A44051998F10 /* App */,
 				1D525796B906EE56730E76C2 /* Capture */,
 				BDD818AF0CC95296C53EAD23 /* Library */,
+				9C03CCFAB58103589012E7FB /* Sync */,
 			);
 			path = ColorMoments;
 			sourceTree = "<group>";
@@ -791,6 +802,7 @@
 				C5345168432CE41677778207 /* CaptureEngine.swift in Sources */,
 				39421DA397F79B0CEBD66E06 /* CaptureInbox.swift in Sources */,
 				59F0C1E84E0A9E36B6A7FF64 /* CaptureScreen.swift in Sources */,
+				DE9A46A0F358B2CDCB9B89F9 /* CloudIDMapper.swift in Sources */,
 				089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */,
 				85404B43045C16239CA26FB5 /* ColorExtractor.swift in Sources */,
 				FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */,
