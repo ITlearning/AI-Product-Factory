@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
-상태 **executing** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift`
+상태 **completed** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift`
 
 **Goal:** 앱 안 촬영 화면 셔터 왼쪽 버튼 → 날짜별(새벽 4시 경계) 직접 만든 선택 화면 → 고른 사진을 촬영 날짜의 하루에 담는다. 이미 열린 조약돌은 다시 칠하지 않는다.
 
