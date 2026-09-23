@@ -5,6 +5,7 @@ struct HomeShell: View {
     let store: DayStore
     let inbox: CaptureInbox
     let gifts: GiftLog
+    let closures: DayClosures
 
     @State private var progress: CGFloat = 0
     @State private var dragging = false
@@ -41,7 +42,7 @@ struct HomeShell: View {
                 Tone.pure.ignoresSafeArea()
 
                 HomeView(store: store, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0,
-                         focusDay: $focusDay, scrubbing: $scrubbing)
+                         focusDay: $focusDay, closures: closures, scrubbing: $scrubbing)
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -66,7 +67,7 @@ struct HomeShell: View {
                        value: progress)
         }
         .preferredColorScheme(.dark)
-        .dayGift(store: store, gifts: gifts)
+        .dayGift(store: store, gifts: gifts, closures: closures)
         .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
             guard pendingLibraryFocus else { return }
             pendingLibraryFocus = false
@@ -92,7 +93,7 @@ struct HomeShell: View {
                 .padding(.trailing, 20).padding(.top, 14)
             }
         }
-        .sheet(isPresented: $showingGate) { SpikeView(inbox: inbox, store: store, gifts: gifts) }
+        .sheet(isPresented: $showingGate) { SpikeView(inbox: inbox, store: store, gifts: gifts, closures: closures) }
         #endif
     }
 

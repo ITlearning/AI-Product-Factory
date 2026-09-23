@@ -62,6 +62,20 @@ struct PebbleShape: InsettableShape {
     }
 }
 
+/// 점선 조약돌 — 아직 색이 없는 자리(첫날 빈 블록·오늘 진행 중 블록)에 쓴다.
+public struct DashedPebble: View {
+    private let height: CGFloat
+
+    public init(height: CGFloat) { self.height = height }
+
+    public var body: some View {
+        PebbleShape(top: 0.44, bottom: 0.40)
+            .strokeBorder(Tone.hairline, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+            .frame(width: height * Shape2.pebbleRatio, height: height)
+            .frame(height: height * 1.16)
+    }
+}
+
 public struct DayBadgeView: View {
     private let moments: [Moment]
     private let size: CGFloat
@@ -118,12 +132,16 @@ public struct DayBadgeView: View {
 
 public struct BadgeRowView: View {
     private let store: DayStore
+    private let closures: DayClosures
 
     @State private var opened: OpenedDay?
 
     private struct OpenedDay: Identifiable { let id: String }
 
-    public init(store: DayStore) { self.store = store }
+    public init(store: DayStore, closures: DayClosures) {
+        self.store = store
+        self.closures = closures
+    }
 
     public var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -138,7 +156,7 @@ public struct BadgeRowView: View {
             .padding(.horizontal, 4).padding(.vertical, 8)
         }
         .sheet(item: $opened) { day in
-            DayMomentsView(dayKey: day.id, store: store)
+            DayMomentsView(dayKey: day.id, store: store, closures: closures)
         }
     }
 }

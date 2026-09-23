@@ -4,15 +4,17 @@ struct SpikeView: View {
     @Bindable var inbox: CaptureInbox
     @Bindable var store: DayStore
     private let gifts: GiftLog
+    private let closures: DayClosures
     @State private var camera: CaptureEngine
     @State private var confirmingWipe = false
 
     @State private var previewing = false
 
-    init(inbox: CaptureInbox, store: DayStore, gifts: GiftLog) {
+    init(inbox: CaptureInbox, store: DayStore, gifts: GiftLog, closures: DayClosures) {
         self.inbox = inbox
         self.store = store
         self.gifts = gifts
+        self.closures = closures
         _camera = State(initialValue: CaptureEngine(
             destination: { ShotStore.directory },
             onRecorded: { store.add($0) }
@@ -123,7 +125,7 @@ struct SpikeView: View {
                     }
 
                     Section("모으면 이렇게") {
-                        BadgeRowView(store: store)
+                        BadgeRowView(store: store, closures: closures)
                             .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                         Text("격자가 아니라 줄이다. 안 담은 날은 조약돌이 없을 뿐 구멍이 아니다.")
                             .font(.caption2).foregroundStyle(.secondary)
@@ -187,6 +189,7 @@ struct SpikeView: View {
                     inbox.reset()
 
                     gifts.reset()
+                    closures.reset()
                 }
                 Button("취소", role: .cancel) {}
             } message: {

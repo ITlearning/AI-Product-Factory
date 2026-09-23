@@ -4,8 +4,10 @@ import UIKit
 public struct DayMomentsView: View {
     private let dayKey: String
     private let store: DayStore
+    private let closures: DayClosures
     @Environment(\.dismiss) private var dismiss
     @State private var viewing: Moment?
+    @State private var confirmingFinish = false
     @Namespace private var zoom
 
     private static let photo = CGSize(width: 190, height: 127)
@@ -16,22 +18,28 @@ public struct DayMomentsView: View {
     private static let maxShift = 3
     private static let tick: CGFloat = 13
 
-    public init(dayKey: String, store: DayStore) {
+    public init(dayKey: String, store: DayStore, closures: DayClosures) {
         self.dayKey = dayKey
         self.store = store
+        self.closures = closures
     }
 
     private var moments: [Moment] { store.moments(on: dayKey) }
     private var pebbleMoments: [Moment] { store.pebbleMoments(on: dayKey) }
 
+    // 안 닫힌 오늘은 색이 아직 없다 — 조약돌·이름·색 번짐을 그리지 않는다.
+    private var isOpenToday: Bool { dayKey == Moment.dayKey(for: Date()) && !store.isFinished(dayKey) }
+
     public var body: some View {
         ZStack(alignment: .topLeading) {
             Tone.base.ignoresSafeArea()
-            DayGradientView(moments: pebbleMoments, axis: .vertical)
-                .blur(radius: 60)
-                .opacity(0.26)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+            if !isOpenToday {
+                DayGradientView(moments: pebbleMoments, axis: .vertical)
+                    .blur(radius: 60)
+                    .opacity(0.26)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
 
             GeometryReader { geo in
                 ScrollView {
@@ -41,6 +49,10 @@ public struct DayMomentsView: View {
                         header
                         Spacer().frame(height: 30)
                         timeline(width: max(0, geo.size.width - 56))
+                        if isOpenToday {
+                            Spacer().frame(height: 40)
+                            finishButton
+                        }
                         Spacer().frame(height: 40)
                     }
                     .padding(.horizontal, 28)
@@ -68,16 +80,42 @@ public struct DayMomentsView: View {
         .buttonStyle(.plain)
     }
 
+    @ViewBuilder
     private var header: some View {
-        HStack(alignment: .center, spacing: 20) {
-            PebbleView(moments: pebbleMoments, height: 130)
-            VStack(alignment: .leading, spacing: 8) {
-                if let named = PebbleNaming.name(for: pebbleMoments) {
-                    Text(named.name).font(Face.nameDay).foregroundStyle(Tone.primary)
-                    Text(named.line).font(Face.line).foregroundStyle(Tone.secondary)
+        if isOpenToday {
+            Text(caption).font(Face.caption).foregroundStyle(Tone.tertiary).monospacedDigit()
+        } else {
+            HStack(alignment: .center, spacing: 20) {
+                PebbleView(moments: pebbleMoments, height: 130)
+                VStack(alignment: .leading, spacing: 8) {
+                    if let named = PebbleNaming.name(for: pebbleMoments) {
+                        Text(named.name).font(Face.nameDay).foregroundStyle(Tone.primary)
+                        Text(named.line).font(Face.line).foregroundStyle(Tone.secondary)
+                    }
+                    Text(caption).font(Face.caption).foregroundStyle(Tone.tertiary).monospacedDigit()
                 }
-                Text(caption).font(Face.caption).foregroundStyle(Tone.tertiary).monospacedDigit()
             }
+        }
+    }
+
+    private var finishButton: some View {
+        Button {
+            confirmingFinish = true
+        } label: {
+            Text("오늘 마무리하기")
+                .font(Face.guide)
+                .foregroundStyle(Tone.secondary)
+                .frame(maxWidth: .infinity, minHeight: Shape2.minTouch)
+        }
+        .buttonStyle(.plain)
+        .confirmationDialog("지금 조약돌을 열까요?", isPresented: $confirmingFinish, titleVisibility: .visible) {
+            Button("마무리하기") {
+                closures.close(dayKey)
+                dismiss()
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("이후에 찍은 사진도 오늘에 담기지만 색은 그대로예요.")
         }
     }
 
@@ -90,7 +128,7 @@ public struct DayMomentsView: View {
         let bandCenter = Self.bandX + 1.5
 
         return ZStack(alignment: .topLeading) {
-            if axisHeight > 0 {
+            if axisHeight > 0 && !isOpenToday {
                 DayGradientView(moments: moments, axis: .vertical)
                     .frame(width: 3, height: axisHeight)
                     .clipShape(Capsule())

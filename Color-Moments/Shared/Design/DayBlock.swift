@@ -7,6 +7,9 @@ public struct DayBlock: View {
 
     private let width: CGFloat
 
+    /// false 면 아직 안 닫힌 오늘 — 조약돌 대신 점선 자리, 이름 없음, 캡션이 "담는 중"으로 바뀐다.
+    private let sealed: Bool
+
     private static let baseWidth: CGFloat = 334
     private static let baseHeight: CGFloat = 388
     // 슬롯마다 다른 크기로 캐시하면 뒷장이 앞으로 올라올 때가 매번 캐시 미스다.
@@ -19,10 +22,11 @@ public struct DayBlock: View {
     @State private var flying: Moment?
     @State private var flyX: CGFloat = 0
 
-    public init(moments: [Moment], pebbleMoments: [Moment]? = nil, width: CGFloat) {
+    public init(moments: [Moment], pebbleMoments: [Moment]? = nil, width: CGFloat, sealed: Bool = true) {
         self.moments = moments
         self.pebbleMoments = pebbleMoments ?? moments
         self.width = width
+        self.sealed = sealed
     }
 
     private var k: CGFloat { width / Self.baseWidth }
@@ -52,11 +56,22 @@ public struct DayBlock: View {
         VStack(alignment: .leading, spacing: 0) {
             stack
             Spacer().frame(height: 26 * k)
-            if let named = PebbleNaming.name(for: pebbleMoments) {
+            if sealed, let named = PebbleNaming.name(for: pebbleMoments) {
                 Text(named.name).font(Face.nameHome).foregroundStyle(Tone.primary)
                 Spacer().frame(height: 9 * k)
             }
+            caption
+        }
+    }
+
+    @ViewBuilder
+    private var caption: some View {
+        if sealed {
             Text(subtitle).font(Face.caption).foregroundStyle(Tone.tertiary).monospacedDigit()
+        } else {
+            (Text("\(moments.count)개 담는 중").foregroundStyle(Tone.primary)
+             + Text("  ·  색은 자정에 열려요").foregroundStyle(Tone.tertiary))
+                .font(Face.today)
         }
     }
 
@@ -126,9 +141,15 @@ public struct DayBlock: View {
                     .zIndex(4)
             }
 
-            PebbleView(moments: pebbleMoments, height: 84 * k, onPhoto: true)
-                .offset(x: 268 * k, y: 322 * k)
-                .zIndex(5)
+            Group {
+                if sealed {
+                    PebbleView(moments: pebbleMoments, height: 84 * k, onPhoto: true)
+                } else {
+                    DashedPebble(height: 84 * k)
+                }
+            }
+            .offset(x: 268 * k, y: 322 * k)
+            .zIndex(5)
         }
         .frame(width: width, height: boxHeight, alignment: .topLeading)
     }

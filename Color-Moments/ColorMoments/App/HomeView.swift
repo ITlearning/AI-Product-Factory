@@ -7,6 +7,8 @@ struct HomeView: View {
 
     @Binding var focusDay: String?
 
+    let closures: DayClosures
+
     // HomeShell 에 알약 스크럽 중임을 알린다 — HomeShell 의 카메라 스와이프가 이 동안 자신을 죽인다.
     @Binding var scrubbing: Bool
 
@@ -25,6 +27,11 @@ struct HomeView: View {
 
     private var days: [String] { store.finishedDayKeys }
 
+    private var todayKey: String { Moment.dayKey(for: Date()) }
+
+    // 오늘 사진이 있고 아직 안 닫혔으면 todayLine 대신 진행 중 블록을 보여준다.
+    private var todayInProgress: Bool { !store.today.isEmpty && !store.isFinished(todayKey) }
+
     private var compactCutoff: String { HomeNavigation.compactCutoff(today: Date()) }
 
     private var months: [String] { HomeNavigation.months(of: days) }
@@ -41,7 +48,7 @@ struct HomeView: View {
             if showsSwipeHint { swipeHint }
         }
         .sheet(item: $opened) { day in
-            DayMomentsView(dayKey: day.id, store: store)
+            DayMomentsView(dayKey: day.id, store: store, closures: closures)
         }
     }
 
@@ -67,11 +74,17 @@ struct HomeView: View {
                             Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
                                 .id("top")
                             Spacer().frame(height: 22)
-                            todayLine
+                            if todayInProgress {
+                                todayProgressBlock(width: blockWidth)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { opened = OpenedDay(id: todayKey) }
+                            } else {
+                                todayLine
+                            }
                             Spacer().frame(height: 38)
 
                             if days.isEmpty {
-                                EmptyDayBlock(width: blockWidth)
+                                if !todayInProgress { EmptyDayBlock(width: blockWidth) }
                             } else {
                                 LazyVStack(alignment: .leading, spacing: 0) {
                                     ForEach(Array(days.enumerated()), id: \.element) { index, key in
@@ -176,6 +189,11 @@ struct HomeView: View {
         }
     }
 
+    private func todayProgressBlock(width: CGFloat) -> some View {
+        // pebbleMoments 를 비워 넘긴다 — 이름도 안 뜨고 조약돌 자리도 점선으로 그려진다(DayBlock sealed: false).
+        DayBlock(moments: store.today, pebbleMoments: [], width: width, sealed: false)
+    }
+
     private var todayLine: some View {
         let n = store.today.count
         return Group {
@@ -264,9 +282,7 @@ struct EmptyDayBlock: View {
                     .strokeBorder(Tone.hairline, style: StrokeStyle(lineWidth: 1, dash: [6, 6]))
                     .frame(width: 314 * k, height: 320 * k)
                     .offset(x: 10 * k)
-                PebbleShape(top: 0.44, bottom: 0.40)
-                    .strokeBorder(Tone.hairline, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
-                    .frame(width: 84 * k * Shape2.pebbleRatio, height: 84 * k)
+                DashedPebble(height: 84 * k)
                     .offset(x: 272 * k, y: 300 * k)
             }
             .frame(width: width, height: 388 * k, alignment: .topLeading)
