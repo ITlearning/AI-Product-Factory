@@ -359,33 +359,177 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(push, [.upsert(a.id)], "서버에 없는 단어를 이 기기가 알고 있으면 다시 올린다")
     }
 
-    func testSameCloudIDKeepsEarlierAndDeletesLoser() {
-        let early = date(2026, 9, 20, 12), late = date(2026, 9, 20, 12, 1)
-        let local = Moment(capturedAt: late, colorHex: "#111111", fileName: "asset-1",
+    private let id1 = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    private let id2 = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+    private let yunseul = PhotoWord(wordID: "w", word: "윤슬", meaning: "m")
+
+    func testSameCloudIDRemoteWinsByIDAndInheritsLocalAsset() {
+        let local = Moment(id: id2, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-1",
                            source: .library, assetID: "L/1", cloudID: "C1")
         store.add(local)
-        let remote = Moment(capturedAt: early, colorHex: "#111111", fileName: "asset-c",
+        let remote = Moment(id: id1, capturedAt: date(2026, 9, 20, 12, 1), colorHex: "#111111", fileName: "asset-c",
                             source: .library, cloudID: "C1")
         let push = store.applyRemote(upserts: [remote], deletes: [])
-        XCTAssertEqual(store.moments.map(\.id), [remote.id])
+        XCTAssertEqual(store.moments.map(\.id), [id1])
         XCTAssertEqual(store.moments.first?.assetID, "L/1", "이긴 기록도 이 기기 에셋 연결은 이어받는다")
-        XCTAssertEqual(push, [.delete(local.id)])
+        XCTAssertEqual(push, [.delete(id2)])
     }
 
-    func testSetCloudIDMergesDuplicate() {
-        let early = date(2026, 9, 20, 12), late = date(2026, 9, 20, 12, 1)
-        let received = Moment(capturedAt: early, colorHex: "#111111", fileName: "asset-c",
+    func testSameCloudIDRemoteLosesButItsWordIsKept() {
+        let local = Moment(id: id1, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-1",
+                           source: .library, assetID: "L/1", cloudID: "C1")
+        store.add(local)
+        let remote = Moment(id: id2, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-c",
+                            source: .library, word: yunseul, labels: ["water"], cloudID: "C1")
+        let push = store.applyRemote(upserts: [remote], deletes: [])
+        XCTAssertEqual(store.moments.map(\.id), [id1])
+        XCTAssertEqual(store.moments.first?.word, yunseul, "진 쪽의 단어를 버리면 두 기기가 다른 단어를 보게 된다")
+        XCTAssertEqual(store.moments.first?.assetID, "L/1")
+        XCTAssertEqual(push, [.delete(id2), .upsert(id1)])
+    }
+
+    func testSetCloudIDMergesDuplicateIntoReceivedWinner() {
+        let received = Moment(id: id1, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-c",
                               source: .library, cloudID: "C1")
         store.applyRemote(upserts: [received], deletes: [])
-        let mine = Moment(capturedAt: late, colorHex: "#111111", fileName: "asset-1",
+        let mine = Moment(id: id2, capturedAt: date(2026, 9, 20, 12, 1), colorHex: "#111111", fileName: "asset-1",
+                          source: .library, word: yunseul, labels: ["water"], assetID: "L/1")
+        store.add(mine)
+        var got: [StoreChange] = []
+        store.onLocalChange = { got += $0 }
+        store.setCloudID(mine.id, "C1")
+        XCTAssertEqual(store.moments.map(\.id), [id1])
+        XCTAssertEqual(store.moments.first?.assetID, "L/1")
+        XCTAssertEqual(store.moments.first?.word, yunseul, "assetID 가진 쪽이 져도 단어는 남는다")
+        XCTAssertEqual(got, [.delete(id2), .upsert(id1)])
+    }
+
+    func testSetCloudIDMergesDuplicateIntoMineWhenMineWins() {
+        let received = Moment(id: id2, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-c",
+                              source: .library, word: yunseul, labels: ["water"], cloudID: "C1")
+        store.applyRemote(upserts: [received], deletes: [])
+        let mine = Moment(id: id1, capturedAt: date(2026, 9, 20, 12, 1), colorHex: "#111111", fileName: "asset-1",
                           source: .library, assetID: "L/1")
         store.add(mine)
         var got: [StoreChange] = []
         store.onLocalChange = { got += $0 }
         store.setCloudID(mine.id, "C1")
-        XCTAssertEqual(store.moments.map(\.id), [received.id])
+        XCTAssertEqual(store.moments.map(\.id), [id1])
         XCTAssertEqual(store.moments.first?.assetID, "L/1")
-        XCTAssertEqual(got, [.delete(mine.id), .upsert(received.id)])
+        XCTAssertEqual(store.moments.first?.word, yunseul)
+        XCTAssertEqual(got, [.delete(id2), .upsert(id1)])
+    }
+
+    func testSetCloudIDsSavesAndNotifiesOnce() {
+        let ms = (0..<3).map { k in
+            Moment(capturedAt: date(2026, 9, 20, 12, k), colorHex: "#111111", fileName: "asset-\(k)",
+                   source: .library, assetID: "L/\(k)")
+        }
+        ms.forEach { store.add($0) }
+        var calls: [[StoreChange]] = []
+        store.onLocalChange = { calls.append($0) }
+        store.setCloudIDs(ms.enumerated().map { ($1.id, "C\($0)") })
+        XCTAssertEqual(calls, [ms.map { .upsert($0.id) }])
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.map(\.cloudID), ["C0", "C1", "C2"])
+    }
+
+    /// 두 기기가 같은 사진을 따로 담은 뒤 서로의 기록을 받고, 각자 돌려준 push 를 상대에게 준다.
+    private func assertTwoDevicesConverge(aID: UUID, bID: UUID, file: StaticString = #filePath, line: UInt = #line) {
+        let t = date(2026, 9, 20, 12)
+        let storeA = store!
+        let storeB = DayStore(fileURL: FileManager.default.temporaryDirectory
+            .appendingPathComponent("days-\(UUID().uuidString).json"),
+                              closures: DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        let a = Moment(id: aID, capturedAt: t, colorHex: "#111111", fileName: "asset-a", source: .library,
+                       assetID: "A/1", cloudID: "C1")
+        let b = Moment(id: bID, capturedAt: t.addingTimeInterval(0.4), colorHex: "#111111", fileName: "asset-b",
+                       source: .library, word: yunseul, labels: ["water"], assetID: "B/1", cloudID: "C1")
+        storeA.add(a); storeB.add(b)
+        var toB = storeA.applyRemote(upserts: [b], deletes: [])
+        var toA = storeB.applyRemote(upserts: [a], deletes: [])
+        func deliver(_ push: [StoreChange], from src: DayStore, to dst: DayStore) -> [StoreChange] {
+            var ups: [Moment] = [], dels = Set<Moment.ID>()
+            for c in push {
+                switch c {
+                case .upsert(let id): if let m = src.moment(id) { ups.append(m) }
+                case .delete(let id): dels.insert(id)
+                }
+            }
+            return dst.applyRemote(upserts: ups, deletes: dels)
+        }
+        for _ in 0..<5 where !(toA.isEmpty && toB.isEmpty) {
+            let nextA = deliver(toB, from: storeA, to: storeB)
+            let nextB = deliver(toA, from: storeB, to: storeA)
+            (toA, toB) = (nextA, nextB)
+        }
+        XCTAssertTrue(toA.isEmpty && toB.isEmpty, "push 가 끝나지 않는다", file: file, line: line)
+        XCTAssertEqual(storeA.moments.map(\.id), storeB.moments.map(\.id), file: file, line: line)
+        XCTAssertEqual(storeA.moments.count, 1, file: file, line: line)
+        XCTAssertEqual(storeA.moments.first?.word, yunseul, file: file, line: line)
+        XCTAssertEqual(storeB.moments.first?.word, yunseul, file: file, line: line)
+        XCTAssertEqual(storeA.moments.first?.assetID, "A/1", file: file, line: line)
+        XCTAssertEqual(storeB.moments.first?.assetID, "B/1", file: file, line: line)
+        XCTAssertTrue(MomentMerge.syncedEqual(storeA.moments[0], storeB.moments[0]), file: file, line: line)
+    }
+
+    func testTwoDevicesConvergeWhenAssetSideWins() { assertTwoDevicesConverge(aID: id1, bID: id2) }
+
+    func testTwoDevicesConvergeWhenWordSideWins() { assertTwoDevicesConverge(aID: id2, bID: id1) }
+
+    func testDeleteAndUpsertOfSameCloudIDInOneBatchKeepsLocalAsset() {
+        let a = Moment(id: id2, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-a",
+                       source: .library, assetID: "A/1", cloudID: "C1")
+        store.add(a)
+        let b = Moment(id: id1, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-c",
+                       source: .library, word: yunseul, labels: ["water"], cloudID: "C1")
+        store.applyRemote(upserts: [b], deletes: [a.id])
+        XCTAssertEqual(store.moments.map(\.id), [id1])
+        XCTAssertEqual(store.moments.first?.assetID, "A/1", "먼저 지우면 이 기기 사진 연결이 사라진다")
+        XCTAssertEqual(store.moments.first?.fileName, "asset-a")
+        XCTAssertEqual(store.moments.first?.word, yunseul)
+    }
+
+    func testDeletedLocalAssetHandsOverToSurvivorWithSameCloudID() throws {
+        let a = Moment(id: id2, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-a",
+                       source: .library, assetID: "A/1", originalName: "o.jpg", cloudID: "C1")
+        let b = Moment(id: id1, capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "asset-c",
+                       source: .library, cloudID: "C1")
+        let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
+        try enc.encode([a, b]).write(to: tempFile)
+        let reopened = DayStore(fileURL: tempFile, closures: closures)
+        reopened.applyRemote(upserts: [], deletes: [a.id])
+        XCTAssertEqual(reopened.moments.map(\.id), [id1])
+        XCTAssertEqual(reopened.moments.first?.assetID, "A/1")
+        XCTAssertEqual(reopened.moments.first?.fileName, "asset-a")
+        XCTAssertEqual(reopened.moments.first?.originalName, "o.jpg")
+    }
+
+    func testReceivedMomentDropsOtherDeviceFileFields() {
+        let r = Moment(capturedAt: date(2026, 9, 20, 12), colorHex: "#111111", fileName: "shot-other.jpg",
+                       source: .app, assetID: "OTHER/1", originalName: "lock.jpg", cloudID: "C1")
+        store.applyRemote(upserts: [r], deletes: [])
+        let got = store.moment(r.id)
+        XCTAssertEqual(got?.fileName, Moment.receivedFileName(cloudID: "C1", id: r.id))
+        XCTAssertNil(got?.assetID)
+        XCTAssertNil(got?.originalName)
+        XCTAssertTrue(store.fileBacked.isEmpty, "다른 기기 파일 이름이면 없는 파일을 입양하려 한다")
+    }
+
+    func testRemoveAllDoesNotNotify() {
+        store.add(moment(date(2026, 9, 22, 12, 0), name: "x.jpg"))
+        var got: [StoreChange] = []
+        store.onLocalChange = { got += $0 }
+        store.removeAll()
+        XCTAssertTrue(got.isEmpty, "디버그 초기화가 다른 기기 기록까지 지우면 안 된다")
+    }
+
+    func testCapturedAtKeepsFractionalSecondsAcrossReload() {
+        let at = date(2026, 9, 22, 12).addingTimeInterval(0.25)
+        let m = moment(at, name: "frac.jpg")
+        store.add(m)
+        let reloaded = DayStore(fileURL: tempFile, closures: closures).moment(m.id)!
+        XCTAssertEqual(reloaded.capturedAt.timeIntervalSince1970, at.timeIntervalSince1970, accuracy: 0.001)
+        XCTAssertTrue(MomentMerge.syncedEqual(reloaded, m))
     }
 
     func testReceivedMomentsAreNotFileBackedAndResolveLater() {

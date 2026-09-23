@@ -92,6 +92,13 @@ public extension Moment {
         "asset-" + String(WordPicker.fnv1a(assetID), radix: 16)
     }
 
+    /// 이 기기 전용 필드(fileName·assetID·originalName)만 바꾼 사본.
+    func withDeviceFields(fileName: String, assetID: String?, originalName: String?) -> Moment {
+        Moment(id: id, capturedAt: capturedAt, colorHex: colorHex, fileName: fileName, source: source,
+               word: word, labels: labels, assetID: assetID, place: place, addedAt: addedAt,
+               batchID: batchID, originalName: originalName, cloudID: cloudID)
+    }
+
     /// 다른 기기에서 받은 기록의 자리 이름 — 파일은 없다. cloudID 가 있으면 사진 기준이라 기기마다 같다.
     static func receivedFileName(cloudID: String?, id: UUID) -> String {
         cloudID.map { "asset-" + String(WordPicker.fnv1a($0), radix: 16) } ?? "remote-\(id.uuidString)"

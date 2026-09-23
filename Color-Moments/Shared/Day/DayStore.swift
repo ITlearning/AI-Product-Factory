@@ -122,11 +122,7 @@ public final class DayStore {
     }
 
     private func reassetted(_ m: Moment, assetID: String) -> Moment {
-        Moment(id: m.id, capturedAt: m.capturedAt, colorHex: m.colorHex,
-               fileName: Moment.assetFileName(for: assetID), source: m.source,
-               word: m.word, labels: m.labels, assetID: assetID,
-               place: m.place, addedAt: m.addedAt, batchID: m.batchID,
-               originalName: m.originalName, cloudID: m.cloudID)
+        m.withDeviceFields(fileName: Moment.assetFileName(for: assetID), assetID: assetID, originalName: m.originalName)
     }
 
     public func remove(assetIDs: Set<String>) {
@@ -139,50 +135,96 @@ public final class DayStore {
     }
 
     public func setCloudID(_ id: Moment.ID, _ cloudID: String) {
-        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].cloudID == nil else { return }
-        moments[i].cloudID = cloudID
-        if let j = moments.firstIndex(where: { $0.id != id && $0.cloudID == cloudID }) {
-            let (winner, loser) = MomentMerge.keeps(moments[i], over: moments[j]) ? (i, j) : (j, i)
-            // winner 가 이 기기 것(assetID 있음)이면 merge 로 덮지 않는다 — merge 는 assetID 를 loser 것으로 가져간다.
-            let merged = moments[winner].assetID != nil ? moments[winner] : MomentMerge.merge(local: moments[loser], remote: moments[winner])
-            let loserID = moments[loser].id
-            moments[winner] = merged
-            moments.remove(at: loser)
-            save()
-            onLocalChange?([.delete(loserID), .upsert(merged.id)])
-            return
-        }
-        save()
-        onLocalChange?([.upsert(id)])
+        setCloudIDs([(id, cloudID)])
     }
 
+    /// 같은 cloudID 기록이 이미 있으면 combine 으로 합친다. 저장·알림은 한 번.
+    public func setCloudIDs(_ pairs: [(Moment.ID, String)]) {
+        var index: [Moment.ID: Int] = [:], byCloud: [String: Int] = [:]
+        for (i, m) in moments.enumerated() {
+            index[m.id] = i
+            if let c = m.cloudID { byCloud[c] = i }
+        }
+        var dropped = Set<Int>()
+        var changes: [StoreChange] = []
+        for (id, cloudID) in pairs {
+            guard let i = index[id], !dropped.contains(i), moments[i].cloudID == nil else { continue }
+            moments[i].cloudID = cloudID
+            guard let j = byCloud[cloudID], j != i, !dropped.contains(j) else {
+                byCloud[cloudID] = i
+                changes.append(.upsert(id))
+                continue
+            }
+            let combined = MomentMerge.combine(moments[i], moments[j])
+            let (keep, drop) = combined.id == moments[i].id ? (i, j) : (j, i)
+            // i 가 남으면 서버의 i 에는 cloudID 가 없다 — 항상 올린다.
+            let needsUpsert = keep == i || !MomentMerge.syncedEqual(combined, moments[j])
+            changes.append(.delete(moments[drop].id))
+            if needsUpsert { changes.append(.upsert(combined.id)) }
+            moments[keep] = combined
+            dropped.insert(drop)
+            byCloud[cloudID] = keep
+        }
+        guard !changes.isEmpty else { return }
+        let droppedIDs = Set(dropped.map { moments[$0].id })
+        moments = moments.enumerated().filter { !dropped.contains($0.offset) }.map(\.element)
+        changes.removeAll { if case .upsert(let id) = $0 { return droppedIDs.contains(id) } else { return false } }
+        save()
+        onLocalChange?(changes)
+    }
+
+    /// upserts 먼저, deletes 나중 — 다른 기기의 delete(a)+upsert(b)(같은 cloudID)를 받을 때 a 의 사진 연결을 b 로 넘기려고.
     @discardableResult
     public func applyRemote(upserts: [Moment], deletes: Set<Moment.ID>) -> [StoreChange] {
         var push: [StoreChange] = []
         var changed = false
-        if !deletes.isEmpty {
-            let before = moments.count
-            moments.removeAll { deletes.contains($0.id) }
-            changed = moments.count != before
+        var index: [Moment.ID: Int] = [:], byCloud: [String: Int] = [:]
+        for (i, m) in moments.enumerated() {
+            index[m.id] = i
+            if let c = m.cloudID { byCloud[c] = i }
         }
-        for remote in upserts {
-            if let i = moments.firstIndex(where: { $0.id == remote.id }) {
+        for incoming in upserts {
+            let remote = incoming.withDeviceFields(
+                fileName: Moment.receivedFileName(cloudID: incoming.cloudID, id: incoming.id),
+                assetID: nil, originalName: nil)
+            if let i = index[remote.id] {
                 let merged = MomentMerge.merge(local: moments[i], remote: remote)
                 if merged != moments[i] { moments[i] = merged; changed = true }
+                if let c = merged.cloudID { byCloud[c] = i }
                 if !MomentMerge.syncedEqual(merged, remote) { push.append(.upsert(merged.id)) }
-            } else if let cid = remote.cloudID, let j = moments.firstIndex(where: { $0.cloudID == cid }) {
-                if MomentMerge.keeps(remote, over: moments[j]) {
-                    let loser = moments[j]
-                    moments[j] = MomentMerge.merge(local: loser, remote: remote)
-                    push.append(.delete(loser.id))
+            } else if let cid = remote.cloudID, let j = byCloud[cid] {
+                let local = moments[j]
+                let combined = MomentMerge.combine(local, remote)
+                let remoteWins = combined.id == remote.id
+                push.append(.delete(remoteWins ? local.id : remote.id))
+                if !MomentMerge.syncedEqual(combined, remoteWins ? remote : local) { push.append(.upsert(combined.id)) }
+                if combined != local {
+                    moments[j] = combined
+                    index[local.id] = nil
+                    index[combined.id] = j
                     changed = true
-                } else {
-                    push.append(.delete(remote.id))
                 }
             } else {
                 moments.append(remote)
+                index[remote.id] = moments.count - 1
+                if let c = remote.cloudID { byCloud[c] = moments.count - 1 }
                 changed = true
             }
+        }
+        if !deletes.isEmpty {
+            for i in moments.indices where deletes.contains(moments[i].id) {
+                let doomed = moments[i]
+                guard doomed.assetID != nil, let cid = doomed.cloudID,
+                      let k = moments.indices.first(where: {
+                          $0 != i && moments[$0].cloudID == cid && moments[$0].assetID == nil
+                              && !deletes.contains(moments[$0].id)
+                      }) else { continue }
+                moments[k] = moments[k].withDeviceFields(fileName: doomed.fileName, assetID: doomed.assetID,
+                                                         originalName: doomed.originalName)
+            }
+            let before = moments.count
+            moments.removeAll { deletes.contains($0.id) }
+            if moments.count != before { changed = true }
         }
         if changed { save() }
         return push
@@ -211,21 +253,35 @@ public final class DayStore {
         return all.filter { $0.batchID == firstBatch }
     }
 
+    /// 이 기기 초기화 전용 — 알리면 다른 기기 기록까지 모두 지워진다.
     public func removeAll() {
-        let removed = moments
         moments = []
         save()
         let fm = FileManager.default
         let files = (try? fm.contentsOfDirectory(at: ShotStore.directory,
                                                  includingPropertiesForKeys: nil)) ?? []
         for f in files { try? fm.removeItem(at: f) }
-        if !removed.isEmpty { onLocalChange?(removed.map { .delete($0.id) }) }
     }
+
+    // 초 단위(.iso8601)로 저장하면 재실행 뒤 capturedAt 이 잘려 CloudKit 값과 어긋난다.
+    private static let fractionalDate: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let wholeSecondDate = ISO8601DateFormatter()
 
     private func load() {
         guard let data = try? Data(contentsOf: fileURL) else { return }
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { d in
+            let c = try d.singleValueContainer()
+            let text = try c.decode(String.self)
+            guard let date = Self.fractionalDate.date(from: text) ?? Self.wholeSecondDate.date(from: text) else {
+                throw DecodingError.dataCorruptedError(in: c, debugDescription: "날짜 형식 아님: \(text)")
+            }
+            return date
+        }
         let decoded = (try? decoder.decode([Moment].self, from: data)) ?? []
         moments = decoded.map { m in
             var m = m
@@ -236,7 +292,10 @@ public final class DayStore {
 
     private func save() {
         let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        encoder.dateEncodingStrategy = .custom { date, e in
+            var c = e.singleValueContainer()
+            try c.encode(Self.fractionalDate.string(from: date))
+        }
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         guard let data = try? encoder.encode(moments) else { return }
         try? data.write(to: fileURL, options: .atomic)
