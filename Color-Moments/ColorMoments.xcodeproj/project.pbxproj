@@ -50,6 +50,7 @@
 		49AF51B739C09C90ABF6DF8B /* CaptureExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CE619222B12DDC48E8D41D /* CaptureExtension.swift */; };
 		4A6EE87BD3B7C2217011154B /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEE28AD42D812B8F599EBC /* Moment.swift */; };
+		559AA75241F4C7C05F596871 /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		598A255826789B22B6C05C2D /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
 		59F0C1E84E0A9E36B6A7FF64 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		5C46EE00CA3DADB1F2965E39 /* GiftScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */; };
@@ -78,6 +79,7 @@
 		A03E0083AE26CB4CCB4A9434 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
 		A041753AF25EE0A48189568C /* NanumMyeongjo-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */; };
 		A04E6AD742FE4847B106EFCF /* TapCorrection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7CF198D349DCFEDDBE122C /* TapCorrection.swift */; };
+		A2BC0036C17B7BB59748D48B /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		A340EE2C4B3C4B575BB7B632 /* ShotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0455554135392A7015D4068F /* ShotStore.swift */; };
 		A402E4FF34F4790F0EC2F752 /* DayMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E880EA384921F9A97C79A87 /* DayMomentsView.swift */; };
 		A40D134691DFE93E46471A40 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B689D73DBFBD16C7B857686 /* Tokens.swift */; };
@@ -86,6 +88,7 @@
 		A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
 		AAFC92410A359BE2377A6AF4 /* TapCorrection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7CF198D349DCFEDDBE122C /* TapCorrection.swift */; };
 		AE0857AF5EDACD9DBF05DC32 /* GiftSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CECA91205032542A8E6CBAD /* GiftSchedule.swift */; };
+		AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0539FB03BB33151F171D2BD /* HomeShell.swift */; };
 		B7C3D5AD27CA0A7B12C6EC07 /* ColorMomentsControl.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 820CBC257650B8198BCC2B5E /* ColorMomentsControl.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		BF658B6D51CC90015F869677 /* ColorMomentsCapture.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 7EB1163362CD567B08943EB6 /* ColorMomentsCapture.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C5345168432CE41677778207 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
@@ -98,6 +101,7 @@
 		CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
 		DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
+		E6B7D3BF033CC827B367D4F7 /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		E9FF039B8236CAA8424CC6D6 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
 		F0DD38512B10A0EC9EF97BD6 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E016D510A0FA71B454E57DF6 /* AVKit.framework */; };
@@ -210,7 +214,9 @@
 		E79F2C0C75680FBE51A5A26C /* PebbleSilhouetteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleSilhouetteTests.swift; sourceTree = "<group>"; };
 		EDA4609189EEBA41333EE662 /* DayGradient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGradient.swift; sourceTree = "<group>"; };
 		EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureScreen.swift; sourceTree = "<group>"; };
+		F0539FB03BB33151F171D2BD /* HomeShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeShell.swift; sourceTree = "<group>"; };
 		F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "NanumMyeongjo-OFL.txt"; sourceTree = "<group>"; };
+		F1ED0B6B00F288E843C5C783 /* DayBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayBlock.swift; sourceTree = "<group>"; };
 		F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotViewer.swift; sourceTree = "<group>"; };
 		FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftScheduleTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -343,6 +349,7 @@
 		A367C7D09D3B5E69C8A79847 /* Design */ = {
 			isa = PBXGroup;
 			children = (
+				F1ED0B6B00F288E843C5C783 /* DayBlock.swift */,
 				BDCE9183C112FFB37E007824 /* PebbleView.swift */,
 				5B689D73DBFBD16C7B857686 /* Tokens.swift */,
 				AC7AA6BC5EE27D8ADDE47C88 /* Fonts */,
@@ -365,6 +372,7 @@
 			isa = PBXGroup;
 			children = (
 				41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */,
+				F0539FB03BB33151F171D2BD /* HomeShell.swift */,
 				953A1415A221B2ED1198C5E8 /* HomeView.swift */,
 				915F51F76D8105385A924494 /* SpikeView.swift */,
 			);
@@ -588,6 +596,7 @@
 				851F47DC9109F3E17C510A45 /* ColorCaptureIntent.swift in Sources */,
 				341D43357966166F08E749AD /* ColorExtractor.swift in Sources */,
 				18E772394B2F6112538961DB /* DayBadge.swift in Sources */,
+				559AA75241F4C7C05F596871 /* DayBlock.swift in Sources */,
 				598A255826789B22B6C05C2D /* DayGift.swift in Sources */,
 				1D2767C95B157B92C97CF81B /* DayGradient.swift in Sources */,
 				A402E4FF34F4790F0EC2F752 /* DayMomentsView.swift in Sources */,
@@ -636,12 +645,14 @@
 				85404B43045C16239CA26FB5 /* ColorExtractor.swift in Sources */,
 				FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */,
 				C6F53A70ADED30A0C697C6C7 /* DayBadge.swift in Sources */,
+				A2BC0036C17B7BB59748D48B /* DayBlock.swift in Sources */,
 				E9FF039B8236CAA8424CC6D6 /* DayGift.swift in Sources */,
 				036A5A204DA00E6E1F8E4DB3 /* DayGradient.swift in Sources */,
 				14B086E929DB0210F2450CFF /* DayMomentsView.swift in Sources */,
 				A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */,
 				46AD1F7A020AA01BF62EEBEC /* GiftSchedule.swift in Sources */,
 				37BEA1D1B07AEF6FF452A7E3 /* Haptics.swift in Sources */,
+				AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */,
 				2EB93D8ABBF2916AEEE1F2F1 /* HomeView.swift in Sources */,
 				50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */,
 				1BA230406A06170D47C94E8E /* PebbleName.swift in Sources */,
@@ -667,6 +678,7 @@
 				5DC43B42BBA5CE7C8296BDAE /* ColorCaptureIntent.swift in Sources */,
 				38CA87D9341976C98CBA90ED /* ColorExtractor.swift in Sources */,
 				27984D8E5256CDD497E302CA /* DayBadge.swift in Sources */,
+				E6B7D3BF033CC827B367D4F7 /* DayBlock.swift in Sources */,
 				FA88E2179DF699A37AE7FDA4 /* DayGift.swift in Sources */,
 				2106F212ED450D8F5C0130AB /* DayGradient.swift in Sources */,
 				9AB9D80B4EDB7FC049E73713 /* DayMomentsView.swift in Sources */,

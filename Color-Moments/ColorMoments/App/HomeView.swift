@@ -1,148 +1,207 @@
 import SwiftUI
 
-/// 몽돌의 홈. **수집물이 본체다.**
+/// 몽돌의 홈. **열린 하루들이 세로로 이어지는 곳이다** (`DESIGN.md` §1.1).
 ///
-/// 앱을 여는 행위는 «찍으러»가 아니라 «보러» 오는 것이다 — 주 진입은 잠금화면 카메라 컨트롤
-/// 1초이고, 그게 「앱을 열어 회고하는」 경쟁 앱들과 이 제품이 갈리는 지점이다(설계 문서 비교표).
-/// 그래서 앱을 열면 카메라가 아니라 모은 조약돌이 보인다.
+/// 별도의 「모은 하루」 화면은 없다. 한 하루 = 겹친 사진 더미 + 우측 하단 조약돌 + 이름·날짜,
+/// 이 덩어리가 세로로 반복된다. **1일차에도 7일차에도 1년차에도 화면 구성이 같다.**
 ///
-/// 지키는 제약 넷 (설계 문서):
-/// - **오늘 색은 안 보여준다.** 담겼다는 것만 한 줄로 알린다 — 찍혔는지조차 모르면 불안하지만,
-///   색을 보여주면 「자정에 열린다」가 그 자리에서 깨진다.
-/// - **격자로 깔지 않는다.** 빈 날이 구멍으로 보이면 그 순간 스트릭이 된다.
-/// - **스트릭·성취는 영구 비목표.** 연속 일수도, 「며칠째」도 없다.
-/// - **재촉하지 않는다.** 미보정 표시·확인 요청을 넣지 않는다.
+/// 지키는 제약 (SPEC §2 · DESIGN §4 «손대면 안 되는 것»):
+/// - **오늘 색은 안 보여준다.** 담겼다는 것만 상단 한 줄로. 조약돌 줄에도 오늘은 없다.
+/// - **격자가 아니다.** 빈 날이 구멍으로 보이면 그 순간 스트릭이 된다.
+/// - **가로 스크롤 없음.** 좌우 스와이프는 카메라가 가져간다(§1.3).
+/// - **재촉하지 않는다.**
 struct HomeView: View {
-    private let store: DayStore
-    private let inbox: CaptureInbox
-    private let gifts: GiftLog
+    let store: DayStore
+    /// 아직 스와이프를 성공한 적이 없는가. 있으면 「쓸면 담기」 힌트를 계속 보여준다.
+    let showsSwipeHint: Bool
 
-    /// **셔터를 누르기 전에는 만들지 않는다.** 홈이 `AVCaptureSession` 을 계속 붙들고 있을
-    /// 이유가 없다 — 앱을 여는 행위는 보러 오는 것이지 찍으러 오는 것이 아니다.
-    /// 카메라 권한도 실제로 찍으러 갈 때 물어야 첫 화면이 권한 팝업이 되지 않는다.
-    @State private var camera: CaptureEngine?
-    @State private var shooting = false
-    #if DEBUG
-    @State private var showingGate = false
-    #endif
+    @State private var opened: OpenedDay?
+    @State private var topDayKey: String?
+    @State private var scrolling = false
 
-    init(store: DayStore, inbox: CaptureInbox, gifts: GiftLog) {
-        self.store = store
-        self.inbox = inbox
-        self.gifts = gifts
-    }
+    private struct OpenedDay: Identifiable { let id: String }
+
+    private var days: [String] { store.finishedDayKeys }
 
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 0) {
-                today
-                collection
-                Spacer(minLength: 0)
-                shutter
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(white: 0.04).ignoresSafeArea())
-            .navigationTitle("몽돌")
-            .toolbarBackground(Color(white: 0.04), for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            #if DEBUG
-            .toolbar {
-                // 계측기는 릴리즈에 안 들어간다. 잠금화면 수신 로그가 사진첩 B 경로 작업에 필요해
-                // 「게이트 통과 후 버린다」 대신 DEBUG 뒤로 물렸다.
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showingGate = true } label: { Image(systemName: "wrench.adjustable") }
-                        .tint(.gray)
-                }
-            }
-            .sheet(isPresented: $showingGate) { SpikeView(inbox: inbox, store: store, gifts: gifts) }
-            #endif
-            .fullScreenCover(isPresented: $shooting) {
-                if let camera {
-                    CaptureScreen(engine: camera, onClose: { shooting = false })
-                }
-            }
+        ZStack {
+            Tone.base.ignoresSafeArea()
+            backdrop
+            content
+            bottomFade
+            if scrolling, let label = monthLabel { monthPill(label) }
+            if showsSwipeHint { swipeHint }
         }
-        .preferredColorScheme(.dark)
-        .dayGift(store: store, gifts: gifts)
+        .sheet(item: $opened) { day in
+            DayMomentsView(dayKey: day.id, store: store)
+        }
     }
 
-    // MARK: 오늘 — 담겼다는 것만. 색은 자정에.
-
-    private var today: some View {
-        let count = store.today.count
-        return VStack(alignment: .leading, spacing: 3) {
-            Text(count == 0 ? "오늘은 아직 비어 있어요" : "오늘 \(count)개 담겼어요")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(0.85))
-            Text(count == 0 ? "지나다 눈에 걸리는 게 있으면 눌러요" : "색은 자정에 열려요")
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.4))
-        }
-        .padding(.horizontal, 16).padding(.vertical, 13)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(white: 0.09), in: RoundedRectangle(cornerRadius: 12))
-        .padding(.horizontal, 20).padding(.top, 4)
-    }
-
-    // MARK: 모은 하루 — 줄이지 격자가 아니다
+    // MARK: 그날 색이 공간을 물들인다 — §1.7
+    //
+    // **blur 130 을 그대로 쓰지 않는다.** 이미 매끈한 그라데이션을 130 으로 흐려봐야
+    // 60 과 눈으로 구분되지 않는데 비용만 몇 배다. 스크롤되는 화면이라 그 차이가 프레임에 그대로 온다.
+    // (§4 — 번짐 opacity 의 «정확한 값»은 손대도 되는 것, 층위 순서 증정 > 하루 상세 > 홈만 지킨다.)
 
     @ViewBuilder
-    private var collection: some View {
-        if store.finishedDayKeys.isEmpty {
-            empty
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("모은 하루")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .padding(.horizontal, 20)
-                BadgeRowView(store: store)
-                    .padding(.leading, 16)
-            }
-            .padding(.top, 28)
+    private var backdrop: some View {
+        if let key = topDayKey ?? days.first {
+            DayGradientView(moments: store.moments(on: key), axis: .vertical)
+                .blur(radius: 60)
+                .opacity(0.16)
+                .ignoresSafeArea()
+                .animation(.easeInOut(duration: 0.45), value: key)
+                .allowsHitTesting(false)
         }
     }
 
-    /// 첫날. **아직 온보딩이 아니다** — Q4 는 사진첩 B 경로를 붙인 뒤에 짠다
-    /// (설치 즉시 과거 사진으로 조약돌이 생기면 이 빈 화면 자체가 거의 사라진다).
-    private var empty: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "circle.dashed")
-                .font(.system(size: 30, weight: .thin))
-                .foregroundStyle(.white.opacity(0.22))
-            Text("아직 모은 하루가 없어요")
-                .font(.system(size: 13))
-                .foregroundStyle(.white.opacity(0.55))
-            Text("오늘 담은 것은 자정에 조약돌이 돼요")
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.32))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 70)
-    }
+    // MARK: 본문
 
-    // MARK: 촬영
+    private var content: some View {
+        GeometryReader { geo in
+            let blockWidth = geo.size.width - 56      // 좌우 여백 28
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                    Spacer().frame(height: 22)
+                    todayLine
+                    Spacer().frame(height: 38)
 
-    private var shutter: some View {
-        VStack(spacing: 11) {
-            Button {
-                if camera == nil {
-                    camera = CaptureEngine(destination: { ShotStore.directory },
-                                           onRecorded: { store.add($0) })
+                    if days.isEmpty {
+                        EmptyDayBlock(width: blockWidth)
+                    } else {
+                        LazyVStack(alignment: .leading, spacing: 64) {
+                            ForEach(days, id: \.self) { key in
+                                Button { opened = OpenedDay(id: key) } label: {
+                                    DayBlock(moments: store.moments(on: key), width: blockWidth)
+                                }
+                                .buttonStyle(.plain)
+                                // 다음 하루는 화면 아래에 «희미하게» 걸친다.
+                                // **blur 로 하지 말 것**(§3.1) — 스크롤되는 뷰에 실시간 blur 를 걸면
+                                // 프레임이 떨어진다. 원본이 4032×3024 라 더 그렇다.
+                                .scrollTransition { c, phase in
+                                    c.opacity(phase.isIdentity ? 1 : 0.5)
+                                     .scaleEffect(phase.isIdentity ? 1 : 0.96)
+                                }
+                                .onScrollVisibilityChange(threshold: 0.6) { visible in
+                                    if visible { topDayKey = key }
+                                }
+                            }
+                        }
+                    }
+                    Spacer().frame(height: 120)
                 }
-                shooting = true
-            } label: {
-                Circle()
-                    .strokeBorder(.white.opacity(0.9), lineWidth: 3)
-                    .frame(width: 70, height: 70)
-                    .overlay(Circle().fill(.white).frame(width: 57, height: 57))
+                .padding(.horizontal, 28)
+                .padding(.top, 72 - geo.safeAreaInsets.top)
             }
-            .buttonStyle(.plain)
-            Text("잠금화면 카메라 컨트롤로도 담을 수 있어요")
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.32))
+            .scrollIndicators(.hidden)
+            .onScrollPhaseChange { _, phase in
+                withAnimation(.easeOut(duration: 0.2)) { scrolling = phase.isScrolling }
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom, 26)
+    }
+
+    /// 한 줄 두 톤. 앞은 primary, 「· 색은…」은 tertiary (§3.1).
+    private var todayLine: some View {
+        let n = store.today.count
+        return Group {
+            if n == 0 {
+                Text("오늘은 아직 비어 있어요").foregroundStyle(Tone.primary)
+                    + Text("  ·  왼쪽에서 쓸어 담아요").foregroundStyle(Tone.tertiary)
+            } else {
+                Text("오늘 \(n)개 담겼어요").foregroundStyle(Tone.primary)
+                    + Text("  ·  색은 자정에 열려요").foregroundStyle(Tone.tertiary)
+            }
+        }
+        .font(Face.today)
+    }
+
+    // MARK: 먼 과거로 가는 법 — §1.4
+    //
+    // **연·월까지만.** 일 단위를 보여주면 달력이 되고 빈 날이 드러나 「격자 금지」가 깨진다.
+
+    private var monthLabel: String? {
+        guard let key = topDayKey, key.count >= 7 else { return nil }
+        let parts = key.split(separator: "-")
+        guard parts.count >= 2 else { return nil }
+        return "\(parts[0])년 \(Int(parts[1]) ?? 0)월"
+    }
+
+    private func monthPill(_ label: String) -> some View {
+        VStack {
+            HStack {
+                Spacer()
+                Text(label)
+                    .font(Face.caption).monospacedDigit()
+                    .foregroundStyle(Tone.secondary)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(.white.opacity(0.10), in: Capsule())
+                    .padding(.trailing, 14)
+            }
+            Spacer()
+        }
+        .padding(.top, 120)
+        .transition(.opacity)
+        .allowsHitTesting(false)
+    }
+
+    // MARK: 쓸면 담기 — §3.1
+    //
+    // 노출 조건은 **「한 번도 성공 못 했으면 계속」**이다(Tabber 결정 2026-09-23).
+    // 날짜·횟수 기반이면 못 보고 놓친 사람은 앱 안에서 찍는 법을 영영 못 찾는다 —
+    // 셔터가 없으므로(§1.2) 이건 재촉이 아니라 유일한 경로 표시다.
+
+    private var swipeHint: some View {
+        // **글자를 세로로 세운다.** 가로로 두면 28pt 여백을 넘어 사진 위에 겹쳐 읽히지 않는다(실측).
+        // 왼쪽 가장자리 여백 안에서만 살아야 본문을 건드리지 않는다.
+        HStack(spacing: 7) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(Tone.tertiary)
+                .frame(width: 3, height: 34)
+            Text("쓸면 담기")
+                .font(.system(size: 11))
+                .foregroundStyle(Tone.tertiary)
+                .fixedSize()
+                .rotationEffect(.degrees(-90))
+                .frame(width: 12, height: 62)
+            Spacer()
+        }
+        .padding(.leading, 5)
+        .allowsHitTesting(false)
+    }
+
+    private var bottomFade: some View {
+        VStack {
+            Spacer()
+            LinearGradient(colors: [.clear, Tone.base], startPoint: .top, endPoint: .bottom)
+                .frame(height: 110)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+}
+
+/// 첫날. 빈 자리를 그려 **다음에 여기에 무엇이 놓이는지 형태로 알려준다** (§3.7).
+struct EmptyDayBlock: View {
+    let width: CGFloat
+    private var k: CGFloat { width / 334 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: Shape2.cardFront * k, style: .continuous)
+                    .strokeBorder(Tone.hairline, style: StrokeStyle(lineWidth: 1, dash: [6, 6]))
+                    .frame(width: 314 * k, height: 320 * k)
+                    .offset(x: 10 * k)
+                PebbleShape(top: 0.44, bottom: 0.40)
+                    .strokeBorder(Tone.hairline, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                    .frame(width: 84 * k * Shape2.pebbleRatio, height: 84 * k)
+                    .offset(x: 272 * k, y: 300 * k)
+            }
+            .frame(width: width, height: 388 * k, alignment: .topLeading)
+            Spacer().frame(height: 26 * k)
+            Text("오늘 담은 것은 자정에 조약돌이 돼요")
+                .font(Face.guide).foregroundStyle(Tone.tertiary)
+        }
     }
 }

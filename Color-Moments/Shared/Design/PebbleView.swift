@@ -96,7 +96,10 @@ public struct PebbleView: View {
                     .blendMode(.destinationOver)
             }
         }
-        .shadow(color: .black.opacity(0.38), radius: 10, y: 5)
+        // 사진 위에서는 그림자를 죽인다 — 짙게 두면 검은 후광이 생겨 스티커처럼 보인다.
+        // 그 자리는 분리 테두리가 대신 맡는다.
+        .shadow(color: .black.opacity(onPhoto ? 0.22 : 0.38),
+                radius: onPhoto ? 6 : 10, y: onPhoto ? 3 : 5)
     }
 
     // MARK: 1. 바탕 — 176°
