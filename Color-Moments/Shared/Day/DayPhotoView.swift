@@ -31,6 +31,7 @@ struct DayPhotoView: View {
             closeButton.padding(.leading, 18).padding(.top, 8)
         }
         .statusBarHidden()
+        .accessibilityAction(.escape) { dismiss() }
     }
 
     private var closeButton: some View {

@@ -19,7 +19,9 @@ final class PhotoLabelerTests: XCTestCase {
 
     func testWeatherFromLabels() {
         XCTAssertEqual(Weather.inferred(from: ["sky", "snow", "cloudy"]), .snow)
-        XCTAssertEqual(Weather.inferred(from: ["sky", "cloudy", "blue_sky"]), .cloudy)
+        XCTAssertEqual(Weather.inferred(from: ["sky", "cloudy", "blue_sky"]), .clear,
+                       "파란 하늘이 보이면 흰 구름이 있어도 맑음 — 먹장구름이 붙으면 영구히 틀린다")
+        XCTAssertEqual(Weather.inferred(from: ["sky", "cloudy"]), .cloudy)
         XCTAssertEqual(Weather.inferred(from: ["blue_sky"]), .clear)
         XCTAssertNil(Weather.inferred(from: ["laptop"]), "사진으로 알 수 없으면 모른다고 둔다")
     }

@@ -26,9 +26,14 @@ public enum WordPicker {
     public static func candidates(for ctx: PhotoContext, labels: Set<String>, in words: [WordEntry],
                                   excluding recent: Set<String>, seed: String, limit: Int = 8) -> [WordEntry] {
         var pool = words.filter { !$0.subjects.isEmpty && !labels.isDisjoint(with: $0.subjects) }
-        // 날씨를 모르는 사진에 날씨 말이 붙으면 영구히 틀린 채 남는다.
-        if ctx.weather == nil { pool = pool.filter { $0.weathers.isEmpty } }
-        let steps = [Check(), Check(weather: false), Check(weather: false, season: false)]
+        if let weather = ctx.weather {
+            // 날씨를 알면 그 날씨와 맞는 말만 — 다른 날씨 말은 끝까지 안 쓴다.
+            pool = pool.filter { $0.weathers.isEmpty || $0.weathers.contains(weather) }
+        } else {
+            // 날씨를 모르는 사진에 날씨 말이 붙으면 영구히 틀린 채 남는다.
+            pool = pool.filter { $0.weathers.isEmpty }
+        }
+        let steps = [Check(weather: false), Check(weather: false, season: false)]
         for skipRecent in [true, false] {
             for k in steps {
                 let found = pool.filter { !(skipRecent && recent.contains($0.id)) && matches($0, ctx, k) }

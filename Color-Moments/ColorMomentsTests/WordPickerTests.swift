@@ -41,11 +41,18 @@ final class WordPickerTests: XCTestCase {
         XCTAssertEqual(pick(dusk, ["sky"], [w("rainy", weathers: [.rain])]), [], "날씨를 모르면 날씨 말은 끝까지 안 쓴다")
     }
 
-    func testKnownWeatherMatchesAndRelaxesBeforeSeason() {
+    func testKnownWeatherNeverGetsOtherWeatherWords() {
         let snowy = PhotoContext(date: Date(timeIntervalSince1970: 18 * 3600), weather: .snow, calendar: utc)
         XCTAssertEqual(pick(snowy, ["snow"], [w("snowword", weathers: [.snow], subjects: ["snow"])]), ["snowword"])
+
         let words = [w("p", weathers: [.rain], seasons: [.winter]), w("q", weathers: [.fog], seasons: [.summer])]
-        XCTAssertEqual(pick(snowy, ["sky"], words), ["p"], "날씨를 계절보다 먼저 푼다")
+        XCTAssertEqual(pick(snowy, ["sky"], words), [], "다른 날씨 말은 끝까지 안 쓴다")
+
+        let clear = PhotoContext(date: Date(timeIntervalSince1970: 18 * 3600), weather: .clear, calendar: utc)
+        XCTAssertEqual(pick(clear, ["sky"], [w("a", weathers: [.clear]), w("r", weathers: [.rain])], recent: ["a"]), ["a"],
+                       "최근 반복을 허용할지언정 비 말은 안 쓴다")
+
+        XCTAssertEqual(pick(clear, ["sky"], [w("s", seasons: [.summer])]), ["s"], "계절 완화도 여전히 동작한다")
     }
 
     func testRecentIsExcludedThenReleased() {

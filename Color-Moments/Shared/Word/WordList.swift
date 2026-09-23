@@ -7,8 +7,8 @@ public enum Weather: String, Codable, Sendable, CaseIterable { case clear, cloud
 public extension Weather {
     static func inferred(from labels: Set<String>) -> Weather? {
         if labels.contains("snow") { return .snow }
-        if labels.contains("cloudy") { return .cloudy }
         if labels.contains("blue_sky") { return .clear }
+        if labels.contains("cloudy") { return .cloudy }
         return nil
     }
 }
