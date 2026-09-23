@@ -29,19 +29,26 @@ final class LibraryImporter {
             let id = asset.localIdentifier
             guard !store.containsAsset(id) else { continue }
             guard let data = await Self.imageData(for: asset) else { continue }
-            guard let image = UIImage(data: data), let jpeg = image.jpegData(compressionQuality: 0.9) else { continue }
-            let fileName = "library-\(String(WordPicker.fnv1a(id), radix: 16)).jpg"
-            guard let url = ShotStore.save(jpeg, name: fileName) else { continue }
-            guard let ci = CIImage(contentsOf: url) else { continue }
-            let hex = ColorExtractor.symbolicColor(for: ci).hex
+            // 인코딩·저장·색 추출은 CPU 무거운 일이라 메인 액터 밖(백그라운드 스레드)에서 돌린다.
+            guard let result = await Task.detached(priority: .userInitiated, operation: {
+                Self.process(data: data, id: id)
+            }).value else { continue }
             let place = asset.location.map {
                 Place(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude, accuracy: $0.horizontalAccuracy)
             }
-            store.add(Moment(capturedAt: asset.creationDate ?? Date(), colorHex: hex, fileName: fileName,
+            store.add(Moment(capturedAt: asset.creationDate ?? Date(), colorHex: result.hex, fileName: result.fileName,
                               source: .library, assetID: id, place: place, addedAt: Date(), batchID: batch))
             count += 1
         }
         return count
+    }
+
+    nonisolated private static func process(data: Data, id: String) -> (fileName: String, hex: String)? {
+        guard let image = UIImage(data: data), let jpeg = image.jpegData(compressionQuality: 0.9) else { return nil }
+        let fileName = "library-\(String(WordPicker.fnv1a(id), radix: 16)).jpg"
+        guard let url = ShotStore.save(jpeg, name: fileName) else { return nil }
+        guard let ci = CIImage(contentsOf: url) else { return nil }
+        return (fileName, ColorExtractor.symbolicColor(for: ci).hex)
     }
 
     private static func imageData(for asset: PHAsset) async -> Data? {
