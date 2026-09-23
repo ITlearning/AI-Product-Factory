@@ -157,4 +157,54 @@ final class DayStoreTests: XCTestCase {
         XCTAssertNil(ms[0].word, "사진을 안 보고 붙은 옛 단어는 지운다")
         XCTAssertEqual(ms[1].word?.wordID, "meondong", "사진을 보고 붙은 단어는 그대로")
     }
+
+    private func imported(_ at: Date, added: Date, batch: UUID, name: String, asset: String? = nil) -> Moment {
+        Moment(capturedAt: at, colorHex: "#445566", fileName: name, source: .library,
+               assetID: asset ?? name, addedAt: added, batchID: batch)
+    }
+
+    func testSealDateIsNextDayAtFour() throws {
+        var c = Calendar(identifier: .gregorian); c.timeZone = .current
+        let seal = try XCTUnwrap(Moment.sealDate(for: "2026-09-22"))
+        let p = c.dateComponents([.year, .month, .day, .hour], from: seal)
+        XCTAssertEqual([p.year, p.month, p.day, p.hour], [2026, 9, 23, 4])
+    }
+
+    func testPhotoAddedAfterSealStaysOutOfThePebble() {
+        let cam = moment(date(2026, 9, 22, 12, 0), name: "cam.jpg")
+        store.add(cam)
+        store.add(imported(date(2026, 9, 22, 15, 0), added: date(2026, 9, 25, 10, 0), batch: UUID(), name: "late.jpg"))
+        XCTAssertEqual(store.pebbleMoments(on: "2026-09-22").map(\.fileName), ["cam.jpg"],
+                       "선물로 받은 조약돌을 나중에 다시 칠하지 않는다")
+        XCTAssertEqual(store.moments(on: "2026-09-22").count, 2, "시간축에는 보인다")
+    }
+
+    func testPhotoAddedBeforeSealCounts() {
+        store.add(imported(date(2026, 9, 22, 15, 0), added: date(2026, 9, 22, 20, 0), batch: UUID(), name: "sameday.jpg"))
+        XCTAssertEqual(store.pebbleMoments(on: "2026-09-22").map(\.fileName), ["sameday.jpg"])
+    }
+
+    func testEmptyPastDayIsMadeByItsFirstBatchOnly() {
+        let first = UUID(), second = UUID()
+        store.add(imported(date(2026, 8, 1, 9, 0), added: date(2026, 9, 23, 10, 0), batch: first, name: "a.jpg"))
+        store.add(imported(date(2026, 8, 1, 18, 0), added: date(2026, 9, 23, 10, 0), batch: first, name: "b.jpg"))
+        store.add(imported(date(2026, 8, 1, 12, 0), added: date(2026, 9, 24, 10, 0), batch: second, name: "c.jpg"))
+        XCTAssertEqual(store.pebbleMoments(on: "2026-08-01").map(\.fileName), ["a.jpg", "b.jpg"],
+                       "조약돌 없던 날은 처음 담은 묶음이 하루가 되고, 다음 묶음은 빠진다")
+    }
+
+    func testContainsAsset() {
+        store.add(imported(date(2026, 9, 22, 15, 0), added: date(2026, 9, 22, 20, 0), batch: UUID(), name: "x.jpg", asset: "ASSET-1"))
+        XCTAssertTrue(store.containsAsset("ASSET-1"))
+        XCTAssertFalse(store.containsAsset("ASSET-2"))
+    }
+
+    func testReadsRecordsWithoutLibraryFields() throws {
+        let legacy = """
+        [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC","fileName":"old.jpg","source":"app"}]
+        """
+        try Data(legacy.utf8).write(to: tempFile)
+        let m = try XCTUnwrap(DayStore(fileURL: tempFile).moments.first)
+        XCTAssertNil(m.assetID); XCTAssertNil(m.place); XCTAssertNil(m.addedAt); XCTAssertNil(m.batchID)
+    }
 }

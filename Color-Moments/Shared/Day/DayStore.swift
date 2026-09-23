@@ -60,6 +60,20 @@ public final class DayStore {
         return Set(ordered.prefix(limit).compactMap { $0.word?.wordID })
     }
 
+    public func containsAsset(_ id: String) -> Bool {
+        moments.contains { $0.assetID == id }
+    }
+
+    public func pebbleMoments(on dayKey: String) -> [Moment] {
+        let all = moments(on: dayKey)
+        guard let seal = Moment.sealDate(for: dayKey) else { return all }
+        let sealed = all.filter { m in m.addedAt.map { $0 <= seal } ?? true }
+        if !sealed.isEmpty { return sealed }
+        guard let firstBatch = all.min(by: { ($0.addedAt ?? .distantFuture) < ($1.addedAt ?? .distantFuture) })?.batchID
+        else { return all }
+        return all.filter { $0.batchID == firstBatch }
+    }
+
     public func removeAll() {
         moments = []
         save()
