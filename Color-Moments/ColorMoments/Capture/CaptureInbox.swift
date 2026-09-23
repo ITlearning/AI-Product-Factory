@@ -78,7 +78,7 @@ final class CaptureInbox {
                 let size = (try? fm.attributesOfItem(atPath: dest.path)[.size] as? Int) ?? 0
                 imported.append(Imported(url: dest, importedAt: Date(), byteCount: size ?? 0))
                 note("들여옴 \(f.lastPathComponent) \(((size ?? 0) / 1024))KB")
-                record(dest)
+                await record(dest)
             } catch {
                 note("복사 실패 \(f.lastPathComponent): \(error.localizedDescription)")
             }
@@ -91,7 +91,7 @@ final class CaptureInbox {
         }
     }
 
-    private func record(_ url: URL) {
+    private func record(_ url: URL) async {
         guard let store = dayStore else { return }
         guard let image = CIImage(contentsOf: url) else { note("색 추출 실패 \(url.lastPathComponent)"); return }
         let hex = ColorExtractor.symbolicColor(for: image).hex
@@ -99,8 +99,10 @@ final class CaptureInbox {
         let name = url.lastPathComponent
         let stamp = name.split(separator: "-").last.flatMap { Double($0.replacingOccurrences(of: ".jpg", with: "")) }
         let capturedAt = stamp.map { Date(timeIntervalSince1970: $0) } ?? Date()
-        store.add(Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked))
+        let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked)
+        store.add(moment)
         note("기록 \(hex) · \(Moment.dayKey(for: capturedAt))")
+        await AssetAdopter.adopt(moment, store: store)
     }
 
     private func note(_ s: String) {

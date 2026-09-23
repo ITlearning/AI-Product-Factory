@@ -2,7 +2,6 @@ import CoreImage
 import CoreLocation
 import Foundation
 import Photos
-import UIKit
 
 @MainActor
 final class LibraryImporter {
@@ -29,29 +28,26 @@ final class LibraryImporter {
             let id = asset.localIdentifier
             guard !store.containsAsset(id) else { continue }
             guard let data = await Self.imageData(for: asset) else { continue }
-            // 인코딩·저장·색 추출은 CPU 무거운 일이라 메인 액터 밖(백그라운드 스레드)에서 돌린다.
-            guard let result = await Task.detached(priority: .userInitiated, operation: {
-                Self.process(data: data, id: id)
+            // 색 추출은 CPU 무거운 일이라 메인 액터 밖(백그라운드 스레드)에서 돌린다. 원본은 파일로 쓰지 않는다 — assetID 로 바로 Moment.
+            guard let hex = await Task.detached(priority: .userInitiated, operation: {
+                Self.process(data: data)
             }).value else { continue }
             guard !store.containsAsset(id) else { continue } // 위 await 들 사이 상태가 바뀌었을 수 있어 넣기 직전 다시 확인
             let place = asset.location.map {
                 Place(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude, accuracy: $0.horizontalAccuracy)
             }
             let before = store.moments.count
-            store.add(Moment(capturedAt: asset.creationDate ?? Date(), colorHex: result.hex, fileName: result.fileName,
+            store.add(Moment(capturedAt: asset.creationDate ?? Date(), colorHex: hex, fileName: Moment.assetFileName(for: id),
                               source: .library, assetID: id, place: place, addedAt: Date(), batchID: batch))
             if store.moments.count > before { count += 1 } // add 가 파일 이름 중복으로 조용히 무시했을 수 있다
         }
         return count
     }
 
-    nonisolated private static func process(data: Data, id: String) -> (fileName: String, hex: String)? {
+    nonisolated private static func process(data: Data) -> String? {
         autoreleasepool {
-            guard let image = UIImage(data: data), let jpeg = image.jpegData(compressionQuality: 0.9) else { return nil }
-            let fileName = "library-\(String(WordPicker.fnv1a(id), radix: 16)).jpg"
-            guard let url = ShotStore.save(jpeg, name: fileName) else { return nil }
-            guard let ci = CIImage(contentsOf: url) else { return nil }
-            return (fileName, ColorExtractor.symbolicColor(for: ci).hex)
+            guard let ci = CIImage(data: data) else { return nil }
+            return ColorExtractor.symbolicColor(for: ci).hex
         }
     }
 
