@@ -2,10 +2,6 @@ import SwiftUI
 import XCTest
 @testable import ColorMoments
 
-/// 조약돌을 실제로 그려서 확인하는 자리. `DESIGN.md` §2.4 여섯 겹.
-///
-/// 표면은 **눈으로만 판정되는 것**이라 단언을 걸지 않는다. 대신 `PEBBLE_DUMP=<디렉토리>` 를 주면
-/// 날짜별·크기별 PNG 를 떨군다. 디자인을 만질 때마다 다시 굽는다.
 @MainActor
 final class PebbleRenderTests: XCTestCase {
 
@@ -17,7 +13,6 @@ final class PebbleRenderTests: XCTestCase {
         }
     }
 
-    /// 그레인 텍스처는 **한 번만 구워야 한다.** 조약돌마다 만들면 스크롤에서 죽는다.
     func testGrainIsBakedOnceAndTiny() throws {
         let a = try XCTUnwrap(Grain.image, "그레인 텍스처 생성 실패 — 4번 겹이 통째로 빠진다")
         let b = try XCTUnwrap(Grain.image)
@@ -48,7 +43,7 @@ final class PebbleRenderTests: XCTestCase {
                     .appendingPathComponent("pebble-\(name)-\(Int(h)).png"))
             }
         }
-        // 슁이 지나가는 중간도 한 장
+
         let r = ImageRenderer(content:
             PebbleView(moments: cases[0].1, height: 180, sheen: 0.5)
                 .padding(26).background(Tone.base))

@@ -31,7 +31,6 @@ final class DayStoreTests: XCTestCase {
                fileName: name ?? "shot-\(Int(at.timeIntervalSince1970)).jpg", source: .app)
     }
 
-    /// 하루의 경계는 자정이 아니라 새벽 4시다. 사람의 하루는 잠으로 끊긴다.
     func testDayBoundaryIsFourInTheMorning() {
         XCTAssertEqual(Moment.dayKey(for: date(2026, 9, 22, 23, 30)), "2026-09-22")
         XCTAssertEqual(Moment.dayKey(for: date(2026, 9, 23, 1, 0)), "2026-09-22",
@@ -42,7 +41,6 @@ final class DayStoreTests: XCTestCase {
                        "4시부터 오늘")
     }
 
-    /// 밤새 이어 찍은 것이 한 하루로 묶여야 그라데이션이 끊기지 않는다.
     func testNightShotsGroupIntoOneDay() {
         store.add(moment(date(2026, 9, 22, 22, 0), name: "a.jpg"))
         store.add(moment(date(2026, 9, 23, 0, 30), name: "b.jpg"))
@@ -59,7 +57,6 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(store.moments(on: "2026-09-22").map(\.fileName), ["early.jpg", "late.jpg"])
     }
 
-    /// 수신함이 재실행되면 같은 파일을 다시 들여올 수 있다. 중복이 쌓이면 안 된다.
     func testDuplicateFileNameIsIgnored() {
         store.add(moment(date(2026, 9, 22, 12, 0), name: "same.jpg"))
         store.add(moment(date(2026, 9, 22, 13, 0), name: "same.jpg"))
@@ -73,7 +70,6 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(reopened.moments.first?.colorHex, "#AABBCC")
     }
 
-    /// 탭 보정. 사용자가 고른 색은 「직접 고름」으로 남아야 나중에 자동값과 구분된다.
     func testColorCorrectionMarksChosen() {
         let m = moment(date(2026, 9, 22, 12, 0), "#111111", name: "fix.jpg")
         store.add(m)

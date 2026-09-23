@@ -60,6 +60,7 @@
 		60F00B961E27FD6874408F2F /* Moment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEE28AD42D812B8F599EBC /* Moment.swift */; };
 		62FD808384BFDB6BDEC7143C /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
 		689F997E07A401BE5FFA343A /* subset-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 311898EF3262DE92643FB442 /* subset-chars.txt */; };
+		6A09C475C9FE48C8875DC770 /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		6A0F51CB079F9D7531B64347 /* BadgeCeremony.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */; };
 		71CBA1496732870FBFD4B48D /* ShotColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F995096ED4662D723ADA035 /* ShotColorPicker.swift */; };
 		72CB8811A9F1756D47042377 /* SheenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69825FD346FEC03526525AE5 /* SheenTests.swift */; };
@@ -76,6 +77,7 @@
 		936F5FD2B12A592FC1339B20 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B689D73DBFBD16C7B857686 /* Tokens.swift */; };
 		949E6A04EB1AAF5A89ABF42D /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		9AB9D80B4EDB7FC049E73713 /* DayMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E880EA384921F9A97C79A87 /* DayMomentsView.swift */; };
+		9EB023C629B1882BE6E7995C /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		A03E0083AE26CB4CCB4A9434 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
 		A041753AF25EE0A48189568C /* NanumMyeongjo-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */; };
 		A04E6AD742FE4847B106EFCF /* TapCorrection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7CF198D349DCFEDDBE122C /* TapCorrection.swift */; };
@@ -97,6 +99,7 @@
 		CDD6D930AE9E6FC142AB4E09 /* ShotViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */; };
 		CF0F9BAAA1D2412A2B0E61E3 /* subset-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 311898EF3262DE92643FB442 /* subset-chars.txt */; };
 		CF11D8850579771F69487B97 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
+		CF1B9077022792BE565162B8 /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		CF20BDEDD80E1D182AEEF086 /* ShotColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F995096ED4662D723ADA035 /* ShotColorPicker.swift */; };
 		CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
@@ -218,6 +221,7 @@
 		F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "NanumMyeongjo-OFL.txt"; sourceTree = "<group>"; };
 		F1ED0B6B00F288E843C5C783 /* DayBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayBlock.swift; sourceTree = "<group>"; };
 		F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotViewer.swift; sourceTree = "<group>"; };
+		F941673D190732D3ADB0055C /* ShotThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotThumbnail.swift; sourceTree = "<group>"; };
 		FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftScheduleTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -351,6 +355,7 @@
 			children = (
 				F1ED0B6B00F288E843C5C783 /* DayBlock.swift */,
 				BDCE9183C112FFB37E007824 /* PebbleView.swift */,
+				F941673D190732D3ADB0055C /* ShotThumbnail.swift */,
 				5B689D73DBFBD16C7B857686 /* Tokens.swift */,
 				AC7AA6BC5EE27D8ADDE47C88 /* Fonts */,
 			);
@@ -609,6 +614,7 @@
 				8E84FDBB2C36A9202A0DEB6D /* ShotColorPicker.swift in Sources */,
 				CF11D8850579771F69487B97 /* ShotImage.swift in Sources */,
 				A340EE2C4B3C4B575BB7B632 /* ShotStore.swift in Sources */,
+				CF1B9077022792BE565162B8 /* ShotThumbnail.swift in Sources */,
 				CDD6D930AE9E6FC142AB4E09 /* ShotViewer.swift in Sources */,
 				1FFCEA29B29AE141B84BA958 /* TapCorrection.swift in Sources */,
 				A40D134691DFE93E46471A40 /* Tokens.swift in Sources */,
@@ -660,6 +666,7 @@
 				CF20BDEDD80E1D182AEEF086 /* ShotColorPicker.swift in Sources */,
 				13113400A994950BF4DBE791 /* ShotImage.swift in Sources */,
 				20BA6C3D955339FFEE5D1C78 /* ShotStore.swift in Sources */,
+				9EB023C629B1882BE6E7995C /* ShotThumbnail.swift in Sources */,
 				866DCC55F52911A6A8BAC243 /* ShotViewer.swift in Sources */,
 				463BB08804C6196DA3590041 /* SpikeView.swift in Sources */,
 				A04E6AD742FE4847B106EFCF /* TapCorrection.swift in Sources */,
@@ -691,6 +698,7 @@
 				71CBA1496732870FBFD4B48D /* ShotColorPicker.swift in Sources */,
 				222B37199099F7A940817E14 /* ShotImage.swift in Sources */,
 				028B83424DE6D8CE4F416399 /* ShotStore.swift in Sources */,
+				6A09C475C9FE48C8875DC770 /* ShotThumbnail.swift in Sources */,
 				7376A941B553C659D52DAE4A /* ShotViewer.swift in Sources */,
 				AAFC92410A359BE2377A6AF4 /* TapCorrection.swift in Sources */,
 				936F5FD2B12A592FC1339B20 /* Tokens.swift in Sources */,

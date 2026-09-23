@@ -1,13 +1,5 @@
 import Foundation
 
-/// 조약돌의 이름과 한 줄.
-///
-/// 이 앱이 하루에 딱 한 번 사용자에게 말을 거는 자리다. 그래서 규칙이 셋이다.
-/// 1. **판단하지 않는다.** "우울한 하루였네요" 같은 말은 없다. 색은 기분이 아니다.
-/// 2. **짧다.** 한 문장을 넘기면 위로가 아니라 훈수가 된다.
-/// 3. **그날을 인정한다.** 바꾸라고 하지 않고, 그런 날도 하루라고 말한다.
-///
-/// 이름은 전부 우리말이다. 한자어(청록·회색)를 쓰면 색상표가 되고, 우리말을 쓰면 물건이 된다.
 public struct PebbleName: Equatable, Sendable {
     public let name: String
     public let line: String
@@ -15,11 +7,6 @@ public struct PebbleName: Equatable, Sendable {
 
 public enum PebbleNaming {
 
-    /// 하루를 대표하는 색을 고른다.
-    ///
-    /// 평균을 내면 색이 섞여 회색으로 수렴한다 — 다채로운 하루일수록 이름이 밋밋해진다.
-    /// 그래서 **가장 선명한 순간**을 쓴다. 사람도 하루를 그렇게 기억한다.
-    /// 전부 흐릿하면 그건 흐릿한 하루이므로 밝기로 부른다.
     public static func representative(of moments: [Moment]) -> ColorExtractor.RGB? {
         let colors = moments.compactMap { rgb(fromHex: $0.colorHex) }
         guard !colors.isEmpty else { return nil }
@@ -34,7 +21,6 @@ public enum PebbleNaming {
     public static func name(for c: ColorExtractor.RGB) -> PebbleName {
         let s = saturation(c), v = value(c), h = hue(c)
 
-        // 채도가 낮으면 색이 아니라 밝기가 그날을 말한다.
         if s < 0.12 {
             switch v {
             case ..<0.18: return .init(name: "그믐", line: "빛이 없는 날은 쉬는 날이에요.")
@@ -73,8 +59,6 @@ public enum PebbleNaming {
         }
     }
 
-    // MARK: 색 변환
-
     static func rgb(fromHex hex: String) -> ColorExtractor.RGB? {
         let t = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
         var v: UInt64 = 0
@@ -91,7 +75,6 @@ public enum PebbleNaming {
         return mx <= 0 ? 0 : (mx - mn) / mx
     }
 
-    /// 0~360. 무채색이면 0.
     static func hue(_ c: ColorExtractor.RGB) -> Double {
         let mx = max(c.r, c.g, c.b), mn = min(c.r, c.g, c.b), d = mx - mn
         guard d > 0 else { return 0 }

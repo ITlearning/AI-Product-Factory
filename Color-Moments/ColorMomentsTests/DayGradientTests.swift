@@ -16,7 +16,6 @@ final class DayGradientTests: XCTestCase {
         XCTAssertTrue(DayGradient.stops(for: []).isEmpty)
     }
 
-    /// 한 장만 찍은 날은 그라데이션이 아니라 단색이다. 그것도 그날의 색이다.
     func testSingleMomentIsOneSolidStop() {
         let stops = DayGradient.stops(for: [moment(0, "#AABBCC")])
         XCTAssertEqual(stops.count, 1)
@@ -29,9 +28,8 @@ final class DayGradientTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(stops.last).location, 1, accuracy: 0.0001)
     }
 
-    /// 핵심 결정: 간격 비율이 유지돼야 한다. 균등 분할이면 몰아 찍은 날이 사라진다.
     func testIntervalsArePreservedNotEqualised() {
-        // 정오, 정오+10분, 정오+100분 -> 가운데 정지점이 0.1 에 와야 한다
+
         let stops = DayGradient.stops(for: [
             moment(0, "#111111"), moment(10, "#222222"), moment(100, "#333333"),
         ])
@@ -46,7 +44,6 @@ final class DayGradientTests: XCTestCase {
         XCTAssertEqual(stops.last?.hex, "#LATE00")
     }
 
-    /// 같은 초에 여러 장 찍으면 간격이 0 이다. 0 으로 나누지 않고 균등 분할로 떨어뜨린다.
     func testSimultaneousMomentsDoNotDivideByZero() {
         let stops = DayGradient.stops(for: [moment(0, "#111111"), moment(0, "#222222"), moment(0, "#333333")])
         XCTAssertEqual(stops.count, 3)

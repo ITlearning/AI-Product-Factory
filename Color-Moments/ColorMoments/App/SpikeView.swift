@@ -1,25 +1,12 @@
 import SwiftUI
 
-/// Gate: LockedCameraCapture 스파이크 확인 화면.
-///
-/// 확인할 것 넷:
-/// 1) 잠금화면에서 확장이 뜨는가
-/// 2) 잠긴 상태로 찍히는가
-/// 3) sessionContentUpdates 로 본 앱에 넘어오는가
-/// 4) 원본 무효화가 되는가 (안 되면 같은 사진을 반복해서 받는다)
-///
-/// **이 화면은 제품 UI가 아니라 계측기다.** 제품 진입점은 `HomeView` 로 넘어갔고(2026-09-22),
-/// 여기는 DEBUG 빌드에서 홈의 공구 아이콘 뒤에만 남아 있다. 버리지 않고 물린 이유는
-/// 잠금화면 수신 로그가 사진첩 B 경로 작업에 아직 필요해서다. B 가 끝나면 지운다.
-///
-/// **증정은 여기서 띄우지 않는다.** 홈이 `.dayGift` 로 띄우는데 여기서도 띄우면 두 번 뜬다.
 struct SpikeView: View {
     @Bindable var inbox: CaptureInbox
     @Bindable var store: DayStore
     private let gifts: GiftLog
     @State private var camera: CaptureEngine
     @State private var confirmingWipe = false
-    /// 미리 보기 중인가. **이력에 남기지 않는다** — 여기서 남기면 진짜 증정이 영영 안 온다.
+
     @State private var previewing = false
 
     init(inbox: CaptureInbox, store: DayStore, gifts: GiftLog) {
@@ -60,7 +47,7 @@ struct SpikeView: View {
                         Text("아직 없음").foregroundStyle(.secondary)
                     } else {
                         VStack(spacing: 6) {
-                            // 자정에 증정될 그라데이션. 시간 간격이 반영돼 있다.
+
                             DayGradientView(moments: store.today)
                                 .frame(height: 64)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -75,7 +62,7 @@ struct SpikeView: View {
                                 .font(.caption2.monospacedDigit())
                                 .foregroundStyle(.secondary)
                             }
-                            // 비교용 — 각 순간의 색을 균등 폭으로. 렌더러 검증에만 쓰고 제품엔 안 나간다.
+
                             HStack(spacing: 0) {
                                 ForEach(store.today) { m in
                                     Rectangle().fill(Color(hex: m.colorHex)).frame(height: 14)
@@ -198,7 +185,7 @@ struct SpikeView: View {
                 Button("지우기", role: .destructive) {
                     store.removeAll()
                     inbox.reset()
-                    // 증정 커서만 남으면 아무것도 증정되지 않는다.
+
                     gifts.reset()
                 }
                 Button("취소", role: .cancel) {}

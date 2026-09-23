@@ -1,8 +1,5 @@
 import Foundation
 
-/// 촬영물 저장소. 잠금화면 확장이 넘긴 것과 앱에서 찍은 것이 같이 쌓인다.
-///
-/// 앱 타깃에만 있으면 `DayStore` 같은 공유 코드에서 못 본다 — Shared 에 둔다.
 public enum ShotStore {
     public static var directory: URL {
         let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -21,7 +18,7 @@ public enum ShotStore {
 import SwiftUI
 
 public extension Color {
-    /// `#RRGGBB` 문자열에서. 못 읽으면 중간 회색.
+
     init(hex: String) {
         var v: UInt64 = 0
         let cleaned = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex

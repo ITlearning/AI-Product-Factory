@@ -2,20 +2,11 @@ import AVKit
 import SwiftUI
 import UIKit
 
-/// 앱과 잠금화면 확장이 함께 쓰는 촬영 화면.
-///
-/// **`AVCaptureEventInteraction` 이 반드시 붙어야 한다.** 애플 문서:
-/// "The app extension terminates shortly after launch if it doesn't have an active camera view
-/// that uses [it] to handle events from the hardware buttons."
-/// `UIImagePickerController` 는 이걸 내장하고 있어서 그냥 됐지만, 커스텀 UI는 직접 붙여야 한다.
-///
-/// 의도적으로 비어 있다. 줌 배율·모드 전환·필터가 없다 —
-/// 「알아차리기」 엔진은 누르는 순간에 아무 선택도 시키지 않는다.
 public struct CaptureScreen: View {
 
     private let engine: CaptureEngine
     private let onClose: (() -> Void)?
-    /// 잠금화면 확장에서만 필요한 안내. 앱 안에서는 닫는 법이 자명하다.
+
     private let showsDismissHint: Bool
     @State private var pinching = false
     @State private var viewingShots = false
@@ -31,6 +22,9 @@ public struct CaptureScreen: View {
             Color.black.ignoresSafeArea()
             PreviewLayerView(engine: engine)
                 .ignoresSafeArea()
+
+                .opacity(engine.isRunning ? 1 : 0)
+                .animation(.easeIn(duration: 0.35), value: engine.isRunning)
                 .gesture(
                     MagnifyGesture()
                         .onChanged {
@@ -40,7 +34,6 @@ public struct CaptureScreen: View {
                         .onEnded { _ in pinching = false }
                 )
 
-            // 「담김」 피드백. 색은 보여주지 않는다 (Approach C — 자정에 열린다).
             if engine.shutterFlash {
                 Color.white.ignoresSafeArea().transition(.opacity)
             }
@@ -68,7 +61,6 @@ public struct CaptureScreen: View {
                     .padding(.bottom, 12)
                 }
 
-                // 찍혔다는 확인. 색은 보여주지 않는다 — 그건 자정에 열린다.
                 Text(engine.confirmation ?? " ")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.white)
@@ -96,7 +88,6 @@ public struct CaptureScreen: View {
                 }
                 .padding(.bottom, 14)
 
-                // 끝내는 법. 안 알려주면 "계속 찍어야 하나?"가 된다.
                 if showsDismissHint {
                     HStack(spacing: 5) {
                         Image(systemName: "chevron.up").font(.system(size: 9, weight: .semibold))
@@ -131,7 +122,6 @@ public struct CaptureScreen: View {
     }
 }
 
-/// 프리뷰 레이어 + 하드웨어 셔터 수신.
 struct PreviewLayerView: UIViewControllerRepresentable {
     let engine: CaptureEngine
 
@@ -154,7 +144,7 @@ final class PreviewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
-        // 카메라 컨트롤·볼륨 버튼의 하드웨어 셔터. 확장 생존 조건이기도 하다.
+
         let interaction = AVCaptureEventInteraction { [weak self] event in
             guard event.phase == .ended else { return }
             self?.engine.capture()
@@ -175,11 +165,6 @@ final class PreviewController: UIViewController {
     }
 }
 
-
-/// 찍은 사진이 오른쪽 아래에 겹겹이 쌓이는 더미.
-///
-/// 숫자 대신 실물이 쌓인다. 「수집하는 앱」이라면 수집이 눈에 보여야 한다.
-/// 새 장은 셔터 쪽에서 날아와 얹히고, 아래 것들은 좌우로 조금씩 어긋나 카드 더미처럼 보인다.
 struct ShotStackView: View {
     let items: [CaptureEngine.StackItem]
     let total: Int
@@ -188,7 +173,7 @@ struct ShotStackView: View {
 
     var body: some View {
         ZStack {
-            // 뒤에서부터 그려야 최근 것이 맨 위로 온다.
+
             ForEach(Array(items.enumerated().reversed()), id: \.element.id) { index, item in
                 Image(uiImage: item.thumbnail)
                     .resizable()
@@ -200,7 +185,7 @@ struct ShotStackView: View {
                             .strokeBorder(.white.opacity(0.75), lineWidth: 1.5)
                     )
                     .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
-                    // 깊이감: 뒤로 갈수록 작아지고, 좌우로 번갈아 어긋난다.
+
                     .scaleEffect(1 - CGFloat(index) * 0.06)
                     .rotationEffect(.degrees(offsetAngle(index)))
                     .offset(x: CGFloat(index) * (index % 2 == 0 ? -3.5 : 3.5),
@@ -209,7 +194,7 @@ struct ShotStackView: View {
                     .zIndex(Double(items.count - index))
                     .transition(
                         .asymmetric(
-                            // 셔터 쪽(왼쪽 아래)에서 날아와 얹히는 느낌
+
                             insertion: .scale(scale: 2.1)
                                 .combined(with: .offset(x: -70, y: 26))
                                 .combined(with: .opacity),
@@ -226,30 +211,23 @@ struct ShotStackView: View {
                     .padding(.horizontal, 5).padding(.vertical, 2)
                     .background(.white, in: Capsule())
                     .offset(x: side / 2 - 2, y: -side / 2 + 2)
-                    // 사진마다 zIndex 를 줬으므로 배지도 명시해야 맨 위로 온다.
-                    // 안 그러면 0 으로 깔려서 더미 뒤에 숨는다 (실측으로 잡힌 버그).
+
                     .zIndex(1000)
                     .transition(.scale.combined(with: .opacity))
             }
         }
         .frame(width: side, height: side)
-        .padding(.top, 6).padding(.trailing, 6)   // 배지가 잘리지 않을 만큼
+        .padding(.top, 6).padding(.trailing, 6)
         .animation(.spring(response: 0.42, dampingFraction: 0.66), value: items)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: total)
     }
 
-    /// 번갈아 기울여 손으로 쌓은 더미처럼 보이게. 인덱스로만 정해져 매번 같다.
     private func offsetAngle(_ index: Int) -> Double {
         let angles: [Double] = [0, -5, 4.5, -3, 6]
         return angles[min(index, angles.count - 1)]
     }
 }
 
-/// 배율 프리셋 알약.
-///
-/// 다이얼(눈금 호)은 2026-09-22 에 걷어냈다 — 카메라는 이 제품의 본질이 아닌데
-/// 기본 카메라를 흉내내는 데 시간이 쏠렸다. 필요해지면 그때 다시 짓는다.
-/// 핀치줌은 그대로 동작하고, 현재 배율은 활성 알약에 표시된다.
 struct ZoomPills: View {
     let presets: [Double]
     let zoom: Double

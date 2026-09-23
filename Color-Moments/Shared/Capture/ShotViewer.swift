@@ -1,12 +1,5 @@
 import SwiftUI
 
-/// 방금 담은 것들을 풀스크린으로 넘겨보는 뷰어.
-///
-/// 기본 카메라의 썸네일 탭과 같은 자리다. 다만 **이번에 켠 동안 담은 것만** 보여준다 —
-/// 과거를 뒤지는 화면이 되면 「자정에 열린다」는 구조와 부딪히고, 잠긴 확장은 어차피
-/// 앱 저장소를 못 읽는다. 여기는 "방금 그거 뭐였지"를 확인하는 자리이지 갤러리가 아니다.
-///
-/// 색은 여전히 안 보여준다. 그건 자정의 몫이다.
 struct ShotViewer: View {
     let items: [CaptureEngine.StackItem]
     @Binding var isPresented: Bool
