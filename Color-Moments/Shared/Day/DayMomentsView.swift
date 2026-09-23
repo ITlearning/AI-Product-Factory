@@ -53,8 +53,9 @@ public struct DayMomentsView: View {
         }
         .presentationDragIndicator(.hidden)
         .sheet(item: $editing) { m in
+            // 되돌린 자동 색은 스토어가 새로 뽑는다. 열 때 찍어 둔 m 을 넘기면 옛 색이 남는다.
             ShotColorPicker(
-                moment: m,
+                moment: moments.first { $0.id == m.id } ?? m,
                 onPick: { store.updateColor(m.id, to: $0) },
                 onRevert: { store.revertColor(m.id) }
             )

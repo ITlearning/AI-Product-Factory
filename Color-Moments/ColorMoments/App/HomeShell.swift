@@ -20,6 +20,7 @@ struct HomeShell: View {
     @State private var camera: CaptureEngine?
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
+    @AppStorage("didSeeFirstRun") private var didSeeFirstRun = false
     #if DEBUG
     @State private var showingGate = false
     #endif
@@ -34,7 +35,7 @@ struct HomeShell: View {
             ZStack {
                 Tone.pure.ignoresSafeArea()
 
-                HomeView(store: store, showsSwipeHint: !didSwipe && progress == 0)
+                HomeView(store: store, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0)
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -43,6 +44,14 @@ struct HomeShell: View {
             }
             .contentShape(Rectangle())
             .simultaneousGesture(swipe(width: w))
+            .overlay {
+                // 이미 쓸어 본 사람에게는 띄우지 않는다 — 기존 설치본도 여기로 들어온다.
+                if !didSeeFirstRun && !didSwipe {
+                    FirstRunOverlay {
+                        withAnimation(.easeOut(duration: 0.25)) { didSeeFirstRun = true }
+                    }
+                }
+            }
 
             .onChange(of: progress) { _, p in
                 if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start() }
