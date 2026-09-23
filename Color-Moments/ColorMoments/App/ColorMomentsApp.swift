@@ -8,6 +8,7 @@ struct ColorMomentsApp: App {
     @State private var inbox = CaptureInbox()
     @State private var gifts = GiftLog()
     @State private var reconcilerObserver: AssetReconcilerObserver?
+    @State private var sync: CloudSync?
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -36,6 +37,14 @@ struct ColorMomentsApp: App {
                     if reconcilerObserver == nil {
                         reconcilerObserver = AssetReconcilerObserver(store: store)
                     }
+
+                    // 유닛 테스트는 앱을 호스트로 띄운다 — 권한 없는 CKContainer 는 크래시하므로 테스트 중엔 켜지 않는다.
+                    if sync == nil, ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+                        let s = CloudSync(store: store, closures: closures, gifts: gifts)
+                        s.start()
+                        sync = s
+                    }
+                    await CloudIDMapper.refresh(store: store)
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -45,6 +54,7 @@ struct ColorMomentsApp: App {
                 Task { await AssetAdopter.adoptAll(store: store) }
             }
             AssetReconciler.reconcile(store: store)
+            Task { await CloudIDMapper.refresh(store: store) }
         }
     }
 }

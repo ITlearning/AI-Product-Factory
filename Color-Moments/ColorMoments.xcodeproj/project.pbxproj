@@ -13,6 +13,7 @@
 		02B89DF8BE3E0E3688F10090 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		036A5A204DA00E6E1F8E4DB3 /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
 		049B7CECEE196C6D70AC4FA8 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
+		0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EDA0910CC8E79B482D32B2 /* CloudSync.swift */; };
 		089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
 		0EE85CE222D9DC39B58B27EE /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		12C3CD61E7A606425EFD41CA /* PebbleNameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B180428138319F72B026C570 /* PebbleNameTests.swift */; };
@@ -230,6 +231,7 @@
 		19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySections.swift; sourceTree = "<group>"; };
 		20A09F696F5607382E065E46 /* SyncRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecords.swift; sourceTree = "<group>"; };
 		219FB2ED514DBE95A9AFAB53 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fixtures; path = ColorMomentsTests/Fixtures; sourceTree = SOURCE_ROOT; };
+		22EDA0910CC8E79B482D32B2 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
 		2407ADFA49967AECDDB4BDC8 /* FirstRunOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunOverlay.swift; sourceTree = "<group>"; };
 		2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordPickerTests.swift; sourceTree = "<group>"; };
 		2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorCaptureIntent.swift; sourceTree = "<group>"; };
@@ -448,6 +450,7 @@
 			isa = PBXGroup;
 			children = (
 				FD91667DFE3E8160A212B1DA /* CloudIDMapper.swift */,
+				22EDA0910CC8E79B482D32B2 /* CloudSync.swift */,
 				20A09F696F5607382E065E46 /* SyncRecords.swift */,
 			);
 			path = Sync;
@@ -814,6 +817,7 @@
 				39421DA397F79B0CEBD66E06 /* CaptureInbox.swift in Sources */,
 				59F0C1E84E0A9E36B6A7FF64 /* CaptureScreen.swift in Sources */,
 				DE9A46A0F358B2CDCB9B89F9 /* CloudIDMapper.swift in Sources */,
+				0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */,
 				089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */,
 				85404B43045C16239CA26FB5 /* ColorExtractor.swift in Sources */,
 				FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */,
