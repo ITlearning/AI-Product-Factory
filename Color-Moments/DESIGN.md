@@ -345,6 +345,7 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 | 9 | 사진첩에서 골라 담기 (docs/designs/mongdol-library-import.md) | ✅ `ColorMoments/Library/`, `Shared/Library/` |
 | 10 | 사진은 사진 앱에 (docs/designs/mongdol-photo-assets.md) | ✅ `ColorMoments/Library/PhotoAssets.swift`, `AssetReconciler.swift` |
 | 11 | 오늘 진행 중 · 마무리하기 | ✅ `Shared/Day/DayClosures.swift`, `Shared/Day/DayStore.swift`, `Shared/Day/DayMomentsView.swift`, `Shared/Design/DayBlock.swift`, `App/HomeView.swift` |
+| 12 | iCloud 연동 (docs/designs/mongdol-icloud-sync.md) | ✅ 실기기 확인 대기 — `ColorMoments/Sync/`, `Shared/Day/MomentMerge.swift` |
 
 **설계에서 벗어난 곳 (근거 있음)**
 

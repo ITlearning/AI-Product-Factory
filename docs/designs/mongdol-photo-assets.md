@@ -104,3 +104,4 @@ ColorMoments/Library/
    `ShotImage` 는 파일로 폴백을 시도하지만 원본 파일이 없는 새 기록(카메라·잠금화면으로
    입양된 사진)은 자리 이름만 남아 결국 빈 자리로 보인다. 지금 범위에서는 풀지 않는다 —
    다음 iCloud 연동 작업에서 `PHCloudIdentifier` 로 assetID 를 재매핑해 푼다.
+   → **해결 (2026-09-23)**: iCloud 연동(`mongdol-icloud-sync.md`)의 cloudID 다시 찾기(`CloudIDMapper.resolve`).

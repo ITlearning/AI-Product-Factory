@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-상태 **draft** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift`
+상태 **completed** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift`
 
 **Goal:** 몽돌 기록(색·단어·날짜·장소·마무리·증정)을 CloudKit 개인 DB로 기기 사이에 동기화하고, 사진은 `PHCloudIdentifier` 로 각 기기에서 다시 찾는다.
 
@@ -288,7 +288,7 @@ public enum MomentMerge {
 - [ ] **Step 8: DayStore 구현**
 
 - `public var onLocalChange: (([StoreChange]) -> Void)?` — `@ObservationIgnored` 를 붙인다(클로저는 관찰 대상 아님).
-- `add` 성공 시 `onLocalChange?([.upsert(moment.id)])`. `assignWord`·`setLabels` 가 실제로 바꾸면 `.upsert(id)`. `adopt` 는 알리지 않는다(바뀌는 필드가 이 기기 전용). `remove(assetIDs:)` 는 지운 기록들의 `.delete(id)`. `removeAll` 은 모두 `.delete`.
+- `add` 성공 시 `onLocalChange?([.upsert(moment.id)])`. `assignWord`·`setLabels` 가 실제로 바꾸면 `.upsert(id)`. `adopt` 는 알리지 않는다(바뀌는 필드가 이 기기 전용). `remove(assetIDs:)` 는 지운 기록들의 `.delete(id)`. `removeAll` 은 알리지 않는다(로컬 디버그 초기화 전용).
 - `public func moment(_ id: Moment.ID) -> Moment? { moments.first { $0.id == id } }`
 - `fileBacked`:
 
