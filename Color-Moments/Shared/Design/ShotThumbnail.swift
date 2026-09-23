@@ -14,7 +14,7 @@ public struct ShotThumbnail: View {
     }
 
     private var image: UIImage? {
-        ShotImage.peek(moment.fileName, maxPixel: maxPixel)
+        ShotImage.peek(moment, maxPixel: maxPixel)
             ?? (loadedName == moment.fileName ? loaded : nil)
     }
 
@@ -27,10 +27,10 @@ public struct ShotThumbnail: View {
             }
         }
         .task(id: moment.fileName) {
-            let name = moment.fileName, px = maxPixel
-            guard ShotImage.peek(name, maxPixel: px) == nil else { return }
+            let m = moment, name = moment.fileName, px = maxPixel
+            guard ShotImage.peek(m, maxPixel: px) == nil else { return }
             let img = await Task.detached(priority: .userInitiated) {
-                ShotImage.warm(name, maxPixel: px)
+                ShotImage.warm(m, maxPixel: px)
             }.value
             guard !Task.isCancelled, name == moment.fileName else { return }
             loaded = img

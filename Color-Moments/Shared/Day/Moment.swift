@@ -78,4 +78,9 @@ public extension Moment {
         guard let start = calendar.date(from: c) else { return nil }
         return calendar.date(byAdding: .day, value: 1, to: start)
     }
+
+    /// 입양된 사진의 자리 이름 — 실제 파일은 없다, fileName 중복 방지가 그대로 동작하게만 쓴다.
+    static func assetFileName(for assetID: String) -> String {
+        "asset-" + String(WordPicker.fnv1a(assetID), radix: 16)
+    }
 }

@@ -78,16 +78,14 @@ struct DayPhotoView: View {
     }
 
     private func load(_ m: Moment) async {
-        let name = m.fileName
-        image = await Task.detached(priority: .userInitiated) { ShotImage.full(name) }.value
+        image = await Task.detached(priority: .userInitiated) { ShotImage.full(m) }.value
     }
 
     private func assignWordIfNeeded(_ m: Moment) async {
         guard m.word == nil else { return }
         var labels = m.labels
         if labels == nil {
-            let name = m.fileName
-            labels = await Task.detached(priority: .userInitiated) { PhotoLabeler.labels(forShot: name) }.value
+            labels = await Task.detached(priority: .userInitiated) { PhotoLabeler.labels(for: m) }.value
             guard let labels else { return } // Vision failed — retry next open, don't stamp a bad guess
             store.setLabels(m.id, labels)
         }

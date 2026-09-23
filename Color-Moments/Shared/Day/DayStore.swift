@@ -64,6 +64,26 @@ public final class DayStore {
         moments.contains { $0.assetID == id }
     }
 
+    public var fileBacked: [Moment] { moments.filter { $0.assetID == nil } }
+
+    public func adopt(_ id: Moment.ID, assetID: String) {
+        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].assetID == nil else { return }
+        let m = moments[i]
+        moments[i] = Moment(id: m.id, capturedAt: m.capturedAt, colorHex: m.colorHex,
+                             fileName: Moment.assetFileName(for: assetID), source: m.source,
+                             word: m.word, labels: m.labels, assetID: assetID,
+                             place: m.place, addedAt: m.addedAt, batchID: m.batchID)
+        save()
+    }
+
+    public func remove(assetIDs: Set<String>) {
+        guard !assetIDs.isEmpty else { return }
+        let kept = moments.filter { !($0.assetID.map(assetIDs.contains) ?? false) }
+        guard kept.count != moments.count else { return }
+        moments = kept
+        save()
+    }
+
     public func hasSealedMoments(on dayKey: String) -> Bool {
         guard let seal = Moment.sealDate(for: dayKey) else { return false }
         return moments(on: dayKey).contains { $0.addedAt.map { $0 <= seal } ?? true }

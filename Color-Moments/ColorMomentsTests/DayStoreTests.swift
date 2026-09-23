@@ -226,4 +226,44 @@ final class DayStoreTests: XCTestCase {
     func testHasSealedMomentsIsFalseForDayWithNoMoments() {
         XCTAssertFalse(store.hasSealedMoments(on: "2026-09-22"))
     }
+
+    func testAdoptPreservesFieldsAndSecondCallIsIgnored() {
+        let m = moment(date(2026, 9, 22, 12, 0), "#AABBCC", name: "cam.jpg")
+        store.add(m)
+        store.setLabels(m.id, ["sky"])
+        store.assignWord(m.id, PhotoWord(wordID: "yunseul", word: "윤슬", meaning: "잔물결"))
+
+        store.adopt(m.id, assetID: "ASSET-1")
+        let adopted = try! XCTUnwrap(store.moments.first { $0.id == m.id })
+        XCTAssertEqual(adopted.assetID, "ASSET-1")
+        XCTAssertEqual(adopted.fileName, Moment.assetFileName(for: "ASSET-1"), "자리 이름이 규칙대로 지어져야 한다")
+        XCTAssertEqual(adopted.colorHex, "#AABBCC")
+        XCTAssertEqual(adopted.labels, ["sky"])
+        XCTAssertEqual(adopted.word?.wordID, "yunseul")
+        XCTAssertEqual(adopted.capturedAt, m.capturedAt)
+
+        store.adopt(m.id, assetID: "ASSET-2")
+        XCTAssertEqual(store.moments.first { $0.id == m.id }?.assetID, "ASSET-1",
+                       "이미 입양된 Moment 는 두 번째 입양을 무시해야 한다")
+    }
+
+    func testRemoveAssetIDsDropsTheDayFromDayKeysWhenEmptied() {
+        let m = imported(date(2026, 9, 22, 15, 0), added: date(2026, 9, 22, 20, 0), batch: UUID(),
+                         name: Moment.assetFileName(for: "ASSET-1"), asset: "ASSET-1")
+        store.add(m)
+        XCTAssertTrue(store.dayKeys.contains("2026-09-22"))
+
+        store.remove(assetIDs: ["ASSET-1"])
+        XCTAssertTrue(store.moments.isEmpty)
+        XCTAssertFalse(store.dayKeys.contains("2026-09-22"), "그 하루의 사진이 다 지워지면 dayKeys 에서도 빠져야 한다")
+    }
+
+    func testFileBackedExcludesAdoptedMoments() {
+        let file = moment(date(2026, 9, 22, 9, 0), name: "file.jpg")
+        let asset = imported(date(2026, 9, 22, 10, 0), added: date(2026, 9, 22, 10, 0), batch: UUID(),
+                             name: Moment.assetFileName(for: "ASSET-9"), asset: "ASSET-9")
+        store.add(file)
+        store.add(asset)
+        XCTAssertEqual(store.fileBacked.map(\.fileName), ["file.jpg"])
+    }
 }
