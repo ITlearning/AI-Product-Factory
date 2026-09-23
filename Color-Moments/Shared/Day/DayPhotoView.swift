@@ -7,7 +7,6 @@ struct DayPhotoView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var image: UIImage?
-    @State private var dismissing = false
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
@@ -25,9 +24,6 @@ struct DayPhotoView: View {
                     }
                 }
                 .scrollIndicators(.hidden)
-                .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, y in
-                    if y < -80, !dismissing { dismissing = true; dismiss() }
-                }
                 .task(id: moment.fileName) { await load(moment) }
                 .task(id: moment.id) { await assignWordIfNeeded(moment) }
             }
@@ -86,10 +82,18 @@ struct DayPhotoView: View {
 
     private func assignWordIfNeeded(_ m: Moment) async {
         guard m.word == nil else { return }
+        var labels = m.labels
+        if labels == nil {
+            let name = m.fileName
+            labels = await Task.detached(priority: .userInitiated) { PhotoLabeler.labels(forShot: name) }.value
+            guard let labels else { return } // Vision failed — retry next open, don't stamp a bad guess
+            store.setLabels(m.id, labels)
+        }
+        let seen = Set(labels ?? [])
         let words = await BundledWordSource().words()
-        let recent = store.recentWordIDs(excluding: m.id)
-        guard let pw = WordPicker.photoWord(for: PhotoContext(date: m.capturedAt), labels: [], in: words,
-                                            excluding: recent, seed: m.id.uuidString) else { return }
+        let ctx = PhotoContext(date: m.capturedAt, weather: Weather.inferred(from: seen))
+        guard let pw = WordPicker.photoWord(for: ctx, labels: seen, in: words,
+                                            excluding: store.recentWordIDs(excluding: m.id), seed: m.id.uuidString) else { return }
         store.assignWord(m.id, pw)
     }
 }

@@ -6,6 +6,7 @@ public struct DayMomentsView: View {
     private let store: DayStore
     @Environment(\.dismiss) private var dismiss
     @State private var viewing: Moment?
+    @Namespace private var zoom
 
     private static let axisHeight: CGFloat = 360
     private static let photo = CGSize(width: 190, height: 127)
@@ -49,7 +50,10 @@ public struct DayMomentsView: View {
             }
         }
         .presentationDragIndicator(.hidden)
-        .fullScreenCover(item: $viewing) { DayPhotoView(momentID: $0.id, store: store) }
+        .fullScreenCover(item: $viewing) { m in
+            DayPhotoView(momentID: m.id, store: store)
+                .navigationTransition(.zoom(sourceID: m.id, in: zoom))
+        }
     }
 
     private var closeButton: some View {
@@ -107,7 +111,9 @@ public struct DayMomentsView: View {
                     .offset(x: bandCenter - Self.tick / 2, y: p.y - Self.tick / 2)
                     .zIndex(Double(placements.count + i))
 
-                Button { viewing = p.moment } label: { photoCard(p.moment) }
+                Button { viewing = p.moment } label: {
+                    photoCard(p.moment).matchedTransitionSource(id: p.moment.id, in: zoom)
+                }
                     .buttonStyle(.plain)
                     .offset(x: Self.photoX + CGFloat(p.shift) * step, y: p.y - Self.tick / 2)
                     .zIndex(Double(i))
