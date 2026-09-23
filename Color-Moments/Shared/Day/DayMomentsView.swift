@@ -39,7 +39,7 @@ public struct DayMomentsView: View {
                         Spacer().frame(height: 24)
                         header
                         Spacer().frame(height: 30)
-                        timeline(width: geo.size.width - 56)
+                        timeline(width: max(0, geo.size.width - 56))
                         Spacer().frame(height: 28)
                         Text("사진을 눌러 그 순간의 색을 고를 수 있어요.")
                             .font(Face.guide).foregroundStyle(Tone.tertiary)

@@ -170,7 +170,7 @@ public final class CaptureEngine: NSObject {
     private func showConfirmation() {
         confirmationToken += 1
         let token = confirmationToken
-        confirmation = "지금 이 순간이 담겼어요"
+        confirmation = "담겼어요"
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
             if self.confirmationToken == token { self.confirmation = nil }
         }
