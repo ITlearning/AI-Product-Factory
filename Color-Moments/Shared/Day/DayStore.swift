@@ -37,6 +37,20 @@ public final class DayStore {
         save()
     }
 
+    public func assignWord(_ id: Moment.ID, _ word: PhotoWord) {
+        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].word == nil else { return }
+        moments[i].word = word
+        save()
+    }
+
+    public func recentWordIDs(excluding id: Moment.ID, limit: Int = 14) -> Set<String> {
+        Set(moments
+            .filter { $0.id != id && $0.word != nil }
+            .sorted { $0.capturedAt > $1.capturedAt }
+            .prefix(limit)
+            .compactMap { $0.word?.wordID })
+    }
+
     public func removeAll() {
         moments = []
         save()

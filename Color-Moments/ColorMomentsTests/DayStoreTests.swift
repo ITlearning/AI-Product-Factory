@@ -86,4 +86,34 @@ final class DayStoreTests: XCTestCase {
         XCTAssertTrue(store.moments.isEmpty)
         XCTAssertTrue(DayStore(fileURL: tempFile).moments.isEmpty, "파일에서도 지워져야 한다")
     }
+
+    func testAssignWordPersistsAndNeverOverwrites() {
+        let m = moment(date(2026, 9, 22, 12, 0), name: "w.jpg")
+        store.add(m)
+        store.assignWord(m.id, PhotoWord(wordID: "neungae", word: "는개", meaning: "가는 비"))
+        store.assignWord(m.id, PhotoWord(wordID: "yunseul", word: "윤슬", meaning: "잔물결"))
+        XCTAssertEqual(DayStore(fileURL: tempFile).moments.first?.word?.wordID, "neungae",
+                       "한 번 붙은 단어가 바뀌면 같은 사진이 뽑기가 된다")
+    }
+
+    func testRecentWordIDsAreNewestFirstAndSkipTheAskingPhoto() {
+        for i in 0..<5 {
+            let m = moment(date(2026, 9, 22, 8 + i, 0), name: "r\(i).jpg")
+            store.add(m)
+            store.assignWord(m.id, PhotoWord(wordID: "w\(i)", word: "w", meaning: "m"))
+        }
+        let asking = store.moments.first { $0.fileName == "r4.jpg" }!
+        XCTAssertEqual(store.recentWordIDs(excluding: asking.id, limit: 2), ["w3", "w2"])
+    }
+
+    func testReadsRecordsSavedBeforeWordsExisted() throws {
+        let legacy = """
+        [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC",
+          "fileName":"pre.jpg","source":"app"}]
+        """
+        try Data(legacy.utf8).write(to: tempFile)
+        let m = try XCTUnwrap(DayStore(fileURL: tempFile).moments.first)
+        XCTAssertNil(m.word)
+        XCTAssertEqual(m.colorHex, "#AABBCC")
+    }
 }
