@@ -7,6 +7,7 @@ struct HomeShell: View {
 
     @State private var progress: CGFloat = 0
     @State private var dragging = false
+    @State private var focusDay: String?
 
     @State private var dragStart: CGFloat = 0
 
@@ -36,7 +37,8 @@ struct HomeShell: View {
             ZStack {
                 Tone.pure.ignoresSafeArea()
 
-                HomeView(store: store, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0)
+                HomeView(store: store, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0,
+                         focusDay: $focusDay)
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -64,7 +66,13 @@ struct HomeShell: View {
         .dayGift(store: store, gifts: gifts)
         .fullScreenCover(isPresented: $pickingLibrary) {
             LibraryPickerView(store: store) { n in
-                if n > 0 { camera?.confirm("담겼어요") }
+                guard n > 0 else { return }
+                camera?.confirm("담겼어요")
+                progress = 0
+                focusDay = store.moments
+                    .filter { $0.addedAt != nil }
+                    .max { $0.addedAt! < $1.addedAt! }?
+                    .dayKey
             }
         }
         #if DEBUG

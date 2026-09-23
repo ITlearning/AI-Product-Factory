@@ -5,6 +5,8 @@ struct HomeView: View {
 
     let showsSwipeHint: Bool
 
+    @Binding var focusDay: String?
+
     @State private var opened: OpenedDay?
     @State private var topDayKey: String?
     @State private var scrolling = false
@@ -12,6 +14,8 @@ struct HomeView: View {
     private struct OpenedDay: Identifiable { let id: String }
 
     private var days: [String] { store.finishedDayKeys }
+
+    private var compactCutoff: String { HomeNavigation.compactCutoff(today: Date()) }
 
     var body: some View {
         ZStack {
@@ -42,42 +46,62 @@ struct HomeView: View {
     private var content: some View {
         GeometryReader { geo in
             let blockWidth = geo.size.width - 56
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
-                    Spacer().frame(height: 22)
-                    todayLine
-                    Spacer().frame(height: 38)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                            .id("top")
+                        Spacer().frame(height: 22)
+                        todayLine
+                        Spacer().frame(height: 38)
 
-                    if days.isEmpty {
-                        EmptyDayBlock(width: blockWidth)
-                    } else {
-                        LazyVStack(alignment: .leading, spacing: 64) {
-                            ForEach(days, id: \.self) { key in
+                        if days.isEmpty {
+                            EmptyDayBlock(width: blockWidth)
+                        } else {
+                            LazyVStack(alignment: .leading, spacing: 0) {
+                                ForEach(Array(days.enumerated()), id: \.element) { index, key in
+                                    dayRow(key, width: blockWidth)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { opened = OpenedDay(id: key) }
 
-                                DayBlock(moments: store.moments(on: key), pebbleMoments: store.pebbleMoments(on: key), width: blockWidth)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { opened = OpenedDay(id: key) }
-
-                                .scrollTransition { c, phase in
-                                    c.opacity(phase.isIdentity ? 1 : 0.5)
-                                     .scaleEffect(phase.isIdentity ? 1 : 0.96)
-                                }
-                                .onScrollVisibilityChange(threshold: 0.6) { visible in
-                                    if visible { topDayKey = key }
+                                        .scrollTransition { c, phase in
+                                            c.opacity(phase.isIdentity ? 1 : 0.5)
+                                             .scaleEffect(phase.isIdentity ? 1 : 0.96)
+                                        }
+                                        .onScrollVisibilityChange(threshold: 0.6) { visible in
+                                            if visible { topDayKey = key }
+                                        }
+                                        .id(key)
+                                        .padding(.top, index == 0 ? 0 : (key < compactCutoff ? 20 : 64))
                                 }
                             }
                         }
+                        Spacer().frame(height: 120)
                     }
-                    Spacer().frame(height: 120)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 72 - geo.safeAreaInsets.top)
                 }
-                .padding(.horizontal, 28)
-                .padding(.top, 72 - geo.safeAreaInsets.top)
+                .scrollIndicators(.hidden)
+                .onScrollPhaseChange { _, phase in
+                    withAnimation(.easeOut(duration: 0.2)) { scrolling = phase.isScrolling }
+                }
+                .onChange(of: focusDay) { _, newValue in
+                    guard let newValue else { return }
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo(days.contains(newValue) ? newValue : "top", anchor: .top)
+                    }
+                    focusDay = nil
+                }
             }
-            .scrollIndicators(.hidden)
-            .onScrollPhaseChange { _, phase in
-                withAnimation(.easeOut(duration: 0.2)) { scrolling = phase.isScrolling }
-            }
+        }
+    }
+
+    @ViewBuilder
+    private func dayRow(_ key: String, width: CGFloat) -> some View {
+        if key < compactCutoff {
+            CompactDayRow(pebbleMoments: store.pebbleMoments(on: key), moments: store.moments(on: key))
+        } else {
+            DayBlock(moments: store.moments(on: key), pebbleMoments: store.pebbleMoments(on: key), width: width)
         }
     }
 
