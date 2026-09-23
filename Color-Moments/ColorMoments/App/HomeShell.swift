@@ -28,6 +28,8 @@ struct HomeShell: View {
     private static let axisBias: CGFloat = 2.2
     @State private var camera: CaptureEngine?
     @State private var pickingLibrary = false
+    // pickingLibrary 는 닫힘 애니메이션 시작에 false 가 된다 — 증정 가드는 커버 onDismiss 에서만 푼다.
+    @State private var libraryCoverUp = false
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
     @AppStorage("didSeeFirstRun") private var didSeeFirstRun = false
@@ -74,8 +76,10 @@ struct HomeShell: View {
         }
         .preferredColorScheme(.dark)
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
-                 blocksPresentation: daySheetPresented || pickingLibrary)
+                 blocksPresentation: daySheetPresented || pickingLibrary || libraryCoverUp)
+        .onChange(of: pickingLibrary) { _, up in if up { libraryCoverUp = true } }
         .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
+            libraryCoverUp = false
             guard pendingLibraryFocus else { return }
             pendingLibraryFocus = false
             focusDay = store.moments
@@ -108,7 +112,10 @@ struct HomeShell: View {
     private var cameraSide: some View {
         if let camera {
 
-            CaptureScreen(engine: camera, onClose: { progress = 0 }, onLibrary: { pickingLibrary = true })
+            CaptureScreen(engine: camera, onClose: { progress = 0 }, onLibrary: {
+                libraryCoverUp = true
+                pickingLibrary = true
+            })
         }
     }
 

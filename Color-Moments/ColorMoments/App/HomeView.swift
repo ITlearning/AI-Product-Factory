@@ -56,10 +56,19 @@ struct HomeView: View {
             if pillActive, let label = pillLabel { monthPill(label) }
             if showsSwipeHint { swipeHint }
         }
-        .sheet(item: $opened, onDismiss: onDaySheetDismissed) { day in
+        .sheet(item: $opened, onDismiss: {
+            // opened 가 nil 이 되는 건 닫힘 애니메이션 시작 — 끝난 뒤(onDismiss)에만 가드를 푼다.
+            daySheetPresented = false
+            onDaySheetDismissed()
+        }) { day in
             DayMomentsView(dayKey: day.id, store: store, closures: closures)
         }
-        .onChange(of: opened) { _, value in daySheetPresented = value != nil }
+        .onChange(of: opened) { _, value in if value != nil { daySheetPresented = true } }
+    }
+
+    private func open(_ key: String) {
+        daySheetPresented = true
+        opened = OpenedDay(id: key)
     }
 
     @ViewBuilder
@@ -90,7 +99,7 @@ struct HomeView: View {
                                 let capturedDayKey = todayKey
                                 todayProgressBlock(width: blockWidth)
                                     .contentShape(Rectangle())
-                                    .onTapGesture { opened = OpenedDay(id: capturedDayKey) }
+                                    .onTapGesture { open(capturedDayKey) }
                             } else if !todayClosedWithMoments {
                                 todayLine
                             }
@@ -103,7 +112,7 @@ struct HomeView: View {
                                     ForEach(Array(days.enumerated()), id: \.element) { index, key in
                                         dayRow(key, width: blockWidth)
                                             .contentShape(Rectangle())
-                                            .onTapGesture { opened = OpenedDay(id: key) }
+                                            .onTapGesture { open(key) }
 
                                             .scrollTransition { c, phase in
                                                 c.opacity(phase.isIdentity ? 1 : 0.5)
