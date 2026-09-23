@@ -14,6 +14,7 @@
 		036A5A204DA00E6E1F8E4DB3 /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
 		049B7CECEE196C6D70AC4FA8 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
+		0EE85CE222D9DC39B58B27EE /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		12C3CD61E7A606425EFD41CA /* PebbleNameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B180428138319F72B026C570 /* PebbleNameTests.swift */; };
 		13113400A994950BF4DBE791 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
 		14B086E929DB0210F2450CFF /* DayMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E880EA384921F9A97C79A87 /* DayMomentsView.swift */; };
@@ -138,10 +139,12 @@
 		E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		E7F3453CCDED443C24380E0B /* words.json in Resources */ = {isa = PBXBuildFile; fileRef = A0A48C2B255FB6B7DFA973C5 /* words.json */; };
 		E9FF039B8236CAA8424CC6D6 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
+		ED42EFBB9D0310947F139082 /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		F0DD38512B10A0EC9EF97BD6 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E016D510A0FA71B454E57DF6 /* AVKit.framework */; };
 		F1CEB3009284EB172D1766E8 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
 		F2C689ACD107EA2CD0F669E4 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
+		F4F24DB7F05FD86971A0E962 /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */; };
 		F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
 		FA88E2179DF699A37AE7FDA4 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
@@ -217,6 +220,7 @@
 		343D1F9744F120B40EEDE985 /* PebbleName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleName.swift; sourceTree = "<group>"; };
 		36163F479DA433C2CB8744EE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayBadge.swift; sourceTree = "<group>"; };
+		3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactDayRow.swift; sourceTree = "<group>"; };
 		3C0C341B4E32F784A77CC08D /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		3D1B75104310693B48F8D9DE /* ShotImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotImage.swift; sourceTree = "<group>"; };
 		3E880EA384921F9A97C79A87 /* DayMomentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayMomentsView.swift; sourceTree = "<group>"; };
@@ -411,6 +415,7 @@
 		A367C7D09D3B5E69C8A79847 /* Design */ = {
 			isa = PBXGroup;
 			children = (
+				3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */,
 				F1ED0B6B00F288E843C5C783 /* DayBlock.swift */,
 				1782AA90AE018A879A1B0885 /* HomeNavigation.swift */,
 				70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */,
@@ -694,6 +699,7 @@
 				2C727EDB8CA45364E0477CA6 /* ColorCaptureControl.swift in Sources */,
 				851F47DC9109F3E17C510A45 /* ColorCaptureIntent.swift in Sources */,
 				341D43357966166F08E749AD /* ColorExtractor.swift in Sources */,
+				F4F24DB7F05FD86971A0E962 /* CompactDayRow.swift in Sources */,
 				18E772394B2F6112538961DB /* DayBadge.swift in Sources */,
 				559AA75241F4C7C05F596871 /* DayBlock.swift in Sources */,
 				598A255826789B22B6C05C2D /* DayGift.swift in Sources */,
@@ -757,6 +763,7 @@
 				089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */,
 				85404B43045C16239CA26FB5 /* ColorExtractor.swift in Sources */,
 				FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */,
+				ED42EFBB9D0310947F139082 /* CompactDayRow.swift in Sources */,
 				C6F53A70ADED30A0C697C6C7 /* DayBadge.swift in Sources */,
 				A2BC0036C17B7BB59748D48B /* DayBlock.swift in Sources */,
 				E9FF039B8236CAA8424CC6D6 /* DayGift.swift in Sources */,
@@ -801,6 +808,7 @@
 				049B7CECEE196C6D70AC4FA8 /* CaptureScreen.swift in Sources */,
 				5DC43B42BBA5CE7C8296BDAE /* ColorCaptureIntent.swift in Sources */,
 				38CA87D9341976C98CBA90ED /* ColorExtractor.swift in Sources */,
+				0EE85CE222D9DC39B58B27EE /* CompactDayRow.swift in Sources */,
 				27984D8E5256CDD497E302CA /* DayBadge.swift in Sources */,
 				E6B7D3BF033CC827B367D4F7 /* DayBlock.swift in Sources */,
 				FA88E2179DF699A37AE7FDA4 /* DayGift.swift in Sources */,
