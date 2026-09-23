@@ -323,7 +323,7 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 | 4 | 하루 상세 격자 → 시간축(§3.2) | ✅ `Day/DayMomentsView.swift`, 배치는 `Day/DayTimeline.swift` — 정규화는 `DayGradient.positions` 한 벌 |
 | 5 | 촬영 모서리 둥근 창(§1.9·3.5) | ✅ `Capture/CaptureScreen.swift` — 앱 안·잠금화면 공용 |
 | 6 | 색 고르기(§3.4) · 뷰어(§3.6) · 첫 실행 오버레이(§1.5) | 🟡 색 고르기 ✅ `Day/ShotColorPicker.swift` · 첫 실행 ✅ `App/FirstRunOverlay.swift` · **뷰어 보류** (§6-3 승인 대기 — 제목 「오늘 담은 것」이 지금 동작과 어긋난다) |
-| 7 | 증정 토큰 교체(§3.3) | ⬜ 미착수 |
+| 7 | 증정 토큰 교체(§3.3) | ✅ `Day/BadgeCeremony.swift` — 모션 타이밍은 손대지 않음 |
 
 **설계에서 벗어난 곳 (근거 있음)**
 

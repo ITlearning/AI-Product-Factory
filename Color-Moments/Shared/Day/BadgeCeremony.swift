@@ -28,7 +28,7 @@ public struct BadgeCeremony: View {
 
     public var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Tone.pure.ignoresSafeArea()
 
             GeometryReader { geo in
                 let side = max(geo.size.width, geo.size.height) * 1.15
@@ -48,7 +48,8 @@ public struct BadgeCeremony: View {
             VStack(spacing: 22) {
                 Text(Self.openingLine(for: moments, now: Date()))
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.white.opacity(lit ? 0.75 : 0))
+                    .foregroundStyle(Tone.secondary)
+                    .opacity(lit ? 1 : 0)
                     .offset(y: risen ? 0 : 8)
 
                 ZStack {
@@ -64,22 +65,22 @@ public struct BadgeCeremony: View {
                     if let named = PebbleNaming.name(for: moments) {
                         VStack(spacing: 5) {
                             Text(named.name)
-                                .font(.system(size: 26, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.white)
+                                .font(Face.nameCeremony)
+                                .foregroundStyle(Tone.primary)
 
                             Text(named.line)
-                                .font(.system(size: 13))
-                                .foregroundStyle(.white.opacity(0.62))
+                                .font(Face.lineCeremony)
+                                .foregroundStyle(Tone.secondary)
                         }
                     }
                     Text(dateText)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.42))
+                        .font(Face.caption)
+                        .foregroundStyle(Tone.tertiary)
                     if let span = DayGradient.span(for: moments) {
                         Text("\(DayGradient.timeText(span.from)) – \(DayGradient.timeText(span.to)) · \(moments.count)개")
-                            .font(.system(size: 11, design: .rounded))
+                            .font(Face.caption)
                             .monospacedDigit()
-                            .foregroundStyle(.white.opacity(0.32))
+                            .foregroundStyle(Tone.tertiary)
                     }
                 }
                 .opacity(settled ? 1 : 0)
@@ -91,7 +92,7 @@ public struct BadgeCeremony: View {
                 Button { isPresented = false } label: {
                     Text("닫기")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(Tone.secondary)
                         .padding(.horizontal, 22).padding(.vertical, 10)
                 }
                 .opacity(settled ? 1 : 0)
