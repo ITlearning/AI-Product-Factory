@@ -1,6 +1,6 @@
 # 몽돌 — 담은 뒤 홈으로 · 짧은 하루 시간축 · 쌓인 하루 찾기
 
-상태 **executing** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift` · Tabber 실기기 피드백(IMG_6360·6361)
+상태 **completed** (후속: 스크럽 중 카메라 스와이프 끄기 · 담은 뒤 스크롤 순서) · 2026-09-23 · 브랜치 `feat/mongdol-day-gift` · Tabber 실기기 피드백(IMG_6360·6361)
 
 ## 결정 (Tabber 2026-09-23)
 
