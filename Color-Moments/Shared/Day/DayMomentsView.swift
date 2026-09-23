@@ -49,7 +49,7 @@ public struct DayMomentsView: View {
                         header
                         Spacer().frame(height: 30)
                         timeline(width: max(0, geo.size.width - 56))
-                        if isOpenToday {
+                        if store.canClose(dayKey) {
                             Spacer().frame(height: 40)
                             finishButton
                         }
@@ -110,6 +110,8 @@ public struct DayMomentsView: View {
         .buttonStyle(.plain)
         .confirmationDialog("지금 조약돌을 열까요?", isPresented: $confirmingFinish, titleVisibility: .visible) {
             Button("마무리하기") {
+                // 확인창이 떠 있는 사이 날짜가 넘어갔을 수 있다 — 그때는 닫지 않는다.
+                guard store.canClose(dayKey) else { return }
                 closures.close(dayKey)
                 dismiss()
             }

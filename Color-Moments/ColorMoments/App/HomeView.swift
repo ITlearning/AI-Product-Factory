@@ -12,6 +12,9 @@ struct HomeView: View {
     // HomeShell 에 알약 스크럽 중임을 알린다 — HomeShell 의 카메라 스와이프가 이 동안 자신을 죽인다.
     @Binding var scrubbing: Bool
 
+    // 하루 상세 시트가 닫힌 뒤 HomeShell 이 증정 확인을 트리거하도록 알린다.
+    var onDaySheetDismissed: () -> Void = {}
+
     @State private var opened: OpenedDay?
     @State private var topDayKey: String?
     @State private var scrolling = false
@@ -32,6 +35,9 @@ struct HomeView: View {
     // 오늘 사진이 있고 아직 안 닫혔으면 todayLine 대신 진행 중 블록을 보여준다.
     private var todayInProgress: Bool { !store.today.isEmpty && !store.isFinished(todayKey) }
 
+    // 마무리한 오늘은 목록 맨 위에 보통 블록으로 이미 보이므로 todayLine 을 다시 보이지 않는다.
+    private var todayClosedWithMoments: Bool { !store.today.isEmpty && store.isFinished(todayKey) }
+
     private var compactCutoff: String { HomeNavigation.compactCutoff(today: Date()) }
 
     private var months: [String] { HomeNavigation.months(of: days) }
@@ -47,7 +53,7 @@ struct HomeView: View {
             if pillActive, let label = pillLabel { monthPill(label) }
             if showsSwipeHint { swipeHint }
         }
-        .sheet(item: $opened) { day in
+        .sheet(item: $opened, onDismiss: onDaySheetDismissed) { day in
             DayMomentsView(dayKey: day.id, store: store, closures: closures)
         }
     }
@@ -75,10 +81,13 @@ struct HomeView: View {
                                 .id("top")
                             Spacer().frame(height: 22)
                             if todayInProgress {
+                                // 블록을 그릴 때의 dayKey 를 캡처한다 — 탭 시점에 todayKey 를 다시 읽으면
+                                // 04시를 넘긴 뒤 눌렀을 때 방금 열린 새 날짜가 열려 버린다.
+                                let capturedDayKey = todayKey
                                 todayProgressBlock(width: blockWidth)
                                     .contentShape(Rectangle())
-                                    .onTapGesture { opened = OpenedDay(id: todayKey) }
-                            } else {
+                                    .onTapGesture { opened = OpenedDay(id: capturedDayKey) }
+                            } else if !todayClosedWithMoments {
                                 todayLine
                             }
                             Spacer().frame(height: 38)

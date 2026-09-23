@@ -12,6 +12,8 @@ struct HomeShell: View {
     @State private var focusDay: String?
     @State private var scrubbing = false
     @State private var pendingLibraryFocus = false
+    // 하루 상세 시트가 닫힐 때마다 올린다 — DayGiftPresenter 가 이 변화만 보고 증정을 시도한다.
+    @State private var daySheetDismissedTick = 0
 
     @State private var dragStart: CGFloat = 0
 
@@ -42,7 +44,8 @@ struct HomeShell: View {
                 Tone.pure.ignoresSafeArea()
 
                 HomeView(store: store, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0,
-                         focusDay: $focusDay, closures: closures, scrubbing: $scrubbing)
+                         focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
+                         onDaySheetDismissed: { daySheetDismissedTick += 1 })
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -67,7 +70,7 @@ struct HomeShell: View {
                        value: progress)
         }
         .preferredColorScheme(.dark)
-        .dayGift(store: store, gifts: gifts, closures: closures)
+        .dayGift(store: store, gifts: gifts, closures: closures, dismissedTick: daySheetDismissedTick)
         .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
             guard pendingLibraryFocus else { return }
             pendingLibraryFocus = false
