@@ -43,6 +43,12 @@ public final class DayStore {
         save()
     }
 
+    public func setLabels(_ id: Moment.ID, _ labels: [String]) {
+        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].labels == nil else { return }
+        moments[i].labels = labels
+        save()
+    }
+
     public func recentWordIDs(excluding id: Moment.ID, limit: Int = 14) -> Set<String> {
         let others = moments.filter { $0.id != id && $0.word != nil }
         let ordered: [Moment]
@@ -67,7 +73,12 @@ public final class DayStore {
         guard let data = try? Data(contentsOf: fileURL) else { return }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        moments = (try? decoder.decode([Moment].self, from: data)) ?? []
+        let decoded = (try? decoder.decode([Moment].self, from: data)) ?? []
+        moments = decoded.map { m in
+            var m = m
+            if m.labels == nil { m.word = nil }
+            return m
+        }
     }
 
     private func save() {

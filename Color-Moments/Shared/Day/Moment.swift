@@ -9,6 +9,7 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     public let fileName: String
     public let source: Source
     public var word: PhotoWord?
+    public var labels: [String]?
 
     public enum Source: String, Codable, Sendable {
 
@@ -20,13 +21,14 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     }
 
     public init(id: UUID = UUID(), capturedAt: Date, colorHex: String,
-                fileName: String, source: Source, word: PhotoWord? = nil) {
+                fileName: String, source: Source, word: PhotoWord? = nil, labels: [String]? = nil) {
         self.id = id
         self.capturedAt = capturedAt
         self.colorHex = colorHex
         self.fileName = fileName
         self.source = source
         self.word = word
+        self.labels = labels
     }
 }
 

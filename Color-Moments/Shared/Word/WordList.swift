@@ -4,6 +4,15 @@ public enum TimeBand: String, Codable, Sendable, CaseIterable { case dawn, morni
 public enum Season: String, Codable, Sendable, CaseIterable { case spring, summer, autumn, winter }
 public enum Weather: String, Codable, Sendable, CaseIterable { case clear, cloudy, rain, drizzle, snow, fog, wind }
 
+public extension Weather {
+    static func inferred(from labels: Set<String>) -> Weather? {
+        if labels.contains("snow") { return .snow }
+        if labels.contains("cloudy") { return .cloudy }
+        if labels.contains("blue_sky") { return .clear }
+        return nil
+    }
+}
+
 public struct WordEntry: Codable, Equatable, Sendable {
     public let id: String
     public let word: String
