@@ -17,6 +17,7 @@
 		12C3CD61E7A606425EFD41CA /* PebbleNameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B180428138319F72B026C570 /* PebbleNameTests.swift */; };
 		13113400A994950BF4DBE791 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
 		14B086E929DB0210F2450CFF /* DayMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E880EA384921F9A97C79A87 /* DayMomentsView.swift */; };
+		172DFE11B4A2ABB242240925 /* LibraryImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38C217645C6BE7612CAB2C8 /* LibraryImporter.swift */; };
 		18E772394B2F6112538961DB /* DayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */; };
 		1996A6A10339037B3A5CCC8F /* DayStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D560E148CF707BADEB351E9 /* DayStoreTests.swift */; };
 		1BA230406A06170D47C94E8E /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
@@ -258,6 +259,7 @@
 		F0539FB03BB33151F171D2BD /* HomeShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeShell.swift; sourceTree = "<group>"; };
 		F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "NanumMyeongjo-OFL.txt"; sourceTree = "<group>"; };
 		F1ED0B6B00F288E843C5C783 /* DayBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayBlock.swift; sourceTree = "<group>"; };
+		F38C217645C6BE7612CAB2C8 /* LibraryImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryImporter.swift; sourceTree = "<group>"; };
 		F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimelineTests.swift; sourceTree = "<group>"; };
 		F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotViewer.swift; sourceTree = "<group>"; };
 		F941673D190732D3ADB0055C /* ShotThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotThumbnail.swift; sourceTree = "<group>"; };
@@ -441,6 +443,14 @@
 			path = Word;
 			sourceTree = "<group>";
 		};
+		BDD818AF0CC95296C53EAD23 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				F38C217645C6BE7612CAB2C8 /* LibraryImporter.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
 		C3CD0D033658A44051998F10 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -478,6 +488,7 @@
 				770DB2BE29FFF678EF2949F8 /* Assets.xcassets */,
 				C3CD0D033658A44051998F10 /* App */,
 				1D525796B906EE56730E76C2 /* Capture */,
+				BDD818AF0CC95296C53EAD23 /* Library */,
 			);
 			path = ColorMoments;
 			sourceTree = "<group>";
@@ -747,6 +758,7 @@
 				AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */,
 				2EB93D8ABBF2916AEEE1F2F1 /* HomeView.swift in Sources */,
 				AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */,
+				172DFE11B4A2ABB242240925 /* LibraryImporter.swift in Sources */,
 				923895A999E487D30889239A /* LibrarySections.swift in Sources */,
 				50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */,
 				1BA230406A06170D47C94E8E /* PebbleName.swift in Sources */,
