@@ -8,6 +8,8 @@ struct HomeShell: View {
     @State private var progress: CGFloat = 0
     @State private var dragging = false
     @State private var focusDay: String?
+    @State private var scrubbing = false
+    @State private var pendingLibraryFocus = false
 
     @State private var dragStart: CGFloat = 0
 
@@ -38,7 +40,7 @@ struct HomeShell: View {
                 Tone.pure.ignoresSafeArea()
 
                 HomeView(store: store, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0,
-                         focusDay: $focusDay)
+                         focusDay: $focusDay, scrubbing: $scrubbing)
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -64,15 +66,19 @@ struct HomeShell: View {
         }
         .preferredColorScheme(.dark)
         .dayGift(store: store, gifts: gifts)
-        .fullScreenCover(isPresented: $pickingLibrary) {
+        .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
+            guard pendingLibraryFocus else { return }
+            pendingLibraryFocus = false
+            focusDay = store.moments
+                .filter { $0.addedAt != nil }
+                .max { $0.addedAt! < $1.addedAt! }?
+                .dayKey
+        }) {
             LibraryPickerView(store: store) { n in
                 guard n > 0 else { return }
                 camera?.confirm("담겼어요")
                 progress = 0
-                focusDay = store.moments
-                    .filter { $0.addedAt != nil }
-                    .max { $0.addedAt! < $1.addedAt! }?
-                    .dayKey
+                pendingLibraryFocus = true
             }
         }
         #if DEBUG
@@ -100,6 +106,7 @@ struct HomeShell: View {
     private func swipe(width: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 18)
             .onChanged { v in
+                guard !scrubbing else { return }
                 let dx = v.translation.width, dy = v.translation.height
                 if axis == nil {
 

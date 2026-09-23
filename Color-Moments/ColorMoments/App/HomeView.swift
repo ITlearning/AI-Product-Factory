@@ -7,6 +7,9 @@ struct HomeView: View {
 
     @Binding var focusDay: String?
 
+    // HomeShell 에 알약 스크럽 중임을 알린다 — HomeShell 의 카메라 스와이프가 이 동안 자신을 죽인다.
+    @Binding var scrubbing: Bool
+
     @State private var opened: OpenedDay?
     @State private var topDayKey: String?
     @State private var scrolling = false
@@ -15,7 +18,6 @@ struct HomeView: View {
     @State private var lingering = false
     @State private var lingerTask: Task<Void, Never>?
 
-    @State private var scrubbing = false
     @State private var pillY: CGFloat = 0
     @State private var scrubMonth: String?
 
@@ -113,8 +115,9 @@ struct HomeView: View {
                     }
 
                     // 오른쪽 가장자리 28pt — 스크롤 중이거나 멈춘 직후에만 손가락을 받는다.
-                    // highPriorityGesture: HomeShell 의 좌→우 카메라 스와이프(simultaneousGesture)보다
-                    // 이 세로 끌기가 먼저 판정돼야 오른쪽 끝에서 손을 떼기 전까지 카메라가 안 열린다.
+                    // highPriorityGesture 는 이 Color.clear 안에서만 유효해서 HomeShell 의 좌우 스와이프
+                    // (다른 뷰에 걸린 simultaneousGesture)를 직접 이기지 못한다. 카메라가 같이 안 열리는 건
+                    // scrubbing 을 HomeShell 에 바인딩으로 알려서 그동안 swipe 쪽이 스스로 드래그를 무시하기 때문.
                     Color.clear
                         .frame(width: 28)
                         .contentShape(Rectangle())
