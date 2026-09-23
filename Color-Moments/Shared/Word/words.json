@@ -1,0 +1,376 @@
+{
+ "version": 1,
+ "words": [
+  {
+   "id": "yunseul",
+   "word": "윤슬",
+   "meaning": "햇빛이나 달빛에 비쳐 반짝이는 잔물결",
+   "times": [],
+   "weathers": [
+    "clear"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "neungae",
+   "word": "는개",
+   "meaning": "안개보다 굵고 이슬비보다 가는 비",
+   "times": [],
+   "weathers": [
+    "drizzle",
+    "fog"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "yeoubi",
+   "word": "여우비",
+   "meaning": "볕이 난 날 잠깐 뿌리다 그치는 비",
+   "times": [
+    "morning",
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [
+    "rain",
+    "clear"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "haegeoreum",
+   "word": "해거름",
+   "meaning": "해가 서쪽으로 넘어가는 무렵",
+   "times": [
+    "dusk"
+   ],
+   "weathers": [],
+   "seasons": []
+  },
+  {
+   "id": "gaebapbaragi",
+   "word": "개밥바라기",
+   "meaning": "저녁 서쪽 하늘에 뜨는 금성",
+   "times": [
+    "dusk",
+    "night"
+   ],
+   "weathers": [
+    "clear"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "saetbyeol",
+   "word": "샛별",
+   "meaning": "새벽 동쪽 하늘에 뜨는 금성",
+   "times": [
+    "dawn"
+   ],
+   "weathers": [
+    "clear"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "meondong",
+   "word": "먼동",
+   "meaning": "날이 밝아 올 무렵의 동쪽 하늘",
+   "times": [
+    "dawn"
+   ],
+   "weathers": [],
+   "seasons": []
+  },
+  {
+   "id": "ttanggeomi",
+   "word": "땅거미",
+   "meaning": "해가 진 뒤 어둑해질 무렵",
+   "times": [
+    "dusk"
+   ],
+   "weathers": [],
+   "seasons": []
+  },
+  {
+   "id": "inae",
+   "word": "이내",
+   "meaning": "해 질 무렵 멀리 보이는 푸르스름하고 흐릿한 기운",
+   "times": [
+    "dusk"
+   ],
+   "weathers": [],
+   "seasons": []
+  },
+  {
+   "id": "dalmuri",
+   "word": "달무리",
+   "meaning": "달 언저리에 둥글게 생기는 허연 테",
+   "times": [
+    "night"
+   ],
+   "weathers": [
+    "cloudy",
+    "clear"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "ajirangi",
+   "word": "아지랑이",
+   "meaning": "봄볕에 공기가 아른아른 움직이는 것",
+   "times": [
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [
+    "clear"
+   ],
+   "seasons": [
+    "spring"
+   ]
+  },
+  {
+   "id": "kkotsaemchuwi",
+   "word": "꽃샘추위",
+   "meaning": "봄꽃이 필 무렵 잠깐 드는 추위",
+   "times": [],
+   "weathers": [],
+   "seasons": [
+    "spring"
+   ]
+  },
+  {
+   "id": "garangbi",
+   "word": "가랑비",
+   "meaning": "가늘게 내리는 비",
+   "times": [],
+   "weathers": [
+    "drizzle",
+    "rain"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "boseulbi",
+   "word": "보슬비",
+   "meaning": "바람 없이 가늘고 성기게 내리는 비",
+   "times": [],
+   "weathers": [
+    "drizzle"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "sonagi",
+   "word": "소나기",
+   "meaning": "갑자기 세차게 쏟아지다 그치는 비",
+   "times": [
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [
+    "rain"
+   ],
+   "seasons": [
+    "summer"
+   ]
+  },
+  {
+   "id": "hambaknun",
+   "word": "함박눈",
+   "meaning": "굵고 탐스럽게 내리는 눈",
+   "times": [],
+   "weathers": [
+    "snow"
+   ],
+   "seasons": [
+    "winter"
+   ]
+  },
+  {
+   "id": "jinnunkkaebi",
+   "word": "진눈깨비",
+   "meaning": "비가 섞여 내리는 눈",
+   "times": [],
+   "weathers": [
+    "snow",
+    "rain"
+   ],
+   "seasons": [
+    "winter"
+   ]
+  },
+  {
+   "id": "museori",
+   "word": "무서리",
+   "meaning": "늦가을 처음 내리는 묽은 서리",
+   "times": [
+    "dawn",
+    "morning"
+   ],
+   "weathers": [],
+   "seasons": [
+    "autumn"
+   ]
+  },
+  {
+   "id": "sandeulbaram",
+   "word": "산들바람",
+   "meaning": "시원하고 가볍게 부는 바람",
+   "times": [],
+   "weathers": [
+    "wind",
+    "clear"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "autumn"
+   ]
+  },
+  {
+   "id": "hanuibaram",
+   "word": "하늬바람",
+   "meaning": "서쪽에서 부는 선선한 바람",
+   "times": [],
+   "weathers": [
+    "wind"
+   ],
+   "seasons": [
+    "autumn"
+   ]
+  },
+  {
+   "id": "doenbaram",
+   "word": "된바람",
+   "meaning": "매섭게 부는 북쪽 바람",
+   "times": [],
+   "weathers": [
+    "wind"
+   ],
+   "seasons": [
+    "winter"
+   ]
+  },
+  {
+   "id": "hannat",
+   "word": "한낮",
+   "meaning": "해가 가장 높이 뜬 때",
+   "times": [
+    "noon"
+   ],
+   "weathers": [],
+   "seasons": []
+  },
+  {
+   "id": "haemaji",
+   "word": "해맞이",
+   "meaning": "떠오르는 해를 맞는 일",
+   "times": [
+    "dawn"
+   ],
+   "weathers": [
+    "clear"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "hanbam",
+   "word": "한밤",
+   "meaning": "깊은 밤",
+   "times": [
+    "night"
+   ],
+   "weathers": [],
+   "seasons": []
+  },
+  {
+   "id": "dalmaji",
+   "word": "달맞이",
+   "meaning": "떠오르는 달을 맞는 일",
+   "times": [
+    "dusk",
+    "night"
+   ],
+   "weathers": [
+    "clear"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "mulbora",
+   "word": "물보라",
+   "meaning": "물결이 부딪쳐 흩어지는 잔 물방울",
+   "times": [],
+   "weathers": [
+    "wind"
+   ],
+   "seasons": [
+    "summer"
+   ]
+  },
+  {
+   "id": "biseolgeoji",
+   "word": "비설거지",
+   "meaning": "비가 오려 할 때 젖으면 안 될 것을 치우는 일",
+   "times": [],
+   "weathers": [
+    "rain",
+    "cloudy"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "haeneomi",
+   "word": "해넘이",
+   "meaning": "해가 넘어가는 일",
+   "times": [
+    "dusk"
+   ],
+   "weathers": [
+    "clear"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "byeotbaragi",
+   "word": "볕바라기",
+   "meaning": "볕을 쬐는 일",
+   "times": [
+    "morning",
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [
+    "clear"
+   ],
+   "seasons": [
+    "autumn",
+    "winter",
+    "spring"
+   ]
+  },
+  {
+   "id": "meokjanggureum",
+   "word": "먹장구름",
+   "meaning": "먹빛처럼 짙은 구름",
+   "times": [],
+   "weathers": [
+    "cloudy",
+    "rain"
+   ],
+   "seasons": []
+  },
+  {
+   "id": "chanbarammeori",
+   "word": "찬바람머리",
+   "meaning": "가을에 찬 바람이 불기 시작할 무렵",
+   "times": [],
+   "weathers": [],
+   "seasons": [
+    "autumn"
+   ]
+  }
+ ]
+}
