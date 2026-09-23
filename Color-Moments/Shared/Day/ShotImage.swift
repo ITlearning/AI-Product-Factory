@@ -19,15 +19,19 @@ public enum ShotImage {
     // MARK: - Moment 판 (공개) — assetID 가 있고 assetSource 가 꽂혀 있으면 에셋, 아니면 파일
 
     public static func full(_ m: Moment) -> UIImage? {
-        if let assetID = m.assetID, let source = assetSource {
-            return source.image(assetID: assetID, maxPixel: .greatestFiniteMagnitude)
+        if let assetID = m.assetID, let source = assetSource,
+           let img = source.image(assetID: assetID, maxPixel: .greatestFiniteMagnitude) {
+            return img
         }
+        // 에셋을 못 찾았거나(기기 복원 등으로 assetID 가 어긋남) assetSource 가 아직 안 꽂혔으면
+        // 파일로 한 번 더 시도한다 — fileName 은 옛 기록이거나, 아직 지우지 않은 library-* 잔여 파일일 수 있다.
         return full(m.fileName)
     }
 
     public static func thumbnail(_ m: Moment, maxPixel: CGFloat = 400) -> UIImage? {
-        if let assetID = m.assetID, let source = assetSource {
-            return source.image(assetID: assetID, maxPixel: maxPixel)
+        if let assetID = m.assetID, let source = assetSource,
+           let img = source.image(assetID: assetID, maxPixel: maxPixel) {
+            return img
         }
         return thumbnail(m.fileName, maxPixel: maxPixel)
     }

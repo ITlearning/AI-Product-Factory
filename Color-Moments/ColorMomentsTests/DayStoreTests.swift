@@ -233,7 +233,7 @@ final class DayStoreTests: XCTestCase {
         store.setLabels(m.id, ["sky"])
         store.assignWord(m.id, PhotoWord(wordID: "yunseul", word: "윤슬", meaning: "잔물결"))
 
-        store.adopt(m.id, assetID: "ASSET-1")
+        XCTAssertTrue(store.adopt(m.id, assetID: "ASSET-1"), "처음 입양은 true 를 돌려줘야 한다")
         let adopted = try! XCTUnwrap(store.moments.first { $0.id == m.id })
         XCTAssertEqual(adopted.assetID, "ASSET-1")
         XCTAssertEqual(adopted.fileName, Moment.assetFileName(for: "ASSET-1"), "자리 이름이 규칙대로 지어져야 한다")
@@ -242,9 +242,53 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(adopted.word?.wordID, "yunseul")
         XCTAssertEqual(adopted.capturedAt, m.capturedAt)
 
-        store.adopt(m.id, assetID: "ASSET-2")
+        XCTAssertFalse(store.adopt(m.id, assetID: "ASSET-2"),
+                       "이미 입양된 Moment 의 두 번째 입양은 false 를 돌려줘야 한다 — 호출부가 파일을 지우면 안 된다는 신호")
         XCTAssertEqual(store.moments.first { $0.id == m.id }?.assetID, "ASSET-1",
                        "이미 입양된 Moment 는 두 번째 입양을 무시해야 한다")
+    }
+
+    func testAddReturnsTrueWhenInsertedFalseWhenDuplicate() {
+        let first = moment(date(2026, 9, 22, 12, 0), name: "dup.jpg")
+        XCTAssertTrue(store.add(first), "처음 넣을 때는 true")
+        let duplicate = moment(date(2026, 9, 22, 13, 0), name: "dup.jpg")
+        XCTAssertFalse(store.add(duplicate), "같은 fileName 은 false — 넣지 않았다는 신호")
+        XCTAssertEqual(store.moments.count, 1)
+    }
+
+    func testAddDedupesByOriginalNameEvenAfterFileNameChangedByAdoption() {
+        // 잠금화면 세션이 재전달되는 상황을 흉내낸다: 원본 이름은 같은데(originalName),
+        // 첫 Moment 는 이미 입양돼 fileName 이 자리 이름으로 바뀌어 있다.
+        let original = Moment(capturedAt: date(2026, 9, 22, 12, 0), colorHex: "#112233",
+                              fileName: "shot-100.jpg", source: .locked, originalName: "shot-100.jpg")
+        store.add(original)
+        store.adopt(original.id, assetID: "ASSET-1")
+        XCTAssertEqual(store.moments.first?.fileName, Moment.assetFileName(for: "ASSET-1"),
+                       "입양 뒤 fileName 은 바뀌어야 정상이다(전제 확인)")
+
+        let redelivered = Moment(capturedAt: date(2026, 9, 22, 12, 1), colorHex: "#445566",
+                                 fileName: "shot-100.jpg", source: .locked, originalName: "shot-100.jpg")
+        XCTAssertFalse(store.add(redelivered),
+                       "fileName 만 비교하면 놓친다 — originalName 이 같으면 재전달된 같은 사진으로 봐야 한다")
+        XCTAssertEqual(store.moments.count, 1)
+    }
+
+    func testAdoptPreservesOriginalName() {
+        let m = Moment(capturedAt: date(2026, 9, 22, 12, 0), colorHex: "#112233",
+                       fileName: "shot-1.jpg", source: .locked, originalName: "shot-1.jpg")
+        store.add(m)
+        store.adopt(m.id, assetID: "ASSET-1")
+        XCTAssertEqual(store.moments.first?.originalName, "shot-1.jpg",
+                       "입양이 fileName 을 자리 이름으로 바꿔도 originalName 은 남아야 재전달 중복을 잡는다")
+    }
+
+    func testReadsRecordsWithoutOriginalName() throws {
+        let legacy = """
+        [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC","fileName":"old.jpg","source":"app"}]
+        """
+        try Data(legacy.utf8).write(to: tempFile)
+        let m = try XCTUnwrap(DayStore(fileURL: tempFile).moments.first)
+        XCTAssertNil(m.originalName, "옛 기록엔 originalName 이 없다 — nil 로 읽혀야 한다")
     }
 
     func testRemoveAssetIDsDropsTheDayFromDayKeysWhenEmptied() {

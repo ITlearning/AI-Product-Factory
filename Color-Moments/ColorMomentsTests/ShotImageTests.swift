@@ -101,10 +101,24 @@ final class ShotImageAssetSourceTests: XCTestCase {
         XCTAssertNotNil(ShotImage.thumbnail(m, maxPixel: 100), "assetID 가 없으면 assetSource 가 꽂혀 있어도 파일에서 읽어야 한다")
     }
 
-    func testUnknownAssetIDReturnsNilWithoutFallingBackToFile() {
+    func testUnknownAssetIDWithNoRealFileReturnsNil() {
         ShotImage.assetSource = FakeAssetImageSource(knownIDs: [])
         let m = Moment(capturedAt: Date(), colorHex: "#112233",
                        fileName: Moment.assetFileName(for: "MISSING"), source: .library, assetID: "MISSING")
-        XCTAssertNil(ShotImage.thumbnail(m, maxPixel: 100), "에셋을 못 찾으면 가짜 파일 이름으로 폴백하면 안 된다")
+        XCTAssertNil(ShotImage.thumbnail(m, maxPixel: 100),
+                     "에셋도 못 찾고 그 이름의 파일도 없으면 nil 이어야 한다")
+    }
+
+    func testUnknownAssetIDFallsBackToFileWhenOneExists() throws {
+        ShotImage.assetSource = FakeAssetImageSource(knownIDs: [])
+        let src = try XCTUnwrap(
+            Bundle(for: Self.self).url(forResource: "IMG_2788", withExtension: "jpg", subdirectory: "Fixtures"))
+        let name = "library-\(UUID().uuidString).jpg"
+        try Data(contentsOf: src).write(to: ShotImage.url(name))
+        defer { try? FileManager.default.removeItem(at: ShotImage.url(name)) }
+        let m = Moment(capturedAt: Date(), colorHex: "#112233", fileName: name, source: .library, assetID: "MISSING")
+
+        XCTAssertNotNil(ShotImage.thumbnail(m, maxPixel: 100),
+                        "에셋을 못 찾아도 그 fileName 에 아직 파일이 남아있으면 파일로 폴백해야 한다(기기 복원 등)")
     }
 }

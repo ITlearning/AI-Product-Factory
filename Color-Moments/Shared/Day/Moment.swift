@@ -26,6 +26,9 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     public var place: Place?
     public var addedAt: Date?
     public var batchID: UUID?
+    /// 입양 전 원래 fileName(잠금화면 세션 파일 이름 등). 입양 뒤 fileName 이 자리 이름으로
+    /// 바뀌어도 originalName 은 그대로라 재전달된 같은 사진을 중복 판정할 수 있다.
+    public var originalName: String?
 
     public enum Source: String, Codable, Sendable {
 
@@ -38,7 +41,8 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
 
     public init(id: UUID = UUID(), capturedAt: Date, colorHex: String,
                 fileName: String, source: Source, word: PhotoWord? = nil, labels: [String]? = nil,
-                assetID: String? = nil, place: Place? = nil, addedAt: Date? = nil, batchID: UUID? = nil) {
+                assetID: String? = nil, place: Place? = nil, addedAt: Date? = nil, batchID: UUID? = nil,
+                originalName: String? = nil) {
         self.id = id
         self.capturedAt = capturedAt
         self.colorHex = colorHex
@@ -50,6 +54,7 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
         self.place = place
         self.addedAt = addedAt
         self.batchID = batchID
+        self.originalName = originalName
     }
 }
 

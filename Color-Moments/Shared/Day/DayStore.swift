@@ -30,11 +30,18 @@ public final class DayStore {
         return dayKeys.filter { $0 < today }
     }
 
-    public func add(_ moment: Moment) {
-
-        guard !moments.contains(where: { $0.fileName == moment.fileName }) else { return }
+    /// 실제로 넣었으면 true, 같은 사진이라 무시했으면 false.
+    /// fileName 이 같거나(입양 전 흔한 경우) originalName 이 같으면(입양 뒤 fileName 이 자리
+    /// 이름으로 바뀐 뒤 같은 세션이 재전달된 경우) 중복으로 본다.
+    @discardableResult
+    public func add(_ moment: Moment) -> Bool {
+        guard !moments.contains(where: { existing in
+            existing.fileName == moment.fileName ||
+            (moment.originalName != nil && existing.originalName == moment.originalName)
+        }) else { return false }
         moments.append(moment)
         save()
+        return true
     }
 
     public func assignWord(_ id: Moment.ID, _ word: PhotoWord) {
@@ -66,14 +73,19 @@ public final class DayStore {
 
     public var fileBacked: [Moment] { moments.filter { $0.assetID == nil } }
 
-    public func adopt(_ id: Moment.ID, assetID: String) {
-        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].assetID == nil else { return }
+    /// 실제로 입양(assetID 를 채움)했으면 true. 이미 입양됐거나 없는 id 면 false —
+    /// 호출부(AssetAdopter)는 이 값으로만 로컬 파일을 지울지 판단해야 한다.
+    @discardableResult
+    public func adopt(_ id: Moment.ID, assetID: String) -> Bool {
+        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].assetID == nil else { return false }
         let m = moments[i]
         moments[i] = Moment(id: m.id, capturedAt: m.capturedAt, colorHex: m.colorHex,
                              fileName: Moment.assetFileName(for: assetID), source: m.source,
                              word: m.word, labels: m.labels, assetID: assetID,
-                             place: m.place, addedAt: m.addedAt, batchID: m.batchID)
+                             place: m.place, addedAt: m.addedAt, batchID: m.batchID,
+                             originalName: m.originalName)
         save()
+        return true
     }
 
     public func remove(assetIDs: Set<String>) {

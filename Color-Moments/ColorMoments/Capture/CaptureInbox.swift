@@ -4,6 +4,7 @@ import Observation
 import CoreImage
 import UIKit
 
+@MainActor
 @Observable
 final class CaptureInbox {
 
@@ -30,7 +31,7 @@ final class CaptureInbox {
     func start() {
         guard task == nil else { return }
         note("수신 시작. 기존 sessionContentURLs \(LockedCameraCaptureManager.shared.sessionContentURLs.count)개")
-        task = Task { [weak self] in
+        task = Task { @MainActor [weak self] in
             for await update in LockedCameraCaptureManager.shared.sessionContentUpdates {
                 guard let self else { return }
                 switch update {
@@ -70,6 +71,8 @@ final class CaptureInbox {
         } else {
             files = [url]
         }
+
+        var toAdopt: [Moment] = []
         for f in files {
             let dest = CaptureInbox.shotsDirectory.appendingPathComponent(f.lastPathComponent)
             do {
@@ -78,31 +81,53 @@ final class CaptureInbox {
                 let size = (try? fm.attributesOfItem(atPath: dest.path)[.size] as? Int) ?? 0
                 imported.append(Imported(url: dest, importedAt: Date(), byteCount: size ?? 0))
                 note("들여옴 \(f.lastPathComponent) \(((size ?? 0) / 1024))KB")
-                await record(dest)
+                if let moment = await record(dest) {
+                    toAdopt.append(moment)
+                }
             } catch {
                 note("복사 실패 \(f.lastPathComponent): \(error.localizedDescription)")
             }
         }
+
+        // 복사 + 기록(add)까지 마친 뒤에만 세션 원본을 무효화한다 — 반드시 입양(adopt) 전에 끊는다.
+        // 그래야 다음 앱 실행에서 같은 세션이 재전달돼도(무효화가 실패했거나 타이밍이 겹친 경우)
+        // add 의 fileName/originalName 중복 판정이 입양 시도보다 먼저 걸린다.
         do {
             try await LockedCameraCaptureManager.shared.invalidateSessionContent(at: url)
             note("원본 무효화 완료")
         } catch {
             note("무효화 실패: \(error.localizedDescription)")
         }
+
+        guard let store = dayStore else { return }
+        for moment in toAdopt {
+            await AssetAdopter.adopt(moment, store: store)
+        }
     }
 
-    private func record(_ url: URL) async {
-        guard let store = dayStore else { return }
-        guard let image = CIImage(contentsOf: url) else { note("색 추출 실패 \(url.lastPathComponent)"); return }
-        let hex = ColorExtractor.symbolicColor(for: image).hex
-
+    /// 색 추출 결과로 store.add 를 부른다. 실제로 넣었을 때만(중복이 아닐 때만) Moment 를 돌려준다 —
+    /// 호출부는 이 값이 있을 때만 입양(adopt)을 시도해야 재전달로 인한 이중 저장을 막는다.
+    private func record(_ url: URL) async -> Moment? {
+        guard let store = dayStore else { return nil }
         let name = url.lastPathComponent
+
+        // 색 추출은 CPU 무거운 일이라 메인 액터 밖(백그라운드)에서 돌린다.
+        guard let hex = await Task.detached(priority: .userInitiated) { () -> String? in
+            autoreleasepool {
+                guard let image = CIImage(contentsOf: url) else { return nil }
+                return ColorExtractor.symbolicColor(for: image).hex
+            }
+        }.value else {
+            note("색 추출 실패 \(name)")
+            return nil
+        }
+
         let stamp = name.split(separator: "-").last.flatMap { Double($0.replacingOccurrences(of: ".jpg", with: "")) }
         let capturedAt = stamp.map { Date(timeIntervalSince1970: $0) } ?? Date()
-        let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked)
-        store.add(moment)
+        let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked, originalName: name)
+        let added = store.add(moment)
         note("기록 \(hex) · \(Moment.dayKey(for: capturedAt))")
-        await AssetAdopter.adopt(moment, store: store)
+        return added ? moment : nil
     }
 
     private func note(_ s: String) {
