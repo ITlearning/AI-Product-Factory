@@ -61,7 +61,7 @@ public extension Moment {
 
     private static let calendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = .current
+        cal.timeZone = .autoupdatingCurrent
         return cal
     }()
 
