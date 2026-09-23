@@ -16,12 +16,6 @@ public enum ColorExtractor {
         var saturation: Double { let mx = max(r, g, b), mn = min(r, g, b); return mx <= 0 ? 0 : (mx - mn) / mx }
     }
 
-    public struct Candidate: Sendable {
-        public let color: RGB
-
-        public let weight: Double
-    }
-
     static let darkCut = 0.25
     static let clusterCount = 5
     static let sampleSide = 96
@@ -34,25 +28,6 @@ public enum ColorExtractor {
         let kept = afterDarkCut(sample(image))
         guard !kept.isEmpty else { return RGB(r: 0.5, g: 0.5, b: 0.5) }
         return histogramColors(kept, count: 1).first ?? RGB(r: 0.5, g: 0.5, b: 0.5)
-    }
-
-    public static func candidates(for image: CIImage, count: Int = 5) -> [Candidate] {
-        let kept = afterDarkCut(sample(image))
-        guard !kept.isEmpty else { return [] }
-        return histogramColors(kept, count: count, wantWeights: true).enumerated().map { i, c in
-            Candidate(color: c, weight: lastWeights.indices.contains(i) ? lastWeights[i] : 0)
-        }
-    }
-
-    public static func color(in image: CIImage, atNormalized point: CGPoint) -> RGB {
-        let e = image.extent
-        let side = min(e.width, e.height) * 0.04
-        let cx = e.origin.x + e.width * point.x
-
-        let cy = e.origin.y + e.height * (1 - point.y)
-        let rect = CGRect(x: cx - side / 2, y: cy - side / 2, width: side, height: side).intersection(e)
-        guard !rect.isNull, rect.width >= 1, rect.height >= 1 else { return symbolicColor(for: image) }
-        return average(image, in: rect)
     }
 
     static func afterDarkCut(_ px: [RGB]) -> [RGB] {
@@ -78,35 +53,20 @@ public enum ColorExtractor {
         }
     }
 
-    static func average(_ image: CIImage, in rect: CGRect) -> RGB {
-        guard let f = CIFilter(name: "CIAreaAverage") else { return RGB(r: 0.5, g: 0.5, b: 0.5) }
-        f.setValue(image, forKey: kCIInputImageKey)
-        f.setValue(CIVector(cgRect: rect), forKey: "inputExtent")
-        guard let out = f.outputImage else { return RGB(r: 0.5, g: 0.5, b: 0.5) }
-        var px = [UInt8](repeating: 0, count: 4)
-        context.render(out, toBitmap: &px, rowBytes: 4,
-                       bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
-                       format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
-        return RGB(r: Double(px[0]) / 255, g: Double(px[1]) / 255, b: Double(px[2]) / 255)
-    }
-
     static let levels = 12
     static let neighborRadius = 1
-    nonisolated(unsafe) private static var lastWeights: [Double] = []
 
-    static func histogramColors(_ px: [RGB], count: Int, wantWeights: Bool = false) -> [RGB] {
+    static func histogramColors(_ px: [RGB], count: Int) -> [RGB] {
         guard !px.isEmpty, count > 0 else { return [] }
         let L = levels, R = neighborRadius
         func bin(_ p: RGB) -> (Int, Int, Int) {
             (min(L - 1, Int(p.r * Double(L))), min(L - 1, Int(p.g * Double(L))), min(L - 1, Int(p.b * Double(L))))
         }
         var w = [Double](repeating: 0, count: L * L * L)
-        var total = 0.0
         for p in px {
             let (r, g, b) = bin(p)
             let k = 0.35 + p.saturation
             w[(r * L + g) * L + b] += k
-            total += k
         }
         var scored: [(idx: Int, score: Double)] = []
         scored.reserveCapacity(L * L * L)
@@ -123,7 +83,6 @@ public enum ColorExtractor {
         scored.sort { $0.score != $1.score ? $0.score > $1.score : $0.idx < $1.idx }
 
         var picked: [RGB] = []
-        var weights: [Double] = []
         var used = Set<Int>()
         for cand in scored {
             guard picked.count < count else { break }
@@ -139,9 +98,7 @@ public enum ColorExtractor {
             }
             guard n > 0 else { continue }
             picked.append(RGB(r: sr / n, g: sg / n, b: sb / n))
-            weights.append(total > 0 ? n / total : 0)
         }
-        if wantWeights { lastWeights = weights }
         return picked
     }
 }

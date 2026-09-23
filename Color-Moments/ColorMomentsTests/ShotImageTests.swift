@@ -5,52 +5,6 @@ import XCTest
 
 final class ShotImageTests: XCTestCase {
 
-    private func halfRedHalfBlue() throws -> CGImage {
-        let w = 100, h = 50
-        let ctx = try XCTUnwrap(CGContext(
-            data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-        ctx.setFillColor(red: 1, green: 0, blue: 0, alpha: 1)
-        ctx.fill(CGRect(x: 0, y: 0, width: w / 2, height: h))
-        ctx.setFillColor(red: 0, green: 0, blue: 1, alpha: 1)
-        ctx.fill(CGRect(x: w / 2, y: 0, width: w / 2, height: h))
-        return try XCTUnwrap(ctx.makeImage())
-    }
-
-    private func isRed(_ c: ColorExtractor.RGB?) -> Bool {
-        guard let c else { return false }
-        return c.r > 0.8 && c.b < 0.2
-    }
-    private func isBlue(_ c: ColorExtractor.RGB?) -> Bool {
-        guard let c else { return false }
-        return c.b > 0.8 && c.r < 0.2
-    }
-
-    func testUprightImageSamplesLeftAndRight() throws {
-        let img = UIImage(cgImage: try halfRedHalfBlue(), scale: 1, orientation: .up)
-        XCTAssertTrue(isRed(ShotImage.color(in: img, atNormalized: CGPoint(x: 0.25, y: 0.5))))
-        XCTAssertTrue(isBlue(ShotImage.color(in: img, atNormalized: CGPoint(x: 0.75, y: 0.5))))
-    }
-
-    func testPortraitImageSamplesTopAndBottom() throws {
-        let img = UIImage(cgImage: try halfRedHalfBlue(), scale: 1, orientation: .right)
-        XCTAssertEqual(img.size, CGSize(width: 50, height: 100), "세로로 보이는 크기가 아니다")
-
-        let top = ShotImage.color(in: img, atNormalized: CGPoint(x: 0.5, y: 0.25))
-        let bottom = ShotImage.color(in: img, atNormalized: CGPoint(x: 0.5, y: 0.75))
-        XCTAssertTrue(isRed(top), "화면 위쪽을 눌렀는데 빨강이 아니다 — EXIF 방향이 안 먹었다")
-        XCTAssertTrue(isBlue(bottom), "화면 아래쪽을 눌렀는데 파랑이 아니다 — EXIF 방향이 안 먹었다")
-    }
-
-    func testTheOldOrientationBlindWayWasActuallyWrong() throws {
-        let img = UIImage(cgImage: try halfRedHalfBlue(), scale: 1, orientation: .right)
-        let blind = CIImage(image: img)
-        let wrong = ColorExtractor.color(in: try XCTUnwrap(blind),
-                                         atNormalized: CGPoint(x: 0.5, y: 0.25))
-        XCTAssertFalse(isRed(wrong), "방향을 무시해도 같은 답이 나온다 — 이 버그는 재현되지 않는다")
-    }
-
     func testThumbnailIsOrientedAndSmall() throws {
         let src = try XCTUnwrap(
             Bundle(for: Self.self).url(forResource: "IMG_5005", withExtension: "jpg", subdirectory: "Fixtures"))

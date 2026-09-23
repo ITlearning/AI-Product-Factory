@@ -9,8 +9,6 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     public let fileName: String
     public let source: Source
 
-    public var colorWasChosen: Bool
-
     public enum Source: String, Codable, Sendable {
 
         case app
@@ -21,13 +19,12 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     }
 
     public init(id: UUID = UUID(), capturedAt: Date, colorHex: String,
-                fileName: String, source: Source, colorWasChosen: Bool = false) {
+                fileName: String, source: Source) {
         self.id = id
         self.capturedAt = capturedAt
         self.colorHex = colorHex
         self.fileName = fileName
         self.source = source
-        self.colorWasChosen = colorWasChosen
     }
 }
 

@@ -63,8 +63,6 @@ public enum Shape2 {
     public static let photoWindow: CGFloat = 18
     public static let cameraWindow: CGFloat = 22
     public static let pill: CGFloat = 100
-    public static let swatchCandidate: CGFloat = 9
-    public static let swatchCurrent: CGFloat = 11
 
     public static let pebbleRatio: CGFloat = 0.70
 

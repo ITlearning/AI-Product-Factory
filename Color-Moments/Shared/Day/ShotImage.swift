@@ -46,33 +46,4 @@ public enum ShotImage {
         guard let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary) else { return nil }
         return UIImage(cgImage: cg)
     }
-
-    public static func color(in image: UIImage, atNormalized point: CGPoint) -> ColorExtractor.RGB? {
-        guard let oriented = orientedCIImage(image) else { return nil }
-        return ColorExtractor.color(in: oriented, atNormalized: point)
-    }
-
-    public static func candidates(in image: UIImage, count: Int = 5) -> [String] {
-        guard let oriented = orientedCIImage(image) else { return [] }
-        return ColorExtractor.candidates(for: oriented, count: count).map(\.color.hex)
-    }
-
-    static func orientedCIImage(_ image: UIImage) -> CIImage? {
-        guard let cg = image.cgImage else { return nil }
-        return CIImage(cgImage: cg).oriented(exifOrientation(image.imageOrientation))
-    }
-
-    static func exifOrientation(_ o: UIImage.Orientation) -> CGImagePropertyOrientation {
-        switch o {
-        case .up: .up
-        case .down: .down
-        case .left: .left
-        case .right: .right
-        case .upMirrored: .upMirrored
-        case .downMirrored: .downMirrored
-        case .leftMirrored: .leftMirrored
-        case .rightMirrored: .rightMirrored
-        @unknown default: .up
-        }
-    }
 }

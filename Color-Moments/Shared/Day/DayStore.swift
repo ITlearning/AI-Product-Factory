@@ -1,4 +1,3 @@
-import CoreImage
 import Foundation
 import Observation
 
@@ -35,26 +34,6 @@ public final class DayStore {
 
         guard !moments.contains(where: { $0.fileName == moment.fileName }) else { return }
         moments.append(moment)
-        save()
-    }
-
-    public func updateColor(_ id: Moment.ID, to hex: String) {
-        guard let i = moments.firstIndex(where: { $0.id == id }) else { return }
-        let old = moments[i]
-        moments[i] = Moment(id: old.id, capturedAt: old.capturedAt, colorHex: hex,
-                            fileName: old.fileName, source: old.source, colorWasChosen: true)
-        save()
-    }
-
-    public func revertColor(_ id: Moment.ID) {
-        guard let i = moments.firstIndex(where: { $0.id == id }) else { return }
-        let old = moments[i]
-        let url = ShotStore.directory.appendingPathComponent(old.fileName)
-        guard let data = try? Data(contentsOf: url),
-              let image = CIImage(data: data) else { return }
-        let hex = ColorExtractor.symbolicColor(for: image).hex
-        moments[i] = Moment(id: old.id, capturedAt: old.capturedAt, colorHex: hex,
-                            fileName: old.fileName, source: old.source, colorWasChosen: false)
         save()
     }
 

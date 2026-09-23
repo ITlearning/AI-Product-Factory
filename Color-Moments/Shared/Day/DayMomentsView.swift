@@ -5,7 +5,7 @@ public struct DayMomentsView: View {
     private let dayKey: String
     private let store: DayStore
     @Environment(\.dismiss) private var dismiss
-    @State private var editing: Moment?
+    @State private var viewing: Moment?
 
     private static let axisHeight: CGFloat = 360
     private static let photo = CGSize(width: 190, height: 127)
@@ -40,9 +40,6 @@ public struct DayMomentsView: View {
                         header
                         Spacer().frame(height: 30)
                         timeline(width: max(0, geo.size.width - 56))
-                        Spacer().frame(height: 28)
-                        Text("사진을 눌러 그 순간의 색을 고를 수 있어요.")
-                            .font(Face.guide).foregroundStyle(Tone.tertiary)
                         Spacer().frame(height: 40)
                     }
                     .padding(.horizontal, 28)
@@ -52,14 +49,7 @@ public struct DayMomentsView: View {
             }
         }
         .presentationDragIndicator(.hidden)
-        .sheet(item: $editing) { m in
-            // 되돌린 자동 색은 스토어가 새로 뽑는다. 열 때 찍어 둔 m 을 넘기면 옛 색이 남는다.
-            ShotColorPicker(
-                moment: moments.first { $0.id == m.id } ?? m,
-                onPick: { store.updateColor(m.id, to: $0) },
-                onRevert: { store.revertColor(m.id) }
-            )
-        }
+        .fullScreenCover(item: $viewing) { DayPhotoView(moment: $0) }
     }
 
     private var closeButton: some View {
@@ -117,7 +107,7 @@ public struct DayMomentsView: View {
                     .offset(x: bandCenter - Self.tick / 2, y: p.y - Self.tick / 2)
                     .zIndex(Double(placements.count + i))
 
-                Button { editing = p.moment } label: { photoCard(p.moment) }
+                Button { viewing = p.moment } label: { photoCard(p.moment) }
                     .buttonStyle(.plain)
                     .offset(x: Self.photoX + CGFloat(p.shift) * step, y: p.y - Self.tick / 2)
                     .zIndex(Double(i))

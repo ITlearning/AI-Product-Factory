@@ -70,13 +70,14 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(reopened.moments.first?.colorHex, "#AABBCC")
     }
 
-    func testColorCorrectionMarksChosen() {
-        let m = moment(date(2026, 9, 22, 12, 0), "#111111", name: "fix.jpg")
-        store.add(m)
-        store.updateColor(m.id, to: "#F0A896")
-        XCTAssertEqual(store.moments.first?.colorHex, "#F0A896")
-        XCTAssertEqual(store.moments.first?.colorWasChosen, true)
-        XCTAssertEqual(store.moments.first?.capturedAt, m.capturedAt, "시각은 안 바뀌어야 한다")
+    func testReadsRecordsSavedWhileColorPickingExisted() throws {
+        let legacy = """
+        [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#F0A896",
+          "fileName":"old.jpg","source":"app","colorWasChosen":true}]
+        """
+        try Data(legacy.utf8).write(to: tempFile)
+        let reopened = DayStore(fileURL: tempFile)
+        XCTAssertEqual(reopened.moments.first?.colorHex, "#F0A896", "색 고르기 시절 기록이 사라지면 그날 조약돌이 없어진다")
     }
 
     func testRemoveAllEmptiesTheStore() {
