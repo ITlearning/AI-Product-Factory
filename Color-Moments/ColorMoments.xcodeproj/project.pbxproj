@@ -85,6 +85,7 @@
 		76AADA98FD5F2F767CDE36DA /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		7A5576FFA328861B7F1FE6AE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 770DB2BE29FFF678EF2949F8 /* Assets.xcassets */; };
 		7B6207CFDF0718F8241F4FB7 /* DayPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */; };
+		7D72341D340848C9972CBF03 /* SyncRecordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */; };
 		7DF8236D94540E4E4AC11388 /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		8015ACB59A07B863B0AD5348 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
 		839143816019CFB52E8335B2 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B689D73DBFBD16C7B857686 /* Tokens.swift */; };
@@ -160,6 +161,7 @@
 		F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
 		FA88E2179DF699A37AE7FDA4 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
 		FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */; };
+		FCEE317A7C230C41A6485A20 /* SyncRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A09F696F5607382E065E46 /* SyncRecords.swift */; };
 		FD5B3C99974A94C925D4C1F0 /* BadgeCeremony.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */; };
 /* End PBXBuildFile section */
 
@@ -225,6 +227,7 @@
 		160019A37882F81114DE5A27 /* HomeNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigationTests.swift; sourceTree = "<group>"; };
 		1782AA90AE018A879A1B0885 /* HomeNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigation.swift; sourceTree = "<group>"; };
 		19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySections.swift; sourceTree = "<group>"; };
+		20A09F696F5607382E065E46 /* SyncRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecords.swift; sourceTree = "<group>"; };
 		219FB2ED514DBE95A9AFAB53 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fixtures; path = ColorMomentsTests/Fixtures; sourceTree = SOURCE_ROOT; };
 		2407ADFA49967AECDDB4BDC8 /* FirstRunOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunOverlay.swift; sourceTree = "<group>"; };
 		2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordPickerTests.swift; sourceTree = "<group>"; };
@@ -241,6 +244,7 @@
 		3E880EA384921F9A97C79A87 /* DayMomentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayMomentsView.swift; sourceTree = "<group>"; };
 		41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMomentsApp.swift; sourceTree = "<group>"; };
 		431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Subset.ttf"; sourceTree = "<group>"; };
+		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
 		5AADBCB38DB09CEFBA41590A /* ColorMoments.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ColorMoments.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B689D73DBFBD16C7B857686 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAssets.swift; sourceTree = "<group>"; };
@@ -391,6 +395,7 @@
 				BB99387BD580BB034A37204A /* PhotoLabelerTests.swift */,
 				69825FD346FEC03526525AE5 /* SheenTests.swift */,
 				75C5D16CF875C68C5FD50755 /* ShotImageTests.swift */,
+				453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */,
 				C8272505EF16B075931B8224 /* WordListTests.swift */,
 				2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */,
 			);
@@ -433,6 +438,14 @@
 				78C8D64FF056CFF1EAA9F88F /* ViewFinder.swift */,
 			);
 			path = ColorMomentsCapture;
+			sourceTree = "<group>";
+		};
+		9C03CCFAB58103589012E7FB /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				20A09F696F5607382E065E46 /* SyncRecords.swift */,
+			);
+			path = Sync;
 			sourceTree = "<group>";
 		};
 		A367C7D09D3B5E69C8A79847 /* Design */ = {
@@ -530,6 +543,7 @@
 				C3CD0D033658A44051998F10 /* App */,
 				1D525796B906EE56730E76C2 /* Capture */,
 				BDD818AF0CC95296C53EAD23 /* Library */,
+				9C03CCFAB58103589012E7FB /* Sync */,
 			);
 			path = ColorMoments;
 			sourceTree = "<group>";
@@ -777,6 +791,7 @@
 				94A5AAD5168196D819A1E2B1 /* PhotoLabelerTests.swift in Sources */,
 				72CB8811A9F1756D47042377 /* SheenTests.swift in Sources */,
 				27C5EAD62A7776F63166FB51 /* ShotImageTests.swift in Sources */,
+				7D72341D340848C9972CBF03 /* SyncRecordsTests.swift in Sources */,
 				8F8B15F8CCD32B424B99892B /* WordListTests.swift in Sources */,
 				7010D21E2960DAB1D241EA53 /* WordPickerTests.swift in Sources */,
 			);
@@ -826,6 +841,7 @@
 				9EB023C629B1882BE6E7995C /* ShotThumbnail.swift in Sources */,
 				866DCC55F52911A6A8BAC243 /* ShotViewer.swift in Sources */,
 				463BB08804C6196DA3590041 /* SpikeView.swift in Sources */,
+				FCEE317A7C230C41A6485A20 /* SyncRecords.swift in Sources */,
 				839143816019CFB52E8335B2 /* Tokens.swift in Sources */,
 				33F453AFE9E4B766D55AC703 /* WordList.swift in Sources */,
 				9A77BBAEF56777997F97B086 /* WordPicker.swift in Sources */,
