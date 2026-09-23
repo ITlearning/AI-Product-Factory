@@ -30,7 +30,7 @@ struct HomeView: View {
     @ViewBuilder
     private var backdrop: some View {
         if let key = topDayKey ?? days.first {
-            DayGradientView(moments: store.moments(on: key), axis: .vertical)
+            DayGradientView(moments: store.pebbleMoments(on: key), axis: .vertical)
                 .blur(radius: 60)
                 .opacity(0.16)
                 .ignoresSafeArea()
@@ -55,7 +55,7 @@ struct HomeView: View {
                         LazyVStack(alignment: .leading, spacing: 64) {
                             ForEach(days, id: \.self) { key in
 
-                                DayBlock(moments: store.moments(on: key), width: blockWidth)
+                                DayBlock(moments: store.moments(on: key), pebbleMoments: store.pebbleMoments(on: key), width: blockWidth)
                                     .contentShape(Rectangle())
                                     .onTapGesture { opened = OpenedDay(id: key) }
 

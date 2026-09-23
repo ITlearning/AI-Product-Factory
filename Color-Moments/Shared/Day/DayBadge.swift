@@ -130,7 +130,7 @@ public struct BadgeRowView: View {
             HStack(alignment: .top, spacing: 14) {
                 ForEach(store.finishedDayKeys, id: \.self) { key in
                     Button { opened = OpenedDay(id: key) } label: {
-                        DayBadgeView(moments: store.moments(on: key), size: 84)
+                        DayBadgeView(moments: store.pebbleMoments(on: key), size: 84)
                     }
                     .buttonStyle(.plain)
                 }

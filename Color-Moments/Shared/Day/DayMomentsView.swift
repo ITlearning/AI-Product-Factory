@@ -23,11 +23,12 @@ public struct DayMomentsView: View {
     }
 
     private var moments: [Moment] { store.moments(on: dayKey) }
+    private var pebbleMoments: [Moment] { store.pebbleMoments(on: dayKey) }
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
             Tone.base.ignoresSafeArea()
-            DayGradientView(moments: moments, axis: .vertical)
+            DayGradientView(moments: pebbleMoments, axis: .vertical)
                 .blur(radius: 60)
                 .opacity(0.26)
                 .ignoresSafeArea()
@@ -70,9 +71,9 @@ public struct DayMomentsView: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 20) {
-            PebbleView(moments: moments, height: 130)
+            PebbleView(moments: pebbleMoments, height: 130)
             VStack(alignment: .leading, spacing: 8) {
-                if let named = PebbleNaming.name(for: moments) {
+                if let named = PebbleNaming.name(for: pebbleMoments) {
                     Text(named.name).font(Face.nameDay).foregroundStyle(Tone.primary)
                     Text(named.line).font(Face.line).foregroundStyle(Tone.secondary)
                 }

@@ -3,6 +3,7 @@ import UIKit
 
 public struct DayBlock: View {
     private let moments: [Moment]
+    private let pebbleMoments: [Moment]
 
     private let width: CGFloat
 
@@ -18,8 +19,9 @@ public struct DayBlock: View {
     @State private var flying: Moment?
     @State private var flyX: CGFloat = 0
 
-    public init(moments: [Moment], width: CGFloat) {
+    public init(moments: [Moment], pebbleMoments: [Moment]? = nil, width: CGFloat) {
         self.moments = moments
+        self.pebbleMoments = pebbleMoments ?? moments
         self.width = width
     }
 
@@ -50,7 +52,7 @@ public struct DayBlock: View {
         VStack(alignment: .leading, spacing: 0) {
             stack
             Spacer().frame(height: 26 * k)
-            if let named = PebbleNaming.name(for: moments) {
+            if let named = PebbleNaming.name(for: pebbleMoments) {
                 Text(named.name).font(Face.nameHome).foregroundStyle(Tone.primary)
                 Spacer().frame(height: 9 * k)
             }
@@ -124,7 +126,7 @@ public struct DayBlock: View {
                     .zIndex(4)
             }
 
-            PebbleView(moments: moments, height: 84 * k, onPhoto: true)
+            PebbleView(moments: pebbleMoments, height: 84 * k, onPhoto: true)
                 .offset(x: 268 * k, y: 322 * k)
                 .zIndex(5)
         }

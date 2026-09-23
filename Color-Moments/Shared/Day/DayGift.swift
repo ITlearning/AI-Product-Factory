@@ -25,7 +25,7 @@ struct DayGiftPresenter: ViewModifier {
             }
             .fullScreenCover(item: $pending) { day in
                 BadgeCeremony(
-                    moments: store.moments(on: day.id),
+                    moments: store.pebbleMoments(on: day.id),
 
                     isPresented: Binding(get: { pending != nil },
                                          set: { shown in
