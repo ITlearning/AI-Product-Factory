@@ -96,14 +96,33 @@ final class DayStoreTests: XCTestCase {
                        "한 번 붙은 단어가 바뀌면 같은 사진이 뽑기가 된다")
     }
 
-    func testRecentWordIDsAreNewestFirstAndSkipTheAskingPhoto() {
+    func testRecentWordIDsMatchNewestFirstWhenAskingPhotoIsTheLatest() {
         for i in 0..<5 {
             let m = moment(date(2026, 9, 22, 8 + i, 0), name: "r\(i).jpg")
             store.add(m)
             store.assignWord(m.id, PhotoWord(wordID: "w\(i)", word: "w", meaning: "m"))
         }
         let asking = store.moments.first { $0.fileName == "r4.jpg" }!
-        XCTAssertEqual(store.recentWordIDs(excluding: asking.id, limit: 2), ["w3", "w2"])
+        XCTAssertEqual(store.recentWordIDs(excluding: asking.id, limit: 2), ["w3", "w2"],
+                       "묻는 사진이 가장 최신이면 촬영 시각이 가까운 순 = 최신순과 같다")
+    }
+
+    func testRecentWordIDsPrefersSameDayPhotosOverNewerOnes() {
+        for i in 0..<20 {
+            let m = moment(date(2026, 9, 22, 8, 0).addingTimeInterval(Double(i) * 60), name: "new\(i).jpg")
+            store.add(m)
+            store.assignWord(m.id, PhotoWord(wordID: "new\(i)", word: "w", meaning: "m"))
+        }
+        let sibling = moment(date(2026, 8, 1, 12, 5), name: "sibling.jpg")
+        store.add(sibling)
+        store.assignWord(sibling.id, PhotoWord(wordID: "sibling", word: "w", meaning: "m"))
+
+        let asking = moment(date(2026, 8, 1, 12, 0), name: "asking.jpg")
+        store.add(asking)
+
+        let ids = store.recentWordIDs(excluding: asking.id, limit: 14)
+        XCTAssertTrue(ids.contains("sibling"),
+                      "옛날 하루의 사진에 물으면 최신 20장보다 같은 날 사진의 단어가 먼저 들어가야 한다")
     }
 
     func testReadsRecordsSavedBeforeWordsExisted() throws {

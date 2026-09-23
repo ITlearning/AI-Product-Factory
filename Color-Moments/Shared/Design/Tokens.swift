@@ -49,6 +49,9 @@ public enum Face {
     public static let nameHome = serif(23)
     public static let word = serif(30)
 
+    public static let wordMeaning = Font.system(size: 11)
+    public static let wordMeta = Font.system(size: 10.5, design: .rounded)
+
     public static let lineCeremony = Font.system(size: 16)
     public static let line = Font.system(size: 13)
     public static let today = Font.system(size: 13)

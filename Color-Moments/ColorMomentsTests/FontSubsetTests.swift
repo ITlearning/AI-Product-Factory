@@ -45,7 +45,7 @@ final class FontSubsetTests: XCTestCase {
         XCTAssertGreaterThan(needed.count, 20, "색 구간을 훑었는데 이름이 거의 안 나왔다 — 이 테스트가 헛돌고 있다")
     }
 
-    func testWordListIsReallyCovered() throws {
+    func testWordListLoads() throws {
         let words = try XCTUnwrap(BundledWordSource.load()?.words)
         XCTAssertGreaterThan(words.count, 0, "단어 목록이 비어 이 검사가 헛돈다")
     }

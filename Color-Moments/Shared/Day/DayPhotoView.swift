@@ -7,6 +7,7 @@ struct DayPhotoView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var image: UIImage?
+    @State private var dismissing = false
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
@@ -25,7 +26,7 @@ struct DayPhotoView: View {
                 }
                 .scrollIndicators(.hidden)
                 .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, y in
-                    if y < -80 { dismiss() }
+                    if y < -80, !dismissing { dismissing = true; dismiss() }
                 }
                 .task(id: moment.fileName) { await load(moment) }
                 .task(id: moment.id) { await assignWordIfNeeded(moment) }
@@ -65,13 +66,13 @@ struct DayPhotoView: View {
             if let w = m.word {
                 Text(w.word).font(Face.word).foregroundStyle(Tone.primary)
                 Spacer().frame(height: 4)
-                Text(w.meaning).font(.system(size: 11)).foregroundStyle(Tone.tertiary)
+                Text(w.meaning).font(Face.wordMeaning).foregroundStyle(Tone.tertiary)
                 Spacer().frame(height: 12)
             }
             HStack(spacing: 6) {
                 Circle().fill(Color(hex: m.colorHex)).frame(width: 9, height: 9)
                 Text(DayGradient.timeText(m.capturedAt))
-                    .font(.system(size: 10.5, design: .rounded)).monospacedDigit()
+                    .font(Face.wordMeta).monospacedDigit()
                     .foregroundStyle(Tone.tertiary)
             }
         }

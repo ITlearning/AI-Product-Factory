@@ -44,11 +44,14 @@ public final class DayStore {
     }
 
     public func recentWordIDs(excluding id: Moment.ID, limit: Int = 14) -> Set<String> {
-        Set(moments
-            .filter { $0.id != id && $0.word != nil }
-            .sorted { $0.capturedAt > $1.capturedAt }
-            .prefix(limit)
-            .compactMap { $0.word?.wordID })
+        let others = moments.filter { $0.id != id && $0.word != nil }
+        let ordered: [Moment]
+        if let at = moments.first(where: { $0.id == id })?.capturedAt {
+            ordered = others.sorted { abs($0.capturedAt.timeIntervalSince(at)) < abs($1.capturedAt.timeIntervalSince(at)) }
+        } else {
+            ordered = others.sorted { $0.capturedAt > $1.capturedAt }
+        }
+        return Set(ordered.prefix(limit).compactMap { $0.word?.wordID })
     }
 
     public func removeAll() {
