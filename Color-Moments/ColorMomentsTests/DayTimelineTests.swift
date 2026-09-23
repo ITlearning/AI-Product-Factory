@@ -47,4 +47,17 @@ final class DayTimelineTests: XCTestCase {
         XCTAssertEqual(p.first?.y, 0)
         XCTAssertEqual(p.first?.showsTime, true)
     }
+
+    func testAxisHeightIsZeroForOneOrNoPhotos() {
+        XCTAssertEqual(DayTimeline.axisHeight(count: 0, photoHeight: 127), 0)
+        XCTAssertEqual(DayTimeline.axisHeight(count: 1, photoHeight: 127), 0)
+    }
+
+    func testAxisHeightScalesWithPhotoCount() {
+        XCTAssertEqual(DayTimeline.axisHeight(count: 2, photoHeight: 127), 190.5)
+    }
+
+    func testAxisHeightCapsAtMaxHeight() {
+        XCTAssertEqual(DayTimeline.axisHeight(count: 10, photoHeight: 127), 360)
+    }
 }

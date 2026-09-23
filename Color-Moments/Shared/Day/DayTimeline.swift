@@ -9,6 +9,11 @@ public enum DayTimeline {
         public let showsTime: Bool
     }
 
+    public static func axisHeight(count: Int, photoHeight: CGFloat, maxHeight: CGFloat = 360) -> CGFloat {
+        guard count > 1 else { return 0 }
+        return min(maxHeight, photoHeight * 1.5 * CGFloat(count - 1))
+    }
+
     public static func place(_ moments: [Moment], height: CGFloat, photoHeight: CGFloat,
                              maxShift: Int = 3, minLabelGap: CGFloat = 14) -> [Placement] {
         var out: [Placement] = []

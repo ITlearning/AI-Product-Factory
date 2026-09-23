@@ -8,7 +8,6 @@ public struct DayMomentsView: View {
     @State private var viewing: Moment?
     @Namespace private var zoom
 
-    private static let axisHeight: CGFloat = 360
     private static let photo = CGSize(width: 190, height: 127)
     private static let labelWidth: CGFloat = 36
     private static let bandX: CGFloat = 44
@@ -85,15 +84,18 @@ public struct DayMomentsView: View {
     private func timeline(width: CGFloat) -> some View {
         let room = width - Self.photoX - Self.photo.width
         let step = max(0, min(Self.shiftStep, room / CGFloat(Self.maxShift)))
-        let placements = DayTimeline.place(moments, height: Self.axisHeight,
+        let axisHeight = DayTimeline.axisHeight(count: moments.count, photoHeight: Self.photo.height)
+        let placements = DayTimeline.place(moments, height: axisHeight,
                                            photoHeight: Self.photo.height, maxShift: Self.maxShift)
         let bandCenter = Self.bandX + 1.5
 
         return ZStack(alignment: .topLeading) {
-            DayGradientView(moments: moments, axis: .vertical)
-                .frame(width: 3, height: Self.axisHeight)
-                .clipShape(Capsule())
-                .offset(x: Self.bandX)
+            if axisHeight > 0 {
+                DayGradientView(moments: moments, axis: .vertical)
+                    .frame(width: 3, height: axisHeight)
+                    .clipShape(Capsule())
+                    .offset(x: Self.bandX)
+            }
 
             ForEach(Array(placements.enumerated()), id: \.element.moment.id) { i, p in
                 if p.showsTime {
@@ -120,7 +122,7 @@ public struct DayMomentsView: View {
                     .zIndex(Double(i))
             }
         }
-        .frame(width: width, height: Self.axisHeight + Self.photo.height, alignment: .topLeading)
+        .frame(width: width, height: axisHeight + Self.photo.height, alignment: .topLeading)
     }
 
     private func photoCard(_ m: Moment) -> some View {
