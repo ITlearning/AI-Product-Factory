@@ -49,7 +49,7 @@ public struct DayMomentsView: View {
             }
         }
         .presentationDragIndicator(.hidden)
-        .fullScreenCover(item: $viewing) { DayPhotoView(moment: $0) }
+        .fullScreenCover(item: $viewing) { DayPhotoView(momentID: $0.id, store: store) }
     }
 
     private var closeButton: some View {
