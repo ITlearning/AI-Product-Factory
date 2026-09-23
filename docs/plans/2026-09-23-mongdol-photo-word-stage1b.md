@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
-상태 **executing** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift` · 앞 계획 `2026-09-23-mongdol-photo-word-stage1.md`
+상태 **completed** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift` · 앞 계획 `2026-09-23-mongdol-photo-word-stage1.md`
 
 **Goal:** 단어를 촬영 시각이 아니라 **사진에 찍힌 것**(기기 안 Vision 분류)으로 고르고, 맞는 말이 없으면 비워 둔다. 크게 보기는 사진 앱처럼 확대·축소 전환으로 연다.
 
