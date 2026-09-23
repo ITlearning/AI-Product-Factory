@@ -7,11 +7,13 @@ public final class DayStore {
     public private(set) var moments: [Moment] = []
 
     private let fileURL: URL
+    private let closures: DayClosures
 
-    public init(fileURL: URL? = nil) {
+    public init(fileURL: URL? = nil, closures: DayClosures = DayClosures()) {
         self.fileURL = fileURL ?? FileManager.default
             .urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("days.json")
+        self.closures = closures
         load()
     }
 
@@ -26,8 +28,22 @@ public final class DayStore {
     }
 
     public var finishedDayKeys: [String] {
+        dayKeys.filter(isFinished)
+    }
+
+    /// 오늘 이전은 항상, 오늘은 「마무리하기」로 닫혀야 true.
+    public func isFinished(_ dayKey: String) -> Bool {
         let today = Moment.dayKey(for: Date())
-        return dayKeys.filter { $0 < today }
+        if dayKey < today { return true }
+        guard dayKey == today else { return false }
+        return closures.closedAt(dayKey) != nil
+    }
+
+    /// 그 하루의 닫힌 시각 — 마무리하기로 일찍 닫았으면 그 시각, 아니면 자정(새벽 4시) 자연 봉인.
+    public func sealDate(on dayKey: String) -> Date? {
+        guard let natural = Moment.sealDate(for: dayKey) else { return nil }
+        guard let closedAt = closures.closedAt(dayKey) else { return natural }
+        return min(closedAt, natural)
     }
 
     /// 실제로 넣었으면 true, 같은 사진이라 무시했으면 false.
@@ -97,14 +113,16 @@ public final class DayStore {
     }
 
     public func hasSealedMoments(on dayKey: String) -> Bool {
-        guard let seal = Moment.sealDate(for: dayKey) else { return false }
-        return moments(on: dayKey).contains { $0.addedAt.map { $0 <= seal } ?? true }
+        guard let seal = sealDate(on: dayKey) else { return false }
+        return moments(on: dayKey).contains { ($0.addedAt ?? $0.capturedAt) <= seal }
     }
 
     public func pebbleMoments(on dayKey: String) -> [Moment] {
         let all = moments(on: dayKey)
-        guard let seal = Moment.sealDate(for: dayKey) else { return all }
-        let sealed = all.filter { m in m.addedAt.map { $0 <= seal } ?? true }
+        guard let seal = sealDate(on: dayKey) else { return all }
+        // addedAt 이 없으면(카메라 촬영) capturedAt 으로 비교한다 — 마무리 뒤 찍은 사진까지
+        // "기록 안 됨=이전"으로 잘못 포함시키지 않기 위해서.
+        let sealed = all.filter { ($0.addedAt ?? $0.capturedAt) <= seal }
         if !sealed.isEmpty { return sealed }
         guard let firstBatch = all.min(by: { ($0.addedAt ?? .distantFuture) < ($1.addedAt ?? .distantFuture) })?.batchID
         else { return all }

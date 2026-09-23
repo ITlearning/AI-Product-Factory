@@ -61,6 +61,17 @@ final class GiftScheduleTests: XCTestCase {
         XCTAssertNil(GiftSchedule.pending(dayKeys: keys, lastGifted: nil, today: "2026-09-22") { _ in false })
     }
 
+    func testClosedTodayCanBePending() {
+        XCTAssertEqual(GiftSchedule.pending(dayKeys: ["2026-09-22"], lastGifted: nil, today: "2026-09-22",
+                                            isFinished: { _ in true }),
+                       "2026-09-22", "오늘이어도 마무리(isFinished)했으면 증정 대상이 된다")
+    }
+
+    func testUnclosedTodayStillNeverGiftedWithIsFinished() {
+        XCTAssertNil(GiftSchedule.pending(dayKeys: ["2026-09-22"], lastGifted: nil, today: "2026-09-22",
+                                          isFinished: { _ in false }))
+    }
+
     func testGiftLogPersists() throws {
         let suite = "GiftLogTests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))

@@ -4,9 +4,12 @@ import Observation
 public enum GiftSchedule {
 
     public static func pending(dayKeys: [String], lastGifted: String?, today: String,
-                                hasSealedMoments: (String) -> Bool = { _ in true }) -> String? {
-        dayKeys.first { key in
-            guard key < today else { return false }
+                                hasSealedMoments: (String) -> Bool = { _ in true },
+                                isFinished: ((String) -> Bool)? = nil) -> String? {
+        // 기본값이 today 를 참조해야 해서 파라미터 기본값 대신 여기서 만든다.
+        let isFinished = isFinished ?? { $0 < today }
+        return dayKeys.first { key in
+            guard isFinished(key) else { return false }
             if let lastGifted, key <= lastGifted { return false }
             return hasSealedMoments(key)
         }
