@@ -77,7 +77,7 @@
 **서버로 옮기기 쉬운 구조**
 
 ```
-protocol WordSource { func words() async -> WordList }
+protocol WordSource { func words() async -> [WordEntry] }
  ├─ BundledWordSource      지금
  └─ RemoteWordSource       나중 — 정적 JSON 을 받고, 실패하면 Bundled
 WordPicker                 순수 함수. 목록이 어디서 왔는지 모른다
@@ -89,8 +89,9 @@ WordPicker                 순수 함수. 목록이 어디서 왔는지 모른�
 
 `WordPicker.candidates(context, list, recentWordIDs)`:
 1. 시간대·계절·날씨가 모두 맞는 단어 (조건 없는 칸은 통과)
-2. 단어가 붙은 사진 중 최신 14장의 단어 제외 (열어 보지 않은 사진은 세지 않는다)
+2. 단어가 붙은 사진 중 촬영 시각이 가장 가까운 14장의 단어 제외 (같은 날 사진이 먼저 들어간다)
 3. 0개면 날씨 → 계절 → 시간대 순으로 조건을 풀어 다시
+   사진에 날씨가 없으면 날씨 조건이 붙은 단어는 최종 폴백 전까지 쓰지 않는다 (틀린 날씨 말은 영구히 남는다)
 4. 최대 8개. 순서는 사진 id 해시로 섞는다(같은 사진은 같은 후보)
 
 **위치**
@@ -140,6 +141,7 @@ var word: PhotoWord?     // wordID, word, meaning, line?, ending?, attempts
 ```
 
 - `word`/`meaning` 은 id 와 **함께 사본으로** 저장한다. 목록에서 단어가 빠지거나 뜻풀이가 고쳐져도 이미 본 사진의 말은 그대로.
+- `PhotoWord` 에 새 필드를 넣을 땐 전부 옵셔널 — `DayStore.load()` 는 한 건만 실패해도 전체가 빈다.
 
 ## 8. 날씨
 
