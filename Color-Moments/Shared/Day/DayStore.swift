@@ -64,6 +64,11 @@ public final class DayStore {
         moments.contains { $0.assetID == id }
     }
 
+    public func hasSealedMoments(on dayKey: String) -> Bool {
+        guard let seal = Moment.sealDate(for: dayKey) else { return false }
+        return moments(on: dayKey).contains { $0.addedAt.map { $0 <= seal } ?? true }
+    }
+
     public func pebbleMoments(on dayKey: String) -> [Moment] {
         let all = moments(on: dayKey)
         guard let seal = Moment.sealDate(for: dayKey) else { return all }

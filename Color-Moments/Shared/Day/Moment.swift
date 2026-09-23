@@ -59,21 +59,23 @@ public extension Moment {
 
     static let dayBoundaryHour = 4
 
-    static func dayKey(for date: Date) -> String {
+    private static let calendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = .current
-        let shifted = cal.date(byAdding: .hour, value: -dayBoundaryHour, to: date) ?? date
-        let c = cal.dateComponents([.year, .month, .day], from: shifted)
+        return cal
+    }()
+
+    static func dayKey(for date: Date) -> String {
+        let shifted = calendar.date(byAdding: .hour, value: -dayBoundaryHour, to: date) ?? date
+        let c = calendar.dateComponents([.year, .month, .day], from: shifted)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
     static func sealDate(for dayKey: String) -> Date? {
         let parts = dayKey.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = .current
         var c = DateComponents(); c.year = parts[0]; c.month = parts[1]; c.day = parts[2]; c.hour = dayBoundaryHour
-        guard let start = cal.date(from: c) else { return nil }
-        return cal.date(byAdding: .day, value: 1, to: start)
+        guard let start = calendar.date(from: c) else { return nil }
+        return calendar.date(byAdding: .day, value: 1, to: start)
     }
 }

@@ -10,16 +10,13 @@ struct LibraryPickerView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var status: PHAuthorizationStatus?
-    @State private var assets: [PHAsset] = []
+    @State private var fetchResult = PHFetchResult<PHAsset>()
+    @State private var sections: [LibrarySection] = []
     @State private var selected: Set<String> = []
     @State private var isImporting = false
+    @State private var imageManager = PHCachingImageManager()
 
-    private let imageManager = PHCachingImageManager()
     private static let gridSpacing: CGFloat = 2
-
-    private var sections: [LibrarySection] {
-        LibrarySections.make(dates: assets.map(\.creationDate))
-    }
 
     var body: some View {
         ZStack {
@@ -31,6 +28,7 @@ struct LibraryPickerView: View {
             }
         }
         .task { await load() }
+        .interactiveDismissDisabled(isImporting)
     }
 
     @ViewBuilder
@@ -38,6 +36,8 @@ struct LibraryPickerView: View {
         if status == .authorized || status == .limited {
             if status == .limited { limitedBanner }
             grid
+        } else if status == .restricted {
+            restrictedState
         } else if status != nil {
             deniedState
         } else {
@@ -55,6 +55,8 @@ struct LibraryPickerView: View {
                     .background(Tone.hairline, in: Capsule())
             }
             .buttonStyle(.plain)
+            .disabled(isImporting)
+            .opacity(isImporting ? 0.4 : 1)
 
             Spacer()
             Text("사진첩").font(.system(size: 15, weight: .semibold)).foregroundStyle(Tone.primary)
@@ -93,6 +95,17 @@ struct LibraryPickerView: View {
         .buttonStyle(.plain)
     }
 
+    private var restrictedState: some View {
+        VStack {
+            Spacer()
+            Text("이 기기에서는 사진 접근이 제한돼 있어요")
+                .font(Face.guide)
+                .foregroundStyle(Tone.secondary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     private var deniedState: some View {
         VStack(spacing: 14) {
             Spacer()
@@ -126,7 +139,7 @@ struct LibraryPickerView: View {
                         Section {
                             LazyVGrid(columns: columns, spacing: Self.gridSpacing) {
                                 ForEach(section.indices, id: \.self) { i in
-                                    let asset = assets[i]
+                                    let asset = fetchResult.object(at: i)
                                     ThumbnailCell(
                                         asset: asset,
                                         side: side,
@@ -163,10 +176,26 @@ struct LibraryPickerView: View {
 
     private func fetchAssets() {
         let result = PHAsset.fetchAssets(with: LibraryImporter.fetchOptions())
-        var arr: [PHAsset] = []
-        arr.reserveCapacity(result.count)
-        result.enumerateObjects { asset, _, _ in arr.append(asset) }
-        assets = arr
+        fetchResult = result
+        Task {
+            let (computed, ids) = await Self.computeSections(result)
+            sections = computed
+            selected = selected.intersection(ids) // 제한 접근 재선택 뒤 사라진 사진은 selected 에서도 지운다
+        }
+    }
+
+    private static func computeSections(_ result: PHFetchResult<PHAsset>) async -> ([LibrarySection], Set<String>) {
+        await Task.detached(priority: .userInitiated) {
+            var dates: [Date?] = []
+            var ids: Set<String> = []
+            dates.reserveCapacity(result.count)
+            ids.reserveCapacity(result.count)
+            result.enumerateObjects { asset, _, _ in
+                dates.append(asset.creationDate)
+                ids.insert(asset.localIdentifier)
+            }
+            return (LibrarySections.make(dates: dates), ids)
+        }.value
     }
 
     private func presentLimitedPicker() {
@@ -181,7 +210,10 @@ struct LibraryPickerView: View {
 
     private func importSelected() async {
         isImporting = true
-        let toImport = assets.filter { selected.contains($0.localIdentifier) }
+        var toImport: [PHAsset] = []
+        fetchResult.enumerateObjects { asset, _, _ in
+            if selected.contains(asset.localIdentifier) { toImport.append(asset) }
+        }
         let n = await LibraryImporter().importAssets(toImport, into: store)
         isImporting = false
         onDone(n)
@@ -219,6 +251,21 @@ private struct ThumbnailCell: View {
         .contentShape(Rectangle())
         .onTapGesture { if !isTaken { onTap() } }
         .task(id: asset.localIdentifier) { await loadImage() }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(isTaken ? [] : (isSelected ? [.isButton, .isSelected] : .isButton))
+    }
+
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "M월 d일 a h:mm"
+        return f
+    }()
+
+    private var accessibilityLabel: String {
+        let time = Self.timeFormatter.string(from: asset.creationDate ?? Date())
+        return isTaken ? "\(time), 이미 담았어요" : time
     }
 
     private var selectionMark: some View {

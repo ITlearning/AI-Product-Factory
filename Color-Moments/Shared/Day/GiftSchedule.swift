@@ -3,11 +3,12 @@ import Observation
 
 public enum GiftSchedule {
 
-    public static func pending(dayKeys: [String], lastGifted: String?, today: String) -> String? {
+    public static func pending(dayKeys: [String], lastGifted: String?, today: String,
+                                hasSealedMoments: (String) -> Bool = { _ in true }) -> String? {
         dayKeys.first { key in
             guard key < today else { return false }
-            guard let lastGifted else { return true }
-            return key > lastGifted
+            if let lastGifted, key <= lastGifted { return false }
+            return hasSealedMoments(key)
         }
     }
 }

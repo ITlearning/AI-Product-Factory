@@ -40,7 +40,8 @@ struct DayGiftPresenter: ViewModifier {
         guard pending == nil else { return }
         guard let key = GiftSchedule.pending(dayKeys: store.dayKeys,
                                              lastGifted: gifts.lastGiftedDayKey,
-                                             today: Moment.dayKey(for: Date())) else { return }
+                                             today: Moment.dayKey(for: Date()),
+                                             hasSealedMoments: store.hasSealedMoments) else { return }
         pending = PendingDay(id: key)
     }
 }

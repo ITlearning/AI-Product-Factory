@@ -33,22 +33,26 @@ final class LibraryImporter {
             guard let result = await Task.detached(priority: .userInitiated, operation: {
                 Self.process(data: data, id: id)
             }).value else { continue }
+            guard !store.containsAsset(id) else { continue } // 위 await 들 사이 상태가 바뀌었을 수 있어 넣기 직전 다시 확인
             let place = asset.location.map {
                 Place(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude, accuracy: $0.horizontalAccuracy)
             }
+            let before = store.moments.count
             store.add(Moment(capturedAt: asset.creationDate ?? Date(), colorHex: result.hex, fileName: result.fileName,
                               source: .library, assetID: id, place: place, addedAt: Date(), batchID: batch))
-            count += 1
+            if store.moments.count > before { count += 1 } // add 가 파일 이름 중복으로 조용히 무시했을 수 있다
         }
         return count
     }
 
     nonisolated private static func process(data: Data, id: String) -> (fileName: String, hex: String)? {
-        guard let image = UIImage(data: data), let jpeg = image.jpegData(compressionQuality: 0.9) else { return nil }
-        let fileName = "library-\(String(WordPicker.fnv1a(id), radix: 16)).jpg"
-        guard let url = ShotStore.save(jpeg, name: fileName) else { return nil }
-        guard let ci = CIImage(contentsOf: url) else { return nil }
-        return (fileName, ColorExtractor.symbolicColor(for: ci).hex)
+        autoreleasepool {
+            guard let image = UIImage(data: data), let jpeg = image.jpegData(compressionQuality: 0.9) else { return nil }
+            let fileName = "library-\(String(WordPicker.fnv1a(id), radix: 16)).jpg"
+            guard let url = ShotStore.save(jpeg, name: fileName) else { return nil }
+            guard let ci = CIImage(contentsOf: url) else { return nil }
+            return (fileName, ColorExtractor.symbolicColor(for: ci).hex)
+        }
     }
 
     private static func imageData(for asset: PHAsset) async -> Data? {

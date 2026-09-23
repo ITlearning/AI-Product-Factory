@@ -48,6 +48,19 @@ final class GiftScheduleTests: XCTestCase {
         XCTAssertNil(GiftSchedule.pending(dayKeys: [], lastGifted: nil, today: "2026-09-22"))
     }
 
+    func testDayWithoutSealedMomentsIsSkippedInFavorOfTheNextCandidate() {
+        let keys = ["2026-09-21", "2026-09-20"]
+        let result = GiftSchedule.pending(dayKeys: keys, lastGifted: nil, today: "2026-09-22") {
+            $0 != "2026-09-21"
+        }
+        XCTAssertEqual(result, "2026-09-20", "조약돌 없던 날은 건너뛰고 다음 후보로 넘어간다")
+    }
+
+    func testAllCandidatesWithoutSealedMomentsYieldsNil() {
+        let keys = ["2026-09-21", "2026-09-20"]
+        XCTAssertNil(GiftSchedule.pending(dayKeys: keys, lastGifted: nil, today: "2026-09-22") { _ in false })
+    }
+
     func testGiftLogPersists() throws {
         let suite = "GiftLogTests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))

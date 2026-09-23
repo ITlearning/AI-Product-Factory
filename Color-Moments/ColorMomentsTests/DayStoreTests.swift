@@ -207,4 +207,23 @@ final class DayStoreTests: XCTestCase {
         let m = try XCTUnwrap(DayStore(fileURL: tempFile).moments.first)
         XCTAssertNil(m.assetID); XCTAssertNil(m.place); XCTAssertNil(m.addedAt); XCTAssertNil(m.batchID)
     }
+
+    func testHasSealedMomentsIsTrueForCameraPhoto() {
+        store.add(moment(date(2026, 9, 22, 12, 0), name: "cam.jpg"))
+        XCTAssertTrue(store.hasSealedMoments(on: "2026-09-22"), "카메라 사진이 있으면 그 하루는 증정 대상이다")
+    }
+
+    func testHasSealedMomentsIsFalseWhenOnlyAddedAfterTheDayEnded() {
+        store.add(imported(date(2026, 9, 22, 15, 0), added: date(2026, 9, 25, 10, 0), batch: UUID(), name: "late.jpg"))
+        XCTAssertFalse(store.hasSealedMoments(on: "2026-09-22"), "봉인 뒤에만 담긴 사진뿐이면 증정할 조약돌이 없다")
+    }
+
+    func testHasSealedMomentsIsTrueWhenAddedBeforeSeal() {
+        store.add(imported(date(2026, 9, 22, 15, 0), added: date(2026, 9, 22, 20, 0), batch: UUID(), name: "sameday.jpg"))
+        XCTAssertTrue(store.hasSealedMoments(on: "2026-09-22"))
+    }
+
+    func testHasSealedMomentsIsFalseForDayWithNoMoments() {
+        XCTAssertFalse(store.hasSealedMoments(on: "2026-09-22"))
+    }
 }
