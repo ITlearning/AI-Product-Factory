@@ -24,6 +24,7 @@ struct DayPhotoView: View {
                     }
                 }
                 .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
                 .task(id: moment.fileName) { await load(moment) }
                 .task(id: moment.id) { await assignWordIfNeeded(moment) }
             }
