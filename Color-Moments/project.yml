@@ -26,6 +26,18 @@ targets:
     scheme:
       testTargets: [ColorMomentsTests]
       gatherCoverageData: false
+    entitlements:
+      path: ColorMoments/ColorMoments.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.itlearning.colormoments]
+        com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
+    info:
+      path: ColorMoments/Info.plist
+      properties:
+        UIBackgroundModes: [remote-notification]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.itlearning.colormoments
