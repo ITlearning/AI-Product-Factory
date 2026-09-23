@@ -23,4 +23,24 @@ final class AssetReconcilerTests: XCTestCase {
         XCTAssertTrue(AssetReconciler.missing(ids: ids, found: found, fullAccess: true).isEmpty,
                       "다 찾았으면 정리할 게 없다")
     }
+
+    func testAllNotFoundSkipsInsteadOfWipingEverything() {
+        let ids: Set<String> = ["a", "b", "c"]
+        XCTAssertTrue(AssetReconciler.missing(ids: ids, found: [], fullAccess: true).isEmpty,
+                      "found 가 통째로 비면 조회 자체가 실패했을 수 있다 — 기록 전체를 지우면 안 된다")
+    }
+
+    func testOverCapSkipsThatRound() {
+        let ids = Set((0..<10).map { "id\($0)" })
+        let found: Set<String> = ["id0"] // 9개가 못 찾은 것 — 상한 max(3, 10/5=2)=3 을 넘는다
+        XCTAssertTrue(AssetReconciler.missing(ids: ids, found: found, fullAccess: true).isEmpty,
+                      "한 번에 지울 개수가 상한을 넘으면 그 회차는 건너뛰어야 한다")
+    }
+
+    func testUnderCapDeletes() {
+        let ids = Set((0..<10).map { "id\($0)" })
+        let found = Set((0..<8).map { "id\($0)" }) // 2개만 못 찾음 — 상한 3 이하
+        let missing = AssetReconciler.missing(ids: ids, found: found, fullAccess: true)
+        XCTAssertEqual(missing, ["id8", "id9"], "상한 이하면 정상적으로 지워야 한다")
+    }
 }
