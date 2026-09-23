@@ -25,13 +25,40 @@ final class GiftScheduleTests: XCTestCase {
                        "2026-09-21")
     }
 
-    func testOlderBacklogNeverComesBackAfterGifting() {
-        let keys = ["2026-09-21", "2026-09-20", "2026-09-19"]
-        let first = GiftSchedule.pending(dayKeys: keys, today: "2026-09-22", isGifted: { _ in false })
-        XCTAssertEqual(first, "2026-09-21")
+    func testOlderBacklogNeverComesBackAfterGifting() throws {
+        let suite = "GiftLogBacklog-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let gifts = GiftLog(defaults: defaults)
 
-        XCTAssertNil(GiftSchedule.pending(dayKeys: keys, today: "2026-09-22",
-                                          isGifted: { k in first.map { k <= $0 } ?? false }))
+        let keys = ["2026-09-21", "2026-09-20", "2026-09-19"]
+        let first = GiftSchedule.pending(dayKeys: keys, today: "2026-09-22", isGifted: gifts.isGifted)
+        XCTAssertEqual(first, "2026-09-21")
+        gifts.markGifted(try XCTUnwrap(first))
+
+        // D-3(2026-09-21) 사진이 사진 앱에서 지워져 dayKeys 에서 그 날이 사라져도, floor(2026-09-21)
+        // 이하인 D-4·D-5 는 뒤늦게 pending 으로 돌아오지 않는다 — 옛 상한선 동작.
+        let afterPhotoRemoved = ["2026-09-20", "2026-09-19"]
+        XCTAssertNil(GiftSchedule.pending(dayKeys: afterPhotoRemoved, today: "2026-09-22", isGifted: gifts.isGifted))
+    }
+
+    func testYesterdayThenTodayWithRealGiftLog() throws {
+        let suite = "GiftLogOrder-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let gifts = GiftLog(defaults: defaults)
+
+        let keys = ["2026-09-22", "2026-09-21"]
+        // 어제 미증정 + 오늘 마무리 → 어제가 먼저.
+        let first = GiftSchedule.pending(dayKeys: keys, today: "2026-09-22", isGifted: gifts.isGifted,
+                                         isFinished: { _ in true })
+        XCTAssertEqual(first, "2026-09-21")
+        gifts.markGifted(try XCTUnwrap(first))
+
+        // 어제를 받았으면 그 다음은 오늘.
+        let second = GiftSchedule.pending(dayKeys: keys, today: "2026-09-22", isGifted: gifts.isGifted,
+                                          isFinished: { _ in true })
+        XCTAssertEqual(second, "2026-09-22")
     }
 
     func testEmptyDaysAreSkipped() {
@@ -132,6 +159,31 @@ final class GiftScheduleTests: XCTestCase {
         XCTAssertTrue(reopened.isGifted("2026-09-20"))
         XCTAssertTrue(reopened.isGifted("2026-09-21"))
         XCTAssertFalse(reopened.isGifted("2026-09-22"))
+    }
+
+    func testGiftLogFloorCoversEarlierDaysAfterGiftingLater() throws {
+        let suite = "GiftLogFloor-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let gifts = GiftLog(defaults: defaults)
+
+        gifts.markGifted("2026-09-21")
+        XCTAssertTrue(gifts.isGifted("2026-09-19"), "가장 최근 하루만 받아도 그 이전 날은 이미 받은 것으로 본다")
+        XCTAssertTrue(gifts.isGifted("2026-09-20"))
+        XCTAssertTrue(gifts.isGifted("2026-09-21"))
+        XCTAssertFalse(gifts.isGifted("2026-09-22"))
+    }
+
+    func testGiftLogLastGiftedDayKeyIncludesLegacyAndNewer() throws {
+        let suite = "GiftLogLastKey-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set("2026-09-21", forKey: "lastGiftedDayKey")
+
+        let gifts = GiftLog(defaults: defaults)
+        XCTAssertEqual(gifts.lastGiftedDayKey, "2026-09-21")
+        gifts.markGifted("2026-09-23")
+        XCTAssertEqual(gifts.lastGiftedDayKey, "2026-09-23")
     }
 
     func testDuplicateMarkGiftedIsIgnored() throws {

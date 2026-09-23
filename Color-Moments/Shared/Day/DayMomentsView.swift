@@ -110,8 +110,8 @@ public struct DayMomentsView: View {
         .buttonStyle(.plain)
         .confirmationDialog("지금 조약돌을 열까요?", isPresented: $confirmingFinish, titleVisibility: .visible) {
             Button("마무리하기") {
-                // 확인창이 떠 있는 사이 날짜가 넘어갔을 수 있다 — 그때는 닫지 않는다.
-                guard store.canClose(dayKey) else { return }
+                // 확인창이 떠 있는 사이 04시가 넘어 이미 저절로 닫혔을 수 있다 — 그땐 그냥 시트를 닫는다.
+                guard store.canClose(dayKey) else { dismiss(); return }
                 closures.close(dayKey)
                 dismiss()
             }

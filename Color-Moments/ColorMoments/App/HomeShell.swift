@@ -14,6 +14,8 @@ struct HomeShell: View {
     @State private var pendingLibraryFocus = false
     // 하루 상세 시트가 닫힐 때마다 올린다 — DayGiftPresenter 가 이 변화만 보고 증정을 시도한다.
     @State private var daySheetDismissedTick = 0
+    // 하루 상세 시트가 떠 있는 동안 true — HomeView 가 갱신한다.
+    @State private var daySheetPresented = false
 
     @State private var dragStart: CGFloat = 0
 
@@ -45,7 +47,8 @@ struct HomeShell: View {
 
                 HomeView(store: store, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0,
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
-                         onDaySheetDismissed: { daySheetDismissedTick += 1 })
+                         onDaySheetDismissed: { daySheetDismissedTick += 1 },
+                         daySheetPresented: $daySheetPresented)
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -70,7 +73,8 @@ struct HomeShell: View {
                        value: progress)
         }
         .preferredColorScheme(.dark)
-        .dayGift(store: store, gifts: gifts, closures: closures, dismissedTick: daySheetDismissedTick)
+        .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
+                 blocksPresentation: daySheetPresented || pickingLibrary)
         .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
             guard pendingLibraryFocus else { return }
             pendingLibraryFocus = false

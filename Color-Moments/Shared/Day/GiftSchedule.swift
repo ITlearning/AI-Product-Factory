@@ -30,9 +30,18 @@ public final class GiftLog {
         self.legacyLast = defaults.string(forKey: Self.legacyStorageKey)
     }
 
-    /// 새 집합에 있거나, 옛 단일값(lastGiftedDayKey) 이하 날짜면 이미 받은 것으로 본다 — 마이그레이션 없이 읽기 호환.
+    /// 받은 날(옛 단일값 포함) 중 가장 최근 — 이 이하는 전부 받은 것으로 본다(옛 상한선 동작).
+    /// 며칠 비운 뒤 가장 최근 하루만 증정해도 그 앞의 날들이 나중에(그 하루가 사진 앱에서 지워져
+    /// dayKeys 에서 사라지면) 다시 pending 으로 튀어나오는 걸 막는다.
+    private var floor: String? {
+        [giftedDayKeys.max(), legacyLast].compactMap { $0 }.max()
+    }
+
+    /// 화면 표시용 — floor 를 그대로 노출한다(읽기 전용).
+    public var lastGiftedDayKey: String? { floor }
+
     public func isGifted(_ dayKey: String) -> Bool {
-        giftedDayKeys.contains(dayKey) || (legacyLast.map { dayKey <= $0 } ?? false)
+        floor.map { dayKey <= $0 } ?? false
     }
 
     public func markGifted(_ dayKey: String) {

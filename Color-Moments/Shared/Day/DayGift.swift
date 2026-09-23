@@ -4,16 +4,19 @@ public extension View {
 
     /// dismissedTick — 하루 상세 시트가 닫힐 때마다 호출부가 올리는 값. 시트가 완전히
     /// 닫힌 뒤에만 증정을 시도하려고 자정 타이머 대신 이 값의 변화를 신호로 쓴다.
-    func dayGift(store: DayStore, gifts: GiftLog, closures: DayClosures, dismissedTick: Int) -> some View {
-        modifier(DayGiftPresenter(store: store, gifts: gifts, closures: closures, dismissedTick: dismissedTick))
+    /// blocksPresentation — 하루 상세·사진첩 선택 등 다른 fullScreenCover/sheet 가 떠 있는 동안 true.
+    /// 이 동안은 present() 를 미룬다 — 동시에 두 개를 띄우면 나중 것의 표시가 씹혀 pending 이 안 풀린다.
+    func dayGift(store: DayStore, gifts: GiftLog, dismissedTick: Int, blocksPresentation: Bool) -> some View {
+        modifier(DayGiftPresenter(store: store, gifts: gifts, dismissedTick: dismissedTick,
+                                  blocksPresentation: blocksPresentation))
     }
 }
 
 struct DayGiftPresenter: ViewModifier {
     let store: DayStore
     let gifts: GiftLog
-    let closures: DayClosures
     let dismissedTick: Int
+    let blocksPresentation: Bool
 
     @Environment(\.scenePhase) private var scenePhase
     @State private var pending: PendingDay?
@@ -29,6 +32,11 @@ struct DayGiftPresenter: ViewModifier {
             // 하루 상세 시트가 완전히 닫힌 뒤에만 증정을 시도한다 — 시트가 dismiss 되는
             // 도중에 조상의 fullScreenCover 를 띄우면 표시가 씹혀 pending 이 영영 안 풀린다.
             .onChange(of: dismissedTick) { _, _ in presentAfterDismiss() }
+            // 막고 있던 시트가 방금 닫혔으면 다시 시도한다 — 사진첩 선택처럼 dismissedTick 을
+            // 안 올리는 경로도 이걸로 같이 커버된다.
+            .onChange(of: blocksPresentation) { _, blocked in
+                if !blocked { presentAfterDismiss() }
+            }
             .fullScreenCover(item: $pending) { day in
                 BadgeCeremony(
                     moments: store.pebbleMoments(on: day.id),
@@ -38,6 +46,9 @@ struct DayGiftPresenter: ViewModifier {
                                              guard !shown else { return }
                                              gifts.markGifted(day.id)
                                              pending = nil
+                                             // 어제를 막 증정했으면 마무리한 오늘이 다음 트리거까지
+                                             // 기다리지 않고 바로 이어서 뜬다.
+                                             presentAfterDismiss()
                                          }))
             }
     }
@@ -51,7 +62,7 @@ struct DayGiftPresenter: ViewModifier {
     }
 
     private func present() {
-        guard pending == nil else { return }
+        guard pending == nil, !blocksPresentation else { return }
         guard let key = GiftSchedule.pending(dayKeys: store.dayKeys,
                                              today: Moment.dayKey(for: Date()),
                                              isGifted: gifts.isGifted,

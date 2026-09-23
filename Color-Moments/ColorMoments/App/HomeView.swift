@@ -15,6 +15,9 @@ struct HomeView: View {
     // 하루 상세 시트가 닫힌 뒤 HomeShell 이 증정 확인을 트리거하도록 알린다.
     var onDaySheetDismissed: () -> Void = {}
 
+    // 하루 상세 시트가 떠 있는 동안 true — HomeShell 이 이걸 보고 증정 fullScreenCover 를 미룬다.
+    @Binding var daySheetPresented: Bool
+
     @State private var opened: OpenedDay?
     @State private var topDayKey: String?
     @State private var scrolling = false
@@ -26,7 +29,7 @@ struct HomeView: View {
     @State private var pillY: CGFloat = 0
     @State private var scrubMonth: String?
 
-    private struct OpenedDay: Identifiable { let id: String }
+    private struct OpenedDay: Identifiable, Equatable { let id: String }
 
     private var days: [String] { store.finishedDayKeys }
 
@@ -56,6 +59,7 @@ struct HomeView: View {
         .sheet(item: $opened, onDismiss: onDaySheetDismissed) { day in
             DayMomentsView(dayKey: day.id, store: store, closures: closures)
         }
+        .onChange(of: opened) { _, value in daySheetPresented = value != nil }
     }
 
     @ViewBuilder
