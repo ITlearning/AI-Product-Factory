@@ -11,11 +11,23 @@ struct HomeView: View {
     @State private var topDayKey: String?
     @State private var scrolling = false
 
+    // 스크롤이 멈춘 뒤에도 1.2초는 알약 띠를 살려 둔다 — 손을 떼자마자 사라지면 못 잡는다.
+    @State private var lingering = false
+    @State private var lingerTask: Task<Void, Never>?
+
+    @State private var scrubbing = false
+    @State private var pillY: CGFloat = 0
+    @State private var scrubMonth: String?
+
     private struct OpenedDay: Identifiable { let id: String }
 
     private var days: [String] { store.finishedDayKeys }
 
     private var compactCutoff: String { HomeNavigation.compactCutoff(today: Date()) }
+
+    private var months: [String] { HomeNavigation.months(of: days) }
+
+    private var pillActive: Bool { scrolling || lingering }
 
     var body: some View {
         ZStack {
@@ -23,7 +35,7 @@ struct HomeView: View {
             backdrop
             content
             bottomFade
-            if scrolling, let label = monthLabel { monthPill(label) }
+            if pillActive, let label = pillLabel { monthPill(label) }
             if showsSwipeHint { swipeHint }
         }
         .sheet(item: $opened) { day in
@@ -47,52 +59,108 @@ struct HomeView: View {
         GeometryReader { geo in
             let blockWidth = geo.size.width - 56
             ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
-                            .id("top")
-                        Spacer().frame(height: 22)
-                        todayLine
-                        Spacer().frame(height: 38)
+                ZStack(alignment: .trailing) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                                .id("top")
+                            Spacer().frame(height: 22)
+                            todayLine
+                            Spacer().frame(height: 38)
 
-                        if days.isEmpty {
-                            EmptyDayBlock(width: blockWidth)
-                        } else {
-                            LazyVStack(alignment: .leading, spacing: 0) {
-                                ForEach(Array(days.enumerated()), id: \.element) { index, key in
-                                    dayRow(key, width: blockWidth)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture { opened = OpenedDay(id: key) }
+                            if days.isEmpty {
+                                EmptyDayBlock(width: blockWidth)
+                            } else {
+                                LazyVStack(alignment: .leading, spacing: 0) {
+                                    ForEach(Array(days.enumerated()), id: \.element) { index, key in
+                                        dayRow(key, width: blockWidth)
+                                            .contentShape(Rectangle())
+                                            .onTapGesture { opened = OpenedDay(id: key) }
 
-                                        .scrollTransition { c, phase in
-                                            c.opacity(phase.isIdentity ? 1 : 0.5)
-                                             .scaleEffect(phase.isIdentity ? 1 : 0.96)
-                                        }
-                                        .onScrollVisibilityChange(threshold: 0.6) { visible in
-                                            if visible { topDayKey = key }
-                                        }
-                                        .id(key)
-                                        .padding(.top, index == 0 ? 0 : (key < compactCutoff ? 20 : 64))
+                                            .scrollTransition { c, phase in
+                                                c.opacity(phase.isIdentity ? 1 : 0.5)
+                                                 .scaleEffect(phase.isIdentity ? 1 : 0.96)
+                                            }
+                                            .onScrollVisibilityChange(threshold: 0.6) { visible in
+                                                if visible { topDayKey = key }
+                                            }
+                                            .id(key)
+                                            .padding(.top, index == 0 ? 0 : (key < compactCutoff ? 20 : 64))
+                                    }
                                 }
                             }
+                            Spacer().frame(height: 120)
                         }
-                        Spacer().frame(height: 120)
+                        .padding(.horizontal, 28)
+                        .padding(.top, 72 - geo.safeAreaInsets.top)
                     }
-                    .padding(.horizontal, 28)
-                    .padding(.top, 72 - geo.safeAreaInsets.top)
-                }
-                .scrollIndicators(.hidden)
-                .onScrollPhaseChange { _, phase in
-                    withAnimation(.easeOut(duration: 0.2)) { scrolling = phase.isScrolling }
-                }
-                .onChange(of: focusDay) { _, newValue in
-                    guard let newValue else { return }
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        proxy.scrollTo(days.contains(newValue) ? newValue : "top", anchor: .top)
+                    .scrollIndicators(.hidden)
+                    .onScrollPhaseChange { _, phase in
+                        withAnimation(.easeOut(duration: 0.2)) { scrolling = phase.isScrolling }
+                        if phase.isScrolling {
+                            lingerTask?.cancel()
+                            lingering = true
+                        } else {
+                            scheduleLingerEnd()
+                        }
                     }
-                    focusDay = nil
+                    .onChange(of: focusDay) { _, newValue in
+                        guard let newValue else { return }
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            proxy.scrollTo(days.contains(newValue) ? newValue : "top", anchor: .top)
+                        }
+                        focusDay = nil
+                    }
+
+                    // 오른쪽 가장자리 28pt — 스크롤 중이거나 멈춘 직후에만 손가락을 받는다.
+                    // highPriorityGesture: HomeShell 의 좌→우 카메라 스와이프(simultaneousGesture)보다
+                    // 이 세로 끌기가 먼저 판정돼야 오른쪽 끝에서 손을 떼기 전까지 카메라가 안 열린다.
+                    Color.clear
+                        .frame(width: 28)
+                        .contentShape(Rectangle())
+                        .highPriorityGesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { v in scrub(to: v.location.y, height: geo.size.height, proxy: proxy) }
+                                .onEnded { _ in endScrub() }
+                        )
+                        .allowsHitTesting(pillActive)
                 }
             }
+        }
+    }
+
+    private func scrub(to y: CGFloat, height: CGFloat, proxy: ScrollViewProxy) {
+        guard !months.isEmpty else { return }
+        scrubbing = true
+        lingerTask?.cancel()
+        lingering = true
+        pillY = min(max(y, 20), max(20, height - 40))
+
+        let fraction = height > 0 ? y / height : 0
+        let index = HomeNavigation.monthIndex(fraction: fraction, count: months.count)
+        let month = months[index]
+        guard month != scrubMonth else { return }
+        scrubMonth = month
+        if let key = days.first(where: { $0.hasPrefix(month) }) {
+            Haptics.tickPassed()
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo(key, anchor: .top)
+            }
+        }
+    }
+
+    private func endScrub() {
+        scrubbing = false
+        scrubMonth = nil
+        scheduleLingerEnd()
+    }
+
+    private func scheduleLingerEnd() {
+        lingerTask?.cancel()
+        lingerTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard !Task.isCancelled else { return }
+            lingering = false
         }
     }
 
@@ -121,8 +189,17 @@ struct HomeView: View {
 
     private var monthLabel: String? {
         guard let key = topDayKey, key.count >= 7 else { return nil }
-        let parts = key.split(separator: "-")
-        guard parts.count >= 2 else { return nil }
+        return formattedMonth(String(key.prefix(7)))
+    }
+
+    private var pillLabel: String? {
+        if scrubbing, let scrubMonth { return formattedMonth(scrubMonth) }
+        return monthLabel
+    }
+
+    private func formattedMonth(_ month: String) -> String {
+        let parts = month.split(separator: "-")
+        guard parts.count >= 2 else { return month }
         return "\(parts[0])년 \(Int(parts[1]) ?? 0)월"
     }
 
@@ -139,7 +216,7 @@ struct HomeView: View {
             }
             Spacer()
         }
-        .padding(.top, 120)
+        .padding(.top, scrubbing ? pillY : 120)
         .transition(.opacity)
         .allowsHitTesting(false)
     }
