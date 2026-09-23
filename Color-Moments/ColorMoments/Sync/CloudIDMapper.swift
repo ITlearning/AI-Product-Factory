@@ -23,15 +23,20 @@ enum CloudIDMapper {
         guard PHPhotoLibrary.authorizationStatus(for: .readWrite).allowsRead else { return }
         let pending = store.unresolved
         guard !pending.isEmpty else { return }
-        let clouds = pending.compactMap(\.cloudID)
-        let found: [String: String] = await Task.detached(priority: .utility) {
+        let found = await localIDs(forCloudIDs: pending.compactMap(\.cloudID))
+        store.resolveAssets(pending.compactMap { m in m.cloudID.flatMap { found[$0] }.map { (m.id, $0) } })
+    }
+
+    /// cloudID → 이 기기 로컬 ID. 못 찾은 것은 빠진다.
+    static func localIDs(forCloudIDs clouds: [String]) async -> [String: String] {
+        guard !clouds.isEmpty else { return [:] }
+        return await Task.detached(priority: .utility) {
             let ids = clouds.map { PHCloudIdentifier(stringValue: $0) }
             let map = PHPhotoLibrary.shared().localIdentifierMappings(for: ids)
             var out: [String: String] = [:]
             for (cloud, result) in map { if let local = try? result.get() { out[cloud.stringValue] = local } }
             return out
         }.value
-        store.resolveAssets(pending.compactMap { m in m.cloudID.flatMap { found[$0] }.map { (m.id, $0) } })
     }
 
     @MainActor

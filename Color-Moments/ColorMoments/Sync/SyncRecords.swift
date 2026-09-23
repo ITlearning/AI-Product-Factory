@@ -31,6 +31,8 @@ enum SyncRecords {
         r["word"] = m.word?.word
         r["meaning"] = m.word?.meaning
         r["labels"] = m.labels
+        // CloudKit 이 빈 배열을 nil 로 돌려줄 수 있다 — 「분류했는데 없음」을 따로 남긴다.
+        r["labelsEmpty"] = m.labels?.isEmpty == true ? 1 : nil
         r["latitude"] = m.place?.latitude
         r["longitude"] = m.place?.longitude
         r["accuracy"] = m.place?.accuracy
@@ -45,7 +47,8 @@ enum SyncRecords {
               let capturedAt = r["capturedAt"] as? Date,
               let colorHex = r["colorHex"] as? String,
               let source = (r["source"] as? String).flatMap(Moment.Source.init(rawValue:)) else { return nil }
-        let labels = r["labels"] as? [String]
+        let labels: [String]? = r["labels"] as? [String]
+            ?? ((r["labelsEmpty"] as? Int) == 1 || r["wordID"] != nil ? [] : nil)
         // 로컬 DayStore.load() 와 같은 규칙 — labels 없이 word 만 있는 상태를 만들지 않는다.
         let word: PhotoWord? = {
             guard labels != nil, let wid = r["wordID"] as? String, let w = r["word"] as? String,

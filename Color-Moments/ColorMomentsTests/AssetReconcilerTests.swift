@@ -43,4 +43,60 @@ final class AssetReconcilerTests: XCTestCase {
         let missing = AssetReconciler.missing(ids: ids, found: found, fullAccess: true)
         XCTAssertEqual(missing, ["id8", "id9"], "상한 이하면 정상적으로 지워야 한다")
     }
+
+    // MARK: 옵저버(removedObjects) 경로 상한
+
+    func testObserverRemovalOverCapIsSkipped() {
+        let removed = Set((0..<10).map { "id\($0)" })
+        XCTAssertTrue(AssetReconciler.cappedRemoval(removed, tracked: 10).isEmpty,
+                      "iCloud 사진 끄기처럼 한 번에 전부 빠지면 그 삭제가 모든 기기로 번진다 — 그 회차는 건너뛴다")
+    }
+
+    func testObserverRemovalUnderCapPasses() {
+        let removed: Set<String> = ["a", "b", "c"]
+        XCTAssertEqual(AssetReconciler.cappedRemoval(removed, tracked: 4), removed, "상한 max(3, n/5) 이하면 그대로 지운다")
+        let many = Set((0..<20).map { "id\($0)" })
+        XCTAssertEqual(AssetReconciler.cappedRemoval(many, tracked: 100), many)
+        XCTAssertTrue(AssetReconciler.cappedRemoval(Set((0..<21).map { "id\($0)" }), tracked: 100).isEmpty)
+    }
+
+    // MARK: 폴링 정리 — cloudID 로 다시 찾기
+
+    func testRelocatedAssetIsReassignedNotRemoved() {
+        let ids = Set((0..<10).map { "id\($0)" })
+        let found = ids.subtracting(["id8", "id9"])
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: ["id8": "new8"], fullAccess: true)
+        XCTAssertEqual(plan.reassign, ["id8": "new8"], "cloudID 로 다시 찾은 사진은 지우지 않고 ID 만 바꿔 끼운다")
+        XCTAssertEqual(plan.remove, ["id9"])
+    }
+
+    func testRestoredLibraryWithAllIDsChangedReassignsEverything() {
+        let ids: Set<String> = ["a", "b", "c", "d", "e"]
+        let relocated = Dictionary(uniqueKeysWithValues: ids.map { ($0, $0 + "'") })
+        let plan = AssetReconciler.plan(ids: ids, found: [], relocated: relocated, fullAccess: true)
+        XCTAssertEqual(plan.reassign, relocated, "복원 뒤 로컬 ID 가 전부 바뀌어도 cloudID 로 다시 찾는다")
+        XCTAssertTrue(plan.remove.isEmpty)
+    }
+
+    func testRelocationToSameIDCountsAsMissing() {
+        let ids = Set((0..<10).map { "id\($0)" })
+        let found = ids.subtracting(["id9"])
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: ["id9": "id9"], fullAccess: true)
+        XCTAssertTrue(plan.reassign.isEmpty)
+        XCTAssertEqual(plan.remove, ["id9"])
+    }
+
+    func testRelocationKeepsCapForTheRest() {
+        let ids = Set((0..<10).map { "id\($0)" })
+        let found: Set<String> = ["id0"]
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: ["id1": "n1"], fullAccess: true)
+        XCTAssertEqual(plan.reassign, ["id1": "n1"])
+        XCTAssertTrue(plan.remove.isEmpty, "다시 찾고 남은 8개는 여전히 상한을 넘는다 — 지우지 않는다")
+    }
+
+    func testPlanDoesNothingWithoutFullAccess() {
+        let plan = AssetReconciler.plan(ids: ["a", "b"], found: ["a"], relocated: ["b": "b2"], fullAccess: false)
+        XCTAssertTrue(plan.reassign.isEmpty)
+        XCTAssertTrue(plan.remove.isEmpty)
+    }
 }

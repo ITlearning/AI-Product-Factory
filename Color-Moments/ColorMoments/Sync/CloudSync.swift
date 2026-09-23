@@ -227,7 +227,12 @@ final class CloudSync: CKSyncEngineDelegate {
                     add([.saveRecord(id)])
                 case .unknownItem:
                     forget(id)
-                    add([.saveRecord(id)])
+                    // 다른 기기가 지운 기록이다 — Moment 를 다시 저장하면 되살아난다(§3-4). Day 만 다시 올린다.
+                    if case .moment(let uuid) = SyncRecords.ref(id) {
+                        store.applyRemote(upserts: [], deletes: [uuid])
+                    } else {
+                        add([.saveRecord(id)])
+                    }
                 case .networkFailure, .networkUnavailable, .zoneBusy, .serviceUnavailable,
                      .notAuthenticated, .operationCancelled, .requestRateLimited:
                     break  // 엔진이 알아서 다시 시도한다
