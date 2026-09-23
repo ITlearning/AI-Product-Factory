@@ -8,13 +8,16 @@ public struct CaptureScreen: View {
     private let onClose: (() -> Void)?
 
     private let showsDismissHint: Bool
+    private let onLibrary: (() -> Void)?
     @State private var pinching = false
     @State private var viewingShots = false
 
-    public init(engine: CaptureEngine, onClose: (() -> Void)? = nil, showsDismissHint: Bool = false) {
+    public init(engine: CaptureEngine, onClose: (() -> Void)? = nil, showsDismissHint: Bool = false,
+                onLibrary: (() -> Void)? = nil) {
         self.engine = engine
         self.onClose = onClose
         self.showsDismissHint = showsDismissHint
+        self.onLibrary = onLibrary
     }
 
     private static let windowRatio: CGFloat = 560 / 370
@@ -131,6 +134,24 @@ public struct CaptureScreen: View {
                         .overlay(Circle().fill(.white).frame(width: 60, height: 60))
                 }
                 .buttonStyle(.plain)
+                HStack {
+                    if let onLibrary {
+                        Button(action: onLibrary) {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 18))
+                                .foregroundStyle(Tone.secondary)
+                                .frame(width: 46, height: 46)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                        .strokeBorder(Tone.hairline, lineWidth: 1.5)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("사진첩에서 담기")
+                        .padding(.leading, 32)
+                    }
+                    Spacer()
+                }
                 HStack {
                     Spacer()
                     Button { if !engine.stack.isEmpty { viewingShots = true } } label: {

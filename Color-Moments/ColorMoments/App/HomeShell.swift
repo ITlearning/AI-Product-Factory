@@ -18,6 +18,7 @@ struct HomeShell: View {
 
     private static let axisBias: CGFloat = 2.2
     @State private var camera: CaptureEngine?
+    @State private var pickingLibrary = false
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
     @AppStorage("didSeeFirstRun") private var didSeeFirstRun = false
@@ -61,6 +62,11 @@ struct HomeShell: View {
         }
         .preferredColorScheme(.dark)
         .dayGift(store: store, gifts: gifts)
+        .fullScreenCover(isPresented: $pickingLibrary) {
+            LibraryPickerView(store: store) { n in
+                if n > 0 { camera?.confirm("담겼어요") }
+            }
+        }
         #if DEBUG
         .overlay(alignment: .topTrailing) {
 
@@ -79,7 +85,7 @@ struct HomeShell: View {
     private var cameraSide: some View {
         if let camera {
 
-            CaptureScreen(engine: camera, onClose: { progress = 0 })
+            CaptureScreen(engine: camera, onClose: { progress = 0 }, onLibrary: { pickingLibrary = true })
         }
     }
 

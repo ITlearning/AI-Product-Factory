@@ -126,6 +126,7 @@
 		CF1B9077022792BE565162B8 /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
+		D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */; };
 		DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
 		DBB09AAD1137F1515A685A4D /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		E0A11DC00DADAE32564950AC /* LibrarySectionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */; };
@@ -235,6 +236,7 @@
 		927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeCeremony.swift; sourceTree = "<group>"; };
 		953A1415A221B2ED1198C5E8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		9D560E148CF707BADEB351E9 /* DayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreTests.swift; sourceTree = "<group>"; };
+		9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPickerView.swift; sourceTree = "<group>"; };
 		A0A48C2B255FB6B7DFA973C5 /* words.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = words.json; sourceTree = "<group>"; };
 		ACD34409978D5C9CDE7304E7 /* WordList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordList.swift; sourceTree = "<group>"; };
 		B180428138319F72B026C570 /* PebbleNameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNameTests.swift; sourceTree = "<group>"; };
@@ -447,6 +449,7 @@
 			isa = PBXGroup;
 			children = (
 				F38C217645C6BE7612CAB2C8 /* LibraryImporter.swift */,
+				9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */,
 			);
 			path = Library;
 			sourceTree = "<group>";
@@ -759,6 +762,7 @@
 				2EB93D8ABBF2916AEEE1F2F1 /* HomeView.swift in Sources */,
 				AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */,
 				172DFE11B4A2ABB242240925 /* LibraryImporter.swift in Sources */,
+				D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */,
 				923895A999E487D30889239A /* LibrarySections.swift in Sources */,
 				50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */,
 				1BA230406A06170D47C94E8E /* PebbleName.swift in Sources */,
@@ -844,7 +848,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "몽돌";
 				INFOPLIST_KEY_NSCameraUsageDescription = "순간의 색을 남기기 위해 카메라를 사용합니다.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "촬영한 사진을 사진 앱에도 저장합니다.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "오늘 찍은 사진에서 색을 읽어 하루 뱃지를 만듭니다. 사진은 기기 밖으로 나가지 않습니다.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "고른 사진을 몽돌에 담고, 찍은 시각과 장소를 하루에 씁니다. 사진은 기기 밖으로 나가지 않습니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -1081,7 +1085,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "몽돌";
 				INFOPLIST_KEY_NSCameraUsageDescription = "순간의 색을 남기기 위해 카메라를 사용합니다.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "촬영한 사진을 사진 앱에도 저장합니다.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "오늘 찍은 사진에서 색을 읽어 하루 뱃지를 만듭니다. 사진은 기기 밖으로 나가지 않습니다.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "고른 사진을 몽돌에 담고, 찍은 시각과 장소를 하루에 씁니다. 사진은 기기 밖으로 나가지 않습니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;

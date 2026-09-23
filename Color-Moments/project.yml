@@ -33,7 +33,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_CFBundleDisplayName: 몽돌
         INFOPLIST_KEY_NSCameraUsageDescription: 순간의 색을 남기기 위해 카메라를 사용합니다.
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: 오늘 찍은 사진에서 색을 읽어 하루 뱃지를 만듭니다. 사진은 기기 밖으로 나가지 않습니다.
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: 고른 사진을 몽돌에 담고, 찍은 시각과 장소를 하루에 씁니다. 사진은 기기 밖으로 나가지 않습니다.
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: 촬영한 사진을 사진 앱에도 저장합니다.
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         INFOPLIST_KEY_UILaunchScreen_Generation: true

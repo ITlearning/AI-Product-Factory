@@ -167,10 +167,10 @@ public final class CaptureEngine: NSObject {
 
     private var confirmationToken = 0
 
-    private func showConfirmation() {
+    public func confirm(_ text: String = "담겼어요") {
         confirmationToken += 1
         let token = confirmationToken
-        confirmation = "담겼어요"
+        confirmation = text
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
             if self.confirmationToken == token { self.confirmation = nil }
         }
@@ -269,7 +269,7 @@ extension CaptureEngine: AVCapturePhotoCaptureDelegate {
                 self.stack.insert(StackItem(thumbnail: thumb, full: image), at: 0)
                 if self.stack.count > Self.stackDepth { self.stack.removeLast() }
             }
-            self.showConfirmation()
+            self.confirm()
         }
     }
 }
