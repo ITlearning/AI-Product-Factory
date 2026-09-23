@@ -59,11 +59,19 @@ enum AssetSaver {
 /// 파일로 남은 Moment 를 사진 앱으로 옮기는 흐름 — 찍은 직후·잠금화면 가져온 직후·앱 시작(옛 사진)에서 같은 함수를 쓴다.
 enum AssetAdopter {
 
+    // 같은 Moment 를 캡처 직후 흐름과 adoptAll 이 동시에 부를 수 있어, 저장이 두 번 나가지 않게 막는다.
+    @MainActor private static var adopting: Set<Moment.ID> = []
+    @MainActor private static var isAdoptingAll = false
+
     @MainActor
     static func adopt(_ m: Moment, store: DayStore) async {
         guard m.assetID == nil else { return }
+        guard !adopting.contains(m.id) else { return }
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else { return }
+
+        adopting.insert(m.id)
+        defer { adopting.remove(m.id) }
 
         let fileURL = ShotImage.url(m.fileName)
         let location = m.place.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
@@ -78,15 +86,19 @@ enum AssetAdopter {
 
     @MainActor
     static func adoptAll(store: DayStore) async {
+        guard !isAdoptingAll else { return }
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else { return }
+
+        isAdoptingAll = true
+        defer { isAdoptingAll = false }
+
         // 사진첩에서 담은 옛 사본은 이미 assetID 가 있어 에셋으로 그려진다 — 남은 파일만 고아라 지운다.
+        // 사본이 아예 없는 fileBacked 파일(assetID == nil)은 여기서 지우지 않는다 — 반드시 adopt 를 거쳐 저장한 뒤에만 지운다.
         for m in store.moments where m.assetID != nil && m.fileName.hasPrefix("library-") {
             try? FileManager.default.removeItem(at: ShotImage.url(m.fileName))
         }
         for m in store.fileBacked {
-            guard !m.fileName.hasPrefix("library-") else {
-                try? FileManager.default.removeItem(at: ShotImage.url(m.fileName))
-                continue
-            }
             await adopt(m, store: store)
         }
     }
