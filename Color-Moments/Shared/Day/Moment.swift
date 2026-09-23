@@ -29,6 +29,8 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     /// 입양 전 원래 fileName(잠금화면 세션 파일 이름 등). 입양 뒤 fileName 이 자리 이름으로
     /// 바뀌어도 originalName 은 그대로라 재전달된 같은 사진을 중복 판정할 수 있다.
     public var originalName: String?
+    /// CloudKit 레코드 id. 이 기기가 붙였거나(setCloudID) 다른 기기에서 받은 기록에 이미 있다.
+    public var cloudID: String?
 
     public enum Source: String, Codable, Sendable {
 
@@ -42,7 +44,7 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     public init(id: UUID = UUID(), capturedAt: Date, colorHex: String,
                 fileName: String, source: Source, word: PhotoWord? = nil, labels: [String]? = nil,
                 assetID: String? = nil, place: Place? = nil, addedAt: Date? = nil, batchID: UUID? = nil,
-                originalName: String? = nil) {
+                originalName: String? = nil, cloudID: String? = nil) {
         self.id = id
         self.capturedAt = capturedAt
         self.colorHex = colorHex
@@ -55,6 +57,7 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
         self.addedAt = addedAt
         self.batchID = batchID
         self.originalName = originalName
+        self.cloudID = cloudID
     }
 }
 
@@ -87,5 +90,10 @@ public extension Moment {
     /// 입양된 사진의 자리 이름 — 실제 파일은 없다, fileName 중복 방지가 그대로 동작하게만 쓴다.
     static func assetFileName(for assetID: String) -> String {
         "asset-" + String(WordPicker.fnv1a(assetID), radix: 16)
+    }
+
+    /// 다른 기기에서 받은 기록의 자리 이름 — 파일은 없다. cloudID 가 있으면 사진 기준이라 기기마다 같다.
+    static func receivedFileName(cloudID: String?, id: UUID) -> String {
+        cloudID.map { "asset-" + String(WordPicker.fnv1a($0), radix: 16) } ?? "remote-\(id.uuidString)"
     }
 }
