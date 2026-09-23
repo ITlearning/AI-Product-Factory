@@ -196,6 +196,20 @@ final class GiftScheduleTests: XCTestCase {
         gifts.markGifted("2026-09-21")
         XCTAssertEqual(gifts.giftedDayKeys, ["2026-09-21"])
     }
+
+    func testGiftLogNotifiesLocalOnlyAndPersists() {
+        let d = UserDefaults(suiteName: UUID().uuidString)!
+        let log = GiftLog(defaults: d)
+        var got: [String] = []
+        log.onLocalChange = { got.append($0) }
+        log.markGifted("2026-09-21")
+        log.markGifted("2026-09-21")
+        log.applyRemote(gifted: "2026-09-22")
+        XCTAssertEqual(got, ["2026-09-21"], "다른 기기에서 온 증정은 되돌려 올리지 않는다")
+        let again = GiftLog(defaults: d)
+        XCTAssertTrue(again.isGifted("2026-09-21"))
+        XCTAssertTrue(again.isGifted("2026-09-22"))
+    }
 }
 
 final class CeremonyCopyTests: XCTestCase {

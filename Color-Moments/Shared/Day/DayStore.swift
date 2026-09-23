@@ -6,6 +6,10 @@ public final class DayStore {
 
     public private(set) var moments: [Moment] = []
 
+    /// 이 기기에서 실제로 바뀐 것만 — applyRemote 는 부르지 않는다(되돌아 올라가면 끝없이 돈다).
+    @ObservationIgnored
+    public var onLocalChange: (([StoreChange]) -> Void)?
+
     private let fileURL: URL
     private let closures: DayClosures
 
@@ -58,6 +62,7 @@ public final class DayStore {
         }) else { return false }
         moments.append(moment)
         save()
+        onLocalChange?([.upsert(moment.id)])
         return true
     }
 
@@ -65,13 +70,17 @@ public final class DayStore {
         guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].word == nil else { return }
         moments[i].word = word
         save()
+        onLocalChange?([.upsert(id)])
     }
 
     public func setLabels(_ id: Moment.ID, _ labels: [String]) {
         guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].labels == nil else { return }
         moments[i].labels = labels
         save()
+        onLocalChange?([.upsert(id)])
     }
+
+    public func moment(_ id: Moment.ID) -> Moment? { moments.first { $0.id == id } }
 
     public func recentWordIDs(excluding id: Moment.ID, limit: Int = 14) -> Set<String> {
         let others = moments.filter { $0.id != id && $0.word != nil }
@@ -88,29 +97,95 @@ public final class DayStore {
         moments.contains { $0.assetID == id }
     }
 
-    public var fileBacked: [Moment] { moments.filter { $0.assetID == nil } }
+    /// 이 기기에 원본 파일이 있는 기록만 — 자리 이름(asset-·remote-)은 파일이 없다.
+    public var fileBacked: [Moment] {
+        moments.filter { $0.assetID == nil && !$0.fileName.hasPrefix("asset-") && !$0.fileName.hasPrefix("remote-") }
+    }
+
+    public var unresolved: [Moment] { moments.filter { $0.assetID == nil && $0.cloudID != nil } }
 
     /// 실제로 입양(assetID 를 채움)했으면 true. 이미 입양됐거나 없는 id 면 false —
     /// 호출부(AssetAdopter)는 이 값으로만 로컬 파일을 지울지 판단해야 한다.
     @discardableResult
     public func adopt(_ id: Moment.ID, assetID: String) -> Bool {
         guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].assetID == nil else { return false }
-        let m = moments[i]
-        moments[i] = Moment(id: m.id, capturedAt: m.capturedAt, colorHex: m.colorHex,
-                             fileName: Moment.assetFileName(for: assetID), source: m.source,
-                             word: m.word, labels: m.labels, assetID: assetID,
-                             place: m.place, addedAt: m.addedAt, batchID: m.batchID,
-                             originalName: m.originalName)
+        moments[i] = reassetted(moments[i], assetID: assetID)
         save()
         return true
     }
 
+    /// 받은 기록(assetID 없음)에 이 기기 사진을 다시 찾아 붙인다. adopt 와 달리 알리지 않는다 — assetID 는 이 기기 전용.
+    public func resolveAsset(_ id: Moment.ID, assetID: String) {
+        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].assetID == nil else { return }
+        moments[i] = reassetted(moments[i], assetID: assetID)
+        save()
+    }
+
+    private func reassetted(_ m: Moment, assetID: String) -> Moment {
+        Moment(id: m.id, capturedAt: m.capturedAt, colorHex: m.colorHex,
+               fileName: Moment.assetFileName(for: assetID), source: m.source,
+               word: m.word, labels: m.labels, assetID: assetID,
+               place: m.place, addedAt: m.addedAt, batchID: m.batchID,
+               originalName: m.originalName, cloudID: m.cloudID)
+    }
+
     public func remove(assetIDs: Set<String>) {
         guard !assetIDs.isEmpty else { return }
-        let kept = moments.filter { !($0.assetID.map(assetIDs.contains) ?? false) }
-        guard kept.count != moments.count else { return }
-        moments = kept
+        let removed = moments.filter { $0.assetID.map(assetIDs.contains) ?? false }
+        guard !removed.isEmpty else { return }
+        moments.removeAll { $0.assetID.map(assetIDs.contains) ?? false }
         save()
+        onLocalChange?(removed.map { .delete($0.id) })
+    }
+
+    public func setCloudID(_ id: Moment.ID, _ cloudID: String) {
+        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].cloudID == nil else { return }
+        moments[i].cloudID = cloudID
+        if let j = moments.firstIndex(where: { $0.id != id && $0.cloudID == cloudID }) {
+            let (winner, loser) = MomentMerge.keeps(moments[i], over: moments[j]) ? (i, j) : (j, i)
+            // winner 가 이 기기 것(assetID 있음)이면 merge 로 덮지 않는다 — merge 는 assetID 를 loser 것으로 가져간다.
+            let merged = moments[winner].assetID != nil ? moments[winner] : MomentMerge.merge(local: moments[loser], remote: moments[winner])
+            let loserID = moments[loser].id
+            moments[winner] = merged
+            moments.remove(at: loser)
+            save()
+            onLocalChange?([.delete(loserID), .upsert(merged.id)])
+            return
+        }
+        save()
+        onLocalChange?([.upsert(id)])
+    }
+
+    @discardableResult
+    public func applyRemote(upserts: [Moment], deletes: Set<Moment.ID>) -> [StoreChange] {
+        var push: [StoreChange] = []
+        var changed = false
+        if !deletes.isEmpty {
+            let before = moments.count
+            moments.removeAll { deletes.contains($0.id) }
+            changed = moments.count != before
+        }
+        for remote in upserts {
+            if let i = moments.firstIndex(where: { $0.id == remote.id }) {
+                let merged = MomentMerge.merge(local: moments[i], remote: remote)
+                if merged != moments[i] { moments[i] = merged; changed = true }
+                if !MomentMerge.syncedEqual(merged, remote) { push.append(.upsert(merged.id)) }
+            } else if let cid = remote.cloudID, let j = moments.firstIndex(where: { $0.cloudID == cid }) {
+                if MomentMerge.keeps(remote, over: moments[j]) {
+                    let loser = moments[j]
+                    moments[j] = MomentMerge.merge(local: loser, remote: remote)
+                    push.append(.delete(loser.id))
+                    changed = true
+                } else {
+                    push.append(.delete(remote.id))
+                }
+            } else {
+                moments.append(remote)
+                changed = true
+            }
+        }
+        if changed { save() }
+        return push
     }
 
     /// 「오늘 마무리하기」를 보여줘도(눌러도) 되는지 — 오늘이고, 사진이 있고, 아직 안 닫혔을 때만.
@@ -137,12 +212,14 @@ public final class DayStore {
     }
 
     public func removeAll() {
+        let removed = moments
         moments = []
         save()
         let fm = FileManager.default
         let files = (try? fm.contentsOfDirectory(at: ShotStore.directory,
                                                  includingPropertiesForKeys: nil)) ?? []
         for f in files { try? fm.removeItem(at: f) }
+        if !removed.isEmpty { onLocalChange?(removed.map { .delete($0.id) }) }
     }
 
     private func load() {
