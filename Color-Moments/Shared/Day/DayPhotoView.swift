@@ -88,7 +88,7 @@ struct DayPhotoView: View {
         guard m.word == nil else { return }
         let words = await BundledWordSource().words()
         let recent = store.recentWordIDs(excluding: m.id)
-        guard let pw = WordPicker.photoWord(for: PhotoContext(date: m.capturedAt), in: words,
+        guard let pw = WordPicker.photoWord(for: PhotoContext(date: m.capturedAt), labels: [], in: words,
                                             excluding: recent, seed: m.id.uuidString) else { return }
         store.assignWord(m.id, pw)
     }

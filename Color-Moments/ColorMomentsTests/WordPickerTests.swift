@@ -3,92 +3,71 @@ import XCTest
 
 final class WordPickerTests: XCTestCase {
 
-    private func w(_ id: String, times: [TimeBand] = [], weathers: [Weather] = [], seasons: [Season] = [], subjects: [String] = []) -> WordEntry {
+    private func w(_ id: String, times: [TimeBand] = [], weathers: [Weather] = [], seasons: [Season] = [],
+                   subjects: [String] = ["sky"]) -> WordEntry {
         WordEntry(id: id, word: id, meaning: "뜻 \(id)", times: times, weathers: weathers, seasons: seasons, subjects: subjects)
     }
 
-    private let duskCalendar: Calendar = {
-        var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "UTC")!; return c
-    }()
-
-    private lazy var dusk = PhotoContext(date: Date(timeIntervalSince1970: 18 * 3600), calendar: duskCalendar)
-    // 1970-01-01 18:00 UTC → dusk, winter
-
-    func testFixtureContextIsDuskWinter() {
-        XCTAssertEqual(dusk.timeBand, .dusk); XCTAssertEqual(dusk.season, .winter)
+    private let utc: Calendar = { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "UTC")!; return c }()
+    private var dusk: PhotoContext { PhotoContext(date: Date(timeIntervalSince1970: 18 * 3600), calendar: utc) } // 1970-01-01 18:00 → dusk, winter
+    private func pick(_ ctx: PhotoContext, _ labels: Set<String>, _ words: [WordEntry], recent: Set<String> = []) -> [String] {
+        WordPicker.candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: "s").map(\.id)
     }
 
-    func testMatchesTimeAndSeasonAndTreatsEmptyAsAny() {
-        let words = [w("a", times: [.dusk]), w("b", times: [.dawn]), w("c"), w("d", seasons: [.summer])]
-        let ids = Set(WordPicker.candidates(for: dusk, in: words, excluding: [], seed: "s").map(\.id))
-        XCTAssertEqual(ids, ["a", "c"])
+    func testFixtureIsDuskWinter() { XCTAssertEqual(dusk.timeBand, .dusk); XCTAssertEqual(dusk.season, .winter) }
+
+    func testOnlyWordsWhoseSubjectIsInThePhoto() {
+        let words = [w("sea", subjects: ["ocean"]), w("desk", subjects: ["laptop"]), w("idle", subjects: [])]
+        XCTAssertEqual(pick(dusk, ["ocean", "sky"], words), ["sea"])
     }
 
-    func testWordNeedingWeatherIsSkippedWhenPhotoHasNone() {
-        let words = [w("rainy", weathers: [.rain]), w("any")]
-        XCTAssertEqual(WordPicker.candidates(for: dusk, in: words, excluding: [], seed: "s").map(\.id), ["any"])
+    func testNothingFitsMeansNothing() {
+        XCTAssertEqual(pick(dusk, ["laptop"], [w("sea", subjects: ["ocean"])]), [], "맞는 말이 없으면 비워 둔다")
+        XCTAssertEqual(pick(dusk, [], [w("sea", subjects: ["ocean"])]), [])
     }
 
-    func testRecentWordsAreExcluded() {
-        let words = [w("a"), w("b"), w("c")]
-        let ids = Set(WordPicker.candidates(for: dusk, in: words, excluding: ["a", "b"], seed: "s").map(\.id))
-        XCTAssertEqual(ids, ["c"])
+    func testTimeBandIsNeverRelaxed() {
+        let words = [w("dawnword", times: [.dawn])]
+        XCTAssertEqual(pick(dusk, ["sky"], words), [], "해질녘 하늘에 새벽 말이 붙으면 안 된다")
     }
 
-    func testRelaxesWeatherBeforeSeasonBeforeTime() {
-        let onlyWeather = [w("x", times: [.dusk], weathers: [.snow], seasons: [.winter])]
-        XCTAssertEqual(WordPicker.candidates(for: dusk, in: onlyWeather, excluding: [], seed: "s").map(\.id), ["x"],
-                       "날씨 단어뿐이면 최종 폴백으로 나온다 — dusk 픽스처엔 날씨가 없어 매칭 자체가 안 된다")
-
-        let snowDusk = PhotoContext(date: Date(timeIntervalSince1970: 18 * 3600), weather: .snow, calendar: duskCalendar)
-        let weatherWrong = [w("p", times: [.dusk], weathers: [.rain], seasons: [.winter]),
-                            w("q", times: [.dusk], weathers: [.fog], seasons: [.summer])]
-        XCTAssertEqual(WordPicker.candidates(for: snowDusk, in: weatherWrong, excluding: [], seed: "s").map(\.id), ["p"],
-                       "날씨를 계절보다 먼저 풀어야 한다 — 눈 오는 사진엔 계절 안 맞는 겨울 말이 여름 말보다 낫다")
-
-        let seasonWrong = [w("y", times: [.dusk], seasons: [.summer]), w("z", times: [.dawn], seasons: [.winter])]
-        XCTAssertEqual(WordPicker.candidates(for: dusk, in: seasonWrong, excluding: [], seed: "s").map(\.id), ["y"],
-                       "계절을 시간대보다 먼저 풀어야 한다 — 해질녘 사진에 새벽 말이 붙으면 안 된다")
+    func testSeasonRelaxesWhenNothingElseFits() {
+        XCTAssertEqual(pick(dusk, ["sky"], [w("summerword", seasons: [.summer])]), ["summerword"])
     }
 
-    func testWeatherlessPhotoNeverGetsWeatherWordEvenWhenRecentExcludesEverythingElse() {
-        let words = [w("plain", times: [.dusk]), w("rainy", weathers: [.rain])]
-        XCTAssertEqual(WordPicker.candidates(for: dusk, in: words, excluding: ["plain"], seed: "s").map(\.id), ["plain"],
-                       "recent 로 막힌 날씨 없는 단어라도, recent 를 해제해서라도 날씨 단어보다 먼저 나온다")
+    func testWeatherlessPhotoSkipsWeatherWords() {
+        let words = [w("rainy", weathers: [.rain]), w("plain")]
+        XCTAssertEqual(pick(dusk, ["sky"], words), ["plain"])
+        XCTAssertEqual(pick(dusk, ["sky"], [w("rainy", weathers: [.rain])]), [], "날씨를 모르면 날씨 말은 끝까지 안 쓴다")
     }
 
-    func testWeatherWordOnlyAppearsAsFinalFallbackWhenNothingElseExists() {
-        let words = [w("rainy", weathers: [.rain])]
-        XCTAssertEqual(WordPicker.candidates(for: dusk, in: words, excluding: [], seed: "s").map(\.id), ["rainy"],
-                       "날씨 없는 사진에 날씨 단어뿐이면, 최종 폴백에서만 나온다")
+    func testKnownWeatherMatchesAndRelaxesBeforeSeason() {
+        let snowy = PhotoContext(date: Date(timeIntervalSince1970: 18 * 3600), weather: .snow, calendar: utc)
+        XCTAssertEqual(pick(snowy, ["snow"], [w("snowword", weathers: [.snow], subjects: ["snow"])]), ["snowword"])
+        let words = [w("p", weathers: [.rain], seasons: [.winter]), w("q", weathers: [.fog], seasons: [.summer])]
+        XCTAssertEqual(pick(snowy, ["sky"], words), ["p"], "날씨를 계절보다 먼저 푼다")
     }
 
-    func testFallsBackToEverythingWhenAllAreRecent() {
+    func testRecentIsExcludedThenReleased() {
         let words = [w("a"), w("b")]
-        XCTAssertEqual(WordPicker.candidates(for: dusk, in: words, excluding: ["a", "b"], seed: "s").count, 2)
+        XCTAssertEqual(pick(dusk, ["sky"], words, recent: ["a"]), ["b"])
+        XCTAssertEqual(Set(pick(dusk, ["sky"], words, recent: ["a", "b"])), ["a", "b"], "다 최근이면 반복을 허용한다")
     }
 
-    func testSameSeedSameOrderDifferentSeedCanDiffer() {
+    func testSameSeedSameOrderAndLimit() {
         let words = (0..<20).map { w("w\($0)") }
-        let a = WordPicker.candidates(for: dusk, in: words, excluding: [], seed: "photo-1").map(\.id)
-        let b = WordPicker.candidates(for: dusk, in: words, excluding: [], seed: "photo-1").map(\.id)
-        let c = WordPicker.candidates(for: dusk, in: words, excluding: [], seed: "photo-2").map(\.id)
-        XCTAssertEqual(a, b)
-        XCTAssertNotEqual(a, c)
-        XCTAssertEqual(a.count, 8, "limit 기본 8")
+        let a = WordPicker.candidates(for: dusk, labels: ["sky"], in: words, excluding: [], seed: "photo-1").map(\.id)
+        let b = WordPicker.candidates(for: dusk, labels: ["sky"], in: words, excluding: [], seed: "photo-1").map(\.id)
+        let c = WordPicker.candidates(for: dusk, labels: ["sky"], in: words, excluding: [], seed: "photo-2").map(\.id)
+        XCTAssertEqual(a, b); XCTAssertNotEqual(a, c); XCTAssertEqual(a.count, 8)
     }
 
     func testFNVIsStableAcrossRuns() {
-        XCTAssertEqual(WordPicker.fnv1a("a"), 0xaf63dc4c8601ec8c, "FNV-1a 64 표준값 — Hasher 로 바꾸면 여기서 깨진다")
+        XCTAssertEqual(WordPicker.fnv1a("a"), 0xaf63dc4c8601ec8c)
     }
 
     func testPhotoWordCopiesTheFirstCandidate() throws {
-        let words = [w("a", times: [.dusk])]
-        let pw = try XCTUnwrap(WordPicker.photoWord(for: dusk, in: words, excluding: [], seed: "s"))
+        let pw = try XCTUnwrap(WordPicker.photoWord(for: dusk, labels: ["sky"], in: [w("a")], excluding: [], seed: "s"))
         XCTAssertEqual(pw, PhotoWord(wordID: "a", word: "a", meaning: "뜻 a"))
-    }
-
-    func testEmptyListGivesNothing() {
-        XCTAssertNil(WordPicker.photoWord(for: dusk, in: [], excluding: [], seed: "s"))
     }
 }

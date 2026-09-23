@@ -23,25 +23,26 @@ public enum WordPicker {
         return true
     }
 
-    public static func candidates(for ctx: PhotoContext, in words: [WordEntry], excluding recent: Set<String>,
-                                  seed: String, limit: Int = 8) -> [WordEntry] {
-        // 날씨를 모르는 사진에 날씨 말이 붙으면 영구히 틀린 채 남는다 — 최종 폴백 전까지 뺀다.
-        let pool = ctx.weather == nil ? words.filter { $0.weathers.isEmpty } : words
-        let steps = [Check(), Check(weather: false), Check(weather: false, season: false),
-                     Check(weather: false, season: false, time: false)]
-        var found: [WordEntry] = []
-        for k in steps {
-            found = pool.filter { !recent.contains($0.id) && matches($0, ctx, k) }
-            if !found.isEmpty { break }
+    public static func candidates(for ctx: PhotoContext, labels: Set<String>, in words: [WordEntry],
+                                  excluding recent: Set<String>, seed: String, limit: Int = 8) -> [WordEntry] {
+        var pool = words.filter { !$0.subjects.isEmpty && !labels.isDisjoint(with: $0.subjects) }
+        // 날씨를 모르는 사진에 날씨 말이 붙으면 영구히 틀린 채 남는다.
+        if ctx.weather == nil { pool = pool.filter { $0.weathers.isEmpty } }
+        let steps = [Check(), Check(weather: false), Check(weather: false, season: false)]
+        for skipRecent in [true, false] {
+            for k in steps {
+                let found = pool.filter { !(skipRecent && recent.contains($0.id)) && matches($0, ctx, k) }
+                if !found.isEmpty {
+                    return Array(found.sorted { fnv1a(seed + ":" + $0.id) < fnv1a(seed + ":" + $1.id) }.prefix(limit))
+                }
+            }
         }
-        if found.isEmpty { found = pool }
-        if found.isEmpty { found = words }
-        return Array(found.sorted { fnv1a(seed + ":" + $0.id) < fnv1a(seed + ":" + $1.id) }.prefix(limit))
+        return []
     }
 
-    public static func photoWord(for ctx: PhotoContext, in words: [WordEntry], excluding recent: Set<String>,
-                                 seed: String) -> PhotoWord? {
-        candidates(for: ctx, in: words, excluding: recent, seed: seed).first
+    public static func photoWord(for ctx: PhotoContext, labels: Set<String>, in words: [WordEntry],
+                                 excluding recent: Set<String>, seed: String) -> PhotoWord? {
+        candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed).first
             .map { PhotoWord(wordID: $0.id, word: $0.word, meaning: $0.meaning) }
     }
 
