@@ -1,3 +1,4 @@
+import Photos
 import SwiftUI
 
 @main
@@ -13,6 +14,12 @@ struct ColorMomentsApp: App {
                     inbox.dayStore = store
                     inbox.loadExisting()
                     inbox.start()
+
+                    ShotImage.assetSource = PhotoAssetSource()
+                    let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                    if status == .authorized || status == .limited {
+                        await AssetAdopter.adoptAll(store: store)
+                    }
                 }
         }
     }

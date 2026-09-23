@@ -26,6 +26,7 @@
 		1CC5449DA7CB344D2AC45E80 /* Moment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEE28AD42D812B8F599EBC /* Moment.swift */; };
 		1D2767C95B157B92C97CF81B /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
 		1DD1FF00D5EDCFB073D97FBE /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
+		1F708EB7D0F030E7D61A9217 /* PhotoAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */; };
 		20BA6C3D955339FFEE5D1C78 /* ShotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0455554135392A7015D4068F /* ShotStore.swift */; };
 		2106F212ED450D8F5C0130AB /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
 		222B37199099F7A940817E14 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
@@ -228,6 +229,7 @@
 		431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Subset.ttf"; sourceTree = "<group>"; };
 		5AADBCB38DB09CEFBA41590A /* ColorMoments.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ColorMoments.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B689D73DBFBD16C7B857686 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
+		604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAssets.swift; sourceTree = "<group>"; };
 		68CF7D8E8818E871DBABBDBF /* ColorMomentsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ColorMomentsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		69825FD346FEC03526525AE5 /* SheenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheenTests.swift; sourceTree = "<group>"; };
 		6F7537CCE985C86CC09C1787 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
@@ -463,6 +465,7 @@
 			children = (
 				F38C217645C6BE7612CAB2C8 /* LibraryImporter.swift */,
 				9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */,
+				604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */,
 			);
 			path = Library;
 			sourceTree = "<group>";
@@ -785,6 +788,7 @@
 				50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */,
 				1BA230406A06170D47C94E8E /* PebbleName.swift in Sources */,
 				F1CEB3009284EB172D1766E8 /* PebbleView.swift in Sources */,
+				1F708EB7D0F030E7D61A9217 /* PhotoAssets.swift in Sources */,
 				EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */,
 				98852006EFA9EF70BC5E5A9E /* PhotoLabeler.swift in Sources */,
 				13113400A994950BF4DBE791 /* ShotImage.swift in Sources */,
