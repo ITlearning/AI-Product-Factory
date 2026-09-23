@@ -5,12 +5,14 @@ final class DayStoreTests: XCTestCase {
 
     private var tempFile: URL!
     private var store: DayStore!
+    private var closures: DayClosures!
 
     override func setUp() {
         super.setUp()
         tempFile = FileManager.default.temporaryDirectory
             .appendingPathComponent("days-\(UUID().uuidString).json")
-        store = DayStore(fileURL: tempFile)
+        closures = DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        store = DayStore(fileURL: tempFile, closures: closures)
     }
 
     override func tearDown() {
@@ -65,7 +67,7 @@ final class DayStoreTests: XCTestCase {
 
     func testPersistsAcrossInstances() {
         store.add(moment(date(2026, 9, 22, 12, 0), "#AABBCC", name: "p.jpg"))
-        let reopened = DayStore(fileURL: tempFile)
+        let reopened = DayStore(fileURL: tempFile, closures: closures)
         XCTAssertEqual(reopened.moments.count, 1)
         XCTAssertEqual(reopened.moments.first?.colorHex, "#AABBCC")
     }
@@ -76,7 +78,7 @@ final class DayStoreTests: XCTestCase {
           "fileName":"old.jpg","source":"app","colorWasChosen":true}]
         """
         try Data(legacy.utf8).write(to: tempFile)
-        let reopened = DayStore(fileURL: tempFile)
+        let reopened = DayStore(fileURL: tempFile, closures: closures)
         XCTAssertEqual(reopened.moments.first?.colorHex, "#F0A896", "색 고르기 시절 기록이 사라지면 그날 조약돌이 없어진다")
     }
 
@@ -84,7 +86,7 @@ final class DayStoreTests: XCTestCase {
         store.add(moment(date(2026, 9, 22, 12, 0), name: "x.jpg"))
         store.removeAll()
         XCTAssertTrue(store.moments.isEmpty)
-        XCTAssertTrue(DayStore(fileURL: tempFile).moments.isEmpty, "파일에서도 지워져야 한다")
+        XCTAssertTrue(DayStore(fileURL: tempFile, closures: closures).moments.isEmpty, "파일에서도 지워져야 한다")
     }
 
     func testAssignWordPersistsAndNeverOverwrites() {
@@ -93,7 +95,7 @@ final class DayStoreTests: XCTestCase {
         store.setLabels(m.id, ["rain"])
         store.assignWord(m.id, PhotoWord(wordID: "neungae", word: "는개", meaning: "가는 비"))
         store.assignWord(m.id, PhotoWord(wordID: "yunseul", word: "윤슬", meaning: "잔물결"))
-        XCTAssertEqual(DayStore(fileURL: tempFile).moments.first?.word?.wordID, "neungae",
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.word?.wordID, "neungae",
                        "한 번 붙은 단어가 바뀌면 같은 사진이 뽑기가 된다")
     }
 
@@ -132,7 +134,7 @@ final class DayStoreTests: XCTestCase {
           "fileName":"pre.jpg","source":"app"}]
         """
         try Data(legacy.utf8).write(to: tempFile)
-        let m = try XCTUnwrap(DayStore(fileURL: tempFile).moments.first)
+        let m = try XCTUnwrap(DayStore(fileURL: tempFile, closures: closures).moments.first)
         XCTAssertNil(m.word)
         XCTAssertEqual(m.colorHex, "#AABBCC")
     }
@@ -142,7 +144,7 @@ final class DayStoreTests: XCTestCase {
         store.add(m)
         store.setLabels(m.id, ["sky"])
         store.setLabels(m.id, ["laptop"])
-        XCTAssertEqual(DayStore(fileURL: tempFile).moments.first?.labels, ["sky"])
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.labels, ["sky"])
     }
 
     func testWordWithoutLabelsIsDroppedOnLoad() throws {
@@ -153,7 +155,7 @@ final class DayStoreTests: XCTestCase {
           "labels":["sky"],"word":{"wordID":"meondong","word":"먼동","meaning":"m"}}]
         """
         try Data(legacy.utf8).write(to: tempFile)
-        let ms = DayStore(fileURL: tempFile).moments.sorted { $0.fileName < $1.fileName }
+        let ms = DayStore(fileURL: tempFile, closures: closures).moments.sorted { $0.fileName < $1.fileName }
         XCTAssertNil(ms[0].word, "사진을 안 보고 붙은 옛 단어는 지운다")
         XCTAssertEqual(ms[1].word?.wordID, "meondong", "사진을 보고 붙은 단어는 그대로")
     }
@@ -204,7 +206,7 @@ final class DayStoreTests: XCTestCase {
         [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC","fileName":"old.jpg","source":"app"}]
         """
         try Data(legacy.utf8).write(to: tempFile)
-        let m = try XCTUnwrap(DayStore(fileURL: tempFile).moments.first)
+        let m = try XCTUnwrap(DayStore(fileURL: tempFile, closures: closures).moments.first)
         XCTAssertNil(m.assetID); XCTAssertNil(m.place); XCTAssertNil(m.addedAt); XCTAssertNil(m.batchID)
     }
 
@@ -287,7 +289,7 @@ final class DayStoreTests: XCTestCase {
         [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC","fileName":"old.jpg","source":"app"}]
         """
         try Data(legacy.utf8).write(to: tempFile)
-        let m = try XCTUnwrap(DayStore(fileURL: tempFile).moments.first)
+        let m = try XCTUnwrap(DayStore(fileURL: tempFile, closures: closures).moments.first)
         XCTAssertNil(m.originalName, "옛 기록엔 originalName 이 없다 — nil 로 읽혀야 한다")
     }
 

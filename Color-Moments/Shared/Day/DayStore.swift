@@ -9,7 +9,8 @@ public final class DayStore {
     private let fileURL: URL
     private let closures: DayClosures
 
-    public init(fileURL: URL? = nil, closures: DayClosures = DayClosures()) {
+    // closures 는 기본값을 주지 않는다 — 묵시적으로 .standard 를 공유하면 테스트가 실기기 저장소를 건드린다.
+    public init(fileURL: URL? = nil, closures: DayClosures) {
         self.fileURL = fileURL ?? FileManager.default
             .urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("days.json")
@@ -110,6 +111,12 @@ public final class DayStore {
         guard kept.count != moments.count else { return }
         moments = kept
         save()
+    }
+
+    /// 「오늘 마무리하기」를 보여줘도(눌러도) 되는지 — 오늘이고, 사진이 있고, 아직 안 닫혔을 때만.
+    public func canClose(_ dayKey: String, now: Date = Date()) -> Bool {
+        guard dayKey == Moment.dayKey(for: now), !isFinished(dayKey) else { return false }
+        return !moments(on: dayKey).isEmpty
     }
 
     public func hasSealedMoments(on dayKey: String) -> Bool {

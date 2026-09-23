@@ -120,7 +120,7 @@ struct SpikeView: View {
                     } footer: {
                         Text("""
                         자정에 나올 장면입니다. 미리 보기는 이력에 남지 않아 진짜 증정을 잡아먹지 않습니다.
-                        마지막 증정: \(gifts.lastGiftedDayKey ?? "없음")
+                        마지막 증정: \(gifts.giftedDayKeys.sorted().last ?? "없음")
                         """)
                     }
 

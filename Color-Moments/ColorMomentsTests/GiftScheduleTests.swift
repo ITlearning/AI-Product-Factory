@@ -4,72 +4,96 @@ import XCTest
 final class GiftScheduleTests: XCTestCase {
 
     func testTodayIsNeverGifted() {
-        XCTAssertNil(GiftSchedule.pending(dayKeys: ["2026-09-22"],
-                                          lastGifted: nil,
-                                          today: "2026-09-22"))
+        XCTAssertNil(GiftSchedule.pending(dayKeys: ["2026-09-22"], today: "2026-09-22",
+                                          isGifted: { _ in false }))
     }
 
     func testFirstRunGiftsTheMostRecentFinishedDay() {
-        XCTAssertEqual(GiftSchedule.pending(dayKeys: ["2026-09-22", "2026-09-21"],
-                                            lastGifted: nil,
-                                            today: "2026-09-22"),
+        XCTAssertEqual(GiftSchedule.pending(dayKeys: ["2026-09-22", "2026-09-21"], today: "2026-09-22",
+                                            isGifted: { _ in false }),
                        "2026-09-21")
     }
 
     func testAlreadyGiftedDayDoesNotComeBack() {
-        XCTAssertNil(GiftSchedule.pending(dayKeys: ["2026-09-22", "2026-09-21"],
-                                          lastGifted: "2026-09-21",
-                                          today: "2026-09-22"))
+        XCTAssertNil(GiftSchedule.pending(dayKeys: ["2026-09-22", "2026-09-21"], today: "2026-09-22",
+                                          isGifted: { $0 <= "2026-09-21" }))
     }
 
     func testBacklogGiftsOnlyTheMostRecent() {
         let keys = ["2026-09-21", "2026-09-20", "2026-09-19"]
-        XCTAssertEqual(GiftSchedule.pending(dayKeys: keys, lastGifted: nil, today: "2026-09-22"),
+        XCTAssertEqual(GiftSchedule.pending(dayKeys: keys, today: "2026-09-22", isGifted: { _ in false }),
                        "2026-09-21")
     }
 
     func testOlderBacklogNeverComesBackAfterGifting() {
         let keys = ["2026-09-21", "2026-09-20", "2026-09-19"]
-        let first = GiftSchedule.pending(dayKeys: keys, lastGifted: nil, today: "2026-09-22")
+        let first = GiftSchedule.pending(dayKeys: keys, today: "2026-09-22", isGifted: { _ in false })
         XCTAssertEqual(first, "2026-09-21")
 
-        XCTAssertNil(GiftSchedule.pending(dayKeys: keys, lastGifted: first, today: "2026-09-22"))
+        XCTAssertNil(GiftSchedule.pending(dayKeys: keys, today: "2026-09-22",
+                                          isGifted: { k in first.map { k <= $0 } ?? false }))
     }
 
     func testEmptyDaysAreSkipped() {
 
-        XCTAssertEqual(GiftSchedule.pending(dayKeys: ["2026-09-20"],
-                                            lastGifted: nil,
-                                            today: "2026-09-22"),
+        XCTAssertEqual(GiftSchedule.pending(dayKeys: ["2026-09-20"], today: "2026-09-22",
+                                            isGifted: { _ in false }),
                        "2026-09-20")
     }
 
     func testNothingRecordedYet() {
-        XCTAssertNil(GiftSchedule.pending(dayKeys: [], lastGifted: nil, today: "2026-09-22"))
+        XCTAssertNil(GiftSchedule.pending(dayKeys: [], today: "2026-09-22", isGifted: { _ in false }))
     }
 
     func testDayWithoutSealedMomentsIsSkippedInFavorOfTheNextCandidate() {
         let keys = ["2026-09-21", "2026-09-20"]
-        let result = GiftSchedule.pending(dayKeys: keys, lastGifted: nil, today: "2026-09-22") {
-            $0 != "2026-09-21"
-        }
+        // 뒤에 isFinished 라는 또 다른 트레일링 클로저 자리가 있어 단일 트레일링 클로저는
+        // (후방 매칭 규칙 때문에) hasSealedMoments 가 아니라 isFinished 로 가 버린다 — 라벨을 명시한다.
+        let result = GiftSchedule.pending(dayKeys: keys, today: "2026-09-22", isGifted: { _ in false },
+                                          hasSealedMoments: { $0 != "2026-09-21" })
         XCTAssertEqual(result, "2026-09-20", "조약돌 없던 날은 건너뛰고 다음 후보로 넘어간다")
     }
 
     func testAllCandidatesWithoutSealedMomentsYieldsNil() {
         let keys = ["2026-09-21", "2026-09-20"]
-        XCTAssertNil(GiftSchedule.pending(dayKeys: keys, lastGifted: nil, today: "2026-09-22") { _ in false })
+        XCTAssertNil(GiftSchedule.pending(dayKeys: keys, today: "2026-09-22", isGifted: { _ in false },
+                                          hasSealedMoments: { _ in false }))
     }
 
     func testClosedTodayCanBePending() {
-        XCTAssertEqual(GiftSchedule.pending(dayKeys: ["2026-09-22"], lastGifted: nil, today: "2026-09-22",
+        XCTAssertEqual(GiftSchedule.pending(dayKeys: ["2026-09-22"], today: "2026-09-22",
+                                            isGifted: { _ in false },
                                             isFinished: { _ in true }),
                        "2026-09-22", "오늘이어도 마무리(isFinished)했으면 증정 대상이 된다")
     }
 
     func testUnclosedTodayStillNeverGiftedWithIsFinished() {
-        XCTAssertNil(GiftSchedule.pending(dayKeys: ["2026-09-22"], lastGifted: nil, today: "2026-09-22",
+        XCTAssertNil(GiftSchedule.pending(dayKeys: ["2026-09-22"], today: "2026-09-22",
+                                          isGifted: { _ in false },
                                           isFinished: { _ in false }))
+    }
+
+    func testYesterdayUngiftedComesBeforeTodayEvenWhenTodayIsFinished() {
+        let keys = ["2026-09-22", "2026-09-21"]
+        XCTAssertEqual(GiftSchedule.pending(dayKeys: keys, today: "2026-09-22",
+                                            isGifted: { _ in false },
+                                            isFinished: { _ in true }),
+                       "2026-09-21", "어제가 아직 안 받았으면 마무리한 오늘보다 어제가 먼저다")
+    }
+
+    func testTodayComesAfterYesterdayIsGifted() {
+        let keys = ["2026-09-22", "2026-09-21"]
+        XCTAssertEqual(GiftSchedule.pending(dayKeys: keys, today: "2026-09-22",
+                                            isGifted: { $0 == "2026-09-21" },
+                                            isFinished: { _ in true }),
+                       "2026-09-22", "어제를 이미 받았으면 다음은 마무리한 오늘이다")
+    }
+
+    func testMostRecentNaturalDayAlreadyGiftedYieldsNilEvenWithOlderUngiftedDays() {
+        let keys = ["2026-09-21", "2026-09-20"]
+        XCTAssertNil(GiftSchedule.pending(dayKeys: keys, today: "2026-09-22",
+                                          isGifted: { $0 == "2026-09-21" }),
+                    "밀린 날 중 가장 최근이 이미 받은 날이면 더 오래된 날까지 뒤늦게 주지 않는다")
     }
 
     func testGiftLogPersists() throws {
@@ -78,10 +102,47 @@ final class GiftScheduleTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suite) }
 
         GiftLog(defaults: defaults).markGifted("2026-09-21")
-        XCTAssertEqual(GiftLog(defaults: defaults).lastGiftedDayKey, "2026-09-21")
+        XCTAssertTrue(GiftLog(defaults: defaults).isGifted("2026-09-21"))
 
         GiftLog(defaults: defaults).reset()
-        XCTAssertNil(GiftLog(defaults: defaults).lastGiftedDayKey)
+        XCTAssertFalse(GiftLog(defaults: defaults).isGifted("2026-09-21"))
+    }
+
+    func testGiftLogHonorsLegacySingleKey() throws {
+        let suite = "GiftLogLegacy-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set("2026-09-21", forKey: "lastGiftedDayKey")
+
+        let gifts = GiftLog(defaults: defaults)
+        XCTAssertTrue(gifts.isGifted("2026-09-20"), "옛 단일 키 이하 날짜는 받은 것으로 본다")
+        XCTAssertTrue(gifts.isGifted("2026-09-21"))
+        XCTAssertFalse(gifts.isGifted("2026-09-22"))
+    }
+
+    func testGiftLogSetPersistsAcrossInstances() throws {
+        let suite = "GiftLogSet-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        GiftLog(defaults: defaults).markGifted("2026-09-20")
+        GiftLog(defaults: defaults).markGifted("2026-09-21")
+
+        let reopened = GiftLog(defaults: defaults)
+        XCTAssertTrue(reopened.isGifted("2026-09-20"))
+        XCTAssertTrue(reopened.isGifted("2026-09-21"))
+        XCTAssertFalse(reopened.isGifted("2026-09-22"))
+    }
+
+    func testDuplicateMarkGiftedIsIgnored() throws {
+        let suite = "GiftLogDup-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let gifts = GiftLog(defaults: defaults)
+        gifts.markGifted("2026-09-21")
+        gifts.markGifted("2026-09-21")
+        XCTAssertEqual(gifts.giftedDayKeys, ["2026-09-21"])
     }
 }
 
@@ -124,7 +185,8 @@ final class FinishedDayKeysTests: XCTestCase {
         super.setUp()
         tempFile = FileManager.default.temporaryDirectory
             .appendingPathComponent("days-\(UUID().uuidString).json")
-        store = DayStore(fileURL: tempFile)
+        let closures = DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        store = DayStore(fileURL: tempFile, closures: closures)
     }
 
     override func tearDown() {
