@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-상태 **executing** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift`
+상태 **completed** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift`
 
 **Goal:** 하루 상세에서 사진을 크게 볼 때, 그 순간의 시간대·계절에 맞는 순우리말 한 단어와 뜻풀이를 보여준다 (AI·위치·날씨 없이).
 
@@ -458,7 +458,7 @@ public enum WordPicker {
 }
 ```
 
-- [ ] **Step 4: 실행 → 통과 확인.** Expected: 11 passed.
+- [ ] **Step 4: 실행 → 통과 확인.** Expected: 10 passed.
 
 - [ ] **Step 5: 커밋**
 
