@@ -37,10 +37,17 @@ final class FontSubsetTests: XCTestCase {
             }
         }
 
+        for w in BundledWordSource.load()?.words ?? [] { needed.formUnion(w.word.unicodeScalars) }
+
         let missing = needed.filter { !glyphExists($0, in: font) }.map(String.init).sorted()
         XCTAssertTrue(missing.isEmpty,
             "서브셋에 없는 글자 \(missing.count)개: \(missing.joined()) — Shared/Design/Fonts/README.md 대로 다시 구울 것")
         XCTAssertGreaterThan(needed.count, 20, "색 구간을 훑었는데 이름이 거의 안 나왔다 — 이 테스트가 헛돌고 있다")
+    }
+
+    func testWordListIsReallyCovered() throws {
+        let words = try XCTUnwrap(BundledWordSource.load()?.words)
+        XCTAssertGreaterThan(words.count, 0, "단어 목록이 비어 이 검사가 헛돈다")
     }
 
     func testSubsetStaysSmall() throws {
