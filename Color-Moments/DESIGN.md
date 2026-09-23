@@ -337,6 +337,7 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 | 7 | 증정 토큰 교체(§3.3) | ✅ `Day/BadgeCeremony.swift` — 모션 타이밍은 손대지 않음 |
 | 8 | 사진 한 단어 1단계 — 사진을 보고 고름(Vision) | ✅ `Shared/Word/`, `Day/DayPhotoView.swift` — AI 한 줄·위치·지도·날씨는 2~4단계 |
 | 9 | 사진첩에서 골라 담기 (docs/designs/mongdol-library-import.md) | ✅ `ColorMoments/Library/`, `Shared/Library/` |
+| 10 | 사진은 사진 앱에 (docs/designs/mongdol-photo-assets.md) | ✅ `ColorMoments/Library/PhotoAssets.swift`, `AssetReconciler.swift` |
 
 **설계에서 벗어난 곳 (근거 있음)**
 

@@ -1,6 +1,6 @@
 # 몽돌 — 사진은 사진 앱에, 몽돌은 에셋 ID만 · 구현 계획
 
-상태 **executing** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift` · 설계 `docs/designs/mongdol-photo-assets.md` (Tabber 승인)
+상태 **completed** · 2026-09-23 · 브랜치 `feat/mongdol-day-gift` · 설계 `docs/designs/mongdol-photo-assets.md` (Tabber 승인)
 
 ## 계획 단계에서 정한 것
 
