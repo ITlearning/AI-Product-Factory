@@ -7,8 +7,8 @@
 |---|---|
 | 원본 | Nanum Myeongjo Regular (Google Fonts) |
 | 라이선스 | SIL Open Font License 1.1 — [`NanumMyeongjo-OFL.txt`](NanumMyeongjo-OFL.txt) |
-| 서브셋 | 84자 (`subset-chars.txt`) |
-| 크기 | 2,987KB → **28.0KB** |
+| 서브셋 | 113자 (`subset-chars.txt`) |
+| 크기 | 2,987KB → **37.7KB** |
 
 ## 다시 만들 때
 
