@@ -16,7 +16,7 @@
 - 색·글자는 `Tone`/`Face` 토큰만. **명조(`Face.serif…`)는 조약돌 이름에만** — 명조 서브셋 폰트는 113자뿐이라 새 글자가 필요하면 깨진다. 「작년 이맘때」「9월의 한 줌」 등은 SF(`Face.line`/`caption`).
 - 홈에 버튼을 추가하지 않는다(DESIGN §1.2). 진입은 길게 누르기·하루 상세·목록 안 머리글.
 - 아직 안 받은 하루(색 숨김)는 카드·한 줌·작년 이맘때 어디에도 색을 내지 않는다 — `gifts.isGifted(dayKey)` 인 하루만.
-- 카드에는 **사진·장소·단어를 넣지 않는다.** 돌·이름·날짜·작은 "몽돌" 만.
+- 카드는 **사진이 주인공** — 사용자가 고른 사진 한 장 + 그날 그라데이션 틀 + 조약돌. 장소·단어는 넣지 않는다(2026-09-24 Tabber).
 - 테스트 `perl -e 'alarm 280; exec @ARGV' xcodebuild test ...`, 멈추면 shutdown→boot 1회, 또 멈추면 BLOCKED. 시뮬레이터 스크린샷·실기기 금지. 단계마다 커밋, 끝줄 `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
 
 ## Review Focus
