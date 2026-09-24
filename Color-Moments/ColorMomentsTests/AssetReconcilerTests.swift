@@ -78,12 +78,39 @@ final class AssetReconcilerTests: XCTestCase {
         XCTAssertTrue(plan.remove.isEmpty)
     }
 
-    func testRelocationToSameIDCountsAsMissing() {
+    func testRelocationToSameIDIsLocatedNotRemoved() {
         let ids = Set((0..<10).map { "id\($0)" })
         let found = ids.subtracting(["id9"])
         let plan = AssetReconciler.plan(ids: ids, found: found, relocated: ["id9": "id9"], fullAccess: true)
-        XCTAssertTrue(plan.reassign.isEmpty)
-        XCTAssertEqual(plan.remove, ["id9"])
+        XCTAssertTrue(plan.reassign.isEmpty, "같은 ID 로 확인됐으면 갈아 끼울 것도 없다")
+        XCTAssertTrue(plan.remove.isEmpty, "매핑이 옛 ID 와 같다 — 사진이 실제로 있다는 뜻이니 지우면 안 된다")
+    }
+
+    // MARK: 재배정 충돌 — 판정 보류(reassign 도 remove 도 안 함)
+
+    func testReassignSkippedWhenNewIDAlreadyFound() {
+        let ids: Set<String> = ["a", "b"]
+        let found: Set<String> = ["a"]
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: ["b": "a"], fullAccess: true)
+        XCTAssertTrue(plan.reassign.isEmpty, "새 ID 가 이미 다른 기록으로 찾아진 상태면 바꿔 끼우면 안 된다")
+        XCTAssertTrue(plan.remove.isEmpty, "충돌이면 지우지도 않는다 — 판정 보류")
+    }
+
+    func testReassignSkippedWhenNewIDBelongsToAnotherRecord() {
+        let ids: Set<String> = ["a", "b"]
+        let found: Set<String> = ["a"]
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: ["b": "other"],
+                                        otherAssetIDs: ["other"], fullAccess: true)
+        XCTAssertTrue(plan.reassign.isEmpty, "새 ID 가 다른 기록의 assetID 면 바꿔 끼우면 안 된다")
+        XCTAssertTrue(plan.remove.isEmpty)
+    }
+
+    func testReassignSkippedWhenValuesCollideWithEachOther() {
+        let ids: Set<String> = ["a", "b", "c"]
+        let found: Set<String> = ["c"]
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: ["a": "x", "b": "x"], fullAccess: true)
+        XCTAssertTrue(plan.reassign.isEmpty, "두 기록이 같은 새 ID 로 겹치면 둘 다 보류한다")
+        XCTAssertTrue(plan.remove.isEmpty)
     }
 
     func testRelocationKeepsCapForTheRest() {
@@ -98,5 +125,46 @@ final class AssetReconcilerTests: XCTestCase {
         let plan = AssetReconciler.plan(ids: ["a", "b"], found: ["a"], relocated: ["b": "b2"], fullAccess: false)
         XCTAssertTrue(plan.reassign.isEmpty)
         XCTAssertTrue(plan.remove.isEmpty)
+    }
+
+    // MARK: 누적 예산 — 24시간 창 안에서 나눠 지우는 걸 막는다
+
+    func testBudgetCreatesFirstWindow() {
+        let now = Date()
+        let (allowed, budget) = AssetReconciler.budgetAllows(removing: 2, now: now, state: nil, tracked: 10)
+        XCTAssertTrue(allowed, "첫 창이면 상한 안쪽은 통과해야 한다")
+        XCTAssertEqual(budget.windowStart, now)
+        XCTAssertEqual(budget.trackedAtStart, 10)
+        XCTAssertEqual(budget.removedSoFar, 2)
+    }
+
+    func testBudgetRejectsWhenWindowSumExceedsCap() {
+        let start = Date()
+        let state = AssetReconciler.Budget(windowStart: start, trackedAtStart: 10, removedSoFar: 2)
+        // 상한 max(3, 10/5=2)=3, 이미 2개 지웠는데 2개 더 지우면 4 > 3 이라 이 회차는 전부 건너뛴다.
+        let (allowed, budget) = AssetReconciler.budgetAllows(removing: 2, now: start.addingTimeInterval(60),
+                                                              state: state, tracked: 10)
+        XCTAssertFalse(allowed, "창 안 누적 합이 상한을 넘으면 그 회차는 통째로 거부한다")
+        XCTAssertEqual(budget.removedSoFar, 2, "거부된 회차는 누적치를 건드리지 않는다")
+    }
+
+    func testBudgetAllowsWithinWindowSum() {
+        let start = Date()
+        let state = AssetReconciler.Budget(windowStart: start, trackedAtStart: 10, removedSoFar: 1)
+        let (allowed, budget) = AssetReconciler.budgetAllows(removing: 2, now: start.addingTimeInterval(60),
+                                                              state: state, tracked: 10)
+        XCTAssertTrue(allowed, "누적 합이 상한(3) 이내면 통과한다")
+        XCTAssertEqual(budget.removedSoFar, 3)
+    }
+
+    func testBudgetStartsNewWindowAfter24Hours() {
+        let start = Date()
+        let state = AssetReconciler.Budget(windowStart: start, trackedAtStart: 10, removedSoFar: 3)
+        let later = start.addingTimeInterval(24 * 3600 + 1)
+        let (allowed, budget) = AssetReconciler.budgetAllows(removing: 2, now: later, state: state, tracked: 40)
+        XCTAssertTrue(allowed, "24시간이 지나면 이전 누적은 리셋된 새 창으로 판정한다")
+        XCTAssertEqual(budget.windowStart, later)
+        XCTAssertEqual(budget.trackedAtStart, 40, "새 창의 추적 수는 지금 값으로 다시 잡는다")
+        XCTAssertEqual(budget.removedSoFar, 2)
     }
 }
