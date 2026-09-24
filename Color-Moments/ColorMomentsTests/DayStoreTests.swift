@@ -120,6 +120,26 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(store.moments(on: "2026-09-22").count, 1)
     }
 
+    /// 캐시된 조회는 제자리 변경(배열 원소 수정)도 곧바로 반영해야 한다 — 안 그러면 단어·입양이 화면에 늦게 뜬다.
+    func testCachedQueriesReflectInPlaceChanges() {
+        let m = moment(date(2026, 9, 22, 12, 0), name: "inplace.jpg")
+        store.add(m)
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertNil(store.moments(on: "2026-09-22").first?.labels)
+
+        store.setLabels(m.id, ["sky"])
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.labels, ["sky"])
+
+        store.assignWord(m.id, PhotoWord(wordID: "yunseul", word: "윤슬", meaning: "잔물결"))
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.word?.wordID, "yunseul")
+
+        XCTAssertTrue(store.adopt(m.id, assetID: "L/1"))
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.assetID, "L/1")
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.fileName, Moment.assetFileName(for: "L/1"))
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertEqual(store.pebbleMoments(on: "2026-09-22").first?.assetID, "L/1")
+    }
+
     func testAssignWordPersistsAndNeverOverwrites() {
         let m = moment(date(2026, 9, 22, 12, 0), name: "w.jpg")
         store.add(m)
