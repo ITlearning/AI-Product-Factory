@@ -6,9 +6,11 @@ public extension View {
     /// blocksPresentation — 하루 상세·사진첩 선택 등 다른 fullScreenCover/sheet 가 떠 있는 동안 true.
     /// 여는 순간 true, 그 시트·커버의 onDismiss 에서만 false 로 바꿔야 한다.
     /// 이 동안은 present() 를 미룬다 — 동시에 두 개를 띄우면 나중 것의 표시가 씹혀 pending 이 안 풀린다.
-    func dayGift(store: DayStore, gifts: GiftLog, dismissedTick: Int, blocksPresentation: Bool) -> some View {
+    // onCeremonyFinished — 증정 커버가 완전히 닫힌 뒤(onDismiss) 그 날짜로 한 번 불린다.
+    func dayGift(store: DayStore, gifts: GiftLog, dismissedTick: Int, blocksPresentation: Bool,
+                 onCeremonyFinished: ((String) -> Void)? = nil) -> some View {
         modifier(DayGiftPresenter(store: store, gifts: gifts, dismissedTick: dismissedTick,
-                                  blocksPresentation: blocksPresentation))
+                                  blocksPresentation: blocksPresentation, onCeremonyFinished: onCeremonyFinished))
     }
 }
 
@@ -17,11 +19,14 @@ struct DayGiftPresenter: ViewModifier {
     let gifts: GiftLog
     let dismissedTick: Int
     let blocksPresentation: Bool
+    let onCeremonyFinished: ((String) -> Void)?
 
     @Environment(\.scenePhase) private var scenePhase
     @State private var pending: PendingDay?
     // pending 은 닫힘 애니메이션 시작에 nil 이 된다 — 커버가 다 닫히기 전 다음 증정을 막는다.
     @State private var ceremonyUp = false
+    // pending 이 nil 로 바뀐 뒤에도 onDismiss 에 어느 날이었는지 알려주려고 따로 들고 있는다.
+    @State private var lastShownDayKey: String?
 
     private struct PendingDay: Identifiable { let id: String }
 
@@ -40,6 +45,7 @@ struct DayGiftPresenter: ViewModifier {
             // 어제를 막 증정했으면 마무리한 오늘이 다음 트리거까지 기다리지 않고 커버가 다 닫힌 뒤 이어서 뜬다.
             .fullScreenCover(item: $pending, onDismiss: {
                 ceremonyUp = false
+                if let key = lastShownDayKey { onCeremonyFinished?(key) }
                 present()
             }) { day in
                 BadgeCeremony(
@@ -62,5 +68,6 @@ struct DayGiftPresenter: ViewModifier {
                                              isFinished: store.isFinished) else { return }
         ceremonyUp = true
         pending = PendingDay(id: key)
+        lastShownDayKey = key
     }
 }
