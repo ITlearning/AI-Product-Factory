@@ -186,4 +186,31 @@ final class AssetReconcilerTests: XCTestCase {
         XCTAssertEqual(budget.trackedAtStart, 40, "새 창의 추적 수는 지금 값으로 다시 잡는다")
         XCTAssertEqual(budget.removedSoFar, 2)
     }
+
+    // MARK: 조회 대기 중 새로 연결된 기록
+
+    /// 사진 앱 조회를 기다리는 사이 같은 assetID 로 새 기록이 담겼다 — 판정한 스냅샷의 기록만 지운다.
+    func testRemovalIsLimitedToSnapshotMoments() {
+        let old = Moment(capturedAt: Date(), colorHex: "#111111", fileName: "asset-X", source: .library, assetID: "X")
+        let kept = Moment(capturedAt: Date(), colorHex: "#222222", fileName: "asset-Y", source: .library, assetID: "Y")
+        let ids = AssetReconciler.removalIDs(snapshot: [old, kept], remove: ["X"])
+        XCTAssertEqual(ids, [old.id])
+
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("rec-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = DayStore(fileURL: url, closures: DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        var changes: [StoreChange] = []
+        store.onLocalChange = { changes += $0 }
+        store.add(old)
+        store.add(kept)
+        let fresh = Moment(capturedAt: Date(), colorHex: "#333333", fileName: "library-X", source: .library, assetID: "X")
+        store.add(fresh)
+        changes = []
+        store.remove(ids: ids)
+        XCTAssertEqual(Set(store.moments.map(\.id)), [kept.id, fresh.id], "같은 assetID 로 새로 담긴 기록은 남아야 한다")
+        XCTAssertEqual(changes, [.delete(old.id)], "지운 기록은 remove(assetIDs:) 처럼 delete 로 알린다")
+        store.remove(ids: [])
+        store.remove(ids: [UUID()])
+        XCTAssertEqual(changes.count, 1, "지운 게 없으면 알리지 않는다")
+    }
 }

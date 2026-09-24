@@ -196,6 +196,15 @@ public final class DayStore {
         notify(removed.map { .delete($0.id) })
     }
 
+    public func remove(ids: Set<Moment.ID>) {
+        guard !ids.isEmpty else { return }
+        let removed = moments.filter { ids.contains($0.id) }
+        guard !removed.isEmpty else { return }
+        moments.removeAll { ids.contains($0.id) }
+        save()
+        notify(removed.map { .delete($0.id) })
+    }
+
     public func setCloudID(_ id: Moment.ID, _ cloudID: String) {
         setCloudIDs([(id, cloudID)])
     }
