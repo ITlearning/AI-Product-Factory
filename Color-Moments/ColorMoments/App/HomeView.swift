@@ -3,6 +3,8 @@ import SwiftUI
 struct HomeView: View {
     let store: DayStore
 
+    let gifts: GiftLog
+
     let showsSwipeHint: Bool
 
     @Binding var focusDay: String?
@@ -28,6 +30,7 @@ struct HomeView: View {
     @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
 
     @State private var opened: OpenedDay?
+    @State private var sharingDayKey: SharingDay?
     @State private var topDayKey: String?
     @State private var scrolling = false
 
@@ -39,6 +42,7 @@ struct HomeView: View {
     @State private var scrubMonth: String?
 
     private struct OpenedDay: Identifiable, Equatable { let id: String }
+    private struct SharingDay: Identifiable { let id: String }
 
     private var days: [String] { store.finishedDayKeys }
 
@@ -70,7 +74,12 @@ struct HomeView: View {
             daySheetPresented = false
             onDaySheetDismissed()
         }) { day in
-            DayMomentsView(dayKey: day.id, store: store, closures: closures, onClosed: onDayClosed)
+            DayMomentsView(dayKey: day.id, store: store, closures: closures,
+                           isGifted: gifts.isGifted, onClosed: onDayClosed,
+                           makeShareSheet: { key in AnyView(KeepsakeShareSheet(dayKey: key, store: store)) })
+        }
+        .sheet(item: $sharingDayKey) { day in
+            KeepsakeShareSheet(dayKey: day.id, store: store)
         }
         .onChange(of: opened) { _, value in if value != nil { daySheetPresented = true } }
         .task { if !store.moments.isEmpty { didOfferLibraryOnboarding = true } }
@@ -223,6 +232,23 @@ struct HomeView: View {
 
     @ViewBuilder
     private func dayRow(_ key: String, width: CGFloat) -> some View {
+        // 받은 하루만 「카드로 만들기」 — 안 받은 하루는 메뉴 자체를 안 건다(빈 메뉴가 뜨면 안 된다).
+        if Keepsake.canMakeCard(dayKey: key, isGifted: gifts.isGifted) {
+            dayRowContent(key, width: width)
+                .contextMenu {
+                    Button {
+                        sharingDayKey = SharingDay(id: key)
+                    } label: {
+                        Label("카드로 만들기", systemImage: "square.and.arrow.up")
+                    }
+                }
+        } else {
+            dayRowContent(key, width: width)
+        }
+    }
+
+    @ViewBuilder
+    private func dayRowContent(_ key: String, width: CGFloat) -> some View {
         if key < compactCutoff {
             CompactDayRow(pebbleMoments: store.pebbleMoments(on: key), moments: store.moments(on: key))
         } else {
