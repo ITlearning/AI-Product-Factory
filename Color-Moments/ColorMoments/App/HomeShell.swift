@@ -7,7 +7,6 @@ struct HomeShell: View {
     let inbox: CaptureInbox
     let gifts: GiftLog
     let closures: DayClosures
-    let route: NotificationRoute
 
     @State private var progress: CGFloat = 0
     @State private var dragging = false
@@ -35,9 +34,9 @@ struct HomeShell: View {
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
     @AppStorage("didSeeFirstRun") private var didSeeFirstRun = false
-    // 처음 마무리한 날의 증정이 끝난 뒤 딱 한 번만 저녁 알림을 물어본다.
-    @AppStorage("didAskEveningReminder") private var didAskEveningReminder = false
-    @State private var showingEveningReminderAsk = false
+    // 첫 증정이 끝난 뒤 딱 한 번만 아침 도착 소식을 물어본다.
+    @AppStorage("didAskArrivalNotice") private var didAskArrivalNotice = false
+    @State private var showingArrivalNoticeAsk = false
     #if DEBUG
     @State private var showingGate = false
     #endif
@@ -55,8 +54,8 @@ struct HomeShell: View {
                 HomeView(store: store, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0,
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          onDaySheetDismissed: { daySheetDismissedTick += 1 },
-                         daySheetPresented: $daySheetPresented, route: route,
-                         onDayClosed: { Task { await EveningReminder.sync(store: store, closures: closures) } })
+                         daySheetPresented: $daySheetPresented,
+                         onDayClosed: { Task { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) } })
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -86,12 +85,12 @@ struct HomeShell: View {
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
                  blocksPresentation: daySheetPresented || pickingLibrary || libraryCoverUp || progress > 0,
                  onCeremonyFinished: handleCeremonyFinished)
-        .alert("사진을 담은 날, 밤 10시에 한 번 알려 드릴까요?", isPresented: $showingEveningReminderAsk) {
+        .alert("조약돌이 도착하면 아침에 알려 드릴까요?", isPresented: $showingArrivalNoticeAsk) {
             Button("알려 주세요") {
                 Task {
                     let granted = (try? await UNUserNotificationCenter.current()
                         .requestAuthorization(options: [.alert, .sound])) ?? false
-                    if granted { await EveningReminder.sync(store: store, closures: closures) }
+                    if granted { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
                 }
             }
             Button("괜찮아요", role: .cancel) {}
@@ -111,7 +110,7 @@ struct HomeShell: View {
                 camera?.confirm("담겼어요")
                 progress = 0
                 pendingLibraryFocus = true
-                Task { await EveningReminder.sync(store: store, closures: closures) }
+                Task { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
             }
         }
         #if DEBUG
@@ -195,15 +194,17 @@ struct HomeShell: View {
                     _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
                 }
                 await AssetAdopter.adopt(m, store: store)
-                await EveningReminder.sync(store: store, closures: closures)
+                await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts)
             }
         })
     }
 
-    // "처음 마무리한 날"의 증정인지는 그 날이 closures 에 기록돼(마무리하기로 일찍 닫았) 있는지로 판단한다.
+    // 4~8시 사이에 앱을 열어 그 자리에서 받았으면 아침 알림이 뒤늦게 오지 않게 그 날짜만 지운다.
+    // 물어보는 건 마무리 여부와 무관하게 "첫 증정" 한 번뿐.
     private func handleCeremonyFinished(_ dayKey: String) {
-        guard !didAskEveningReminder, closures.closedAt(dayKey) != nil else { return }
-        didAskEveningReminder = true
-        showingEveningReminderAsk = true
+        Task { await ArrivalNotice.clear(dayKey: dayKey) }
+        guard !didAskArrivalNotice else { return }
+        didAskArrivalNotice = true
+        showingArrivalNoticeAsk = true
     }
 }

@@ -5,7 +5,7 @@ public struct DayMomentsView: View {
     private let dayKey: String
     private let store: DayStore
     private let closures: DayClosures
-    // 「마무리하기」로 실제로 닫혔을 때만 호출부(HomeShell)가 저녁 알림 예약을 다시 맞춘다.
+    // 「마무리하기」로 실제로 닫혔을 때만 호출부(HomeShell)가 아침 도착 소식 예약을 다시 맞춘다.
     private let onClosed: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var viewing: Moment?

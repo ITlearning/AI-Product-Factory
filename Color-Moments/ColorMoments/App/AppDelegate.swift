@@ -1,15 +1,7 @@
-import Observation
 import UIKit
 import UserNotifications
 
-/// 알림을 눌러 앱이 열릴 때 HomeView 에 어느 날을 펼지 알린다.
-@Observable
-final class NotificationRoute {
-    var openDay: String?
-}
-
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-    let route = NotificationRoute()
 
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
@@ -23,11 +15,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         completionHandler([])
     }
 
+    // 알림을 누르면 그냥 앱이 열린다 — 증정은 DayGiftPresenter 가 알아서 띄우므로 따로 라우팅하지 않는다.
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        if let dayKey = response.notification.request.content.userInfo["dayKey"] as? String {
-            route.openDay = dayKey
-        }
         completionHandler()
     }
 }

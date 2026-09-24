@@ -23,7 +23,7 @@ struct ColorMomentsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures, route: appDelegate.route)
+            HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures)
                 .task {
                     // 모든 저장소 쓰기보다 먼저 켠다 — 구독 전 변경은 저장소가 쌓아 두지만 그건 이중 안전장치일 뿐이다.
                     // 유닛 테스트는 앱을 호스트로 띄운다 — 권한 없는 CKContainer 는 크래시하므로 테스트 중엔 켜지 않는다.
@@ -47,7 +47,7 @@ struct ColorMomentsApp: App {
                     }
 
                     await CloudIDMapper.refresh(store: store)
-                    await EveningReminder.sync(store: store, closures: closures)
+                    await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts)
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -64,7 +64,7 @@ struct ColorMomentsApp: App {
             // 사진이 담기는 경로는 여러 곳이라(잠금화면·라이브러리 입양 등) active/background 전환마다
             // 다시 맞춰 둔다 — 그 사이 놓친 변경도 여기서 잡힌다.
             guard newPhase == .active || newPhase == .background else { return }
-            Task { await EveningReminder.sync(store: store, closures: closures) }
+            Task { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
         }
     }
 }

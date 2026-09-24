@@ -18,10 +18,7 @@ struct HomeView: View {
     // 하루 상세 시트가 떠 있는 동안 true — HomeShell 이 이걸 보고 증정 fullScreenCover 를 미룬다.
     @Binding var daySheetPresented: Bool
 
-    // 저녁 알림을 눌러 열렸을 때 어느 날을 펼지 담는다.
-    let route: NotificationRoute
-
-    // 하루를 마무리할 때(closures.close) HomeShell 이 저녁 알림 예약을 다시 맞추도록 알린다.
+    // 하루를 마무리할 때(closures.close) HomeShell 이 아침 도착 소식 예약을 다시 맞추도록 알린다.
     var onDayClosed: () -> Void = {}
 
     @State private var opened: OpenedDay?
@@ -70,12 +67,6 @@ struct HomeView: View {
             DayMomentsView(dayKey: day.id, store: store, closures: closures, onClosed: onDayClosed)
         }
         .onChange(of: opened) { _, value in if value != nil { daySheetPresented = true } }
-        // initial: true — 알림을 눌러 콜드 런치될 때도 잡는다(HomeView 가 생기기 전에 이미 세팅돼 있을 수 있다).
-        .onChange(of: route.openDay, initial: true) { _, day in
-            defer { route.openDay = nil }
-            guard let day, day == todayKey, !store.isFinished(day) else { return }
-            open(day)
-        }
     }
 
     private func open(_ key: String) {
