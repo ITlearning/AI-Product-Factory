@@ -32,6 +32,7 @@ targets:
         com.apple.developer.icloud-container-identifiers: [iCloud.com.itlearning.colormoments]
         com.apple.developer.icloud-services: [CloudKit]
         aps-environment: development
+        com.apple.security.application-groups: [group.com.itlearning.colormoments]
     info:
       path: ColorMoments/Info.plist
       properties:
@@ -78,6 +79,10 @@ targets:
     dependencies:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework
+    entitlements:
+      path: ColorMomentsControl/ColorMomentsControl.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.itlearning.colormoments]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.itlearning.colormoments.control

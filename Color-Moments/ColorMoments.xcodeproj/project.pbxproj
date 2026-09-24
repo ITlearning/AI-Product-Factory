@@ -252,6 +252,7 @@
 		41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMomentsApp.swift; sourceTree = "<group>"; };
 		431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Subset.ttf"; sourceTree = "<group>"; };
 		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
+		503FB3A2F6076A7563C32074 /* ColorMomentsControl.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ColorMomentsControl.entitlements; sourceTree = "<group>"; };
 		5AADBCB38DB09CEFBA41590A /* ColorMoments.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ColorMoments.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B689D73DBFBD16C7B857686 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAssets.swift; sourceTree = "<group>"; };
@@ -548,6 +549,7 @@
 			isa = PBXGroup;
 			children = (
 				71305FB203F40AC7A2172D6E /* ColorCaptureControl.swift */,
+				503FB3A2F6076A7563C32074 /* ColorMomentsControl.entitlements */,
 				D7284FE09B31C6D29E4790FB /* Info.plist */,
 			);
 			path = ColorMomentsControl;
@@ -963,6 +965,7 @@
 		2439B4536542484570ABB7F6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ColorMomentsControl/ColorMomentsControl.entitlements;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ColorMomentsControl/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "몽돌";
@@ -1082,6 +1085,7 @@
 		4D3A9A9B1047BAA2C8918D52 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ColorMomentsControl/ColorMomentsControl.entitlements;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ColorMomentsControl/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "몽돌";
