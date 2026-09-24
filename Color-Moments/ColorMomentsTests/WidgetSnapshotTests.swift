@@ -109,6 +109,26 @@ final class WidgetSnapshotTests: XCTestCase {
         XCTAssertEqual(WidgetSnapshot.read(from: url), s)
     }
 
+    // App Group 파일에는 PebbleView 가 실제로 쓰는 값(그라데이션 상대 위치·dayKey)만 남긴다 — 찍은 시각은 빼고.
+    func testSnapshotKeepsGradientPositionsNotCaptureTimes() throws {
+        add("2026-09-20T09:00:00", "#AA0000")
+        add("2026-09-20T12:00:00", "#00AA00")
+        add("2026-09-20T21:00:00", "#0000AA")
+        gifts.markGifted("2026-09-20")
+        let s = WidgetSnapshot.make(store: store, gifts: gifts)
+
+        let pebble = store.pebbleMoments(on: "2026-09-20")
+        let original = DayGradient.stops(for: pebble)
+        let rebuilt = DayGradient.stops(for: s.latest!.moments)
+        XCTAssertEqual(rebuilt.map(\.hex), original.map(\.hex))
+        for (r, o) in zip(rebuilt, original) { XCTAssertEqual(r.location, o.location, accuracy: 0.001) }
+
+        let json = String(decoding: try s.encoded(), as: UTF8.self)
+        for m in pebble {
+            XCTAssertFalse(json.contains(String(Int(m.capturedAt.timeIntervalSinceReferenceDate))), json)
+        }
+    }
+
     func testUnreadableFileFallsBackToEmpty() {
         let missing = FileManager.default.temporaryDirectory.appendingPathComponent("none-\(UUID().uuidString).json")
         XCTAssertEqual(WidgetSnapshot.read(from: missing), .empty)

@@ -2,19 +2,24 @@ import Foundation
 
 public struct WidgetSnapshot: Codable, Equatable, Sendable {
 
+    // location — DayGradient 상대 위치(0...1). 찍은 시각은 App Group 에 남기지 않는다.
     public struct ColorPoint: Codable, Equatable, Sendable {
         public let hex: String
-        public let at: Date
+        public let location: Double
     }
 
-    // PebbleView 는 색 순서뿐 아니라 찍은 시각(그라데이션 위치·실루엣의 dayKey)을 본다.
     public struct Latest: Codable, Equatable, Sendable {
         public let dayKey: String
         public let name: String?
         public let colors: [ColorPoint]
 
+        // PebbleView 는 시각에서 그라데이션 위치(비율)와 실루엣의 dayKey 만 본다 — 그 날 08시부터 12시간 안에 비율대로 되살린다.
         public var moments: [Moment] {
-            colors.map { Moment(capturedAt: $0.at, colorHex: $0.hex, fileName: "", source: .app) }
+            let base = Moment.sealDate(for: dayKey)?.addingTimeInterval(-20 * 3600) ?? Date()
+            return colors.map {
+                Moment(capturedAt: base.addingTimeInterval($0.location * 12 * 3600),
+                       colorHex: $0.hex, fileName: "", source: .app)
+            }
         }
 
         public var dateText: String {
@@ -57,7 +62,9 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             let pebble = store.pebbleMoments(on: key)
             return Latest(dayKey: key,
                           name: PebbleNaming.name(for: pebble)?.name,
-                          colors: pebble.map { ColorPoint(hex: $0.colorHex, at: $0.capturedAt) })
+                          colors: DayGradient.positions(for: pebble).map {
+                              ColorPoint(hex: $0.moment.colorHex, location: ($0.location * 1000).rounded() / 1000)
+                          })
         }
         let arrivals = candidates.filter { !gifts.isGifted($0) }.compactMap { key in
             store.sealDate(on: key).map { Arrival(dayKey: key, arrivesAt: $0) }
