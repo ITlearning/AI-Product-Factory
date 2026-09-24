@@ -11,17 +11,19 @@ public final class DayStore {
     private struct DayIndex {
         let byDay: [String: [Moment]]
         let keys: [String]
+        let zone: String
     }
     @ObservationIgnored private var dayIndex: DayIndex?
 
     // 캐시가 맞아도 moments 를 읽는다 — 안 읽으면 뷰가 이 저장소를 관찰하지 않아 새 기록을 못 본다.
     private var index: DayIndex {
         let current = moments
-        if let dayIndex { return dayIndex }
+        let zone = Moment.zoneIdentifier
+        if let dayIndex, dayIndex.zone == zone { return dayIndex }
         var byDay: [String: [Moment]] = [:]
         for m in current { byDay[m.dayKey, default: []].append(m) }
         for key in byDay.keys { byDay[key]?.sort { $0.capturedAt < $1.capturedAt } }
-        let built = DayIndex(byDay: byDay, keys: byDay.keys.sorted(by: >))
+        let built = DayIndex(byDay: byDay, keys: byDay.keys.sorted(by: >), zone: zone)
         dayIndex = built
         return built
     }

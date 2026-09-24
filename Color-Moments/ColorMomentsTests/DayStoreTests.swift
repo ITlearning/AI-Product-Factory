@@ -100,6 +100,26 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(raw?.count, 0)
     }
 
+    /// 여행 중 시간대가 바뀌면 같은 순간의 하루가 달라진다 — 캐시된 하루 목록이 옛 시간대에 머물면 안 된다.
+    func testDayIndexFollowsTimeZoneChange() {
+        // 시스템 시간대 바꾸기 흉내 — NSTimeZone.default 는 autoupdatingCurrent 달력에 안 먹는다.
+        let original = ProcessInfo.processInfo.environment["TZ"]
+        func setZone(_ id: String?) {
+            if let id { setenv("TZ", id, 1) } else { unsetenv("TZ") }
+            tzset()
+            NSTimeZone.resetSystemTimeZone()
+        }
+        defer { setZone(original) }
+        setZone("Asia/Seoul")
+        // 2026-09-22 20:00Z — 서울 23일 05시, LA 22일 13시.
+        let at = Date(timeIntervalSince1970: 1_790_107_200)
+        store.add(moment(at, name: "tz.jpg"))
+        XCTAssertEqual(store.dayKeys, ["2026-09-23"])
+        setZone("America/Los_Angeles")
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertEqual(store.moments(on: "2026-09-22").count, 1)
+    }
+
     func testAssignWordPersistsAndNeverOverwrites() {
         let m = moment(date(2026, 9, 22, 12, 0), name: "w.jpg")
         store.add(m)
