@@ -11,6 +11,12 @@ public enum Keepsake {
         isGifted(dayKey)
     }
 
+    /// 공유 시트가 처음 보여줄 사진 — 하루 상세에서 보던 사진이 그날 사진이면 그것, 아니면 그날 첫 사진.
+    public static func initialPhotoID(photos: [Moment], viewing: Moment.ID?) -> Moment.ID? {
+        if let viewing, photos.contains(where: { $0.id == viewing }) { return viewing }
+        return photos.first?.id
+    }
+
     /// URL 이 없으면 카드 이미지만 공유한다 — 문구 자체를 붙이지 않는다.
     public static func shareText(pebbleName: String, appStoreURL: URL?) -> String? {
         guard let appStoreURL else { return nil }

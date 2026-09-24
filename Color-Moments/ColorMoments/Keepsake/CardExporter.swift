@@ -4,11 +4,22 @@ import UniformTypeIdentifiers
 
 /// PebbleCard 를 실제 이미지로 굽는다 — ImageRenderer 는 앱 타깃 전용(Shared 는 위젯·잠금화면 확장도 컴파일한다).
 enum CardExporter {
-    static let pointSize = CGSize(width: 1080 / 3, height: 1920 / 3)
+    static let pointSize = PebbleCardLayout.canvas
+    static let photoPixels: CGFloat = 1600
 
     @MainActor
-    static func render(dayKey: String, pebbleMoments: [Moment]) -> UIImage? {
-        renderRaw(dayKey: dayKey, pebbleMoments: pebbleMoments).flatMap { isBlank($0) ? nil : $0 }
+    static func render(dayKey: String, pebbleMoments: [Moment], face: Moment? = nil, photo: UIImage? = nil) -> UIImage? {
+        renderRaw(dayKey: dayKey, pebbleMoments: pebbleMoments, face: face, photo: photo)
+            .flatMap { isBlank($0, region: blankRegion(photo: photo)) ? nil : $0 }
+    }
+
+    /// 카드용 사진 — 사진 앱 에셋, 없으면 파일. 받은 기록은 nil(색 면으로 그린다). 메인 밖에서 부른다.
+    static func cardPhoto(_ m: Moment) -> UIImage? {
+        ShotImage.thumbnail(m, maxPixel: photoPixels)
+    }
+
+    static func blankRegion(photo: UIImage?) -> CGRect {
+        PebbleCardLayout.blankRegion(aspect: PebbleCardLayout.aspect(of: photo))
     }
 
     /// 한 달 한 줌 카드 — PebbleCard 와 같은 판형·같은 빈 카드 판정을 쓴다.
@@ -20,9 +31,9 @@ enum CardExporter {
 
     /// 빈 판정 전 렌더 — ImageRenderer 는 메인 전용이라 이 부분만 메인에 남기고 나머지는 prepare 로 넘긴다.
     @MainActor
-    static func renderRaw(dayKey: String, pebbleMoments: [Moment]) -> UIImage? {
+    static func renderRaw(dayKey: String, pebbleMoments: [Moment], face: Moment? = nil, photo: UIImage? = nil) -> UIImage? {
         guard !pebbleMoments.isEmpty else { return nil }
-        return bake(PebbleCard(dayKey: dayKey, pebbleMoments: pebbleMoments))
+        return bake(PebbleCard(dayKey: dayKey, pebbleMoments: pebbleMoments, face: face, photo: photo))
     }
 
     @MainActor
@@ -47,10 +58,10 @@ enum CardExporter {
     }
 
     /// 빈 판정·PNG 인코딩·미리보기 축소는 메인 밖에서. 비었거나 인코딩이 실패하면 nil.
-    static func prepare(_ image: UIImage?) async -> Prepared? {
+    static func prepare(_ image: UIImage?, region: CGRect = pebbleRegion) async -> Prepared? {
         guard let image else { return nil }
         return await Task.detached(priority: .userInitiated) { () -> Prepared? in
-            guard !isBlank(image), let data = image.pngData() else { return nil }
+            guard !isBlank(image, region: region), let data = image.pngData() else { return nil }
             let side = CGSize(width: pointSize.width / 2, height: pointSize.height / 2)
             let format = UIGraphicsImageRendererFormat()
             format.scale = 2
@@ -61,7 +72,7 @@ enum CardExporter {
         }.value
     }
 
-    /// 조약돌이 놓이는 가운데 영역(0...1 비율) — PebbleCard 는 돌이 세로 가운데보다 조금 위, HandfulCard 는 위 72% 가운데.
+    /// HandfulCard 의 돌이 모이는 가운데 영역(0...1) — PebbleCard 는 사진마다 달라 PebbleCardLayout.blankRegion 을 쓴다.
     static let pebbleRegion = CGRect(x: 0.3, y: 0.25, width: 0.4, height: 0.3)
 
     struct RegionStats: Equatable {
@@ -107,10 +118,10 @@ enum CardExporter {
         return drawn ? (data, w, h) : nil
     }
 
-    /// 가운데 조약돌 자리가 배경과 같거나 한 색으로 균일하면 빈 카드 — PebbleView 의 drawingGroup/CoreImage 질감이
+    /// 조약돌 자리가 배경과 같거나 한 색으로 균일하면 빈 카드 — PebbleView 의 drawingGroup/CoreImage 질감이
     /// 렌더 단계에서 비어버리는 경우를 잡는다(배경이 불투명해 알파만 봐서는 못 잡는다).
-    static func isBlank(_ image: UIImage) -> Bool {
-        guard let s = regionStats(image) else { return true }
+    static func isBlank(_ image: UIImage, region: CGRect = pebbleRegion) -> Bool {
+        guard let s = regionStats(image, region: region) else { return true }
         // 실측(시뮬레이터): 돌 있는 카드 분산 ≈ 500~2000, 돌 빠진 배경 그라데이션만 ≈ 6.
         return s.meanDiffFromBackground < 6 || s.lumaVariance < 50
     }

@@ -16,7 +16,7 @@ struct KeepsakeShareSheet: View {
             .task(id: dayKey) {
                 await RenderedCard.afterPresentation()
                 let raw = CardExporter.renderRaw(dayKey: dayKey, pebbleMoments: pebbleMoments)
-                rendered = RenderedCard(card: await CardExporter.prepare(raw))
+                rendered = RenderedCard(card: await CardExporter.prepare(raw, region: CardExporter.blankRegion(photo: nil)))
             }
     }
 }

@@ -184,7 +184,7 @@ final class PerformanceTests: XCTestCase {
         XCTAssertNotNil(handful)
 
         if let card {
-            time("f.isBlank") { _ = CardExporter.isBlank(card) }
+            time("f.isBlank") { _ = CardExporter.isBlank(card, region: CardExporter.blankRegion(photo: nil)) }
             // ShareLink(item: Image) 는 건네기를 누르는 순간 메인에서 PNG 로 굽는다.
             time("f.pngEncode") { _ = card.pngData() }
         }
@@ -193,7 +193,7 @@ final class PerformanceTests: XCTestCase {
         var raw: UIImage?
         let mainPart = time("f.sheetMainRender") { raw = CardExporter.renderRaw(dayKey: key, pebbleMoments: pebble) }
         let t = CFAbsoluteTimeGetCurrent()
-        let prepared = await CardExporter.prepare(raw)
+        let prepared = await CardExporter.prepare(raw, region: CardExporter.blankRegion(photo: nil))
         print("measured perf.f.prepareOffMain: \(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - t) * 1000)) ms")
         XCTAssertNotNil(prepared)
         XCTAssertEqual(prepared?.png.data.isEmpty, false)
