@@ -162,6 +162,7 @@
 		C0BD8C781712AF5378F41F12 /* PhotoContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB546AAD2C0C80DB7EF1B50 /* PhotoContextTests.swift */; };
 		C4EEE994B512FF5B448A580C /* DayPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */; };
 		C5345168432CE41677778207 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
+		C551F0362332CF997FF491B8 /* BackgroundHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */; };
 		C6042960F0442084AB0338E3 /* DayClosuresTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C70E667A14B10F8000505A /* DayClosuresTests.swift */; };
 		C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		C6592BFBDEAAB5F814989180 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
@@ -310,6 +311,7 @@
 		77CBA56139EDB549235ABCB2 /* MemoriesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoriesTests.swift; sourceTree = "<group>"; };
 		78C8D64FF056CFF1EAA9F88F /* ViewFinder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewFinder.swift; sourceTree = "<group>"; };
 		79FEE28AD42D812B8F599EBC /* Moment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Moment.swift; sourceTree = "<group>"; };
+		7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundHold.swift; sourceTree = "<group>"; };
 		7EB1163362CD567B08943EB6 /* ColorMomentsCapture.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = ColorMomentsCapture.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		820CBC257650B8198BCC2B5E /* ColorMomentsControl.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ColorMomentsControl.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8747F82BBC5889D32A11161B /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -626,6 +628,7 @@
 			children = (
 				D9C7A51085814AAD190D567A /* AppDelegate.swift */,
 				11362570D9E4DD826EDC96B0 /* ArrivalNotice.swift */,
+				7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */,
 				41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */,
 				2407ADFA49967AECDDB4BDC8 /* FirstRunOverlay.swift */,
 				F0539FB03BB33151F171D2BD /* HomeShell.swift */,
@@ -945,6 +948,7 @@
 				46F2AF21817056E13AD7F919 /* AppDelegate.swift in Sources */,
 				879D785A8FD06689896263E6 /* ArrivalNotice.swift in Sources */,
 				60CFD40171F7C16075470127 /* AssetReconciler.swift in Sources */,
+				C551F0362332CF997FF491B8 /* BackgroundHold.swift in Sources */,
 				9350B45953F4B84683162C30 /* BadgeCeremony.swift in Sources */,
 				C5345168432CE41677778207 /* CaptureEngine.swift in Sources */,
 				39421DA397F79B0CEBD66E06 /* CaptureInbox.swift in Sources */,

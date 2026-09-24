@@ -49,6 +49,32 @@ final class CoalescingWriterTests: XCTestCase {
         XCTAssertEqual(order.get().last, "state")
         XCTAssertEqual(Set(order.get()), ["a", "b", "state"])
     }
+
+    /// 백그라운드로 가며 멈춰도 밀린 쓰기가 끝날 때까지 프로세스를 붙잡고, 끝나면 반드시 놓는다.
+    func testEveryDrainHoldsAndReleasesActivity() {
+        let begun = LockedBox(0), released = LockedBox(0), heldDuringWrite = LockedBox(false)
+        let original = CoalescingWriter.activityHolder
+        defer { CoalescingWriter.activityHolder = original }
+        CoalescingWriter.activityHolder = { _ in
+            begun.update { $0 += 1 }
+            return { released.update { $0 += 1 } }
+        }
+        let writer = CoalescingWriter.forFile(tempURL("hold"))
+        // 밀린 쓰기는 마지막 것만 돈다 — 둘 다에서 잰다.
+        writer.write { heldDuringWrite.set(begun.get() > released.get()); return Data("1".utf8) }
+        writer.write { heldDuringWrite.set(begun.get() > released.get()); return Data("2".utf8) }
+        writer.then {}
+        writer.flush()
+        XCTAssertTrue(heldDuringWrite.get(), "쓰는 동안 붙잡고 있어야 한다")
+        XCTAssertGreaterThan(begun.get(), 0)
+        XCTAssertEqual(begun.get(), released.get(), "붙잡은 만큼 놓아야 한다 — 안 놓으면 시스템이 앱을 죽인다")
+    }
+
+    func testDefaultExpiringActivityReleases() {
+        let release = CoalescingWriter.expiringActivity("test")
+        release()
+        release()
+    }
 }
 
 final class LockedBox<T>: @unchecked Sendable {
