@@ -3,7 +3,7 @@ import XCTest
 @testable import ColorMoments
 
 /// 실기기 멈춤 보고(iCloud 대량 수신·사진첩 담기·카드 건네기)의 메인 스레드 비용을 합성 데이터로 잰다.
-/// 시뮬레이터(맥) 수치라 실기기는 몇 배 느리다 — 상한은 회귀만 잡을 만큼 넉넉하게 둔다.
+/// 시뮬레이터(맥) 수치라 실기기는 몇 배 느리다 — 상한은 수정 뒤 실측 3회 최댓값의 5배.
 @MainActor
 final class PerformanceTests: XCTestCase {
 
@@ -74,7 +74,7 @@ final class PerformanceTests: XCTestCase {
             }
         }
         XCTAssertEqual(store.moments.filter { $0.assetID != nil }.count, Self.momentCount)
-        XCTAssertLessThan(batched, 300, "묶음마다 days.json 전체를 메인에서 쓰면 수신량 제곱으로 늘어난다(수정 전 623ms)")
+        XCTAssertLessThan(batched, 177, "묶음마다 days.json 전체를 메인에서 쓰면 수신량 제곱으로 늘어난다(수정 전 623ms)")
     }
 
     func testSetCloudIDsAndResolveThreeThousand() {
@@ -110,7 +110,7 @@ final class PerformanceTests: XCTestCase {
         }
         let adds200 = time("c.add200") { for m in adds { store.add(m) } }
         XCTAssertEqual(store.moments.count, Self.momentCount + 200)
-        XCTAssertLessThan(adds200, 1_500, "add 마다 메인에서 전체 저장하면 9초를 넘는다")
+        XCTAssertLessThan(adds200, 664, "add 마다 메인에서 전체 저장하면 9초를 넘는다")
         store.flush()
         XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.count, Self.momentCount + 200,
                        "백그라운드 저장도 마지막 상태까지 남아야 한다")
@@ -147,8 +147,8 @@ final class PerformanceTests: XCTestCase {
             _ = GiftSchedule.pending(dayKeys: store.dayKeys, today: today, isGifted: gifts.isGifted,
                                      hasSealedMoments: store.hasSealedMoments, isFinished: store.isFinished)
         }
-        XCTAssertLessThan(rows, 50, "행마다 전체 기록을 거르면 스크롤이 끊긴다(수정 전 125ms)")
-        XCTAssertLessThan(allRows, 300, "수정 전 3.5초")
+        XCTAssertLessThan(rows, 2, "행마다 전체 기록을 거르면 스크롤이 끊긴다(수정 전 125ms)")
+        XCTAssertLessThan(allRows, 12, "수정 전 3.5초")
     }
 
     /// 앱 시작 때 DayStore init 이 메인에서 days.json 을 읽는 비용 — 이번엔 고치지 않고 기록만.
@@ -165,7 +165,7 @@ final class PerformanceTests: XCTestCase {
         let store = freshStore()
         store.applyRemote(upserts: synthetic(), deletes: [])
         let widget = time("e.WidgetSnapshot.make") { _ = WidgetSnapshot.make(store: store, gifts: gifts) }
-        XCTAssertLessThan(widget, 300, "수정 전 1.8초")
+        XCTAssertLessThan(widget, 51, "수정 전 1.8초")
     }
 
     func testCardRender() async {
@@ -197,6 +197,6 @@ final class PerformanceTests: XCTestCase {
         print("measured perf.f.prepareOffMain: \(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - t) * 1000)) ms")
         XCTAssertNotNil(prepared)
         XCTAssertEqual(prepared?.png.data.isEmpty, false)
-        XCTAssertLessThan(mainPart, 500)
+        XCTAssertLessThan(mainPart, 17)
     }
 }
