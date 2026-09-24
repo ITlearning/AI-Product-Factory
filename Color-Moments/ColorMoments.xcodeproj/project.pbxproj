@@ -163,8 +163,10 @@
 		EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		F0DD38512B10A0EC9EF97BD6 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E016D510A0FA71B454E57DF6 /* AVKit.framework */; };
 		F1CEB3009284EB172D1766E8 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
+		F2AED0EA530722CDA81ECD0C /* PebbleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4228061CA26BCE3FF38B2 /* PebbleWidget.swift */; };
 		F2C689ACD107EA2CD0F669E4 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		F317A29590E9991823D148EB /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */; };
+		F3230F73D5F251F3B2EE84D2 /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E46082B433DCE04145412FFA /* HomeWidget.swift */; };
 		F4F24DB7F05FD86971A0E962 /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */; };
 		F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
@@ -289,6 +291,7 @@
 		BDB546AAD2C0C80DB7EF1B50 /* PhotoContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoContextTests.swift; sourceTree = "<group>"; };
 		BDCE9183C112FFB37E007824 /* PebbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleView.swift; sourceTree = "<group>"; };
 		BE9BFF0980144C315646D9E5 /* PebbleRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleRenderTests.swift; sourceTree = "<group>"; };
+		C3D4228061CA26BCE3FF38B2 /* PebbleWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleWidget.swift; sourceTree = "<group>"; };
 		C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		C8272505EF16B075931B8224 /* WordListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordListTests.swift; sourceTree = "<group>"; };
 		C9CE619222B12DDC48E8D41D /* CaptureExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureExtension.swift; sourceTree = "<group>"; };
@@ -303,6 +306,7 @@
 		DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
 		E016D510A0FA71B454E57DF6 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 		E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoContext.swift; sourceTree = "<group>"; };
+		E46082B433DCE04145412FFA /* HomeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWidget.swift; sourceTree = "<group>"; };
 		E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPhotoView.swift; sourceTree = "<group>"; };
 		E79F2C0C75680FBE51A5A26C /* PebbleSilhouetteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleSilhouetteTests.swift; sourceTree = "<group>"; };
 		EDA4609189EEBA41333EE662 /* DayGradient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGradient.swift; sourceTree = "<group>"; };
@@ -546,6 +550,7 @@
 				2407ADFA49967AECDDB4BDC8 /* FirstRunOverlay.swift */,
 				F0539FB03BB33151F171D2BD /* HomeShell.swift */,
 				953A1415A221B2ED1198C5E8 /* HomeView.swift */,
+				E46082B433DCE04145412FFA /* HomeWidget.swift */,
 				915F51F76D8105385A924494 /* SpikeView.swift */,
 			);
 			path = App;
@@ -567,6 +572,7 @@
 				71305FB203F40AC7A2172D6E /* ColorCaptureControl.swift */,
 				503FB3A2F6076A7563C32074 /* ColorMomentsControl.entitlements */,
 				D7284FE09B31C6D29E4790FB /* Info.plist */,
+				C3D4228061CA26BCE3FF38B2 /* PebbleWidget.swift */,
 			);
 			path = ColorMomentsControl;
 			sourceTree = "<group>";
@@ -794,6 +800,7 @@
 				1EA8EE22FEEAA7E8B7FA0118 /* MomentMerge.swift in Sources */,
 				F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */,
 				2992E2534861C57FB2499B90 /* PebbleView.swift in Sources */,
+				F2AED0EA530722CDA81ECD0C /* PebbleWidget.swift in Sources */,
 				3CDC3B977191BC7C08488E35 /* PhotoContext.swift in Sources */,
 				606CEC7B3987E18F4BE01709 /* PhotoLabeler.swift in Sources */,
 				CF11D8850579771F69487B97 /* ShotImage.swift in Sources */,
@@ -869,6 +876,7 @@
 				8B1F7FBF239684E48BA39B1A /* HomeNavigation.swift in Sources */,
 				AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */,
 				2EB93D8ABBF2916AEEE1F2F1 /* HomeView.swift in Sources */,
+				F3230F73D5F251F3B2EE84D2 /* HomeWidget.swift in Sources */,
 				AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */,
 				172DFE11B4A2ABB242240925 /* LibraryImporter.swift in Sources */,
 				D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */,

@@ -18,5 +18,6 @@ struct ColorCaptureControl: ControlWidget {
 struct ColorMomentsControlBundle: WidgetBundle {
     var body: some Widget {
         ColorCaptureControl()
+        PebbleWidget()
     }
 }
