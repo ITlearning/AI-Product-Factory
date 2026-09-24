@@ -329,6 +329,8 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 - §3.1 「희미하게」를 blur로 구현하지 않기
 - §3.2 시간축 정규화를 DayGradient와 같은 함수로
 - 터치 44pt 하한
+- 카드는 사용자가 직접 누를 때만, 사진 없음
+- 한 줌은 격자가 아니다
 
 ---
 
@@ -350,6 +352,9 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 | 12 | iCloud 연동 (docs/designs/mongdol-icloud-sync.md) | ✅ 실기기 확인 대기 — `ColorMoments/Sync/`, `Shared/Day/MomentMerge.swift` |
 | 13 | 아침 도착 소식 | ✅ `ColorMoments/App/ArrivalNotice.swift` |
 | 14 | 홈 화면 위젯 | ✅ `ColorMomentsControl/PebbleWidget.swift`, `Shared/Widget/WidgetSnapshot.swift` |
+| 15 | 첫날 지난 일주일 담기 — 빈 첫 화면 제안 + 첫 담기 증정 한 번 | ✅ `App/HomeView.swift`(libraryOnboardingLine) · `Shared/Day/GiftSchedule.swift`(pendingWithOnboarding) · `Shared/Day/DayGift.swift` |
+| 16 | 조약돌 카드 + 건네기 | ✅ `Shared/Keepsake/PebbleCard.swift`, `Keepsake.swift` · `ColorMoments/Keepsake/CardExporter.swift`, `KeepsakeShareSheet.swift` · 진입은 하루 상세 공유 아이콘·홈 contextMenu(받은 하루만) |
+| 17 | 작년 이맘때 · 한 달 한 줌 | ✅ `Shared/Keepsake/Memories.swift`(lastYear·months·handfulLayout) · `App/HomeView.swift`(작년 이맘때 줄·달 머리글) · `Shared/Keepsake/HandfulView.swift`, `HandfulCard.swift` · `ColorMoments/Keepsake/HandfulShareSheet.swift` |
 
 **홈 화면 위젯 (systemSmall 하나 — 2026-09-24 Tabber).** 마지막으로 받은 조약돌과 이름·날짜만 보인다. 사진 있던 하루가 닫혔는데(04시 또는 「지금 조약돌로 받기」) 아직 안 받았으면 **색을 가린 회색 돌 + 「도착했어요」** — 색은 증정에서 처음 열린다, 위젯이 먼저 보여 주지 않는다. 받은 돌이 없으면 점선 빈 돌만. 앱이 App Group `widget-snapshot.json` 에 써 두고 reload 한다(담김·일찍 받기·증정 끝·active/background). 스냅샷엔 색과 그라데이션 상대 위치만 — 찍은 시각은 남기지 않는다. 도착 소식 본문은 이름 없이 「어제의 조약돌이 도착했어요.」 하나(이름이 색을 드러낸다).
 

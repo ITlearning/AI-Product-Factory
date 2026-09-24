@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
-상태 **draft** · 2026-09-24 · 브랜치 `feat/mongdol-keepsakes` (`feat/mongdol-day-gift` 에서 분기)
+상태 **completed** · 2026-09-24 · 브랜치 `feat/mongdol-keepsakes` (`feat/mongdol-day-gift` 에서 분기)
 
 **Goal:** 첫날 지난 일주일 담기 · 조약돌 카드 · 작년 이맘때와 한 달 한 줌 · 조약돌 건네기 — 몽돌이 쌓일수록 다시 꺼내 보고 밖으로 건넬 수 있게 한다.
 
