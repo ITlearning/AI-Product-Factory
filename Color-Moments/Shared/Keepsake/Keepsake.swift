@@ -14,6 +14,12 @@ public enum Keepsake {
     /// URL 이 없으면 카드 이미지만 공유한다 — 문구 자체를 붙이지 않는다.
     public static func shareText(pebbleName: String, appStoreURL: URL?) -> String? {
         guard let appStoreURL else { return nil }
-        return "\(pebbleName)을 건네요. 나도 몽돌 받아 보기 → \(appStoreURL.absoluteString)"
+        return "\(pebbleName)\(objectParticle(after: pebbleName)) 건네요. 나도 몽돌 받아 보기 → \(appStoreURL.absoluteString)"
+    }
+
+    /// 마지막 글자 받침이 있으면 「을」, 없으면 「를」 — 한글이 아니면 「을」.
+    public static func objectParticle(after word: String) -> String {
+        guard let v = word.unicodeScalars.last?.value, (0xAC00...0xD7A3).contains(v) else { return "을" }
+        return (v - 0xAC00) % 28 == 0 ? "를" : "을"
     }
 }
