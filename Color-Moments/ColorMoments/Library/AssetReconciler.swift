@@ -106,14 +106,14 @@ enum AssetReconciler {
     @MainActor
     private static func run(store: DayStore, defaults: UserDefaults) async {
         let fullAccess = PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized
-        let ids = Set(store.moments.compactMap(\.assetID))
+        // 조회를 기다리는 사이 새로 담긴 기록은 found 에 없다 — 판정은 조회 전 스냅샷으로만 한다.
+        let snapshot = store.moments
+        let ids = Set(snapshot.compactMap(\.assetID))
         guard fullAccess, !ids.isEmpty else { return }
 
-        var found = Set<String>()
-        PHAsset.fetchAssets(withLocalIdentifiers: Array(ids), options: nil)
-            .enumerateObjects { asset, _, _ in found.insert(asset.localIdentifier) }
+        let found = await existing(Array(ids))
 
-        let lost = store.moments.filter { m in m.assetID.map { !found.contains($0) } ?? false }
+        let lost = snapshot.filter { m in m.assetID.map { !found.contains($0) } ?? false }
         var relocated: [String: String] = [:]
         let clouds = lost.compactMap(\.cloudID)
         if !clouds.isEmpty {
@@ -139,6 +139,17 @@ enum AssetReconciler {
         store.remove(assetIDs: plan.remove)
     }
 
+    /// 사진 앱에 아직 있는 로컬 ID — 수천 개 조회는 메인 밖에서.
+    static func existing(_ ids: [String]) async -> Set<String> {
+        guard !ids.isEmpty else { return [] }
+        return await Task.detached(priority: .utility) {
+            var found = Set<String>()
+            PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+                .enumerateObjects { asset, _, _ in found.insert(asset.localIdentifier) }
+            return found
+        }.value
+    }
+
     private static func loadBudget(defaults: UserDefaults) -> Budget? {
         guard let data = defaults.data(forKey: budgetDefaultsKey) else { return nil }
         return try? JSONDecoder().decode(Budget.self, from: data)
@@ -160,17 +171,21 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
         self.store = store
         super.init()
         PHPhotoLibrary.shared().register(self)
-        Task { @MainActor [weak self] in self?.refreshFetchResult() }
+        Task { @MainActor [weak self] in await self?.refreshFetchResult() }
     }
 
     deinit {
         PHPhotoLibrary.shared().unregisterChangeObserver(self)
     }
 
+    // 사진 앱이 바뀔 때마다(iCloud 사진이 내려오는 동안 잦다) 수천 개를 다시 조회한다 — 메인 밖에서.
     @MainActor
-    private func refreshFetchResult() {
+    private func refreshFetchResult() async {
         let ids = Array(Set(store.moments.compactMap(\.assetID)))
-        fetchResult = ids.isEmpty ? nil : PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+        guard !ids.isEmpty else { fetchResult = nil; return }
+        fetchResult = await Task.detached(priority: .utility) {
+            PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+        }.value
     }
 
     func photoLibraryDidChange(_ changeInstance: PHChange) {
@@ -185,7 +200,7 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
                 await AssetReconciler.reconcile(store: self.store)
             }
             // 추적 목록을 지금 저장소 기준으로 다시 세운다 — 새로 입양된 assetID 도 다음 변경부터 잡힌다.
-            self.refreshFetchResult()
+            await self.refreshFetchResult()
             // iCloud 사진이 늦게 내려와도 여기서 cloudID 를 다시 찾는다.
             Task { await CloudIDMapper.refresh(store: self.store) }
         }

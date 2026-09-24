@@ -116,9 +116,7 @@ enum AssetAdopter {
         let libraryBacked = store.moments.filter { $0.assetID != nil && $0.fileName.hasPrefix("library-") }
         if !libraryBacked.isEmpty {
             let ids = libraryBacked.compactMap(\.assetID)
-            var found = Set<String>()
-            PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
-                .enumerateObjects { asset, _, _ in found.insert(asset.localIdentifier) }
+            let found = await AssetReconciler.existing(ids)
             for m in libraryBacked where m.assetID.map(found.contains) == true {
                 try? FileManager.default.removeItem(at: ShotImage.url(m.fileName))
             }
