@@ -31,6 +31,7 @@ struct HomeView: View {
 
     @State private var opened: OpenedDay?
     @State private var sharingDayKey: SharingDay?
+    @State private var openedMonth: OpenedMonth?
     @State private var topDayKey: String?
     @State private var scrolling = false
 
@@ -43,8 +44,12 @@ struct HomeView: View {
 
     private struct OpenedDay: Identifiable, Equatable { let id: String }
     private struct SharingDay: Identifiable { let id: String }
+    private struct OpenedMonth: Identifiable { let id: String }
 
     private var days: [String] { store.finishedDayKeys }
+
+    // 받지 않은 하루는 작년 이맘때·한 달 한 줌 어디에도 들어가지 않는다 — floor 판정은 GiftLog 하나뿐.
+    private var giftedDays: [String] { days.filter(gifts.isGifted) }
 
     private var todayKey: String { Moment.dayKey(for: Date()) }
 
@@ -59,6 +64,14 @@ struct HomeView: View {
     private var months: [String] { HomeNavigation.months(of: days) }
 
     private var pillActive: Bool { scrolling || lingering }
+
+    private var lastYearDayKey: String? { Memories.lastYear(today: todayKey, giftedDays: giftedDays) }
+
+    private var handfulMonths: Set<String> { Set(Memories.months(giftedDays: giftedDays, today: todayKey)) }
+
+    private func giftedPebbleGroups(forMonth month: String) -> [[Moment]] {
+        days.filter { $0.hasPrefix(month) && gifts.isGifted($0) }.map { store.pebbleMoments(on: $0) }
+    }
 
     var body: some View {
         ZStack {
@@ -80,6 +93,13 @@ struct HomeView: View {
         }
         .sheet(item: $sharingDayKey) { day in
             KeepsakeShareSheet(dayKey: day.id, store: store)
+        }
+        .fullScreenCover(item: $openedMonth) { month in
+            HandfulView(month: month.id, pebbleGroups: giftedPebbleGroups(forMonth: month.id),
+                        makeShareSheet: {
+                            AnyView(HandfulShareSheet(month: month.id,
+                                                      pebbleGroups: giftedPebbleGroups(forMonth: month.id)))
+                        })
         }
         .onChange(of: opened) { _, value in if value != nil { daySheetPresented = true } }
         .task { if !store.moments.isEmpty { didOfferLibraryOnboarding = true } }
@@ -125,6 +145,7 @@ struct HomeView: View {
                             } else if !todayClosedWithMoments {
                                 todayLine
                             }
+                            lastYearLine
                             Spacer().frame(height: 38)
 
                             if days.isEmpty {
@@ -138,6 +159,13 @@ struct HomeView: View {
                             } else {
                                 LazyVStack(alignment: .leading, spacing: 0) {
                                     ForEach(Array(days.enumerated()), id: \.element) { index, key in
+                                        let month = String(key.prefix(7))
+                                        let isMonthStart = index == 0 || String(days[index - 1].prefix(7)) != month
+                                        if isMonthStart, handfulMonths.contains(month) {
+                                            monthHandfulHeader(month)
+                                                .padding(.top, index == 0 ? 0 : 24)
+                                                .id("month-\(month)")
+                                        }
                                         dayRow(key, width: blockWidth)
                                             .contentShape(Rectangle())
                                             .onTapGesture { open(key) }
@@ -281,6 +309,30 @@ struct HomeView: View {
             .foregroundStyle(Tone.secondary)
             .contentShape(Rectangle())
             .onTapGesture { onRequestLibraryPicker() }
+    }
+
+    // 받은 날이 1년 전 ±3일 안에 없으면 아무것도 안 보인다 — 이름만 명조, 나머지는 SF.
+    @ViewBuilder
+    private var lastYearLine: some View {
+        if let key = lastYearDayKey, let named = PebbleNaming.name(for: store.pebbleMoments(on: key)) {
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer().frame(height: 14)
+                Text("작년 이맘때 · ").font(Face.line).foregroundStyle(Tone.secondary)
+                    + Text(named.name).font(Face.nameCompact).foregroundStyle(Tone.primary)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { open(key) }
+        }
+    }
+
+    private func monthHandfulHeader(_ month: String) -> some View {
+        let parts = month.split(separator: "-")
+        let label = parts.count == 2 ? "\(Int(parts[1]) ?? 0)월의 한 줌" : month
+        return Text(label)
+            .font(Face.line)
+            .foregroundStyle(Tone.secondary)
+            .contentShape(Rectangle())
+            .onTapGesture { openedMonth = OpenedMonth(id: month) }
     }
 
     private var monthLabel: String? {

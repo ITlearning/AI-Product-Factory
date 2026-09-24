@@ -15,6 +15,17 @@ enum CardExporter {
         return image
     }
 
+    /// 한 달 한 줌 카드 — PebbleCard 와 같은 판형·같은 빈 이미지 판정을 쓴다.
+    @MainActor
+    static func renderHandful(month: String, pebbleGroups: [[Moment]]) -> UIImage? {
+        let renderer = ImageRenderer(content:
+            HandfulCard(month: month, pebbleGroups: pebbleGroups)
+                .frame(width: pointSize.width, height: pointSize.height))
+        renderer.scale = 3
+        guard let image = renderer.uiImage, !isBlank(image) else { return nil }
+        return image
+    }
+
     /// PebbleView 의 drawingGroup/CoreImage 질감이 렌더 단계에서 통째로 비어버리는 경우를 잡는다.
     static func isBlank(_ image: UIImage) -> Bool {
         guard let cg = image.cgImage, cg.width > 0, cg.height > 0 else { return true }
