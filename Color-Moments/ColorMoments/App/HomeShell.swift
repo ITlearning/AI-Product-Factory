@@ -31,11 +31,15 @@ struct HomeShell: View {
     @State private var pickingLibrary = false
     // pickingLibrary 는 닫힘 애니메이션 시작에 false 가 된다 — 증정 가드는 커버 onDismiss 에서만 푼다.
     @State private var libraryCoverUp = false
+    // 사진첩 시트를 열기 직전의 기록 id 스냅샷 — onDone 에서 새로 담긴 날짜만 골라내려고.
+    @State private var momentIDsBeforeLibraryImport: Set<Moment.ID> = []
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
     @AppStorage("didSeeFirstRun") private var didSeeFirstRun = false
     // 첫 증정이 끝난 뒤 딱 한 번만 아침 도착 소식을 물어본다 — 실제로 답을 받았을 때만 true.
     @AppStorage("didAskArrivalNotice") private var didAskArrivalNotice = false
+    // 기록 0개에서 사진첩으로 처음 담았을 때 고른 하루 — 증정 뒤 이 값을 지운다.
+    @AppStorage("onboardingGiftDay") private var onboardingGiftDay: String?
     @State private var showingArrivalNoticeAsk = false
     #if DEBUG
     @State private var showingGate = false
@@ -55,7 +59,8 @@ struct HomeShell: View {
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          onDaySheetDismissed: { daySheetDismissedTick += 1 },
                          daySheetPresented: $daySheetPresented,
-                         onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } })
+                         onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } },
+                         onRequestLibraryPicker: openLibraryPicker)
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -85,6 +90,7 @@ struct HomeShell: View {
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
                  blocksPresentation: daySheetPresented || pickingLibrary || libraryCoverUp || progress > 0
                      || showingArrivalNoticeAsk,
+                 onboardingGiftDay: onboardingGiftDay,
                  onCeremonyFinished: handleCeremonyFinished)
         .alert("조약돌이 도착하면 아침에 알려 드릴까요?", isPresented: $showingArrivalNoticeAsk) {
             Button("알려 주세요") {
@@ -112,6 +118,14 @@ struct HomeShell: View {
                 camera?.confirm("담겼어요")
                 progress = 0
                 pendingLibraryFocus = true
+                if momentIDsBeforeLibraryImport.isEmpty {
+                    let importedDayKeys = store.moments
+                        .filter { !momentIDsBeforeLibraryImport.contains($0.id) }
+                        .map(\.dayKey)
+                    onboardingGiftDay = OnboardingGift.firstImportDay(existingRecordsWereEmpty: true,
+                                                                      importedDayKeys: importedDayKeys,
+                                                                      today: Moment.dayKey(for: Date()))
+                }
                 Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
             }
         }
@@ -133,11 +147,14 @@ struct HomeShell: View {
     private var cameraSide: some View {
         if let camera {
 
-            CaptureScreen(engine: camera, onClose: { progress = 0 }, onLibrary: {
-                libraryCoverUp = true
-                pickingLibrary = true
-            })
+            CaptureScreen(engine: camera, onClose: { progress = 0 }, onLibrary: openLibraryPicker)
         }
+    }
+
+    private func openLibraryPicker() {
+        momentIDsBeforeLibraryImport = Set(store.moments.map(\.id))
+        libraryCoverUp = true
+        pickingLibrary = true
     }
 
     private func swipe(width: CGFloat) -> some Gesture {
@@ -205,6 +222,7 @@ struct HomeShell: View {
     // 물어보는 건 마무리 여부와 무관하게 "첫 증정" 한 번뿐 — 이 콜백 직후 present() 가 다음 증정을 띄우므로
     // 남은 증정이 있으면 묻지 않고 그 증정이 끝난 뒤(다음 콜백)로 미룬다.
     private func handleCeremonyFinished(_ dayKey: String) {
+        if dayKey == onboardingGiftDay { onboardingGiftDay = nil }
         Task { await ArrivalNotice.clear(dayKey: dayKey) }
         HomeWidget.refresh(store: store, gifts: gifts)
         let next = GiftSchedule.pending(dayKeys: store.dayKeys,

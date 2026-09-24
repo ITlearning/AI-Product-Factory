@@ -58,6 +58,7 @@
 		3CDC3B977191BC7C08488E35 /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		3CE1625788607AF614E6B418 /* ViewFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C8D64FF056CFF1EAA9F88F /* ViewFinder.swift */; };
 		3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001315A7B5573B9974966AF7 /* DayGradientTests.swift */; };
+		40B9D26FE9CD8258E04D8053 /* OnboardingGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */; };
 		463BB08804C6196DA3590041 /* SpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915F51F76D8105385A924494 /* SpikeView.swift */; };
 		46AD1F7A020AA01BF62EEBEC /* GiftSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CECA91205032542A8E6CBAD /* GiftSchedule.swift */; };
 		46F2AF21817056E13AD7F919 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9C7A51085814AAD190D567A /* AppDelegate.swift */; };
@@ -97,6 +98,7 @@
 		85404B43045C16239CA26FB5 /* ColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */; };
 		866DCC55F52911A6A8BAC243 /* ShotViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */; };
 		879D785A8FD06689896263E6 /* ArrivalNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11362570D9E4DD826EDC96B0 /* ArrivalNotice.swift */; };
+		8AFDFD1FC5C8C602F84B0EBB /* OnboardingGiftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */; };
 		8B1F7FBF239684E48BA39B1A /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
 		8F8B15F8CCD32B424B99892B /* WordListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8272505EF16B075931B8224 /* WordListTests.swift */; };
 		90B7A542F814159743E818D2 /* words.json in Resources */ = {isa = PBXBuildFile; fileRef = A0A48C2B255FB6B7DFA973C5 /* words.json */; };
@@ -125,6 +127,7 @@
 		A8B410E526DB99857E8666B2 /* NanumMyeongjo-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */; };
 		A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
 		AE0857AF5EDACD9DBF05DC32 /* GiftSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CECA91205032542A8E6CBAD /* GiftSchedule.swift */; };
+		AE398008B7E64F3E92398B36 /* OnboardingGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */; };
 		AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0539FB03BB33151F171D2BD /* HomeShell.swift */; };
 		AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
 		B3358B78B3BA94067A3E02B1 /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
@@ -167,6 +170,7 @@
 		F2C689ACD107EA2CD0F669E4 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		F317A29590E9991823D148EB /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */; };
 		F3230F73D5F251F3B2EE84D2 /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E46082B433DCE04145412FFA /* HomeWidget.swift */; };
+		F47D588A2739762FA431A426 /* OnboardingGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */; };
 		F4F24DB7F05FD86971A0E962 /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */; };
 		F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
@@ -280,12 +284,14 @@
 		926BDBAFE04F7B17464F627E /* DayTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimeline.swift; sourceTree = "<group>"; };
 		927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeCeremony.swift; sourceTree = "<group>"; };
 		953A1415A221B2ED1198C5E8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingGift.swift; sourceTree = "<group>"; };
 		9D560E148CF707BADEB351E9 /* DayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreTests.swift; sourceTree = "<group>"; };
 		9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPickerView.swift; sourceTree = "<group>"; };
 		A0A48C2B255FB6B7DFA973C5 /* words.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = words.json; sourceTree = "<group>"; };
 		ACD34409978D5C9CDE7304E7 /* WordList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordList.swift; sourceTree = "<group>"; };
 		ACF0FEAA69BCAAE696688328 /* WidgetSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotTests.swift; sourceTree = "<group>"; };
 		B180428138319F72B026C570 /* PebbleNameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNameTests.swift; sourceTree = "<group>"; };
+		B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingGiftTests.swift; sourceTree = "<group>"; };
 		B3676D77CA8F72C6175CC066 /* ColorExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractorTests.swift; sourceTree = "<group>"; };
 		BB99387BD580BB034A37204A /* PhotoLabelerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLabelerTests.swift; sourceTree = "<group>"; };
 		BDB546AAD2C0C80DB7EF1B50 /* PhotoContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoContextTests.swift; sourceTree = "<group>"; };
@@ -398,6 +404,7 @@
 				2CECA91205032542A8E6CBAD /* GiftSchedule.swift */,
 				79FEE28AD42D812B8F599EBC /* Moment.swift */,
 				D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */,
+				98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */,
 				343D1F9744F120B40EEDE985 /* PebbleName.swift */,
 				3D1B75104310693B48F8D9DE /* ShotImage.swift */,
 			);
@@ -420,6 +427,7 @@
 				160019A37882F81114DE5A27 /* HomeNavigationTests.swift */,
 				0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */,
 				6CB97C7E8769569A500FCFF1 /* MomentMergeTests.swift */,
+				B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */,
 				B180428138319F72B026C570 /* PebbleNameTests.swift */,
 				BE9BFF0980144C315646D9E5 /* PebbleRenderTests.swift */,
 				E79F2C0C75680FBE51A5A26C /* PebbleSilhouetteTests.swift */,
@@ -798,6 +806,7 @@
 				F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */,
 				1CC5449DA7CB344D2AC45E80 /* Moment.swift in Sources */,
 				1EA8EE22FEEAA7E8B7FA0118 /* MomentMerge.swift in Sources */,
+				F47D588A2739762FA431A426 /* OnboardingGift.swift in Sources */,
 				F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */,
 				2992E2534861C57FB2499B90 /* PebbleView.swift in Sources */,
 				F2AED0EA530722CDA81ECD0C /* PebbleWidget.swift in Sources */,
@@ -830,6 +839,7 @@
 				17862587A29EF312EF46CBD3 /* HomeNavigationTests.swift in Sources */,
 				E0A11DC00DADAE32564950AC /* LibrarySectionsTests.swift in Sources */,
 				A34E2A2A8AF2BCCDCCE21452 /* MomentMergeTests.swift in Sources */,
+				8AFDFD1FC5C8C602F84B0EBB /* OnboardingGiftTests.swift in Sources */,
 				12C3CD61E7A606425EFD41CA /* PebbleNameTests.swift in Sources */,
 				307336BE9B12FD503EBF66EC /* PebbleRenderTests.swift in Sources */,
 				294A77897542943DC92B2BE2 /* PebbleSilhouetteTests.swift in Sources */,
@@ -883,6 +893,7 @@
 				923895A999E487D30889239A /* LibrarySections.swift in Sources */,
 				50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */,
 				2B4617290F37676DF89566DF /* MomentMerge.swift in Sources */,
+				40B9D26FE9CD8258E04D8053 /* OnboardingGift.swift in Sources */,
 				1BA230406A06170D47C94E8E /* PebbleName.swift in Sources */,
 				F1CEB3009284EB172D1766E8 /* PebbleView.swift in Sources */,
 				1F708EB7D0F030E7D61A9217 /* PhotoAssets.swift in Sources */,
@@ -928,6 +939,7 @@
 				9DA9DB9E6BBA273B5C90A00F /* LibrarySections.swift in Sources */,
 				60F00B961E27FD6874408F2F /* Moment.swift in Sources */,
 				304E851724E25006163D4850 /* MomentMerge.swift in Sources */,
+				AE398008B7E64F3E92398B36 /* OnboardingGift.swift in Sources */,
 				62FD808384BFDB6BDEC7143C /* PebbleName.swift in Sources */,
 				A03E0083AE26CB4CCB4A9434 /* PebbleView.swift in Sources */,
 				A72BCF9D6E87301BA1102FF9 /* PhotoContext.swift in Sources */,

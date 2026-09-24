@@ -21,6 +21,12 @@ struct HomeView: View {
     // 하루를 마무리할 때(closures.close) HomeShell 이 아침 도착 소식 예약을 다시 맞추도록 알린다.
     var onDayClosed: () -> Void = {}
 
+    // 빈 첫 화면의 "지난 며칠 담기" 제안을 누르면 HomeShell 이 기존 사진첩 담기 화면을 띄운다.
+    var onRequestLibraryPicker: () -> Void = {}
+
+    // 기록이 한 번이라도 생기면 true — 그 뒤엔 사진첩 제안 문구를 다시 보이지 않는다.
+    @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
+
     @State private var opened: OpenedDay?
     @State private var topDayKey: String?
     @State private var scrolling = false
@@ -67,6 +73,10 @@ struct HomeView: View {
             DayMomentsView(dayKey: day.id, store: store, closures: closures, onClosed: onDayClosed)
         }
         .onChange(of: opened) { _, value in if value != nil { daySheetPresented = true } }
+        .task { if !store.moments.isEmpty { didOfferLibraryOnboarding = true } }
+        .onChange(of: store.moments.isEmpty) { _, isEmpty in
+            if !isEmpty { didOfferLibraryOnboarding = true }
+        }
     }
 
     private func open(_ key: String) {
@@ -109,7 +119,13 @@ struct HomeView: View {
                             Spacer().frame(height: 38)
 
                             if days.isEmpty {
-                                if !todayInProgress { EmptyDayBlock(width: blockWidth) }
+                                if !todayInProgress {
+                                    EmptyDayBlock(width: blockWidth)
+                                    if !didOfferLibraryOnboarding {
+                                        Spacer().frame(height: 20)
+                                        libraryOnboardingLine
+                                    }
+                                }
                             } else {
                                 LazyVStack(alignment: .leading, spacing: 0) {
                                     ForEach(Array(days.enumerated()), id: \.element) { index, key in
@@ -231,6 +247,14 @@ struct HomeView: View {
             }
         }
         .font(Face.today)
+    }
+
+    private var libraryOnboardingLine: some View {
+        Text("지난 며칠 사진으로 먼저 받아 볼까요?")
+            .font(Face.line)
+            .foregroundStyle(Tone.secondary)
+            .contentShape(Rectangle())
+            .onTapGesture { onRequestLibraryPicker() }
     }
 
     private var monthLabel: String? {
