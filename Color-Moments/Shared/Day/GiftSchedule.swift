@@ -13,6 +13,16 @@ public enum GiftSchedule {
         if dayKeys.contains(today), isFinished(today), hasSealedMoments(today), !isGifted(today) { return today }
         return nil
     }
+
+    /// 첫 담기 온보딩 하루(있고 아직 안 받았으면)는 hasSealedMoments 를 건너뛰고 바로 증정 — 그 외엔 평소 판정 그대로.
+    public static func pendingWithOnboarding(onboardingGiftDay: String?, isGifted: (String) -> Bool,
+                                              dayKeys: [String], today: String,
+                                              hasSealedMoments: (String) -> Bool = { _ in true },
+                                              isFinished: ((String) -> Bool)? = nil) -> String? {
+        if let day = onboardingGiftDay, !isGifted(day) { return day }
+        return pending(dayKeys: dayKeys, today: today, isGifted: isGifted,
+                       hasSealedMoments: hasSealedMoments, isFinished: isFinished)
+    }
 }
 
 @Observable
