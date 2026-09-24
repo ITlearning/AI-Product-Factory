@@ -5,7 +5,7 @@ public struct DayMomentsView: View {
     private let dayKey: String
     private let store: DayStore
     private let closures: DayClosures
-    // 「마무리하기」로 실제로 닫혔을 때만 호출부(HomeShell)가 아침 도착 소식 예약을 다시 맞춘다.
+    // 「지금 조약돌로 받기」로 실제로 닫혔을 때만 호출부(HomeShell)가 아침 도착 소식 예약을 다시 맞춘다.
     private let onClosed: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var viewing: Moment?
@@ -105,21 +105,21 @@ public struct DayMomentsView: View {
         Button {
             confirmingFinish = true
         } label: {
-            Text("오늘 마무리하기")
+            Text("지금 조약돌로 받기")
                 .font(Face.guide)
                 .foregroundStyle(Tone.secondary)
                 .frame(maxWidth: .infinity, minHeight: Shape2.minTouch)
         }
         .buttonStyle(.plain)
-        .confirmationDialog("지금 조약돌을 열까요?", isPresented: $confirmingFinish, titleVisibility: .visible) {
-            Button("마무리하기") {
+        .confirmationDialog("오늘을 지금 조약돌로 받을까요?", isPresented: $confirmingFinish, titleVisibility: .visible) {
+            Button("받기") {
                 // 확인창이 떠 있는 사이 04시가 넘어 이미 저절로 닫혔을 수 있다 — 그땐 그냥 시트를 닫는다.
                 guard store.canClose(dayKey) else { dismiss(); return }
                 closures.close(dayKey)
                 onClosed()
                 dismiss()
             }
-            Button("취소", role: .cancel) {}
+            Button("기다릴게요", role: .cancel) {}
         } message: {
             Text("이후에 찍은 사진도 오늘에 담기지만 색은 그대로예요.")
         }

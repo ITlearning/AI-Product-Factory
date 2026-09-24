@@ -27,7 +27,7 @@
 **홈은 열린 하루들이 세로로 이어지는 곳이다.** 별도의 「모은 하루」 화면은 없다.
 
 - 한 하루 = **겹친 사진 더미 + 우측 하단 조약돌 + 이름·날짜·개수**, 이 덩어리가 세로로 반복된다.
-- 최근이 위. 오늘은 맨 위 **진행 중 블록**(사진 더미 + 빈 조약돌 자리). 색은 하루가 닫힐 때(자정 4시 또는 「오늘 마무리하기」) 열린다 — 2026-09-23 Tabber
+- 최근이 위. 오늘은 맨 위 **진행 중 블록**(사진 더미 + 빈 조약돌 자리). 색은 하루가 닫힐 때(자정 4시 또는 「지금 조약돌로 받기」) 열린다 — 2026-09-23 Tabber
 - 다음 하루는 화면 아래에 걸쳐 **희미하게** 보인다.
 - 1일차에도 7일차에도 1년차에도 화면 구성이 같다. 이게 이 정의를 고른 이유다.
 - 예외: 30일 지난 하루는 한 줄로 작게(쌓인 하루 찾기 — 2026-09-23 Tabber)
@@ -204,7 +204,7 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 [오늘 진행 중 블록] (사진 있고 아직 안 닫혔을 때 — 2026-09-23 Tabber)
   다른 하루 블록과 같은 더미 박스, 조약돌 자리엔 점선 빈 조약돌(DashedPebble)
   이름 없음. 캡션 "N개 담는 중 · 색은 자정에 열려요" — 오늘 줄과 같은 두 톤
-  누르면 오늘 상세 시트. 닫히면(자정 또는 마무리하기) 보통 하루 블록으로 바뀐다
+  누르면 오늘 상세 시트. 닫히면(자정 또는 「지금 조약돌로 받기」) 보통 하루 블록으로 바뀐다
   ↓ 38
 [하루 블록]
   더미 박스 334 × 388
@@ -346,7 +346,7 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 | 8 | 사진 한 단어 1단계 — 사진을 보고 고름(Vision) | ✅ `Shared/Word/`, `Day/DayPhotoView.swift` — AI 한 줄·위치·지도·날씨는 2~4단계 |
 | 9 | 사진첩에서 골라 담기 (docs/designs/mongdol-library-import.md) | ✅ `ColorMoments/Library/`, `Shared/Library/` |
 | 10 | 사진은 사진 앱에 (docs/designs/mongdol-photo-assets.md) | ✅ `ColorMoments/Library/PhotoAssets.swift`, `AssetReconciler.swift` |
-| 11 | 오늘 진행 중 · 마무리하기 | ✅ `Shared/Day/DayClosures.swift`, `Shared/Day/DayStore.swift`, `Shared/Day/DayMomentsView.swift`, `Shared/Design/DayBlock.swift`, `App/HomeView.swift` |
+| 11 | 오늘 진행 중 · 지금 조약돌로 받기 | ✅ `Shared/Day/DayClosures.swift`, `Shared/Day/DayStore.swift`, `Shared/Day/DayMomentsView.swift`, `Shared/Design/DayBlock.swift`, `App/HomeView.swift` |
 | 12 | iCloud 연동 (docs/designs/mongdol-icloud-sync.md) | ✅ 실기기 확인 대기 — `ColorMoments/Sync/`, `Shared/Day/MomentMerge.swift` |
 | 13 | 아침 도착 소식 | ✅ `ColorMoments/App/ArrivalNotice.swift` |
 
