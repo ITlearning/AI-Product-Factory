@@ -317,6 +317,7 @@ public final class DayStore {
     public func removeAll() {
         moments = []
         save()
+        flush()
         let fm = FileManager.default
         let files = (try? fm.contentsOfDirectory(at: ShotStore.directory,
                                                  includingPropertiesForKeys: nil)) ?? []

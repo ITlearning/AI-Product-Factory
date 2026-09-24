@@ -96,6 +96,8 @@ enum AssetAdopter {
             print("AssetAdopter: \(current.id) 는 저장 중 이미 입양돼 파일을 지우지 않음")
             return false
         }
+        // 파일이 유일한 사본이던 기록 — 입양이 디스크에 닿기 전에 지우면 kill 뒤 기록이 빈 파일을 가리킨다.
+        store.flush()
         try? FileManager.default.removeItem(at: fileURL)
         return true
     }

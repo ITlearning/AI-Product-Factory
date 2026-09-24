@@ -91,6 +91,15 @@ final class DayStoreTests: XCTestCase {
         XCTAssertTrue(DayStore(fileURL: tempFile, closures: closures).moments.isEmpty, "파일에서도 지워져야 한다")
     }
 
+    /// 원본 파일을 지우기 전에 빈 목록이 디스크에 닿아야 한다 — 거꾸로면 kill 뒤 파일 없는 기록만 남는다.
+    func testRemoveAllLandsOnDiskBeforeReturning() throws {
+        store.add(moment(date(2026, 9, 22, 12, 0), name: "x.jpg"))
+        store.flush()
+        store.removeAll()
+        let raw = try JSONSerialization.jsonObject(with: Data(contentsOf: tempFile)) as? [Any]
+        XCTAssertEqual(raw?.count, 0)
+    }
+
     func testAssignWordPersistsAndNeverOverwrites() {
         let m = moment(date(2026, 9, 22, 12, 0), name: "w.jpg")
         store.add(m)
