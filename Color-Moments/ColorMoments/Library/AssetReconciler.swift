@@ -171,6 +171,7 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
 
     private let store: DayStore
     private var fetchResult: PHFetchResult<PHAsset>?
+    private var fetchGeneration = 0
 
     init(store: DayStore) {
         self.store = store
@@ -186,11 +187,16 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
     // 사진 앱이 바뀔 때마다(iCloud 사진이 내려오는 동안 잦다) 수천 개를 다시 조회한다 — 메인 밖에서.
     @MainActor
     private func refreshFetchResult() async {
+        fetchGeneration += 1
+        let generation = fetchGeneration
         let ids = Array(Set(store.moments.compactMap(\.assetID)))
         guard !ids.isEmpty else { fetchResult = nil; return }
-        fetchResult = await Task.detached(priority: .utility) {
+        let result = await Task.detached(priority: .utility) {
             PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
         }.value
+        // 조회가 겹치면 늦게 끝난 옛 조회가 새 추적 목록을 덮는다 — 마지막으로 시작한 것만 남긴다.
+        guard generation == fetchGeneration else { return }
+        fetchResult = result
     }
 
     func photoLibraryDidChange(_ changeInstance: PHChange) {
