@@ -20,6 +20,9 @@ struct HomeView: View {
     // 하루 상세 시트가 떠 있는 동안 true — HomeShell 이 이걸 보고 증정 fullScreenCover 를 미룬다.
     @Binding var daySheetPresented: Bool
 
+    // 카드 시트·한 줌 전체 화면이 떠 있는 동안 true — 여는 순간 올리고 onDismiss 에서만 내린다(증정 가드).
+    @Binding var keepsakePresented: Bool
+
     // 하루를 마무리할 때(closures.close) HomeShell 이 아침 도착 소식 예약을 다시 맞추도록 알린다.
     var onDayClosed: () -> Void = {}
 
@@ -91,17 +94,20 @@ struct HomeView: View {
                            isGifted: gifts.isGifted, onClosed: onDayClosed,
                            makeShareSheet: { key in AnyView(KeepsakeShareSheet(dayKey: key, store: store)) })
         }
-        .sheet(item: $sharingDayKey) { day in
+        .sheet(item: $sharingDayKey, onDismiss: keepsakeDismissed) { day in
             KeepsakeShareSheet(dayKey: day.id, store: store)
         }
-        .fullScreenCover(item: $openedMonth) { month in
+        .fullScreenCover(item: $openedMonth, onDismiss: keepsakeDismissed) { month in
             HandfulView(month: month.id, pebbleGroups: giftedPebbleGroups(forMonth: month.id),
+                        today: todayKey,
                         makeShareSheet: {
-                            AnyView(HandfulShareSheet(month: month.id,
+                            AnyView(HandfulShareSheet(month: month.id, today: todayKey,
                                                       pebbleGroups: giftedPebbleGroups(forMonth: month.id)))
                         })
         }
         .onChange(of: opened) { _, value in if value != nil { daySheetPresented = true } }
+        .onChange(of: sharingDayKey?.id) { _, value in if value != nil { keepsakePresented = true } }
+        .onChange(of: openedMonth?.id) { _, value in if value != nil { keepsakePresented = true } }
         .task { if !store.moments.isEmpty { didOfferLibraryOnboarding = true } }
         .onChange(of: store.moments.isEmpty) { _, isEmpty in
             if !isEmpty { didOfferLibraryOnboarding = true }
@@ -111,6 +117,18 @@ struct HomeView: View {
     private func open(_ key: String) {
         daySheetPresented = true
         opened = OpenedDay(id: key)
+    }
+
+    private func keepsakeDismissed() {
+        keepsakePresented = false
+        onDaySheetDismissed()
+    }
+
+    // 그 달 첫 하루(목록 순서)에 한 줌 머리글이 붙어 있으면 머리글로 스크롤한다 — 하루로 가면 머리글이 위로 가려진다.
+    private func scrollID(for key: String) -> String {
+        let month = String(key.prefix(7))
+        guard handfulMonths.contains(month), days.first(where: { $0.hasPrefix(month) }) == key else { return key }
+        return "month-\(month)"
     }
 
     @ViewBuilder
@@ -161,9 +179,11 @@ struct HomeView: View {
                                     ForEach(Array(days.enumerated()), id: \.element) { index, key in
                                         let month = String(key.prefix(7))
                                         let isMonthStart = index == 0 || String(days[index - 1].prefix(7)) != month
-                                        if isMonthStart, handfulMonths.contains(month) {
+                                        let hasHeader = isMonthStart && handfulMonths.contains(month)
+                                        if hasHeader {
+                                            // 위 여백 > 아래 여백 — 머리글이 앞 달 마지막 블록의 캡션처럼 붙지 않게.
                                             monthHandfulHeader(month)
-                                                .padding(.top, index == 0 ? 0 : 24)
+                                                .padding(.top, index == 0 ? 0 : 56)
                                                 .id("month-\(month)")
                                         }
                                         dayRow(key, width: blockWidth)
@@ -178,7 +198,7 @@ struct HomeView: View {
                                                 if visible { topDayKey = key }
                                             }
                                             .id(key)
-                                            .padding(.top, index == 0 ? 0 : (key < compactCutoff ? 20 : 64))
+                                            .padding(.top, hasHeader ? 16 : (index == 0 ? 0 : (key < compactCutoff ? 20 : 64)))
                                     }
                                 }
                             }
@@ -200,7 +220,7 @@ struct HomeView: View {
                     .onChange(of: focusDay) { _, newValue in
                         guard let newValue else { return }
                         withAnimation(.easeOut(duration: 0.3)) {
-                            proxy.scrollTo(days.contains(newValue) ? newValue : "top", anchor: .top)
+                            proxy.scrollTo(days.contains(newValue) ? scrollID(for: newValue) : "top", anchor: .top)
                         }
                         focusDay = nil
                     }
@@ -238,7 +258,7 @@ struct HomeView: View {
         if let key = days.first(where: { $0.hasPrefix(month) }) {
             Haptics.tickPassed()
             withAnimation(.easeOut(duration: 0.2)) {
-                proxy.scrollTo(key, anchor: .top)
+                proxy.scrollTo(scrollID(for: key), anchor: .top)
             }
         }
     }
@@ -265,6 +285,7 @@ struct HomeView: View {
             dayRowContent(key, width: width)
                 .contextMenu {
                     Button {
+                        keepsakePresented = true
                         sharingDayKey = SharingDay(id: key)
                     } label: {
                         Label("카드로 만들기", systemImage: "square.and.arrow.up")
@@ -307,6 +328,7 @@ struct HomeView: View {
         Text("지난 며칠 사진으로 먼저 받아 볼까요?")
             .font(Face.line)
             .foregroundStyle(Tone.secondary)
+            .frame(minHeight: Shape2.minTouch, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture { onRequestLibraryPicker() }
     }
@@ -317,22 +339,25 @@ struct HomeView: View {
         if let key = lastYearDayKey, let named = PebbleNaming.name(for: store.pebbleMoments(on: key)) {
             VStack(alignment: .leading, spacing: 0) {
                 Spacer().frame(height: 14)
-                Text("작년 이맘때 · ").font(Face.line).foregroundStyle(Tone.secondary)
-                    + Text(named.name).font(Face.nameCompact).foregroundStyle(Tone.primary)
+                (Text("작년 이맘때 · ").font(Face.line).foregroundStyle(Tone.secondary)
+                    + Text(named.name).font(Face.nameCompact).foregroundStyle(Tone.primary))
+                    .frame(minHeight: Shape2.minTouch, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture { open(key) }
             }
-            .contentShape(Rectangle())
-            .onTapGesture { open(key) }
         }
     }
 
     private func monthHandfulHeader(_ month: String) -> some View {
-        let parts = month.split(separator: "-")
-        let label = parts.count == 2 ? "\(Int(parts[1]) ?? 0)월의 한 줌" : month
-        return Text(label)
+        Text(Memories.handfulTitle(month: month, today: todayKey))
             .font(Face.line)
             .foregroundStyle(Tone.secondary)
+            .frame(minHeight: Shape2.minTouch, alignment: .leading)
             .contentShape(Rectangle())
-            .onTapGesture { openedMonth = OpenedMonth(id: month) }
+            .onTapGesture {
+                keepsakePresented = true
+                openedMonth = OpenedMonth(id: month)
+            }
     }
 
     private var monthLabel: String? {

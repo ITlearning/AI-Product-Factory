@@ -17,6 +17,8 @@ struct HomeShell: View {
     @State private var daySheetDismissedTick = 0
     // 하루 상세 시트가 떠 있는 동안 true — HomeView 가 갱신한다.
     @State private var daySheetPresented = false
+    // 카드 시트·한 줌 전체 화면이 떠 있는 동안 true — HomeView 가 onDismiss 에서만 내린다.
+    @State private var keepsakePresented = false
 
     @State private var dragStart: CGFloat = 0
 
@@ -59,6 +61,7 @@ struct HomeShell: View {
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          onDaySheetDismissed: { daySheetDismissedTick += 1 },
                          daySheetPresented: $daySheetPresented,
+                         keepsakePresented: $keepsakePresented,
                          onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } },
                          onRequestLibraryPicker: openLibraryPicker)
                     .offset(x: progress * w)
@@ -91,8 +94,8 @@ struct HomeShell: View {
         // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
-                 blocksPresentation: daySheetPresented || pickingLibrary || libraryCoverUp || progress > 0
-                     || showingArrivalNoticeAsk,
+                 blocksPresentation: daySheetPresented || keepsakePresented || pickingLibrary || libraryCoverUp
+                     || progress > 0 || showingArrivalNoticeAsk,
                  onboardingGiftDay: onboardingGiftDay,
                  onCeremonyFinished: handleCeremonyFinished)
         .alert("조약돌이 도착하면 아침에 알려 드릴까요?", isPresented: $showingArrivalNoticeAsk) {
