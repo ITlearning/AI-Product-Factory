@@ -55,7 +55,7 @@ struct HomeShell: View {
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          onDaySheetDismissed: { daySheetDismissedTick += 1 },
                          daySheetPresented: $daySheetPresented,
-                         onDayClosed: { Task { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) } })
+                         onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } })
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
@@ -110,7 +110,7 @@ struct HomeShell: View {
                 camera?.confirm("담겼어요")
                 progress = 0
                 pendingLibraryFocus = true
-                Task { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
+                Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
             }
         }
         #if DEBUG
@@ -194,7 +194,7 @@ struct HomeShell: View {
                     _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
                 }
                 await AssetAdopter.adopt(m, store: store)
-                await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts)
+                await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts)
             }
         })
     }
@@ -203,6 +203,7 @@ struct HomeShell: View {
     // 물어보는 건 마무리 여부와 무관하게 "첫 증정" 한 번뿐.
     private func handleCeremonyFinished(_ dayKey: String) {
         Task { await ArrivalNotice.clear(dayKey: dayKey) }
+        HomeWidget.refresh(store: store, gifts: gifts)
         guard !didAskArrivalNotice else { return }
         didAskArrivalNotice = true
         showingArrivalNoticeAsk = true
