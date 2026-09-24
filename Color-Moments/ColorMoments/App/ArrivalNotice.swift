@@ -101,9 +101,10 @@ enum ArrivalNotice {
         if !delivered.isEmpty { center.removeDeliveredNotifications(withIdentifiers: delivered) }
     }
 
-    /// 첫 증정 뒤 권한을 물을지 — 다음 증정이 이어서 뜰 참이면 커버와 alert 가 겹치므로 그 증정이 끝난 뒤로 미룬다.
-    static func shouldAsk(didAsk: Bool, nextGift: String?) -> Bool {
-        !didAsk && nextGift == nil
+    /// 첫 자연 증정 뒤 권한을 물을지 — 온보딩 증정(설치 첫날) 뒤엔 묻지 않고, 다음 증정이 이어서 뜰 참이면
+    /// 커버와 alert 가 겹치므로 그 증정이 끝난 뒤로 미룬다.
+    static func shouldAsk(didAsk: Bool, nextGift: String?, finishedWasOnboarding: Bool) -> Bool {
+        !didAsk && !finishedWasOnboarding && nextGift == nil
     }
 
     /// 순수 판정 — sync 가 계획할 dayKey 들. 오늘 dayKey 에 더해, 4~8시 사이엔 어제 dayKey 의 08시도

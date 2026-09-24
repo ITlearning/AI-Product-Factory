@@ -31,8 +31,8 @@ struct HomeShell: View {
     @State private var pickingLibrary = false
     // pickingLibrary 는 닫힘 애니메이션 시작에 false 가 된다 — 증정 가드는 커버 onDismiss 에서만 푼다.
     @State private var libraryCoverUp = false
-    // 사진첩 시트를 열기 직전의 기록 id 스냅샷 — onDone 에서 새로 담긴 날짜만 골라내려고.
-    @State private var momentIDsBeforeLibraryImport: Set<Moment.ID> = []
+    // 사진첩 시트를 열기 직전 기록이 하나도 없었는지 — 온보딩 증정 하루를 고를지 판단한다.
+    @State private var recordsWereEmptyBeforeLibraryImport = false
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
     @AppStorage("didSeeFirstRun") private var didSeeFirstRun = false
@@ -85,6 +85,9 @@ struct HomeShell: View {
                        value: progress)
         }
         .preferredColorScheme(.dark)
+        .onChange(of: store.dayKeys) { _, keys in
+            if onboardingGiftDay != nil { onboardingGiftDay = OnboardingGift.retained(onboardingGiftDay, dayKeys: keys) }
+        }
         // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
@@ -113,17 +116,14 @@ struct HomeShell: View {
                 .max { $0.addedAt! < $1.addedAt! }?
                 .dayKey
         }) {
-            LibraryPickerView(store: store) { n in
-                guard n > 0 else { return }
+            LibraryPickerView(store: store) { importedDayKeys in
+                guard !importedDayKeys.isEmpty else { return }
                 camera?.confirm("담겼어요")
                 progress = 0
                 pendingLibraryFocus = true
-                if momentIDsBeforeLibraryImport.isEmpty {
-                    let importedDayKeys = store.moments
-                        .filter { !momentIDsBeforeLibraryImport.contains($0.id) }
-                        .map(\.dayKey)
+                if recordsWereEmptyBeforeLibraryImport {
                     onboardingGiftDay = OnboardingGift.firstImportDay(existingRecordsWereEmpty: true,
-                                                                      importedDayKeys: importedDayKeys,
+                                                                      importedDayKeys: Array(importedDayKeys),
                                                                       today: Moment.dayKey(for: Date()))
                 }
                 Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
@@ -152,7 +152,7 @@ struct HomeShell: View {
     }
 
     private func openLibraryPicker() {
-        momentIDsBeforeLibraryImport = Set(store.moments.map(\.id))
+        recordsWereEmptyBeforeLibraryImport = store.moments.isEmpty
         libraryCoverUp = true
         pickingLibrary = true
     }
@@ -222,7 +222,8 @@ struct HomeShell: View {
     // 물어보는 건 마무리 여부와 무관하게 "첫 증정" 한 번뿐 — 이 콜백 직후 present() 가 다음 증정을 띄우므로
     // 남은 증정이 있으면 묻지 않고 그 증정이 끝난 뒤(다음 콜백)로 미룬다.
     private func handleCeremonyFinished(_ dayKey: String) {
-        if dayKey == onboardingGiftDay { onboardingGiftDay = nil }
+        let wasOnboarding = dayKey == onboardingGiftDay
+        if wasOnboarding { onboardingGiftDay = nil }
         Task { await ArrivalNotice.clear(dayKey: dayKey) }
         HomeWidget.refresh(store: store, gifts: gifts)
         let next = GiftSchedule.pending(dayKeys: store.dayKeys,
@@ -230,7 +231,8 @@ struct HomeShell: View {
                                         isGifted: gifts.isGifted,
                                         hasSealedMoments: store.hasSealedMoments,
                                         isFinished: store.isFinished)
-        guard ArrivalNotice.shouldAsk(didAsk: didAskArrivalNotice, nextGift: next) else { return }
+        guard ArrivalNotice.shouldAsk(didAsk: didAskArrivalNotice, nextGift: next,
+                                      finishedWasOnboarding: wasOnboarding) else { return }
         showingArrivalNoticeAsk = true
     }
 }

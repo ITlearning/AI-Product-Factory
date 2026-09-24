@@ -9,4 +9,10 @@ public enum OnboardingGift {
         guard existingRecordsWereEmpty else { return nil }
         return importedDayKeys.filter { $0 != today }.max()
     }
+
+    /// 사진이 지워져 그 하루가 dayKeys 에서 사라졌으면 온보딩 하루도 버린다(nil).
+    public static func retained(_ onboardingGiftDay: String?, dayKeys: [String]) -> String? {
+        guard let day = onboardingGiftDay, dayKeys.contains(day) else { return nil }
+        return day
+    }
 }

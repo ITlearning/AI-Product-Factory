@@ -5,7 +5,7 @@ import UIKit
 
 struct LibraryPickerView: View {
     let store: DayStore
-    let onDone: (Int) -> Void
+    let onDone: (Set<String>) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
@@ -214,9 +214,9 @@ struct LibraryPickerView: View {
         fetchResult.enumerateObjects { asset, _, _ in
             if selected.contains(asset.localIdentifier) { toImport.append(asset) }
         }
-        let n = await LibraryImporter().importAssets(toImport, into: store)
+        let importedDayKeys = await LibraryImporter().importAssets(toImport, into: store)
         isImporting = false
-        onDone(n)
+        onDone(importedDayKeys)
         dismiss()
     }
 }

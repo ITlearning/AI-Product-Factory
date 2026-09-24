@@ -21,9 +21,10 @@ final class LibraryImporter {
         await PHPhotoLibrary.requestAuthorization(for: .readWrite)
     }
 
-    func importAssets(_ assets: [PHAsset], into store: DayStore) async -> Int {
+    /// 이번에 실제로 넣은 기록의 하루(dayKey)들 — iCloud 로 그 사이 들어온 원격 기록은 섞이지 않는다.
+    func importAssets(_ assets: [PHAsset], into store: DayStore) async -> Set<String> {
         let batch = UUID()
-        var count = 0
+        var dayKeys: Set<String> = []
         for asset in assets {
             let id = asset.localIdentifier
             guard !store.containsAsset(id) else { continue }
@@ -36,13 +37,14 @@ final class LibraryImporter {
             let place = asset.location.map {
                 Place(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude, accuracy: $0.horizontalAccuracy)
             }
-            let before = store.moments.count
-            store.add(Moment(capturedAt: asset.creationDate ?? Date(), colorHex: hex, fileName: Moment.assetFileName(for: id),
-                              source: .library, assetID: id, place: place, addedAt: Date(), batchID: batch))
-            if store.moments.count > before { count += 1 } // add 가 파일 이름 중복으로 조용히 무시했을 수 있다
+            let moment = Moment(capturedAt: asset.creationDate ?? Date(), colorHex: hex,
+                                fileName: Moment.assetFileName(for: id),
+                                source: .library, assetID: id, place: place, addedAt: Date(), batchID: batch)
+            // add 가 파일 이름 중복으로 조용히 무시했을 수 있다
+            if store.add(moment) { dayKeys.insert(moment.dayKey) }
         }
         await CloudIDMapper.assignMissing(store: store)
-        return count
+        return dayKeys
     }
 
     nonisolated private static func process(data: Data) -> String? {
