@@ -75,8 +75,10 @@ struct HomeShell: View {
                        value: progress)
         }
         .preferredColorScheme(.dark)
+        // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
+        // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
-                 blocksPresentation: daySheetPresented || pickingLibrary || libraryCoverUp)
+                 blocksPresentation: daySheetPresented || pickingLibrary || libraryCoverUp || progress > 0)
         .onChange(of: pickingLibrary) { _, up in if up { libraryCoverUp = true } }
         .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
             libraryCoverUp = false
