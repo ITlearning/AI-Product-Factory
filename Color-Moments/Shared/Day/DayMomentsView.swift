@@ -5,6 +5,8 @@ public struct DayMomentsView: View {
     private let dayKey: String
     private let store: DayStore
     private let closures: DayClosures
+    // 「마무리하기」로 실제로 닫혔을 때만 호출부(HomeShell)가 저녁 알림 예약을 다시 맞춘다.
+    private let onClosed: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var viewing: Moment?
     @State private var confirmingFinish = false
@@ -18,10 +20,11 @@ public struct DayMomentsView: View {
     private static let maxShift = 3
     private static let tick: CGFloat = 13
 
-    public init(dayKey: String, store: DayStore, closures: DayClosures) {
+    public init(dayKey: String, store: DayStore, closures: DayClosures, onClosed: @escaping () -> Void = {}) {
         self.dayKey = dayKey
         self.store = store
         self.closures = closures
+        self.onClosed = onClosed
     }
 
     private var moments: [Moment] { store.moments(on: dayKey) }
@@ -113,6 +116,7 @@ public struct DayMomentsView: View {
                 // 확인창이 떠 있는 사이 04시가 넘어 이미 저절로 닫혔을 수 있다 — 그땐 그냥 시트를 닫는다.
                 guard store.canClose(dayKey) else { dismiss(); return }
                 closures.close(dayKey)
+                onClosed()
                 dismiss()
             }
             Button("취소", role: .cancel) {}

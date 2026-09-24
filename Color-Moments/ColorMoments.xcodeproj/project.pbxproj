@@ -12,6 +12,7 @@
 		028B83424DE6D8CE4F416399 /* ShotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0455554135392A7015D4068F /* ShotStore.swift */; };
 		02B89DF8BE3E0E3688F10090 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		036A5A204DA00E6E1F8E4DB3 /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
+		03E527E744AAA9A19AD5695A /* EveningReminderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B8C50DD4A283C052C97F361 /* EveningReminderTests.swift */; };
 		049B7CECEE196C6D70AC4FA8 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EDA0910CC8E79B482D32B2 /* CloudSync.swift */; };
 		089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
@@ -58,6 +59,7 @@
 		3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001315A7B5573B9974966AF7 /* DayGradientTests.swift */; };
 		463BB08804C6196DA3590041 /* SpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915F51F76D8105385A924494 /* SpikeView.swift */; };
 		46AD1F7A020AA01BF62EEBEC /* GiftSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CECA91205032542A8E6CBAD /* GiftSchedule.swift */; };
+		46F2AF21817056E13AD7F919 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9C7A51085814AAD190D567A /* AppDelegate.swift */; };
 		48DC2D9847C7C2A96BE21B7C /* words.json in Resources */ = {isa = PBXBuildFile; fileRef = A0A48C2B255FB6B7DFA973C5 /* words.json */; };
 		49AF51B739C09C90ABF6DF8B /* CaptureExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CE619222B12DDC48E8D41D /* CaptureExtension.swift */; };
 		4A6EE87BD3B7C2217011154B /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
@@ -143,6 +145,7 @@
 		CF1B9077022792BE565162B8 /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		D0232AF91965F3F9595ABB68 /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
+		D190D8056C09A2C8FEBB3777 /* EveningReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01418AFDF0E8ABE2DB4157F6 /* EveningReminder.swift */; };
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
 		D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */; };
 		DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
@@ -218,6 +221,7 @@
 
 /* Begin PBXFileReference section */
 		001315A7B5573B9974966AF7 /* DayGradientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGradientTests.swift; sourceTree = "<group>"; };
+		01418AFDF0E8ABE2DB4157F6 /* EveningReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EveningReminder.swift; sourceTree = "<group>"; };
 		0455554135392A7015D4068F /* ShotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotStore.swift; sourceTree = "<group>"; };
 		05C70E667A14B10F8000505A /* DayClosuresTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayClosuresTests.swift; sourceTree = "<group>"; };
 		08DC1AC8E491F5D81CA2D80E /* AssetReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetReconcilerTests.swift; sourceTree = "<group>"; };
@@ -261,6 +265,7 @@
 		770DB2BE29FFF678EF2949F8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		78C8D64FF056CFF1EAA9F88F /* ViewFinder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewFinder.swift; sourceTree = "<group>"; };
 		79FEE28AD42D812B8F599EBC /* Moment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Moment.swift; sourceTree = "<group>"; };
+		7B8C50DD4A283C052C97F361 /* EveningReminderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EveningReminderTests.swift; sourceTree = "<group>"; };
 		7EB1163362CD567B08943EB6 /* ColorMomentsCapture.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = ColorMomentsCapture.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		820CBC257650B8198BCC2B5E /* ColorMomentsControl.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ColorMomentsControl.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8747F82BBC5889D32A11161B /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -286,6 +291,7 @@
 		D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractor.swift; sourceTree = "<group>"; };
 		D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentMerge.swift; sourceTree = "<group>"; };
 		D7284FE09B31C6D29E4790FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D9C7A51085814AAD190D567A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStore.swift; sourceTree = "<group>"; };
 		DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
 		E016D510A0FA71B454E57DF6 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
@@ -388,6 +394,7 @@
 				001315A7B5573B9974966AF7 /* DayGradientTests.swift */,
 				9D560E148CF707BADEB351E9 /* DayStoreTests.swift */,
 				F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */,
+				7B8C50DD4A283C052C97F361 /* EveningReminderTests.swift */,
 				219FB2ED514DBE95A9AFAB53 /* Fixtures */,
 				08FA4218B93874BE76730863 /* FontSubsetTests.swift */,
 				FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */,
@@ -516,7 +523,9 @@
 		C3CD0D033658A44051998F10 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				D9C7A51085814AAD190D567A /* AppDelegate.swift */,
 				41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */,
+				01418AFDF0E8ABE2DB4157F6 /* EveningReminder.swift */,
 				2407ADFA49967AECDDB4BDC8 /* FirstRunOverlay.swift */,
 				F0539FB03BB33151F171D2BD /* HomeShell.swift */,
 				953A1415A221B2ED1198C5E8 /* HomeView.swift */,
@@ -789,6 +798,7 @@
 				3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */,
 				1996A6A10339037B3A5CCC8F /* DayStoreTests.swift in Sources */,
 				97BEEB530BE9186A6F1A872A /* DayTimelineTests.swift in Sources */,
+				03E527E744AAA9A19AD5695A /* EveningReminderTests.swift in Sources */,
 				2D2DCAAA1704F58B8D38A822 /* FontSubsetTests.swift in Sources */,
 				5C46EE00CA3DADB1F2965E39 /* GiftScheduleTests.swift in Sources */,
 				17862587A29EF312EF46CBD3 /* HomeNavigationTests.swift in Sources */,
@@ -811,6 +821,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				46F2AF21817056E13AD7F919 /* AppDelegate.swift in Sources */,
 				60CFD40171F7C16075470127 /* AssetReconciler.swift in Sources */,
 				9350B45953F4B84683162C30 /* BadgeCeremony.swift in Sources */,
 				C5345168432CE41677778207 /* CaptureEngine.swift in Sources */,
@@ -831,6 +842,7 @@
 				7B6207CFDF0718F8241F4FB7 /* DayPhotoView.swift in Sources */,
 				A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */,
 				7DF8236D94540E4E4AC11388 /* DayTimeline.swift in Sources */,
+				D190D8056C09A2C8FEBB3777 /* EveningReminder.swift in Sources */,
 				32A6E9632D4BBA9208258DE4 /* FirstRunOverlay.swift in Sources */,
 				46AD1F7A020AA01BF62EEBEC /* GiftSchedule.swift in Sources */,
 				37BEA1D1B07AEF6FF452A7E3 /* Haptics.swift in Sources */,

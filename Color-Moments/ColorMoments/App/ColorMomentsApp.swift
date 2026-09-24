@@ -10,6 +10,7 @@ struct ColorMomentsApp: App {
     @State private var reconcilerObserver: AssetReconcilerObserver?
     @State private var sync: CloudSync?
     @Environment(\.scenePhase) private var scenePhase
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         // 첫 화면이 그려지기 전에 꽂아야 첫 프레임부터 에셋 사진이 보인다 — .task 는 첫 렌더 뒤에 돈다.
@@ -22,7 +23,7 @@ struct ColorMomentsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures)
+            HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures, route: appDelegate.route)
                 .task {
                     // 모든 저장소 쓰기보다 먼저 켠다 — 구독 전 변경은 저장소가 쌓아 두지만 그건 이중 안전장치일 뿐이다.
                     // 유닛 테스트는 앱을 호스트로 띄운다 — 권한 없는 CKContainer 는 크래시하므로 테스트 중엔 켜지 않는다.
@@ -46,18 +47,24 @@ struct ColorMomentsApp: App {
                     }
 
                     await CloudIDMapper.refresh(store: store)
+                    await EveningReminder.sync(store: store, closures: closures)
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active else { return }
-            let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-            if status == .authorized || status == .limited {
-                Task { await AssetAdopter.adoptAll(store: store) }
+            if newPhase == .active {
+                let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                if status == .authorized || status == .limited {
+                    Task { await AssetAdopter.adoptAll(store: store) }
+                }
+                Task {
+                    await AssetReconciler.reconcile(store: store)
+                    await CloudIDMapper.refresh(store: store)
+                }
             }
-            Task {
-                await AssetReconciler.reconcile(store: store)
-                await CloudIDMapper.refresh(store: store)
-            }
+            // 사진이 담기는 경로는 여러 곳이라(잠금화면·라이브러리 입양 등) active/background 전환마다
+            // 다시 맞춰 둔다 — 그 사이 놓친 변경도 여기서 잡힌다.
+            guard newPhase == .active || newPhase == .background else { return }
+            Task { await EveningReminder.sync(store: store, closures: closures) }
         }
     }
 }
