@@ -353,6 +353,9 @@ public final class DayStore {
     /// 밀린 저장을 지금 끝낸다 — 앱이 background 로 갈 때 부른다.
     public func flush() { writer.flush() }
 
+    /// 지금까지의 저장이 디스크에 닿은 뒤 work 를 돌린다(메인을 막지 않는다).
+    public func afterSaved(_ work: @escaping @Sendable () -> Void) { writer.then(work) }
+
     private func save() {
         let snapshot = moments
         writer.write { Self.encode(snapshot) }
