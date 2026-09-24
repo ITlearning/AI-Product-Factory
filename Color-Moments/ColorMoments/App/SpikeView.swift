@@ -190,6 +190,8 @@ struct SpikeView: View {
 
                     gifts.reset()
                     closures.reset()
+                    HomeWidget.refresh(store: store, gifts: gifts)
+                    Task { await ArrivalNotice.removeAll() }
                 }
                 Button("취소", role: .cancel) {}
             } message: {
