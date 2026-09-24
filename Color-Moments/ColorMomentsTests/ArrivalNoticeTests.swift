@@ -16,10 +16,9 @@ final class ArrivalNoticeTests: XCTestCase {
     }
 
     private func plan(dayKey: String = "2026-09-24", hasPebble: Bool = true, closed: Bool = false,
-                      gifted: Bool = false, pebbleName: String? = "그믐",
-                      now: Date? = nil) -> ArrivalNotice.Request? {
+                      gifted: Bool = false, now: Date? = nil) -> ArrivalNotice.Request? {
         ArrivalNotice.plan(dayKey: dayKey, hasPebble: hasPebble, closed: closed, gifted: gifted,
-                          pebbleName: pebbleName, now: now ?? date(2026, 9, 24, 12, 0), calendar: calendar)
+                          now: now ?? date(2026, 9, 24, 12, 0), calendar: calendar)
     }
 
     func testNoPhotosYieldsNil() {
@@ -44,19 +43,9 @@ final class ArrivalNoticeTests: XCTestCase {
         XCTAssertNil(request)
     }
 
-    func testHasBatchimUsesI() {
-        let request = plan(pebbleName: "그믐")
-        XCTAssertEqual(request?.body, "어제의 조약돌, 〈그믐〉이 도착했어요.")
-    }
-
-    func testNoBatchimUsesGa() {
-        let request = plan(pebbleName: "안개")
-        XCTAssertEqual(request?.body, "어제의 조약돌, 〈안개〉가 도착했어요.")
-    }
-
-    func testNoNameFallsBackToDefaultLine() {
-        let request = plan(pebbleName: nil)
-        XCTAssertEqual(request?.body, "어제의 조약돌이 도착했어요.")
+    // 이름은 색으로 정해진다(「노을」=빨강) — 알림이 증정보다 먼저 색을 드러내면 안 된다.
+    func testBodyNeverCarriesPebbleName() {
+        XCTAssertEqual(plan()?.body, "어제의 조약돌이 도착했어요.")
     }
 
     func testEarlyMorningStillYesterdaysDayKeyFiresThatSameMorning() {
@@ -68,5 +57,28 @@ final class ArrivalNoticeTests: XCTestCase {
     func testIdentifierIncludesDayKey() {
         let request = plan(dayKey: "2026-09-24")
         XCTAssertEqual(request?.id, "arrival-2026-09-24")
+    }
+
+    // MARK: - targets
+
+    func testTargetsBeforeDayBoundaryOnlyStillOpenDay() {
+        XCTAssertEqual(ArrivalNotice.targets(now: date(2026, 9, 25, 3, 59), calendar: calendar), ["2026-09-24"])
+    }
+
+    func testTargetsAfterBoundaryKeepYesterdayUntilEight() {
+        XCTAssertEqual(ArrivalNotice.targets(now: date(2026, 9, 25, 4, 1), calendar: calendar),
+                       ["2026-09-24", "2026-09-25"])
+        XCTAssertEqual(ArrivalNotice.targets(now: date(2026, 9, 25, 7, 59), calendar: calendar),
+                       ["2026-09-24", "2026-09-25"])
+    }
+
+    func testTargetsAfterEightOnlyToday() {
+        XCTAssertEqual(ArrivalNotice.targets(now: date(2026, 9, 25, 8, 1), calendar: calendar), ["2026-09-25"])
+        XCTAssertEqual(ArrivalNotice.targets(now: date(2026, 9, 25, 23, 0), calendar: calendar), ["2026-09-25"])
+    }
+
+    func testTargetsCrossMonth() {
+        XCTAssertEqual(ArrivalNotice.targets(now: date(2026, 10, 1, 5, 0), calendar: calendar),
+                       ["2026-09-30", "2026-10-01"])
     }
 }
