@@ -151,6 +151,16 @@ final class PerformanceTests: XCTestCase {
         XCTAssertLessThan(allRows, 300, "수정 전 3.5초")
     }
 
+    /// 앱 시작 때 DayStore init 이 메인에서 days.json 을 읽는 비용 — 이번엔 고치지 않고 기록만.
+    func testLoadThreeThousandFromDisk() {
+        let store = freshStore()
+        store.applyRemote(upserts: synthetic(), deletes: [])
+        store.flush()
+        var reopened: DayStore?
+        time("h.load3000") { reopened = DayStore(fileURL: tempFile, closures: closures) }
+        XCTAssertEqual(reopened?.moments.count, Self.momentCount)
+    }
+
     func testWidgetSnapshotMake() {
         let store = freshStore()
         store.applyRemote(upserts: synthetic(), deletes: [])
