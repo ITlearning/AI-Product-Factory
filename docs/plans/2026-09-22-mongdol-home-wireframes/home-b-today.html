@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/>
+<title>몽돌 와이어프레임 — B. 오늘 우선</title>
+<style>
+:root{--bg:#f5f5f7;--ink:#1d1d1f;--sub:#6e6e73;--line:#d2d2d7;--face:#fff}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Pretendard",sans-serif;background:var(--bg);margin:0;padding:24px;color:var(--ink)}
+.meta{max-width:380px;margin:0 auto 16px;padding:12px 16px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.7}
+.meta dt{font-weight:600;color:var(--sub);display:inline}
+.meta dd{display:inline;margin:0 12px 0 4px}
+.device{max-width:380px;margin:0 auto;background:#0b0b0d;border:2px solid var(--ink);border-radius:32px;overflow:hidden;min-height:720px;display:flex;flex-direction:column;color:#fff}
+.statusbar{padding:10px 22px 0;font-size:11px;color:#8e8e93;display:flex;justify-content:space-between}
+.note{max-width:380px;margin:16px auto 0;font-size:12px;line-height:1.7;color:var(--sub)}
+.note b{color:var(--ink)}
+.pebble{border-radius:44% 44% 42% 42%/38% 38% 46% 46%;box-shadow:0 3px 10px rgba(0,0,0,.45)}
+.sealed{border:1px dashed #48484a;background:repeating-linear-gradient(135deg,#1c1c1e,#1c1c1e 6px,#232326 6px,#232326 12px)}
+.shutter{width:70px;height:70px;border-radius:50%;border:3px solid rgba(255,255,255,.9);background:#fff;margin:0 auto}
+.row{display:flex;gap:14px;overflow:hidden;padding:4px 0}
+.cap{font-size:10px;color:#8e8e93;text-align:center;margin-top:6px}
+
+.head{padding:24px 22px 0;font-size:12px;color:#8e8e93}
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.hero .t{font-size:13px;color:#c7c7cc}
+.hero .d{font-size:11px;color:#8e8e93}
+.past{padding:0 0 0 22px}
+.label{font-size:11px;color:#8e8e93;margin-bottom:10px}
+.foot{padding:18px 22px 30px}
+</style></head><body>
+<div class="meta"><dl>
+<dt>화면</dt><dd>홈 — B. 오늘 우선</dd><br>
+<dt>진입</dt><dd>앱 아이콘</dd><br>
+<dt>핵심 액션</dt><dd>봉인된 오늘을 본다 / 지난 조약돌 탭 → 색 고치기</dd>
+</dl></div>
+<div class="device">
+  <div class="statusbar"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="head">오늘</div>
+  <div class="hero">
+    <div class="pebble sealed" style="width:150px;height:184px"></div>
+    <div class="t">3개 담겼어요</div>
+    <div class="d">자정에 열려요</div>
+  </div>
+  <div class="past">
+    <div class="label">지난 하루</div>
+    <div class="row">
+      <div><div class="pebble" style="width:62px;height:76px;background:linear-gradient(#3a4a7a,#b1452e)"></div></div>
+      <div><div class="pebble" style="width:58px;height:72px;background:linear-gradient(#2a3550,#6a5a7a)"></div></div>
+      <div><div class="pebble" style="width:60px;height:74px;background:linear-gradient(#5a7f5b,#8fa36b)"></div></div>
+    </div>
+  </div>
+  <div class="foot"><div class="shutter"></div></div>
+</div>
+<div class="note"><b>위험:</b> 봉인된 오늘을 크게 두면 「열렸나」 확인하러 매일 오게 된다.
+그건 세지 않는 스트릭이다 — 문서가 스트릭을 <b>영구 비목표</b>로 못 박았다.<br><br>
+<b>이점:</b> 기다림이 시각화돼 「자정에 열린다」가 한눈에 이해된다. Q4(첫날 온보딩)를 이 화면이 일부 대신한다.</div>
+</body></html>

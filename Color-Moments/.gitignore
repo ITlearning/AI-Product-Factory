@@ -1,0 +1,16 @@
+build/
+DerivedData/
+
+# Xcode 가 사람마다 다르게 쓰는 UI 상태. xcodeproj 는 xcodegen 산출물이라 커밋하지만
+# 이 안의 xcuserdata 는 사람마다 충돌한다. 두 자리 모두 막는다 —
+# project.xcworkspace 밑에도 따로 생긴다.
+xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+.DS_Store
+
+# 비밀값 — 커밋 금지
+.env
+.env.*
+.superpowers/
