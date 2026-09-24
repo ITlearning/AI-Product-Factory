@@ -158,7 +158,7 @@ final class PerformanceTests: XCTestCase {
         XCTAssertLessThan(widget, 300, "수정 전 1.8초")
     }
 
-    func testCardRender() {
+    func testCardRender() async {
         let store = freshStore()
         store.applyRemote(upserts: synthetic(), deletes: [])
         let key = store.dayKeys[5]
@@ -178,5 +178,15 @@ final class PerformanceTests: XCTestCase {
             // ShareLink(item: Image) 는 건네기를 누르는 순간 메인에서 PNG 로 굽는다.
             time("f.pngEncode") { _ = card.pngData() }
         }
+
+        // 시트가 메인에서 쓰는 몫(렌더)과 메인 밖 몫(빈 판정·PNG·미리보기)을 나눠 잰다.
+        var raw: UIImage?
+        let mainPart = time("f.sheetMainRender") { raw = CardExporter.renderRaw(dayKey: key, pebbleMoments: pebble) }
+        let t = CFAbsoluteTimeGetCurrent()
+        let prepared = await CardExporter.prepare(raw)
+        print("measured perf.f.prepareOffMain: \(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - t) * 1000)) ms")
+        XCTAssertNotNil(prepared)
+        XCTAssertEqual(prepared?.png.data.isEmpty, false)
+        XCTAssertLessThan(mainPart, 500)
     }
 }

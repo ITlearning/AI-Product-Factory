@@ -14,14 +14,21 @@ struct KeepsakeShareSheet: View {
         KeepsakeCardStage(rendered: rendered, previewTitle: "몽돌 카드",
                           message: Keepsake.shareText(pebbleName: pebbleName, appStoreURL: Keepsake.appStoreURL))
             .task(id: dayKey) {
-                rendered = RenderedCard(image: CardExporter.render(dayKey: dayKey, pebbleMoments: pebbleMoments))
+                await RenderedCard.afterPresentation()
+                let raw = CardExporter.renderRaw(dayKey: dayKey, pebbleMoments: pebbleMoments)
+                rendered = RenderedCard(card: await CardExporter.prepare(raw))
             }
     }
 }
 
-/// 렌더를 끝냈는지(nil) 와 렌더가 비었는지(image nil) 를 가른다.
+/// 렌더를 끝냈는지(nil) 와 렌더가 비었는지(card nil) 를 가른다.
 struct RenderedCard {
-    let image: UIImage?
+    let card: CardExporter.Prepared?
+
+    // .task 는 시트가 올라오기 시작할 때 돈다 — 바로 메인에서 렌더하면 올라오는 애니메이션이 멈춘다.
+    static func afterPresentation() async {
+        try? await Task.sleep(nanoseconds: 350_000_000)
+    }
 }
 
 /// 카드 시트 공통 무대 — 렌더 중엔 비워 두고, 끝나면 카드와 「건네기」, 비었으면 안내 한 줄.
@@ -34,18 +41,18 @@ struct KeepsakeCardStage: View {
         ZStack {
             Tone.base.ignoresSafeArea()
             if let rendered {
-                if let image = rendered.image {
+                if let card = rendered.card {
                     VStack(spacing: 28) {
                         Spacer()
-                        Image(uiImage: image)
+                        Image(uiImage: card.image)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                             .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
                             .padding(.horizontal, 40)
-                        ShareLink(item: Image(uiImage: image),
+                        ShareLink(item: card.png,
                                   message: message.map(Text.init),
-                                  preview: SharePreview(previewTitle, image: Image(uiImage: image))) {
+                                  preview: SharePreview(previewTitle, image: Image(uiImage: card.preview))) {
                             Text("건네기")
                                 .font(Face.guide)
                                 .foregroundStyle(Tone.primary)
@@ -58,6 +65,8 @@ struct KeepsakeCardStage: View {
                 } else {
                     Text("카드를 만들 수 없어요").font(Face.guide).foregroundStyle(Tone.secondary)
                 }
+            } else {
+                ProgressView().tint(Tone.secondary)
             }
         }
     }

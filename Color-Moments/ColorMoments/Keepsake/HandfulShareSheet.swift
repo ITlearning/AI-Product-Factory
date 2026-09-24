@@ -14,8 +14,9 @@ struct HandfulShareSheet: View {
         KeepsakeCardStage(rendered: rendered, previewTitle: "몽돌 한 줌",
                           message: Keepsake.shareText(pebbleName: label, appStoreURL: Keepsake.appStoreURL))
             .task(id: month) {
-                rendered = RenderedCard(image: CardExporter.renderHandful(month: month, today: today,
-                                                                         pebbleGroups: pebbleGroups))
+                await RenderedCard.afterPresentation()
+                let raw = CardExporter.renderHandfulRaw(month: month, today: today, pebbleGroups: pebbleGroups)
+                rendered = RenderedCard(card: await CardExporter.prepare(raw))
             }
     }
 }
