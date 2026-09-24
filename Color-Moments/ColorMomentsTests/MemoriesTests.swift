@@ -85,3 +85,18 @@ final class MemoriesHandfulLayoutTests: XCTestCase {
         XCTAssertFalse(zip(a, b).allSatisfy { $0 == $1 })
     }
 }
+
+final class MemoriesHandfulTitleTests: XCTestCase {
+
+    func testThisYearOmitsYear() {
+        XCTAssertEqual(Memories.handfulTitle(month: "2026-08", today: "2026-09-24"), "8월의 한 줌")
+    }
+
+    func testPriorYearIncludesYear() {
+        XCTAssertEqual(Memories.handfulTitle(month: "2025-09", today: "2026-09-24"), "2025년 9월의 한 줌")
+    }
+
+    func testMalformedMonthFallsBackToRaw() {
+        XCTAssertEqual(Memories.handfulTitle(month: "bad", today: "2026-09-24"), "bad")
+    }
+}

@@ -4,10 +4,12 @@ import SwiftUI
 public struct HandfulCard: View {
     private let month: String
     private let pebbleGroups: [[Moment]]
+    private let today: String
 
-    public init(month: String, pebbleGroups: [[Moment]]) {
+    public init(month: String, pebbleGroups: [[Moment]], today: String = Moment.dayKey(for: Date())) {
         self.month = month
         self.pebbleGroups = pebbleGroups
+        self.today = today
     }
 
     public var body: some View {
@@ -38,9 +40,5 @@ public struct HandfulCard: View {
         Memories.handfulLayout(count: pebbleGroups.count, seed: WordPicker.fnv1a(month))
     }
 
-    private var label: String {
-        let parts = month.split(separator: "-")
-        guard parts.count == 2, let m = Int(parts[1]) else { return month }
-        return "\(m)월의 한 줌"
-    }
+    private var label: String { Memories.handfulTitle(month: month, today: today) }
 }

@@ -53,6 +53,13 @@ public enum Memories {
         return result
     }
 
+    /// 한 줌 머리글·전체 화면·카드·공유 문구가 같이 쓰는 라벨 — 올해 달은 「9월의 한 줌」, 지난해 달은 「2025년 9월의 한 줌」.
+    public static func handfulTitle(month: String, today: String) -> String {
+        let p = month.split(separator: "-")
+        guard p.count == 2, let y = Int(p[0]), let m = Int(p[1]) else { return month }
+        return today.hasPrefix("\(p[0])-") ? "\(m)월의 한 줌" : "\(y)년 \(m)월의 한 줌"
+    }
+
     /// 한 손(반지름 1의 원) 안에 겹쳐 쌓는 배치 — 같은 (count, seed) 는 항상 같은 결과를 낸다.
     public static func handfulLayout(count: Int, seed: UInt64) -> [(x: Double, y: Double, rotation: Double, scale: Double)] {
         guard count > 0 else { return [] }

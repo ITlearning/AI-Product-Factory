@@ -4,15 +4,18 @@ import SwiftUI
 public struct HandfulView: View {
     private let month: String
     private let pebbleGroups: [[Moment]]
+    private let today: String
     // ImageRenderer/ShareLink 는 앱 타깃 전용이라 카드 시트 내용은 호출부(App)가 만들어 넘긴다.
     private let makeShareSheet: (() -> AnyView)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var sharing = false
 
-    public init(month: String, pebbleGroups: [[Moment]], makeShareSheet: (() -> AnyView)? = nil) {
+    public init(month: String, pebbleGroups: [[Moment]], today: String = Moment.dayKey(for: Date()),
+                makeShareSheet: (() -> AnyView)? = nil) {
         self.month = month
         self.pebbleGroups = pebbleGroups
+        self.today = today
         self.makeShareSheet = makeShareSheet
     }
 
@@ -78,9 +81,5 @@ public struct HandfulView: View {
         Memories.handfulLayout(count: pebbleGroups.count, seed: WordPicker.fnv1a(month))
     }
 
-    private var label: String {
-        let parts = month.split(separator: "-")
-        guard parts.count == 2, let m = Int(parts[1]) else { return month }
-        return "\(m)월의 한 줌"
-    }
+    private var label: String { Memories.handfulTitle(month: month, today: today) }
 }
