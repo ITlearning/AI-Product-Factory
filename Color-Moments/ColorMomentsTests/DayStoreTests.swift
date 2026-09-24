@@ -91,6 +91,55 @@ final class DayStoreTests: XCTestCase {
         XCTAssertTrue(DayStore(fileURL: tempFile, closures: closures).moments.isEmpty, "파일에서도 지워져야 한다")
     }
 
+    /// 원본 파일을 지우기 전에 빈 목록이 디스크에 닿아야 한다 — 거꾸로면 kill 뒤 파일 없는 기록만 남는다.
+    func testRemoveAllLandsOnDiskBeforeReturning() throws {
+        store.add(moment(date(2026, 9, 22, 12, 0), name: "x.jpg"))
+        store.flush()
+        store.removeAll()
+        let raw = try JSONSerialization.jsonObject(with: Data(contentsOf: tempFile)) as? [Any]
+        XCTAssertEqual(raw?.count, 0)
+    }
+
+    /// 여행 중 시간대가 바뀌면 같은 순간의 하루가 달라진다 — 캐시된 하루 목록이 옛 시간대에 머물면 안 된다.
+    func testDayIndexFollowsTimeZoneChange() {
+        // 시스템 시간대 바꾸기 흉내 — NSTimeZone.default 는 autoupdatingCurrent 달력에 안 먹는다.
+        let original = ProcessInfo.processInfo.environment["TZ"]
+        func setZone(_ id: String?) {
+            if let id { setenv("TZ", id, 1) } else { unsetenv("TZ") }
+            tzset()
+            NSTimeZone.resetSystemTimeZone()
+        }
+        defer { setZone(original) }
+        setZone("Asia/Seoul")
+        // 2026-09-22 20:00Z — 서울 23일 05시, LA 22일 13시.
+        let at = Date(timeIntervalSince1970: 1_790_107_200)
+        store.add(moment(at, name: "tz.jpg"))
+        XCTAssertEqual(store.dayKeys, ["2026-09-23"])
+        setZone("America/Los_Angeles")
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertEqual(store.moments(on: "2026-09-22").count, 1)
+    }
+
+    /// 캐시된 조회는 제자리 변경(배열 원소 수정)도 곧바로 반영해야 한다 — 안 그러면 단어·입양이 화면에 늦게 뜬다.
+    func testCachedQueriesReflectInPlaceChanges() {
+        let m = moment(date(2026, 9, 22, 12, 0), name: "inplace.jpg")
+        store.add(m)
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertNil(store.moments(on: "2026-09-22").first?.labels)
+
+        store.setLabels(m.id, ["sky"])
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.labels, ["sky"])
+
+        store.assignWord(m.id, PhotoWord(wordID: "yunseul", word: "윤슬", meaning: "잔물결"))
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.word?.wordID, "yunseul")
+
+        XCTAssertTrue(store.adopt(m.id, assetID: "L/1"))
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.assetID, "L/1")
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.fileName, Moment.assetFileName(for: "L/1"))
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertEqual(store.pebbleMoments(on: "2026-09-22").first?.assetID, "L/1")
+    }
+
     func testAssignWordPersistsAndNeverOverwrites() {
         let m = moment(date(2026, 9, 22, 12, 0), name: "w.jpg")
         store.add(m)

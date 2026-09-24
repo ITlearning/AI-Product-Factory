@@ -11,17 +11,19 @@ public final class DayStore {
     private struct DayIndex {
         let byDay: [String: [Moment]]
         let keys: [String]
+        let zone: String
     }
     @ObservationIgnored private var dayIndex: DayIndex?
 
     // 캐시가 맞아도 moments 를 읽는다 — 안 읽으면 뷰가 이 저장소를 관찰하지 않아 새 기록을 못 본다.
     private var index: DayIndex {
         let current = moments
-        if let dayIndex { return dayIndex }
+        let zone = Moment.zoneIdentifier
+        if let dayIndex, dayIndex.zone == zone { return dayIndex }
         var byDay: [String: [Moment]] = [:]
         for m in current { byDay[m.dayKey, default: []].append(m) }
         for key in byDay.keys { byDay[key]?.sort { $0.capturedAt < $1.capturedAt } }
-        let built = DayIndex(byDay: byDay, keys: byDay.keys.sorted(by: >))
+        let built = DayIndex(byDay: byDay, keys: byDay.keys.sorted(by: >), zone: zone)
         dayIndex = built
         return built
     }
@@ -194,6 +196,15 @@ public final class DayStore {
         notify(removed.map { .delete($0.id) })
     }
 
+    public func remove(ids: Set<Moment.ID>) {
+        guard !ids.isEmpty else { return }
+        let removed = moments.filter { ids.contains($0.id) }
+        guard !removed.isEmpty else { return }
+        moments.removeAll { ids.contains($0.id) }
+        save()
+        notify(removed.map { .delete($0.id) })
+    }
+
     public func setCloudID(_ id: Moment.ID, _ cloudID: String) {
         setCloudIDs([(id, cloudID)])
     }
@@ -317,6 +328,7 @@ public final class DayStore {
     public func removeAll() {
         moments = []
         save()
+        flush()
         let fm = FileManager.default
         let files = (try? fm.contentsOfDirectory(at: ShotStore.directory,
                                                  includingPropertiesForKeys: nil)) ?? []
@@ -352,6 +364,9 @@ public final class DayStore {
 
     /// 밀린 저장을 지금 끝낸다 — 앱이 background 로 갈 때 부른다.
     public func flush() { writer.flush() }
+
+    /// 지금까지의 저장이 디스크에 닿은 뒤 work 를 돌린다(메인을 막지 않는다).
+    public func afterSaved(_ work: @escaping @Sendable () -> Void) { writer.then(work) }
 
     private func save() {
         let snapshot = moments

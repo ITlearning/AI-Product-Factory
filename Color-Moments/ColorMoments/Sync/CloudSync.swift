@@ -150,8 +150,11 @@ final class CloudSync: CKSyncEngineDelegate {
 
     private func resetForAccountChange() {
         // 로컬 기록은 절대 지우지 않는다 — 동기화 상태만 버리고 다음 계정에 다시 올린다.
+        // 밀린 상태 쓰기가 지운 뒤에 옛 토큰을 되살리지 않게 — 기록 큐 → 시스템 필드 큐 순으로 비운 뒤 지운다.
+        store.flush()
         systemFields.removeAll()
         persistSystemFields()
+        systemFields.flush()
         try? FileManager.default.removeItem(at: stateURL)
         engine = nil
         start()
@@ -168,7 +171,10 @@ final class CloudSync: CKSyncEngineDelegate {
         guard syncEngine === engine else { return }
         switch event {
         case .stateUpdate(let e):
-            if let data = try? JSONEncoder().encode(e.stateSerialization) { try? data.write(to: stateURL, options: .atomic) }
+            guard let data = try? JSONEncoder().encode(e.stateSerialization) else { break }
+            // 토큰이 받은 기록보다 먼저 디스크에 남으면 kill 뒤 그 기록을 다시 받지 못한다 — 기록·시스템 필드 쓰기 뒤에 쓴다.
+            let url = stateURL, fields = systemFields.fileWriter
+            store.afterSaved { fields.then { try? data.write(to: url, options: .atomic) } }
 
         case .accountChange(let e):
             switch e.changeType {

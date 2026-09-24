@@ -47,6 +47,6 @@ final class SyncPerformanceTests: XCTestCase {
         let reloaded = SystemFieldsCache(fileURL: url)
         XCTAssertEqual(reloaded.count, 3_000, "백그라운드로 쓴 시스템 필드가 다시 읽혀야 한다")
         XCTAssertNotNil(reloaded.record(all[7].recordID, type: SyncRecords.momentType))
-        XCTAssertLessThan(ms, 1_500)
+        XCTAssertLessThan(ms, 552)
     }
 }

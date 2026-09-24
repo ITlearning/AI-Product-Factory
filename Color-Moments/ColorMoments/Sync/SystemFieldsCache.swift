@@ -44,4 +44,7 @@ final class SystemFieldsCache {
     }
 
     func flush() { writer.flush() }
+
+    /// 이 파일 쓰기 뒤에 이어 쓸 때 — 백그라운드 큐에서 부를 수 있게 쓰기 객체를 넘긴다.
+    var fileWriter: CoalescingWriter { writer }
 }

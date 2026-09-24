@@ -136,7 +136,12 @@ enum AssetReconciler {
         let (allowed, budget) = budgetAllows(removing: plan.remove.count, now: Date(), state: state, tracked: ids.count)
         saveBudget(budget, defaults: defaults)
         guard allowed else { return }
-        store.remove(assetIDs: plan.remove)
+        store.remove(ids: removalIDs(snapshot: snapshot, remove: plan.remove))
+    }
+
+    /// 판정한 스냅샷 안의 기록만 — assetID 로 지우면 조회 대기 중 같은 사진으로 새로 담긴 기록까지 지워진다.
+    static func removalIDs(snapshot: [Moment], remove: Set<String>) -> Set<Moment.ID> {
+        Set(snapshot.filter { $0.assetID.map(remove.contains) ?? false }.map(\.id))
     }
 
     /// 사진 앱에 아직 있는 로컬 ID — 수천 개 조회는 메인 밖에서.
@@ -166,6 +171,7 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
 
     private let store: DayStore
     private var fetchResult: PHFetchResult<PHAsset>?
+    private var fetchGeneration = 0
 
     init(store: DayStore) {
         self.store = store
@@ -181,11 +187,16 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
     // 사진 앱이 바뀔 때마다(iCloud 사진이 내려오는 동안 잦다) 수천 개를 다시 조회한다 — 메인 밖에서.
     @MainActor
     private func refreshFetchResult() async {
+        fetchGeneration += 1
+        let generation = fetchGeneration
         let ids = Array(Set(store.moments.compactMap(\.assetID)))
         guard !ids.isEmpty else { fetchResult = nil; return }
-        fetchResult = await Task.detached(priority: .utility) {
+        let result = await Task.detached(priority: .utility) {
             PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
         }.value
+        // 조회가 겹치면 늦게 끝난 옛 조회가 새 추적 목록을 덮는다 — 마지막으로 시작한 것만 남긴다.
+        guard generation == fetchGeneration else { return }
+        fetchResult = result
     }
 
     func photoLibraryDidChange(_ changeInstance: PHChange) {
