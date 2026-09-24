@@ -34,7 +34,7 @@ struct HomeShell: View {
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
     @AppStorage("didSeeFirstRun") private var didSeeFirstRun = false
-    // 첫 증정이 끝난 뒤 딱 한 번만 아침 도착 소식을 물어본다.
+    // 첫 증정이 끝난 뒤 딱 한 번만 아침 도착 소식을 물어본다 — 실제로 답을 받았을 때만 true.
     @AppStorage("didAskArrivalNotice") private var didAskArrivalNotice = false
     @State private var showingArrivalNoticeAsk = false
     #if DEBUG
@@ -83,17 +83,19 @@ struct HomeShell: View {
         // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
-                 blocksPresentation: daySheetPresented || pickingLibrary || libraryCoverUp || progress > 0,
+                 blocksPresentation: daySheetPresented || pickingLibrary || libraryCoverUp || progress > 0
+                     || showingArrivalNoticeAsk,
                  onCeremonyFinished: handleCeremonyFinished)
         .alert("조약돌이 도착하면 아침에 알려 드릴까요?", isPresented: $showingArrivalNoticeAsk) {
             Button("알려 주세요") {
+                didAskArrivalNotice = true
                 Task {
                     let granted = (try? await UNUserNotificationCenter.current()
                         .requestAuthorization(options: [.alert, .sound])) ?? false
                     if granted { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
                 }
             }
-            Button("괜찮아요", role: .cancel) {}
+            Button("괜찮아요", role: .cancel) { didAskArrivalNotice = true }
         }
         .onChange(of: pickingLibrary) { _, up in if up { libraryCoverUp = true } }
         .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
@@ -200,12 +202,17 @@ struct HomeShell: View {
     }
 
     // 4~8시 사이에 앱을 열어 그 자리에서 받았으면 아침 알림이 뒤늦게 오지 않게 그 날짜만 지운다.
-    // 물어보는 건 마무리 여부와 무관하게 "첫 증정" 한 번뿐.
+    // 물어보는 건 마무리 여부와 무관하게 "첫 증정" 한 번뿐 — 이 콜백 직후 present() 가 다음 증정을 띄우므로
+    // 남은 증정이 있으면 묻지 않고 그 증정이 끝난 뒤(다음 콜백)로 미룬다.
     private func handleCeremonyFinished(_ dayKey: String) {
         Task { await ArrivalNotice.clear(dayKey: dayKey) }
         HomeWidget.refresh(store: store, gifts: gifts)
-        guard !didAskArrivalNotice else { return }
-        didAskArrivalNotice = true
+        let next = GiftSchedule.pending(dayKeys: store.dayKeys,
+                                        today: Moment.dayKey(for: Date()),
+                                        isGifted: gifts.isGifted,
+                                        hasSealedMoments: store.hasSealedMoments,
+                                        isFinished: store.isFinished)
+        guard ArrivalNotice.shouldAsk(didAsk: didAskArrivalNotice, nextGift: next) else { return }
         showingArrivalNoticeAsk = true
     }
 }

@@ -101,6 +101,11 @@ enum ArrivalNotice {
         if !delivered.isEmpty { center.removeDeliveredNotifications(withIdentifiers: delivered) }
     }
 
+    /// 첫 증정 뒤 권한을 물을지 — 다음 증정이 이어서 뜰 참이면 커버와 alert 가 겹치므로 그 증정이 끝난 뒤로 미룬다.
+    static func shouldAsk(didAsk: Bool, nextGift: String?) -> Bool {
+        !didAsk && nextGift == nil
+    }
+
     /// 순수 판정 — sync 가 계획할 dayKey 들. 오늘 dayKey 에 더해, 4~8시 사이엔 어제 dayKey 의 08시도
     /// 아직 안 왔으므로 함께 둔다. 발화 시각(dayKey 다음 날 08시)이 지난 날은 뺀다.
     static func targets(now: Date, calendar: Calendar) -> [String] {
