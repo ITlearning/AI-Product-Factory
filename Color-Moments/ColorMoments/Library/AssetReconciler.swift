@@ -45,8 +45,9 @@ enum AssetReconciler {
         for value in changed.values { valueCounts[value, default: 0] += 1 }
         let collidingValues = Set(valueCounts.filter { $0.value > 1 }.keys)
 
-        // 새 ID 가 이미 찾아졌거나(found) 다른 기록의 assetID 면 충돌 — 판정 보류.
-        let occupied = found.union(otherAssetIDs)
+        // 새 ID 가 추적 중인 어떤 assetID 와도 겹치면 충돌 — 판정 보류. ids 를 빼면 a→b 로 살린 기록이
+        // 같은 회차의 remove(b) 에 함께 지워진다.
+        let occupied = found.union(otherAssetIDs).union(ids)
 
         let reassign = changed.filter { !occupied.contains($0.value) && !collidingValues.contains($0.value) }
         // 충돌로 제외된 것들은 reassign 에도 remove 에도 넣지 않는다(판정 보류).
@@ -72,7 +73,8 @@ enum AssetReconciler {
     /// (부분 삭제 금지) 누적치는 그대로 둔다.
     static func budgetAllows(removing: Int, now: Date, state: Budget?, tracked: Int) -> (Bool, Budget) {
         let active: Budget
-        if let state, now.timeIntervalSince(state.windowStart) < budgetWindow {
+        // 시계를 되돌려 음수가 되면 새 창 — 창이 끝없이 이어져 정상 삭제가 막히지 않게.
+        if let state, case let dt = now.timeIntervalSince(state.windowStart), dt >= 0, dt < budgetWindow {
             active = state
         } else {
             active = Budget(windowStart: now, trackedAtStart: tracked, removedSoFar: 0)

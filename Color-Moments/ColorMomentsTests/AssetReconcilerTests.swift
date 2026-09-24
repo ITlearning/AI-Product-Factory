@@ -105,6 +105,25 @@ final class AssetReconcilerTests: XCTestCase {
         XCTAssertTrue(plan.remove.isEmpty)
     }
 
+    func testReassignOntoAnotherMissingIDIsDeferredNotChainDeleted() {
+        // Y(a)·X(b) 둘 다 조회에서 빠지고 Y 의 cloudID 가 b 로 매핑 — a→b 로 살린 Y 가 remove(b) 에 같이 지워지면 안 된다.
+        let plan = AssetReconciler.plan(ids: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
+                                        found: ["c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
+                                        relocated: ["a": "b"], fullAccess: true)
+        XCTAssertTrue(plan.reassign.isEmpty)
+        XCTAssertFalse(plan.remove.contains("a"))
+        XCTAssertEqual(plan.remove, ["b"])
+    }
+
+    func testBudgetOpensNewWindowWhenClockGoesBackwards() {
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        let state = AssetReconciler.Budget(windowStart: start, trackedAtStart: 10, removedSoFar: 3)
+        let (ok, next) = AssetReconciler.budgetAllows(removing: 1, now: start.addingTimeInterval(-3600),
+                                                      state: state, tracked: 10)
+        XCTAssertTrue(ok)
+        XCTAssertEqual(next.removedSoFar, 1)
+    }
+
     func testReassignSkippedWhenValuesCollideWithEachOther() {
         let ids: Set<String> = ["a", "b", "c"]
         let found: Set<String> = ["c"]
