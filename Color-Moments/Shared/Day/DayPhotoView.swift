@@ -4,9 +4,12 @@ import UIKit
 struct DayPhotoView: View {
     let momentID: Moment.ID
     let store: DayStore
+    // 받은 하루일 때만 호출부가 넘긴다 — ImageRenderer/ShareLink 는 앱 타깃 전용.
+    var makeShareSheet: (() -> AnyView)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var image: UIImage?
+    @State private var sharing = false
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
@@ -28,7 +31,12 @@ struct DayPhotoView: View {
                 .task(id: moment.fileName) { await load(moment) }
                 .task(id: moment.id) { await assignWordIfNeeded(moment) }
             }
-            closeButton.padding(.leading, 18).padding(.top, 8)
+            HStack {
+                closeButton
+                Spacer()
+                shareButton
+            }
+            .padding(.horizontal, 18).padding(.top, 8)
         }
         .statusBarHidden()
         .accessibilityAction(.escape) { dismiss() }
@@ -56,6 +64,19 @@ struct DayPhotoView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: Shape2.photoWindow, style: .continuous))
         .padding(.horizontal, 14)
+    }
+
+    @ViewBuilder
+    private var shareButton: some View {
+        if let makeShareSheet {
+            Button { sharing = true } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .foregroundStyle(Tone.secondary)
+                    .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $sharing) { makeShareSheet() }
+        }
     }
 
     @ViewBuilder

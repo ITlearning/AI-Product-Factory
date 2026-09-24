@@ -92,7 +92,9 @@ struct HomeView: View {
         }) { day in
             DayMomentsView(dayKey: day.id, store: store, closures: closures,
                            isGifted: gifts.isGifted, onClosed: onDayClosed,
-                           makeShareSheet: { key in AnyView(KeepsakeShareSheet(dayKey: key, store: store)) })
+                           makeShareSheet: { key, viewing in
+                               AnyView(KeepsakeShareSheet(dayKey: key, store: store, viewingID: viewing))
+                           })
         }
         .sheet(item: $sharingDayKey, onDismiss: keepsakeDismissed) { day in
             KeepsakeShareSheet(dayKey: day.id, store: store)

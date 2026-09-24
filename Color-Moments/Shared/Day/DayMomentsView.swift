@@ -10,11 +10,13 @@ public struct DayMomentsView: View {
     // 받은 하루인지 — App 타깃의 gifts.isGifted 를 그대로 받는다(Shared 는 GiftLog 를 몰라도 된다).
     private let isGifted: (String) -> Bool
     // 카드 공유 시트 — ImageRenderer/ShareLink 는 앱 타깃 전용이라 내용은 호출부(App)가 만들어 넘긴다.
-    private let makeShareSheet: ((String) -> AnyView)?
+    // 두 번째 인자는 보던 사진 — 카드가 그 사진으로 먼저 열린다.
+    private let makeShareSheet: ((String, Moment.ID?) -> AnyView)?
     @Environment(\.dismiss) private var dismiss
     @State private var viewing: Moment?
     @State private var confirmingFinish = false
     @State private var sharing = false
+    @State private var lastViewed: Moment.ID?
     @Namespace private var zoom
 
     private static let photo = CGSize(width: 190, height: 127)
@@ -28,7 +30,7 @@ public struct DayMomentsView: View {
     public init(dayKey: String, store: DayStore, closures: DayClosures,
                 isGifted: @escaping (String) -> Bool = { _ in false },
                 onClosed: @escaping () -> Void = {},
-                makeShareSheet: ((String) -> AnyView)? = nil) {
+                makeShareSheet: ((String, Moment.ID?) -> AnyView)? = nil) {
         self.dayKey = dayKey
         self.store = store
         self.closures = closures
@@ -75,8 +77,9 @@ public struct DayMomentsView: View {
             }
         }
         .presentationDragIndicator(.hidden)
+        .onChange(of: viewing?.id) { _, id in if let id { lastViewed = id } }
         .fullScreenCover(item: $viewing) { m in
-            DayPhotoView(momentID: m.id, store: store)
+            DayPhotoView(momentID: m.id, store: store, makeShareSheet: photoShareSheet(m.id))
                 .navigationTransition(.zoom(sourceID: m.id, in: zoom))
         }
     }
@@ -111,8 +114,13 @@ public struct DayMomentsView: View {
                     .frame(width: Shape2.minTouch, height: Shape2.minTouch)
             }
             .buttonStyle(.plain)
-            .sheet(isPresented: $sharing) { makeShareSheet(dayKey) }
+            .sheet(isPresented: $sharing) { makeShareSheet(dayKey, lastViewed) }
         }
+    }
+
+    private func photoShareSheet(_ id: Moment.ID) -> (() -> AnyView)? {
+        guard let makeShareSheet, Keepsake.canMakeCard(dayKey: dayKey, isGifted: isGifted) else { return nil }
+        return { makeShareSheet(dayKey, id) }
     }
 
     @ViewBuilder
