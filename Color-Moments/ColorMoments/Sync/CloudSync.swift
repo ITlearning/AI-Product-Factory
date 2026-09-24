@@ -13,10 +13,8 @@ final class CloudSync: CKSyncEngineDelegate {
     private static let container = "iCloud.com.itlearning.colormoments"
     private let stateURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("sync-state.json")
-    private let systemFieldsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("sync-records.json")
-    /// recordName → 서버가 준 시스템 필드(변경 태그). 없으면 새 기록으로 올려 충돌 한 번을 더 치른다.
-    private var systemFields: [String: Data] = [:]
+    private let systemFields = SystemFieldsCache(fileURL: FileManager.default
+        .urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("sync-records.json"))
 
     init(store: DayStore, closures: DayClosures, gifts: GiftLog) {
         self.store = store
@@ -28,8 +26,6 @@ final class CloudSync: CKSyncEngineDelegate {
         guard engine == nil else { return }
         let state = (try? Data(contentsOf: stateURL))
             .flatMap { try? JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: $0) }
-        systemFields = (try? Data(contentsOf: systemFieldsURL))
-            .flatMap { try? JSONDecoder().decode([String: Data].self, from: $0) } ?? [:]
         let db = CKContainer(identifier: Self.container).privateCloudDatabase
         engine = CKSyncEngine(CKSyncEngine.Configuration(database: db, stateSerialization: state, delegate: self))
 
@@ -39,6 +35,9 @@ final class CloudSync: CKSyncEngineDelegate {
 
         if state == nil { enqueueEverything() }
     }
+
+    /// 밀린 시스템 필드 쓰기를 지금 끝낸다 — 앱이 background 로 갈 때.
+    func flush() { systemFields.flush() }
 
     // MARK: 보낼 것
 
@@ -85,39 +84,21 @@ final class CloudSync: CKSyncEngineDelegate {
         case .moment(let uuid):
             // nil 이면 엔진이 이 저장 요청을 버린다 — 이미 로컬에서 지운 기록이라 정상.
             guard let m = store.moment(uuid) else { return nil }
-            let r = cachedRecord(id, type: SyncRecords.momentType)
+            let r = systemFields.record(id, type: SyncRecords.momentType)
             SyncRecords.fill(r, with: m)
             return r
         case .day(let key):
-            let r = cachedRecord(id, type: SyncRecords.dayType)
+            let r = systemFields.record(id, type: SyncRecords.dayType)
             SyncRecords.fill(r, with: dayState(key))
             return r
         }
     }
 
-    private func cachedRecord(_ id: CKRecord.ID, type: String) -> CKRecord {
-        if let data = systemFields[id.recordName],
-           let coder = try? NSKeyedUnarchiver(forReadingFrom: data) {
-            coder.requiresSecureCoding = true
-            defer { coder.finishDecoding() }
-            if let r = CKRecord(coder: coder) { return r }
-        }
-        return CKRecord(recordType: type, recordID: id)
-    }
+    private func remember(_ r: CKRecord) { systemFields.remember(r) }
 
-    private func remember(_ r: CKRecord) {
-        let coder = NSKeyedArchiver(requiringSecureCoding: true)
-        r.encodeSystemFields(with: coder)
-        coder.finishEncoding()
-        systemFields[r.recordID.recordName] = coder.encodedData
-    }
+    private func forget(_ id: CKRecord.ID) { systemFields.forget(id) }
 
-    private func forget(_ id: CKRecord.ID) { systemFields[id.recordName] = nil }
-
-    private func persistSystemFields() {
-        guard let data = try? JSONEncoder().encode(systemFields) else { return }
-        try? data.write(to: systemFieldsURL, options: .atomic)
-    }
+    private func persistSystemFields() { systemFields.persist() }
 
     // MARK: 받은 것
 
@@ -141,13 +122,13 @@ final class CloudSync: CKSyncEngineDelegate {
         }
         enqueue(store.applyRemote(upserts: upserts, deletes: deletes))
         persistSystemFields()
-        if !upserts.isEmpty { Task { await CloudIDMapper.resolve(store: store) } }
+        if !upserts.isEmpty { Task { await CloudIDMapper.resolveCoalesced(store: store) } }
         if dayChanged || !upserts.isEmpty || !deletes.isEmpty { refreshSurfaces() }
     }
 
     // 다른 기기에서 받음·닫힘·사진이 들어오면 이 기기의 예약 알림·위젯도 맞춘다 — 안 그러면 이미 받은 날 알림이 울린다.
     private func refreshSurfaces() {
-        Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
+        HomeWidget.scheduleSync(store: store, closures: closures, gifts: gifts)
     }
 
     /// 이 기기 상태가 바뀌었으면 true.
@@ -169,7 +150,7 @@ final class CloudSync: CKSyncEngineDelegate {
 
     private func resetForAccountChange() {
         // 로컬 기록은 절대 지우지 않는다 — 동기화 상태만 버리고 다음 계정에 다시 올린다.
-        systemFields = [:]
+        systemFields.removeAll()
         persistSystemFields()
         try? FileManager.default.removeItem(at: stateURL)
         engine = nil
@@ -201,7 +182,7 @@ final class CloudSync: CKSyncEngineDelegate {
 
         case .fetchedDatabaseChanges(let e):
             guard let gone = e.deletions.first(where: { $0.zoneID == SyncRecords.zoneID }) else { break }
-            systemFields = [:]
+            systemFields.removeAll()
             persistSystemFields()
             if gone.reason == .encryptedDataReset {
                 // 기기 암호 재설정 등으로 서버가 존을 비웠다 — 사용자가 지운 게 아니라 다시 올린다.
