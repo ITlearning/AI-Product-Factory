@@ -127,11 +127,12 @@ final class CloudSync: CKSyncEngineDelegate {
             if case .deleteRecord(let id) = $0 { id.recordName } else { nil }
         })
         var upserts: [Moment] = []
+        var dayChanged = false
         for r in modified {
             remember(r)
             if pendingDeletes.contains(r.recordID.recordName) { continue }
             if let m = SyncRecords.moment(from: r) { upserts.append(m) }
-            else if let d = SyncRecords.day(from: r) { applyDay(d) }
+            else if let d = SyncRecords.day(from: r) { dayChanged = applyDay(d) || dayChanged }
         }
         var deletes = Set<UUID>()
         for id in deleted {
@@ -141,14 +142,23 @@ final class CloudSync: CKSyncEngineDelegate {
         enqueue(store.applyRemote(upserts: upserts, deletes: deletes))
         persistSystemFields()
         if !upserts.isEmpty { Task { await CloudIDMapper.resolve(store: store) } }
+        if dayChanged || !upserts.isEmpty || !deletes.isEmpty { refreshSurfaces() }
     }
 
-    private func applyDay(_ d: SyncRecords.DayState) {
+    // 다른 기기에서 받음·닫힘·사진이 들어오면 이 기기의 예약 알림·위젯도 맞춘다 — 안 그러면 이미 받은 날 알림이 울린다.
+    private func refreshSurfaces() {
+        Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
+    }
+
+    /// 이 기기 상태가 바뀌었으면 true.
+    private func applyDay(_ d: SyncRecords.DayState) -> Bool {
+        let before = dayState(d.dayKey)
         if let at = d.closedAt { closures.applyRemote(dayKey: d.dayKey, closedAt: at) }
         if d.gifted { gifts.applyRemote(gifted: d.dayKey) }
         // 이 기기가 더 이른 마무리나 받은 증정을 알고 있으면 다시 올린다.
         let mine = dayState(d.dayKey)
         if mine.gifted != d.gifted || !Self.sameInstant(mine.closedAt, d.closedAt) { enqueueDay(d.dayKey) }
+        return mine.gifted != before.gifted || !Self.sameInstant(mine.closedAt, before.closedAt)
     }
 
     // CloudKit 은 Date 를 밀리초로 자른다 — 정확히 같다로 비교하면 같은 마무리를 끝없이 다시 올린다.
@@ -230,6 +240,7 @@ final class CloudSync: CKSyncEngineDelegate {
                     // 다른 기기가 지운 기록이다 — Moment 를 다시 저장하면 되살아난다(§3-4). Day 만 다시 올린다.
                     if case .moment(let uuid) = SyncRecords.ref(id) {
                         store.applyRemote(upserts: [], deletes: [uuid])
+                        refreshSurfaces()
                     } else {
                         add([.saveRecord(id)])
                     }

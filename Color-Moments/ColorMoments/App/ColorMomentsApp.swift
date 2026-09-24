@@ -51,20 +51,24 @@ struct ColorMomentsApp: App {
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active {
-                let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-                if status == .authorized || status == .limited {
-                    Task { await AssetAdopter.adoptAll(store: store) }
-                }
+            // 사진이 담기는 경로는 여러 곳이라(잠금화면·라이브러리 입양 등) active/background 전환마다
+            // 다시 맞춰 둔다 — active 는 입양·정리가 끝난 뒤에 계산해야 방금 들어온 사진이 반영된다.
+            switch newPhase {
+            case .active:
                 Task {
+                    let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                    if status == .authorized || status == .limited {
+                        await AssetAdopter.adoptAll(store: store)
+                    }
                     await AssetReconciler.reconcile(store: store)
                     await CloudIDMapper.refresh(store: store)
+                    await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts)
                 }
+            case .background:
+                Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
+            default:
+                break
             }
-            // 사진이 담기는 경로는 여러 곳이라(잠금화면·라이브러리 입양 등) active/background 전환마다
-            // 다시 맞춰 둔다 — 그 사이 놓친 변경도 여기서 잡힌다.
-            guard newPhase == .active || newPhase == .background else { return }
-            Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
         }
     }
 }
