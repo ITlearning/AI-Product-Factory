@@ -62,6 +62,7 @@ SPEC §3.1의 「모은 하루 가로 스크롤」은 폐기.
 딤드 오버레이 1회. 왼쪽 가장자리에서 오른쪽으로 쓰는 동작을 보여준다.
 
 - **다시 뜨지 않는다.** 「도움말」 재진입도 없다 (SPEC §2-4 재촉 금지).
+  예외: 저녁 알림 — 사진 있는 날만, 마무리 안 했을 때 밤 10시 한 번(2026-09-24 Tabber)
 - 아무 데나 누르면 닫힌다. 따라 하지 않아도 닫힌다.
 
 ### 1.6 다크 처리를 한 값으로
@@ -346,6 +347,7 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 | 10 | 사진은 사진 앱에 (docs/designs/mongdol-photo-assets.md) | ✅ `ColorMoments/Library/PhotoAssets.swift`, `AssetReconciler.swift` |
 | 11 | 오늘 진행 중 · 마무리하기 | ✅ `Shared/Day/DayClosures.swift`, `Shared/Day/DayStore.swift`, `Shared/Day/DayMomentsView.swift`, `Shared/Design/DayBlock.swift`, `App/HomeView.swift` |
 | 12 | iCloud 연동 (docs/designs/mongdol-icloud-sync.md) | ✅ 실기기 확인 대기 — `ColorMoments/Sync/`, `Shared/Day/MomentMerge.swift` |
+| 13 | 저녁 알림 | ✅ `ColorMoments/App/EveningReminder.swift` |
 
 **설계에서 벗어난 곳 (근거 있음)**
 
