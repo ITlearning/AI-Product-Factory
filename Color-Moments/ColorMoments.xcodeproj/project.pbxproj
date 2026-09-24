@@ -182,6 +182,7 @@
 		E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		E7F3453CCDED443C24380E0B /* words.json in Resources */ = {isa = PBXBuildFile; fileRef = A0A48C2B255FB6B7DFA973C5 /* words.json */; };
 		E9FF039B8236CAA8424CC6D6 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
+		ECB715D7732750F048FB06C6 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5EE0642C2B995E3015E25E /* PerformanceTests.swift */; };
 		ED42EFBB9D0310947F139082 /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		F0DD38512B10A0EC9EF97BD6 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E016D510A0FA71B454E57DF6 /* AVKit.framework */; };
@@ -330,6 +331,7 @@
 		C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		C8272505EF16B075931B8224 /* WordListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordListTests.swift; sourceTree = "<group>"; };
 		C9CE619222B12DDC48E8D41D /* CaptureExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureExtension.swift; sourceTree = "<group>"; };
+		CB5EE0642C2B995E3015E25E /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		CCB28EF5745DCE3F3B008662 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CCE87849E68DBA4048D0AB81 /* DayGift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGift.swift; sourceTree = "<group>"; };
 		D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrivalNoticeTests.swift; sourceTree = "<group>"; };
@@ -475,6 +477,7 @@
 				B180428138319F72B026C570 /* PebbleNameTests.swift */,
 				BE9BFF0980144C315646D9E5 /* PebbleRenderTests.swift */,
 				E79F2C0C75680FBE51A5A26C /* PebbleSilhouetteTests.swift */,
+				CB5EE0642C2B995E3015E25E /* PerformanceTests.swift */,
 				BDB546AAD2C0C80DB7EF1B50 /* PhotoContextTests.swift */,
 				BB99387BD580BB034A37204A /* PhotoLabelerTests.swift */,
 				69825FD346FEC03526525AE5 /* SheenTests.swift */,
@@ -906,6 +909,7 @@
 				12C3CD61E7A606425EFD41CA /* PebbleNameTests.swift in Sources */,
 				307336BE9B12FD503EBF66EC /* PebbleRenderTests.swift in Sources */,
 				294A77897542943DC92B2BE2 /* PebbleSilhouetteTests.swift in Sources */,
+				ECB715D7732750F048FB06C6 /* PerformanceTests.swift in Sources */,
 				C0BD8C781712AF5378F41F12 /* PhotoContextTests.swift in Sources */,
 				94A5AAD5168196D819A1E2B1 /* PhotoLabelerTests.swift in Sources */,
 				72CB8811A9F1756D47042377 /* SheenTests.swift in Sources */,
