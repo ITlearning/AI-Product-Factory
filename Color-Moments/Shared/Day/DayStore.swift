@@ -4,7 +4,27 @@ import Observation
 @Observable
 public final class DayStore {
 
-    public private(set) var moments: [Moment] = []
+    public private(set) var moments: [Moment] = [] {
+        didSet { dayIndex = nil }
+    }
+
+    private struct DayIndex {
+        let byDay: [String: [Moment]]
+        let keys: [String]
+    }
+    @ObservationIgnored private var dayIndex: DayIndex?
+
+    // 캐시가 맞아도 moments 를 읽는다 — 안 읽으면 뷰가 이 저장소를 관찰하지 않아 새 기록을 못 본다.
+    private var index: DayIndex {
+        let current = moments
+        if let dayIndex { return dayIndex }
+        var byDay: [String: [Moment]] = [:]
+        for m in current { byDay[m.dayKey, default: []].append(m) }
+        for key in byDay.keys { byDay[key]?.sort { $0.capturedAt < $1.capturedAt } }
+        let built = DayIndex(byDay: byDay, keys: byDay.keys.sorted(by: >))
+        dayIndex = built
+        return built
+    }
 
     /// 이 기기에서 실제로 바뀐 것만 — applyRemote 는 부르지 않는다(되돌아 올라가면 끝없이 돈다).
     /// 구독 전에 생긴 변경은 모아 두었다가 설정되는 순간 한 번에 넘긴다.
@@ -26,6 +46,7 @@ public final class DayStore {
 
     private let fileURL: URL
     private let closures: DayClosures
+    @ObservationIgnored private let writer: CoalescingWriter
 
     // closures 는 기본값을 주지 않는다 — 묵시적으로 .standard 를 공유하면 테스트가 실기기 저장소를 건드린다.
     public init(fileURL: URL? = nil, closures: DayClosures) {
@@ -33,26 +54,30 @@ public final class DayStore {
             .urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("days.json")
         self.closures = closures
+        self.writer = CoalescingWriter.forFile(self.fileURL)
+        writer.flush()
         load()
     }
 
     public var today: [Moment] { moments(on: Moment.dayKey(for: Date())) }
 
     public func moments(on dayKey: String) -> [Moment] {
-        moments.filter { $0.dayKey == dayKey }.sorted { $0.capturedAt < $1.capturedAt }
+        index.byDay[dayKey] ?? []
     }
 
-    public var dayKeys: [String] {
-        Array(Set(moments.map(\.dayKey))).sorted(by: >)
-    }
+    public var dayKeys: [String] { index.keys }
 
     public var finishedDayKeys: [String] {
-        dayKeys.filter(isFinished)
+        let today = Moment.dayKey(for: Date())
+        return dayKeys.filter { isFinished($0, today: today) }
     }
 
     /// 오늘 이전은 항상, 오늘은 「마무리하기」로 닫혀야 true.
     public func isFinished(_ dayKey: String) -> Bool {
-        let today = Moment.dayKey(for: Date())
+        isFinished(dayKey, today: Moment.dayKey(for: Date()))
+    }
+
+    private func isFinished(_ dayKey: String, today: String) -> Bool {
         if dayKey < today { return true }
         guard dayKey == today else { return false }
         return closures.closedAt(dayKey) != nil
@@ -325,14 +350,21 @@ public final class DayStore {
         }
     }
 
+    /// 밀린 저장을 지금 끝낸다 — 앱이 background 로 갈 때 부른다.
+    public func flush() { writer.flush() }
+
     private func save() {
+        let snapshot = moments
+        writer.write { Self.encode(snapshot) }
+    }
+
+    private static func encode(_ moments: [Moment]) -> Data? {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .custom { date, e in
             var c = e.singleValueContainer()
-            try c.encode(Self.fractionalDate.string(from: date))
+            try c.encode(fractionalDate.string(from: date))
         }
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(moments) else { return }
-        try? data.write(to: fileURL, options: .atomic)
+        return try? encoder.encode(moments)
     }
 }

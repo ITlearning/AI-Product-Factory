@@ -66,7 +66,7 @@ final class PerformanceTests: XCTestCase {
     func testApplyRemoteInBatchesWithResolve() {
         let store = freshStore()
         let incoming = synthetic()
-        time("a2.applyRemote15x200+resolve") {
+        let batched = time("a2.applyRemote15x200+resolve") {
             for chunk in stride(from: 0, to: incoming.count, by: 200) {
                 let part = Array(incoming[chunk..<min(chunk + 200, incoming.count)])
                 store.applyRemote(upserts: part, deletes: [])
@@ -74,6 +74,7 @@ final class PerformanceTests: XCTestCase {
             }
         }
         XCTAssertEqual(store.moments.filter { $0.assetID != nil }.count, Self.momentCount)
+        XCTAssertLessThan(batched, 300, "묶음마다 days.json 전체를 메인에서 쓰면 수신량 제곱으로 늘어난다(수정 전 623ms)")
     }
 
     func testSetCloudIDsAndResolveThreeThousand() {
@@ -107,8 +108,12 @@ final class PerformanceTests: XCTestCase {
             Moment(capturedAt: now.addingTimeInterval(-Double(i) * 60), colorHex: "#334455",
                    fileName: "new\(i)", source: .library, assetID: "N\(i)", addedAt: now, batchID: UUID())
         }
-        time("c.add200") { for m in adds { store.add(m) } }
+        let adds200 = time("c.add200") { for m in adds { store.add(m) } }
         XCTAssertEqual(store.moments.count, Self.momentCount + 200)
+        XCTAssertLessThan(adds200, 1_500, "add 마다 메인에서 전체 저장하면 9초를 넘는다")
+        store.flush()
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.count, Self.momentCount + 200,
+                       "백그라운드 저장도 마지막 상태까지 남아야 한다")
     }
 
     /// HomeView body 한 번이 부르는 것들 — 목록 행은 LazyVStack 이라 화면 안 ~8행만 그리지만, 행마다 days 를 다시 읽는다.
@@ -126,7 +131,7 @@ final class PerformanceTests: XCTestCase {
             _ = Memories.lastYear(today: today, giftedDays: giftedDays)
             _ = Set(Memories.months(giftedDays: giftedDays, today: today))
         }
-        time("d.visibleRows8") {
+        let rows = time("d.visibleRows8") {
             for index in 0..<8 {
                 let days = store.finishedDayKeys
                 let key = days[index]
@@ -135,19 +140,22 @@ final class PerformanceTests: XCTestCase {
                 _ = store.moments(on: key)
             }
         }
-        time("d.allRowsPebbleMoments400") {
+        let allRows = time("d.allRowsPebbleMoments400") {
             for key in store.dayKeys { _ = store.pebbleMoments(on: key); _ = store.moments(on: key) }
         }
         time("d.pendingGift") {
             _ = GiftSchedule.pending(dayKeys: store.dayKeys, today: today, isGifted: gifts.isGifted,
                                      hasSealedMoments: store.hasSealedMoments, isFinished: store.isFinished)
         }
+        XCTAssertLessThan(rows, 50, "행마다 전체 기록을 거르면 스크롤이 끊긴다(수정 전 125ms)")
+        XCTAssertLessThan(allRows, 300, "수정 전 3.5초")
     }
 
     func testWidgetSnapshotMake() {
         let store = freshStore()
         store.applyRemote(upserts: synthetic(), deletes: [])
-        time("e.WidgetSnapshot.make") { _ = WidgetSnapshot.make(store: store, gifts: gifts) }
+        let widget = time("e.WidgetSnapshot.make") { _ = WidgetSnapshot.make(store: store, gifts: gifts) }
+        XCTAssertLessThan(widget, 300, "수정 전 1.8초")
     }
 
     func testCardRender() {
