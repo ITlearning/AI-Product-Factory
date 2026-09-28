@@ -176,9 +176,10 @@ struct LibraryPickerView: View {
 
     private func fetchAssets() {
         let result = PHAsset.fetchAssets(with: LibraryImporter.fetchOptions())
-        fetchResult = result
         Task {
             let (computed, ids) = await Self.computeSections(result)
+            // 섹션 인덱스는 그 결과에만 맞는다 — 새 결과를 먼저 꽂으면 옛 섹션이 범위 밖을 읽는다.
+            fetchResult = result
             sections = computed
             selected = selected.intersection(ids) // 제한 접근 재선택 뒤 사라진 사진은 selected 에서도 지운다
         }
@@ -288,8 +289,17 @@ private struct ThumbnailCell: View {
         options.isNetworkAccessAllowed = true
         let targetSize = CGSize(width: side * displayScale, height: side * displayScale)
         let result: UIImage? = await withCheckedContinuation { continuation in
+            var resumed = false
+            let lock = NSLock()
             manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill,
-                                  options: options) { img, _ in continuation.resume(returning: img) }
+                                  options: options) { img, _ in
+                // fastFormat 은 콜백 1회가 계약이지만, 재호출돼도 두 번째 resume 은 크래시라 방어한다.
+                lock.lock()
+                defer { lock.unlock() }
+                guard !resumed else { return }
+                resumed = true
+                continuation.resume(returning: img)
+            }
         }
         if let result { image = result }
     }
