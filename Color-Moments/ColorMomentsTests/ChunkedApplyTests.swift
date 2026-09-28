@@ -85,6 +85,28 @@ final class ChunkedApplyTests: XCTestCase {
         XCTAssertFalse(chunked.moments.contains { s.deletes.contains($0.id) })
     }
 
+    /// 조각 사이에 쉬는 동안 이 기기에서 지운 기록은 뒤 조각의 원격 upsert 로 되살아나지 않는다.
+    func testRemovedBetweenChunksIsNotRevived() async {
+        let local = m(0, cloud: "K0")
+        let s = store(with: [local])
+        var pendingDeletes = Set<UUID>()
+        s.onLocalChange = { changes in
+            for c in changes { if case .delete(let id) = c { pendingDeletes.insert(id) } }
+        }
+        var upserts = (1..<130).map { m($0, cloud: "Q\($0)") }
+        let edited = Moment(id: local.id, capturedAt: local.capturedAt, colorHex: local.colorHex, fileName: "x",
+                            source: .library, word: PhotoWord(wordID: "e", word: "윤슬", meaning: "잔물결"),
+                            labels: ["sea"], addedAt: local.addedAt, cloudID: "K0")
+        upserts.insert(edited, at: 100)
+        var pauses = 0
+        await s.applyRemoteInChunks(upserts: upserts, deletes: [], excluding: { pendingDeletes }) {
+            pauses += 1
+            if pauses == 1 { s.remove(ids: [local.id]) }
+        }
+        XCTAssertFalse(s.moments.contains { $0.id == local.id })
+        XCTAssertEqual(s.moments.count, 129)
+    }
+
     func testSmallBatchDoesNotPause() async {
         let s = store(with: [])
         var pauses = 0

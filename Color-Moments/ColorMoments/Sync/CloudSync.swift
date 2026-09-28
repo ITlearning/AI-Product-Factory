@@ -121,12 +121,21 @@ final class CloudSync: CKSyncEngineDelegate {
             forget(id)
             if case .moment(let uuid) = SyncRecords.ref(id) { deletes.insert(uuid) }
         }
-        let push = await store.applyRemoteInChunks(upserts: upserts, deletes: deletes, pause: FramePause.next)
+        let push = await store.applyRemoteInChunks(upserts: upserts, deletes: deletes,
+                                                   excluding: { [weak self] in self?.pendingMomentDeletes() ?? [] },
+                                                   pause: FramePause.next)
         guard engine === current else { return }
         enqueue(push)
         persistSystemFields()
         if !upserts.isEmpty { Task { await CloudIDMapper.resolveCoalesced(store: store) } }
         if dayChanged || !upserts.isEmpty || !deletes.isEmpty { refreshSurfaces() }
+    }
+
+    private func pendingMomentDeletes() -> Set<UUID> {
+        Set((engine?.state.pendingRecordZoneChanges ?? []).compactMap {
+            guard case .deleteRecord(let id) = $0, case .moment(let uuid) = SyncRecords.ref(id) else { return nil }
+            return uuid
+        })
     }
 
     // 다른 기기에서 받음·닫힘·사진이 들어오면 이 기기의 예약 알림·위젯도 맞춘다 — 안 그러면 이미 받은 날 알림이 울린다.

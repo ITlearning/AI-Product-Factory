@@ -375,17 +375,24 @@ public final class DayStore {
     public static let remoteChunkSize = 40
 
     /// 큰 묶음은 40건씩 나눠 넣고 사이에 pause 로 화면을 한 번 그리게 한다. deletes 는 마지막 조각에 — upsert 먼저 규칙 그대로.
+    /// excluding 은 조각마다 다시 읽는다 — 쉬는 사이 이 기기에서 지운 기록을 뒤 조각이 되살리지 않게.
     @MainActor
     @discardableResult
     public func applyRemoteInChunks(upserts: [Moment], deletes: Set<Moment.ID>,
+                                    excluding: () -> Set<Moment.ID> = { [] },
                                     pause: () async -> Void) async -> [StoreChange] {
-        guard upserts.count > Self.remoteChunkThreshold else { return applyRemote(upserts: upserts, deletes: deletes) }
+        guard upserts.count > Self.remoteChunkThreshold else {
+            let skip = excluding()
+            return applyRemote(upserts: skip.isEmpty ? upserts : upserts.filter { !skip.contains($0.id) }, deletes: deletes)
+        }
         var push: [StoreChange] = []
         var start = 0
         while start < upserts.count {
             let end = min(start + Self.remoteChunkSize, upserts.count)
             let last = end == upserts.count
-            push += applyRemote(upserts: Array(upserts[start..<end]), deletes: last ? deletes : [])
+            let skip = excluding()
+            let chunk = skip.isEmpty ? Array(upserts[start..<end]) : upserts[start..<end].filter { !skip.contains($0.id) }
+            push += applyRemote(upserts: chunk, deletes: last ? deletes : [])
             start = end
             if !last { await pause() }
         }
