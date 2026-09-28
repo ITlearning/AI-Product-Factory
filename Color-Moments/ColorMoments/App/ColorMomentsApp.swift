@@ -26,14 +26,17 @@ struct ColorMomentsApp: App {
         let gifts = GiftLog()
         _gifts = State(initialValue: gifts)
         _catchUp = State(initialValue: CatchUp(steps: [
-            {
+            .init(budget: .seconds(20)) {
                 let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
                 if status == .authorized || status == .limited { await AssetAdopter.adoptAll(store: store) }
             },
-            { await AssetReconciler.reconcile(store: store) },
-            { await CloudIDMapper.refresh(store: store) },
-            { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) },
-        ]))
+            // 입양이 상한을 넘겨 배경에서 계속 돌아도 그대로 이어 돈다 — adoptAll 은 assetID 없는 기록만,
+            // reconcile 은 assetID 있는 기록만 건드려 서로 다른 기록을 다루고, remove 는 조회 전 스냅샷 기준이라 안전하다.
+            .init(budget: .seconds(5)) { await AssetReconciler.reconcile(store: store) },
+            .init(budget: .seconds(5)) { await CloudIDMapper.refresh(store: store) },
+        ], widgetSync: {
+            await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts)
+        }))
     }
 
     var body: some Scene {
@@ -52,11 +55,12 @@ struct ColorMomentsApp: App {
                     inbox.loadExisting()
                     inbox.start()
 
-                    // 로드 직후 입양·정리·위젯까지 한꺼번에 몰리면 첫 화면이 끊긴다 — 첫 차례는 조금 쉬었다 한 줄로(active 전환과 합친다).
-                    await catchUp.run()
+                    // catchUp 과 무관하게 로드 직후 바로 켠다 — 뒤로 미루면 그 사이 사진 앱 변경을 놓친다.
                     if reconcilerObserver == nil {
                         reconcilerObserver = AssetReconcilerObserver(store: store)
                     }
+                    // 로드 직후 입양·정리·cloudID·위젯까지 한꺼번에 몰리면 첫 화면이 끊긴다 — 첫 차례는 조금 쉬었다 한 줄로(active 전환과 합친다).
+                    await catchUp.run()
                 }
                 // 푸시로 잠금 해제 전에 깨어나면 days.json 을 못 읽는다 — 풀리는 순간 다시 읽어야 저장이 풀린다.
                 .onReceive(NotificationCenter.default.publisher(
