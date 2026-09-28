@@ -95,6 +95,42 @@ final class OnboardingRulesTests: XCTestCase {
                        .nothing)
     }
 
+    // MARK: 받기 결과 문구
+
+    func testReceivedCopyForGift() {
+        XCTAssertEqual(ReceivedCopy.text(.gift("2026-09-20"), addedCount: 3, dayGifted: false),
+                       .init(title: "첫 조약돌을 받았어요", detail: "홈에서 언제든 다시 볼 수 있어요."))
+    }
+
+    func testReceivedCopyForAddedToGiftedDay() {
+        XCTAssertEqual(ReceivedCopy.text(.added, addedCount: 4, dayGifted: true),
+                       .init(title: "4장 더 담겼어요", detail: "이미 받은 하루라 조약돌 색은 그대로예요"))
+        XCTAssertEqual(ReceivedCopy.text(.added, addedCount: 2, dayGifted: false),
+                       .init(title: "2장 더 담겼어요", detail: nil), "받기 전 하루엔 색이 그대로라고 말하지 않는다")
+        XCTAssertEqual(ReceivedCopy.text(.added, addedCount: 0, dayGifted: true).title, "사진이 담겼어요",
+                       "몇 장인지 못 세면 장 수를 적지 않는다")
+    }
+
+    func testReceivedCopyForTodayOnly() {
+        XCTAssertEqual(ReceivedCopy.text(.todayOnly, addedCount: 2, dayGifted: false),
+                       .init(title: "오늘 진행 중에 담겼어요", detail: "색은 자정에 열려요"))
+    }
+
+    func testReceivedFocusDayPrefersLatestPastDay() {
+        let today = "2026-09-22"
+        XCTAssertEqual(ReceivedCopy.focusDay(importedDayKeys: ["2026-09-19", "2026-09-21", today], today: today),
+                       "2026-09-21")
+        XCTAssertEqual(ReceivedCopy.focusDay(importedDayKeys: [today], today: today), today)
+        XCTAssertNil(ReceivedCopy.focusDay(importedDayKeys: [], today: today))
+    }
+
+    func testStartPebbleIsLatestGiftedDayOnly() {
+        XCTAssertEqual(StartScene.latestGiftedDay(dayKeys: ["2026-09-22", "2026-09-21", "2026-09-20"],
+                                                  isGifted: { $0 <= "2026-09-21" }), "2026-09-21")
+        XCTAssertNil(StartScene.latestGiftedDay(dayKeys: ["2026-09-22"], isGifted: { _ in false }),
+                     "받은 조약돌이 없으면 점선 빈 돌")
+    }
+
     // MARK: 추천 점수
 
     func testUtilityPhotosAreExcluded() {

@@ -85,9 +85,6 @@ struct SecondaryAction: View {
 struct IntroStep: View {
     let next: () -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var arrived = false
-
     private static let sample: [Moment] = {
         let base = Date(timeIntervalSince1970: 1_758_000_000)
         return ["#E7B98A", "#9DB7CF", "#D98F7A"].enumerated().map { i, hex in
@@ -98,25 +95,18 @@ struct IntroStep: View {
 
     var body: some View {
         OnboardingPage {
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer().frame(height: 20)
-                Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
-                Spacer()
-                PebbleView(moments: Self.sample, height: 150)
-                    .frame(maxWidth: .infinity)
-                    .offset(x: arrived || reduceMotion ? 0 : -260)
-                    .rotationEffect(.degrees(arrived || reduceMotion ? 0 : -150))
-                    .opacity(arrived ? 1 : 0)
-                Spacer()
+            SceneLayout {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                        .padding(.top, 20)
+                    IntroScene(moments: Self.sample)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } words: {
                 OnboardingText(title: "찍을 때는 색을 숨겨 두고, 하루가 닫히면 그날의 색으로 빚은 조약돌이 도착해요.")
-                Spacer().frame(height: 36)
             }
         } actions: {
             PrimaryAction(title: "다음", action: next)
-        }
-        .onAppear {
-            let animation: Animation = reduceMotion ? .easeOut(duration: 0.6) : .easeOut(duration: 1.6)
-            withAnimation(animation.delay(0.25)) { arrived = true }
         }
     }
 }
@@ -126,6 +116,7 @@ struct IntroStep: View {
 struct FirstPebbleStep: View {
     let model: FirstPebbleModel
     let store: DayStore
+    let result: ReceivedResult
     let begin: (_ ask: Bool) async -> Void
     let receive: () async -> Void
     let pickManually: () -> Void
@@ -139,13 +130,11 @@ struct FirstPebbleStep: View {
         OnboardingPage {
             switch model.phase {
             case .ask:
-                VStack(alignment: .leading, spacing: 0) {
-                    Spacer()
-                    DashedPebble(height: 110).frame(maxWidth: .infinity)
-                    Spacer()
+                SceneLayout {
+                    DashedPebble(height: 120).breathing()
+                } words: {
                     OnboardingText(title: "지난 두 주 사진으로 첫 조약돌을 받아 볼까요?",
                                    detail: "사진첩에서 풍경 사진 몇 장을 기기 안에서 골라 둘게요. 사진은 기기 밖으로 나가지 않아요.")
-                    Spacer().frame(height: 36)
                 }
             case .suggesting, .importing:
                 suggestionGrid
@@ -231,26 +220,21 @@ struct FirstPebbleStep: View {
             .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
     }
 
-    @ViewBuilder
     private func received(_ outcome: OnboardingFlow.ImportOutcome) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer()
-            switch outcome {
-            case .gift(let day):
-                PebbleView(moments: store.pebbleMoments(on: day), height: 130).frame(maxWidth: .infinity)
-                Spacer()
-                OnboardingText(title: "첫 조약돌을 받았어요", detail: "홈에서 언제든 다시 볼 수 있어요.")
-            case .todayOnly:
-                DashedPebble(height: 110).frame(maxWidth: .infinity)
-                Spacer()
-                OnboardingText(title: "오늘 사진이 담겼어요", detail: "오늘은 아직 진행 중이라, 하루가 닫히면 조약돌이 도착해요.")
-            case .added, .nothing:
-                Spacer()
-                OnboardingText(title: "사진이 담겼어요")
-            }
-            Spacer().frame(height: 36)
+        let copy = ReceivedCopy.text(outcome, addedCount: result.photos.count, dayGifted: result.dayGifted)
+        return SceneLayout {
+            ReceivedScene(outcome: outcome, pebble: result.pebble, photos: result.photos)
+        } words: {
+            OnboardingText(title: copy.title, detail: copy.detail)
         }
     }
+}
+
+/// 방금 담은 것 — 결과 장면에 쓸 사진과, 색을 보여도 되는 조약돌.
+struct ReceivedResult {
+    var photos: [Moment] = []
+    var pebble: [Moment] = []
+    var dayGifted = false
 }
 
 // MARK: 3. 아침 도착 소식
@@ -266,11 +250,11 @@ struct ArrivalStep: View {
 
     var body: some View {
         OnboardingPage {
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer()
+            SceneLayout {
+                ArrivalScene()
+            } words: {
                 OnboardingText(title: "사진을 담은 다음 날 아침, 조약돌이 도착하면 한 번 알려 드려요.",
                                detail: didAskArrivalNotice ? "알림은 설정에서 언제든 바꿀 수 있어요." : nil)
-                Spacer().frame(height: 36)
             }
         } actions: {
             if didAskArrivalNotice {
@@ -327,17 +311,13 @@ struct CloudStep: View {
 
     var body: some View {
         OnboardingPage {
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer()
-                Image(systemName: signedIn == false ? "icloud.slash" : "icloud")
-                    .font(Face.wordmark)
-                    .foregroundStyle(Tone.secondary)
-                    .frame(maxWidth: .infinity)
-                    .opacity(signedIn == nil ? 0 : 1)
-                Spacer()
+            SceneLayout {
+                CloudScene(linked: remoteDays > 0 || signedIn == true, receiving: receiving, remoteDays: remoteDays)
+                    .opacity(signedIn == nil && remoteDays == 0 ? 0 : 1)
+                    .animation(.easeOut(duration: 0.4), value: signedIn)
+            } words: {
                 OnboardingText(title: title, detail: detail)
                     .opacity(signedIn == nil && remoteDays == 0 ? 0 : 1)
-                Spacer().frame(height: 36)
             }
         } actions: {
             PrimaryAction(title: actionTitle, action: next)
@@ -379,38 +359,19 @@ struct CloudStep: View {
 struct HowToStep: View {
     let next: () -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var sweep = false
-
     var body: some View {
         OnboardingPage {
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer()
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(LinearGradient(colors: [.clear, Tone.secondary], startPoint: .leading, endPoint: .trailing))
-                        .frame(width: sweep ? 150 : 0, height: 3)
-                    Circle()
-                        .fill(Tone.primary)
-                        .frame(width: 22, height: 22)
-                        .offset(x: sweep ? 139 : -11)
-                }
-                .opacity(sweep && !reduceMotion ? 0 : 1)
-                .frame(height: 22)
-                Spacer()
+            SceneLayout {
+                HowToScene()
+            } words: {
                 VStack(alignment: .leading, spacing: 22) {
                     OnboardingText(title: "홈에서 왼쪽 가장자리를 오른쪽으로 쓸면 카메라가 열려요")
                     OnboardingText(title: "잠금화면에서도 찍을 수 있어요",
                                    detail: "잠금화면 카메라 컨트롤에서 몽돌을 고르면 돼요.")
                 }
-                Spacer().frame(height: 36)
             }
         } actions: {
             PrimaryAction(title: "다음", action: next)
-        }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 1.3).delay(0.3).repeatForever(autoreverses: false)) { sweep = true }
         }
     }
 }
@@ -418,20 +379,17 @@ struct HowToStep: View {
 // MARK: 6. 시작하기
 
 struct StartStep: View {
+    let pebble: [Moment]
     let ready: Bool
     let onCamera: () -> Void
     let onStart: () -> Void
 
-    @Environment(\.onboardingInk) private var ink
-
     var body: some View {
         OnboardingPage {
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer()
-                Text("몽돌").font(Face.wordmark).foregroundStyle(ink.primary)
-                Spacer().frame(height: 14)
+            SceneLayout {
+                StartScene(pebble: pebble)
+            } words: {
                 OnboardingText(title: "준비됐어요", detail: "오늘 담은 것은 자정에 조약돌이 돼요.")
-                Spacer().frame(height: 36)
             }
         } actions: {
             PrimaryAction(title: "지금 한 장 남겨보기", working: !ready, action: onCamera)

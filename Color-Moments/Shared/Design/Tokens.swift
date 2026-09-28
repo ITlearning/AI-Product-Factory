@@ -21,6 +21,10 @@ public enum Tone {
     /// 온보딩 배경 — 받은 조약돌이 없을 때의 따뜻한 중간 톤(어둡게 눌러 쓴다).
     public static let backdropWarm = ["#B98A6A", "#8E6E86", "#C9A27A", "#6F7F8E"]
 
+    /// 아침 소식 장면의 하늘 — 새벽(위·아래)에서 아침(위·아래)으로 천천히.
+    public static let skyDawn = ["#1E1A33", "#4A3446"]
+    public static let skyMorning = ["#233A52", "#5C6B78"]
+
     // 밝은 화면(온보딩 「준비됐어요」) 위 글자·버튼 — 파스텔 배경 대비 4.5:1 이상.
     public static let inkPrimaryHex = "#1E1B18"
     public static let inkPrimary = Color(hex: inkPrimaryHex)
@@ -71,6 +75,7 @@ public enum Face {
     public static let line = Font.system(size: 13)
     public static let today = Font.system(size: 13)
     public static let caption = Font.system(size: 11, design: .rounded)
+    public static let noticeApp = Font.system(size: 13, weight: .semibold)
     public static let guide = Font.system(size: 12)
     public static let hex = Font.system(size: 16, design: .monospaced)
 }

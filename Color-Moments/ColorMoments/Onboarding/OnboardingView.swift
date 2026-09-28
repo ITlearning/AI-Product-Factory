@@ -88,6 +88,7 @@ struct OnboardingView: View {
             LibraryPickerView(store: store) { keys in
                 importedDayKeys.formUnion(keys)
                 guard !keys.isEmpty else { return }
+                lastImport = RecentImport(dayKeys: keys, since: pickerStartedAt)
                 pickerOutcome = OnboardingFlow.outcome(existingRecordsWereEmpty: pickerStartedEmpty,
                                                       importedDayKeys: keys, today: Moment.dayKey(for: Date()))
                 afterImport()
@@ -97,6 +98,29 @@ struct OnboardingView: View {
     }
 
     @State private var pickerStartedEmpty = true
+    @State private var pickerStartedAt = Date()
+    @State private var lastImport: RecentImport?
+
+    private struct RecentImport {
+        let dayKeys: Set<String>
+        let since: Date
+    }
+
+    private var receivedResult: ReceivedResult {
+        guard let lastImport else { return ReceivedResult() }
+        let photos = store.moments
+            .filter { m in m.addedAt.map { $0 >= lastImport.since } ?? false && lastImport.dayKeys.contains(m.dayKey) }
+            .sorted { ($0.addedAt ?? .distantPast) < ($1.addedAt ?? .distantPast) }
+        guard let day = ReceivedCopy.focusDay(importedDayKeys: lastImport.dayKeys, today: Moment.dayKey(for: Date()))
+        else { return ReceivedResult(photos: photos) }
+        let gifted = gifts.isGifted(day)
+        return ReceivedResult(photos: photos, pebble: gifted ? store.pebbleMoments(on: day) : [], dayGifted: gifted)
+    }
+
+    private var startPebble: [Moment] {
+        StartScene.latestGiftedDay(dayKeys: store.dayKeys, isGifted: gifts.isGifted)
+            .map { store.pebbleMoments(on: $0) } ?? []
+    }
 
     // MARK: 틀
 
@@ -188,11 +212,12 @@ struct OnboardingView: View {
         case .intro:
             IntroStep(next: next)
         case .firstPebble:
-            FirstPebbleStep(model: firstPebble, store: store,
+            FirstPebbleStep(model: firstPebble, store: store, result: receivedResult,
                             begin: beginFirstPebble,
                             receive: receiveSelected,
                             pickManually: {
                                 pickerStartedEmpty = store.moments.isEmpty
+                                pickerStartedAt = Date()
                                 pickingLibrary = true
                             },
                             next: next)
@@ -205,7 +230,7 @@ struct OnboardingView: View {
         case .howTo:
             HowToStep(next: next)
         case .start:
-            StartStep(ready: ready,
+            StartStep(pebble: startPebble, ready: ready,
                       onCamera: { onFinish(true) },
                       onStart: { onFinish(false) })
                 .task {
@@ -224,8 +249,10 @@ struct OnboardingView: View {
     }
 
     private func receiveSelected() async {
+        let since = Date()
         let (outcome, keys) = await firstPebble.importSelected(store: store)
         importedDayKeys.formUnion(keys)
+        if !keys.isEmpty { lastImport = RecentImport(dayKeys: keys, since: since) }
         guard outcome != .nothing else { return }
         afterImport()
         handle(outcome)
