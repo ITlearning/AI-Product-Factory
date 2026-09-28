@@ -308,6 +308,41 @@ enum AssetAdopter {
         return true
     }
 
+    @MainActor
+    static func adoptAll(store: DayStore, env: Env = .live) async {
+        guard !isAdoptingAll else { return }
+        let status = env.access()
+        guard status == .authorized || status == .limited else { return }
+
+        isAdoptingAll = true
+        defer { isAdoptingAll = false }
+
+        let snapshot = store.moments
+        let ids = Array(Set(snapshot.compactMap(\.assetID)))
+        let found = await env.existing(ids)
+
+        // 사진첩에서 담은 옛 사본은 이미 assetID 가 있어 에셋으로 그려진다 — 남은 파일만 고아라 지운다.
+        // 단, 그 assetID 가 실제로 사진 앱에서 찾아질 때만 지운다. 못 찾으면(기기 복원 등으로 assetID 가
+        // 어긋난 경우) 파일을 남긴다 — ShotImage 가 에셋을 못 찾으면 파일로 폴백해 계속 그려진다.
+        // 사본이 아예 없는 fileBacked 파일(assetID == nil)은 여기서 지우지 않는다 — 반드시 adopt 를 거쳐 저장한 뒤에만 지운다.
+        for m in snapshot where m.fileName.hasPrefix("library-") && m.assetID.map(found.contains) == true {
+            env.removeFile(ShotImage.url(m.fileName))
+        }
+
+        // 에셋이 사라진 기록(사본 파일이 남았어도)은 사진 앱에서 지운 것 — 여기서 되살리지 않고 정리에 맡긴다.
+        for m in store.fileBacked {
+            _ = await adoptWithoutMapping(m, store: store, env: env)
+        }
+        await env.assignMissing(store)
+    }
+}
+
+#if DEBUG
+/// 디버그 진단 화면의 수동 「복구」 — 에셋이 사라진 기록의 사본을 사진 앱에 다시 저장한다. 자동으로는 돌지 않는다.
+extension AssetAdopter {
+
+    static let restoreLimit = 20
+
     /// 순수 함수 — 에셋이 사라졌는데 이 기기에 파일이 남은 기록(파일로 다시 입양할 대상).
     /// 전체 접근일 때만(제한 접근에서 못 찾은 건 고르지 않은 것뿐이라 다시 저장하면 중복된다),
     /// 조회가 통째로 비면 아무것도 안 고른다. cloudID 로 다시 찾아지는 기록은 정리가 바꿔 끼우므로 뺀다.
@@ -339,7 +374,7 @@ enum AssetAdopter {
         guard let newID = report.assetID else { return false }
 
         guard store.readopt(current.id, from: old, to: newID) else {
-            print("AssetAdopter: \(current.id) 는 다시 저장하는 사이 바뀌어 파일을 지우지 않음")
+            print("AssetAdopter: \(current.id) 는 다시 저장하는 사이 바뀌어 파일을 지우지 않음(새 에셋 \(newID) 는 사진 앱에 남음)")
             return false
         }
         stats.readoptSucceeded += 1
@@ -348,42 +383,28 @@ enum AssetAdopter {
         return true
     }
 
+    /// 한 번에 `limit` 개까지. 다시 저장한 수를 돌려준다.
     @MainActor
-    static func adoptAll(store: DayStore, env: Env = .live) async {
-        guard !isAdoptingAll else { return }
-        let status = env.access()
-        guard status == .authorized || status == .limited else { return }
-
-        isAdoptingAll = true
-        defer { isAdoptingAll = false }
-
+    @discardableResult
+    static func restoreLost(store: DayStore, limit: Int = restoreLimit, env: Env = .live) async -> Int {
+        let fullAccess = env.access() == .authorized
+        guard fullAccess else { return 0 }
         let snapshot = store.moments
-        let ids = Array(Set(snapshot.compactMap(\.assetID)))
-        let found = await env.existing(ids)
-
-        // 사진첩에서 담은 옛 사본은 이미 assetID 가 있어 에셋으로 그려진다 — 남은 파일만 고아라 지운다.
-        // 단, 그 assetID 가 실제로 사진 앱에서 찾아질 때만 지운다. 못 찾으면(기기 복원 등으로 assetID 가
-        // 어긋난 경우) 파일을 남긴다 — ShotImage 가 에셋을 못 찾으면 파일로 폴백해 계속 그려진다.
-        // 사본이 아예 없는 fileBacked 파일(assetID == nil)은 여기서 지우지 않는다 — 반드시 adopt 를 거쳐 저장한 뒤에만 지운다.
-        for m in snapshot where m.fileName.hasPrefix("library-") && m.assetID.map(found.contains) == true {
-            env.removeFile(ShotImage.url(m.fileName))
-        }
-
+        let found = await env.existing(Array(Set(snapshot.compactMap(\.assetID))))
         let lost = snapshot.filter { m in m.assetID.map { !found.contains($0) } ?? false }
-        let fullAccess = status == .authorized
-        let onDisk = fullAccess && !lost.isEmpty ? await env.localFiles(lost.map(\.fileName)) : []
+        guard !lost.isEmpty else { return 0 }
+        let onDisk = await env.localFiles(lost.map(\.fileName))
         let lostWithFile = lost.filter { AssetReconciler.holdsLocalFile(fileName: $0.fileName, exists: onDisk.contains) }
         let clouds = lostWithFile.compactMap(\.cloudID)
         let locals = clouds.isEmpty ? [:] : await env.localIDs(clouds)
         let relocatable = Set(lostWithFile.filter { $0.cloudID.flatMap { locals[$0] } != nil }.compactMap(\.assetID))
+        var restored = 0
         for m in readoptCandidates(snapshot: snapshot, found: found, relocatable: relocatable,
-                                   onDisk: onDisk, fullAccess: fullAccess) {
-            _ = await readoptWithoutMapping(m, store: store, env: env)
+                                   onDisk: onDisk, fullAccess: fullAccess).prefix(limit) {
+            if await readoptWithoutMapping(m, store: store, env: env) { restored += 1 }
         }
-
-        for m in store.fileBacked {
-            _ = await adoptWithoutMapping(m, store: store, env: env)
-        }
-        await env.assignMissing(store)
+        if restored > 0 { await env.assignMissing(store) }
+        return restored
     }
 }
+#endif

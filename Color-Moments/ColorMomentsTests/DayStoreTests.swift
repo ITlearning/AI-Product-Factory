@@ -335,7 +335,7 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(r.originalName, "IMG_1.HEIC", "중복 판정에 쓰는 원래 이름은 남긴다")
         XCTAssertNil(r.cloudID, "옛 cloudID 는 사라진 사진 것 — 비워 두고 새 사진의 것을 다시 붙인다")
         XCTAssertEqual(r.colorHex, "#AABBCC")
-        XCTAssertTrue(got.isEmpty, "assetID 는 기기 전용 — 새 cloudID 가 붙을 때 올린다")
+        XCTAssertEqual(got, [.upsert(m.id)], "비운 cloudID 를 올려야 병합이 서버의 옛 cloudID 를 되살리지 않는다")
         XCTAssertFalse(store.readopt(m.id, from: "OLD", to: "NEW2"), "두 번째 호출은 옛 값이 아니라 무시한다")
     }
 

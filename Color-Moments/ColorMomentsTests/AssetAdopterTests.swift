@@ -55,7 +55,20 @@ final class AssetAdopterTests: XCTestCase {
                originalName: original, cloudID: cloud)
     }
 
-    func testLostAssetWithLocalFileIsSavedAgainAndFileRemovedAfterSwap() async {
+    func testAdoptAllDoesNotBringBackDeletedAssetsFromLeftoverFile() async {
+        store.add(moment("library-a.jpg", asset: "OLD", cloud: "C-OLD")); store.add(moment("asset-b", asset: "B"))
+        let fake = Fake()
+        fake.found = ["B"]; fake.onDisk = ["library-a.jpg"]
+
+        await AssetAdopter.adoptAll(store: store, env: fake.env)
+
+        XCTAssertTrue(fake.saved.isEmpty, "사진 앱에서 지운 사진은 사본이 남아도 자동으로 되살리지 않는다")
+        XCTAssertTrue(fake.removed.isEmpty, "사본 파일은 정리가 기록을 지운 뒤에 치운다")
+    }
+
+    // MARK: 수동 복구(디버그 전용)
+
+    func testRestoreSavesAgainAndRemovesFileAfterSwap() async {
         let lost = moment("shot-a.jpg", asset: "OLD", cloud: "C-OLD", original: "IMG_1.HEIC")
         let fine = moment("asset-b", asset: "B")
         store.add(lost); store.add(fine)
@@ -63,8 +76,9 @@ final class AssetAdopterTests: XCTestCase {
         fake.found = ["B"]
         fake.onDisk = ["shot-a.jpg"]
 
-        await AssetAdopter.adoptAll(store: store, env: fake.env)
+        let restored = await AssetAdopter.restoreLost(store: store, env: fake.env)
 
+        XCTAssertEqual(restored, 1)
         let r = store.moments.first { $0.id == lost.id }
         XCTAssertEqual(r?.assetID, "NEW")
         XCTAssertEqual(r?.fileName, Moment.assetFileName(for: "NEW"))
@@ -73,6 +87,18 @@ final class AssetAdopterTests: XCTestCase {
         XCTAssertEqual(fake.saved, ["shot-a.jpg"])
         XCTAssertEqual(fake.removed, ["shot-a.jpg"], "새 ID 로 바꾼 뒤에만 파일을 지운다")
         XCTAssertEqual(fake.mapped, 1, "새 사진의 cloudID 를 붙인다")
+    }
+
+    func testRestoreStopsAtLimit() async {
+        for i in 0..<3 { store.add(moment("shot-\(i).jpg", asset: "OLD\(i)")) }
+        store.add(moment("asset-b", asset: "B"))
+        let fake = Fake()
+        fake.found = ["B"]; fake.onDisk = ["shot-0.jpg", "shot-1.jpg", "shot-2.jpg"]
+
+        let restored = await AssetAdopter.restoreLost(store: store, limit: 2, env: fake.env)
+
+        XCTAssertEqual(restored, 2)
+        XCTAssertEqual(fake.saved.count, 2, "한 번에 상한까지만 다시 저장한다")
     }
 
     func testFileBackedMomentIsStillAdopted() async {
@@ -92,7 +118,7 @@ final class AssetAdopterTests: XCTestCase {
         let fake = Fake()
         fake.found = ["B"]; fake.onDisk = ["shot-a.jpg"]; fake.nextID = nil
 
-        await AssetAdopter.adoptAll(store: store, env: fake.env)
+        await AssetAdopter.restoreLost(store: store, env: fake.env)
 
         XCTAssertEqual(store.moments.first { $0.id == lost.id }?.assetID, "OLD")
         XCTAssertTrue(fake.removed.isEmpty, "저장에 실패하면 파일이 유일한 사본이다")
@@ -103,7 +129,7 @@ final class AssetAdopterTests: XCTestCase {
         let fake = Fake()
         fake.status = .limited; fake.found = ["B"]; fake.onDisk = ["shot-a.jpg"]
 
-        await AssetAdopter.adoptAll(store: store, env: fake.env)
+        await AssetAdopter.restoreLost(store: store, env: fake.env)
 
         XCTAssertTrue(fake.saved.isEmpty, "제한 접근에서 못 찾은 건 고르지 않은 사진일 뿐 — 다시 저장하면 중복된다")
     }
@@ -113,7 +139,7 @@ final class AssetAdopterTests: XCTestCase {
         let fake = Fake()
         fake.onDisk = ["shot-a.jpg", "shot-b.jpg"]
 
-        await AssetAdopter.adoptAll(store: store, env: fake.env)
+        await AssetAdopter.restoreLost(store: store, env: fake.env)
 
         XCTAssertTrue(fake.saved.isEmpty, "조회가 통째로 비면 실패일 수 있다 — 전부 다시 저장하면 사진 앱이 중복으로 찬다")
     }
@@ -123,7 +149,7 @@ final class AssetAdopterTests: XCTestCase {
         let fake = Fake()
         fake.found = ["B"]; fake.onDisk = ["shot-a.jpg"]; fake.cloudToLocal = ["C-A": "MOVED"]
 
-        await AssetAdopter.adoptAll(store: store, env: fake.env)
+        await AssetAdopter.restoreLost(store: store, env: fake.env)
 
         XCTAssertTrue(fake.saved.isEmpty, "cloudID 로 다시 찾아지면 정리가 바꿔 끼운다 — 다시 저장하면 중복")
     }
@@ -133,21 +159,33 @@ final class AssetAdopterTests: XCTestCase {
         let fake = Fake()
         fake.found = ["B"]
 
-        await AssetAdopter.adoptAll(store: store, env: fake.env)
+        await AssetAdopter.restoreLost(store: store, env: fake.env)
 
         XCTAssertTrue(fake.saved.isEmpty)
     }
 
     func testConcurrentAdoptAllSavesOnce() async {
-        store.add(moment("shot-a.jpg", asset: "OLD")); store.add(moment("asset-b", asset: "B"))
+        store.add(moment("shot-a.jpg", asset: nil))
         let fake = Fake()
-        fake.found = ["B"]; fake.onDisk = ["shot-a.jpg"]
         fake.saveGate = { await Task.yield() }
 
         async let first: Void = AssetAdopter.adoptAll(store: store, env: fake.env)
         async let second: Void = AssetAdopter.adoptAll(store: store, env: fake.env)
         _ = await (first, second)
         await AssetAdopter.adoptAll(store: store, env: fake.env)
+
+        XCTAssertEqual(fake.saved, ["shot-a.jpg"], "같은 사진이 두 번 저장되면 사진 앱에 중복이 생긴다")
+    }
+
+    func testConcurrentRestoreSavesOnce() async {
+        store.add(moment("shot-a.jpg", asset: "OLD")); store.add(moment("asset-b", asset: "B"))
+        let fake = Fake()
+        fake.found = ["B"]; fake.onDisk = ["shot-a.jpg"]
+        fake.saveGate = { await Task.yield() }
+
+        async let first = AssetAdopter.restoreLost(store: store, env: fake.env)
+        async let second = AssetAdopter.restoreLost(store: store, env: fake.env)
+        _ = await (first, second)
 
         XCTAssertEqual(fake.saved, ["shot-a.jpg"], "같은 사진이 두 번 저장되면 사진 앱에 중복이 생긴다")
     }
@@ -162,8 +200,7 @@ final class AssetAdopterTests: XCTestCase {
         await AssetAdopter.adoptAll(store: store, env: fake.env)
 
         let after = AssetAdopter.stats
-        XCTAssertEqual(after.readoptTried - before.readoptTried, 1)
-        XCTAssertEqual(after.readoptSucceeded, before.readoptSucceeded)
+        XCTAssertEqual(after.readoptTried, before.readoptTried, "자동 입양은 사라진 사진을 다시 저장하지 않는다")
         XCTAssertEqual(after.adoptTried - before.adoptTried, 1)
         XCTAssertEqual(after.adoptSucceeded, before.adoptSucceeded)
         XCTAssertEqual(after.lastFailure?.fileName, "shot-f.jpg")

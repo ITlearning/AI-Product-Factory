@@ -12,6 +12,8 @@ struct SpikeView: View {
     #if DEBUG
     @State private var diagnostics: AssetDiagnostics.Snapshot?
     @State private var diagnosing = false
+    @State private var confirmingRestore = false
+    @State private var restoreResult: String?
     #endif
 
     init(inbox: CaptureInbox, store: DayStore, gifts: GiftLog, closures: DayClosures) {
@@ -238,7 +240,7 @@ struct SpikeView: View {
                 row("⑤ 에셋 있음·cloudID 없음", "\(c.foundNoCloud)")
                 row("⑥ cloudID 없음 전체", "\(c.noCloud)")
                 row("이번 실행 입양 시도/성공", "\(d.stats.adoptTried)/\(d.stats.adoptSucceeded)")
-                row("이번 실행 다시 입양 시도/성공", "\(d.stats.readoptTried)/\(d.stats.readoptSucceeded)")
+                row("이번 실행 수동 복구 시도/성공", "\(d.stats.readoptTried)/\(d.stats.readoptSucceeded)")
                 Text("마지막 저장 실패: \(d.stats.lastFailure?.summary ?? "없음")")
                     .font(.caption2.monospaced()).textSelection(.enabled)
                 if let fallback = d.stats.lastFallback {
@@ -262,6 +264,31 @@ struct SpikeView: View {
                 Label(diagnosing ? "옮기는 중…" : "지금 다시 옮기기", systemImage: "arrow.triangle.2.circlepath")
             }
             .disabled(diagnosing)
+            let lostWithFile = diagnostics.map { $0.counts.lostWithLibraryFile + $0.counts.lostWithOtherFile } ?? 0
+            Button {
+                confirmingRestore = true
+            } label: {
+                Label("복구(사본을 사진 앱에 다시 저장)", systemImage: "arrow.uturn.backward")
+            }
+            .disabled(diagnosing || lostWithFile == 0)
+            .confirmationDialog("사본을 사진 앱에 다시 저장할까요?", isPresented: $confirmingRestore,
+                                titleVisibility: .visible) {
+                Button("최대 \(AssetAdopter.restoreLimit)개 다시 저장") {
+                    Task {
+                        diagnosing = true
+                        let n = await AssetAdopter.restoreLost(store: store)
+                        restoreResult = "\(n)개 다시 저장함"
+                        await refreshDiagnostics()
+                        diagnosing = false
+                    }
+                }
+                Button("취소", role: .cancel) {}
+            } message: {
+                Text("사진 앱에서 사라진 기록 \(lostWithFile)개 중 최대 \(AssetAdopter.restoreLimit)개를 이 기기에 남은 사본으로 사진 앱에 다시 저장합니다. 사진 앱에서 일부러 지운 사진이면 다시 생겨요.")
+            }
+            if let restoreResult {
+                Text("복구: \(restoreResult)").font(.caption2).foregroundStyle(.secondary)
+            }
             Button("다시 세기") { Task { await refreshDiagnostics() } }
         } header: {
             Text("사진 앱 옮기기 진단")

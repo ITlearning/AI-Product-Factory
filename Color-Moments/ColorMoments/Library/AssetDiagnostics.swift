@@ -9,7 +9,7 @@ enum AssetDiagnostics {
         var fileOnly = 0
         /// ② ①인데 파일 없음 — 되살릴 원본이 없다
         var fileOnlyMissing = 0
-        /// ③ assetID 있음·에셋 없음·파일 있음 — 다시 입양 대상
+        /// ③ assetID 있음·에셋 없음·파일 있음 — 정리가 지울 대상(수동 복구로만 되살린다)
         var lostWithLibraryFile = 0
         var lostWithOtherFile = 0
         /// ④ assetID 있음·에셋 없음·파일 없음
