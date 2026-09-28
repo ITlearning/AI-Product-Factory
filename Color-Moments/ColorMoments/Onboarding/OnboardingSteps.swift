@@ -298,7 +298,7 @@ struct ArrivalAskOverlay: View {
 
     var body: some View {
         ZStack {
-            Tone.base.ignoresSafeArea()
+            SceneBackdrop(hexes: BackdropPalette.sourceHexes(store: store, gifts: gifts))
             VStack(spacing: 0) {
                 Spacer().frame(height: 52)
                 ArrivalStep(store: store, closures: closures, gifts: gifts, answered: {})

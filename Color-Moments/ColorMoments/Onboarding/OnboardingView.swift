@@ -42,7 +42,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            Tone.base.ignoresSafeArea()
+            SceneBackdrop(hexes: BackdropPalette.sourceHexes(store: store, gifts: gifts))
             VStack(spacing: 0) {
                 topBar
                 ZStack {
@@ -56,6 +56,7 @@ struct OnboardingView: View {
                 .clipped()
             }
         }
+        .environment(\.onboardingScenesPaused, ceremonyDay != nil || pickingLibrary)
         .contentShape(Rectangle())
         .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { v in
             guard abs(v.translation.width) > abs(v.translation.height) * 1.5 else { return }

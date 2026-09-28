@@ -6,15 +6,20 @@ public enum Tone {
 
     public static let pure = Color.black
 
-    public static let primary = Color.white.opacity(0.92)
+    public static let primaryAlpha = 0.92
+    public static let primary = Color.white.opacity(primaryAlpha)
 
-    public static let secondary = Color.white.opacity(0.64)
+    public static let secondaryAlpha = 0.64
+    public static let secondary = Color.white.opacity(secondaryAlpha)
 
     public static let tertiary = Color.white.opacity(0.48)
 
     public static let hairline = Color.white.opacity(0.24)
 
     public static let amber = Color(red: 1, green: 0xD6 / 255, blue: 0x40 / 255)
+
+    /// 온보딩 배경 — 받은 조약돌이 없을 때의 따뜻한 중간 톤(어둡게 눌러 쓴다).
+    public static let backdropWarm = ["#B98A6A", "#8E6E86", "#C9A27A", "#6F7F8E"]
 }
 
 final class SharedBundleMarker {}
