@@ -66,10 +66,13 @@ struct DayPhotoView: View {
         Group {
             if let image {
                 Image(uiImage: image).resizable().scaledToFit()
+                    .transition(.opacity)
             } else {
                 Color(hex: m.colorHex).aspectRatio(3 / 4, contentMode: .fit)
+                    .overlay { ProgressView().tint(Tone.secondary) }
             }
         }
+        .animation(.easeOut(duration: 0.35), value: image == nil)
         .clipShape(RoundedRectangle(cornerRadius: Shape2.photoWindow, style: .continuous))
         .padding(.horizontal, 14)
     }
