@@ -29,9 +29,7 @@ public struct ShotThumbnail: View {
         .task(id: moment.fileName) {
             let m = moment, name = moment.fileName, px = maxPixel
             guard ShotImage.peek(m, maxPixel: px) == nil else { return }
-            let img = await Task.detached(priority: .userInitiated) {
-                ShotImage.warm(m, maxPixel: px)
-            }.value
+            let img = await ShotImage.warm(m, maxPixel: px)
             guard !Task.isCancelled, name == moment.fileName else { return }
             loaded = img
             loadedName = name

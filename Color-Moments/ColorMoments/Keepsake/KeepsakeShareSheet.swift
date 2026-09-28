@@ -96,7 +96,7 @@ struct KeepsakeShareSheet: View {
         photos = photos.filter { keepIDs.contains($0.key) }
         // 고른 장 먼저 — 양옆은 넘길 때 바로 보이도록 뒤이어.
         for m in [all[i]] + keep.filter({ $0.id != id }) where photos[m.id] == nil {
-            let image = await Task.detached(priority: .userInitiated) { CardExporter.cardPhoto(m) }.value
+            let image = await CardExporter.cardPhoto(m)
             guard !Task.isCancelled else { return }
             photos[m.id] = .some(image)
         }

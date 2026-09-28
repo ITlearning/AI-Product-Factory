@@ -99,14 +99,14 @@ struct DayPhotoView: View {
     }
 
     private func load(_ m: Moment) async {
-        image = await Task.detached(priority: .userInitiated) { ShotImage.full(m) }.value
+        image = await ShotImage.full(m)
     }
 
     private func assignWordIfNeeded(_ m: Moment) async {
         guard m.word == nil else { return }
         var labels = m.labels
         if labels == nil {
-            labels = await Task.detached(priority: .userInitiated) { PhotoLabeler.labels(for: m) }.value
+            labels = await PhotoLabeler.labels(for: m)
             guard let labels else { return } // Vision failed — retry next open, don't stamp a bad guess
             store.setLabels(m.id, labels)
         }

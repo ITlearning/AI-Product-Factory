@@ -3,8 +3,9 @@ import ImageIO
 import UIKit
 
 /// 사진 앱 접근을 대신해주는 구멍 — Shared 는 Photos 를 모른다, 앱 타깃이 꽂는다.
+/// 취소되면 요청을 거두고 nil 을 돌려준다.
 public protocol AssetImageSource: Sendable {
-    func image(assetID: String, maxPixel: CGFloat) -> UIImage?
+    func image(assetID: String, maxPixel: CGFloat) async -> UIImage?
 }
 
 public enum ShotImage {
@@ -18,21 +19,23 @@ public enum ShotImage {
 
     // MARK: - Moment 판 (공개) — assetID 가 있고 assetSource 가 꽂혀 있으면 에셋, 아니면 파일
 
-    public static func full(_ m: Moment) -> UIImage? {
+    public static func full(_ m: Moment) async -> UIImage? {
         if let assetID = m.assetID, let source = assetSource,
-           let img = source.image(assetID: assetID, maxPixel: .greatestFiniteMagnitude) {
+           let img = await source.image(assetID: assetID, maxPixel: .greatestFiniteMagnitude) {
             return img
         }
+        guard !Task.isCancelled else { return nil }
         // 에셋을 못 찾았거나(기기 복원 등으로 assetID 가 어긋남) assetSource 가 아직 안 꽂혔으면
         // 파일로 한 번 더 시도한다 — fileName 은 옛 기록이거나, 아직 지우지 않은 library-* 잔여 파일일 수 있다.
         return full(m.fileName)
     }
 
-    public static func thumbnail(_ m: Moment, maxPixel: CGFloat = 400) -> UIImage? {
+    public static func thumbnail(_ m: Moment, maxPixel: CGFloat = 400) async -> UIImage? {
         if let assetID = m.assetID, let source = assetSource,
-           let img = source.image(assetID: assetID, maxPixel: maxPixel) {
+           let img = await source.image(assetID: assetID, maxPixel: maxPixel) {
             return img
         }
+        guard !Task.isCancelled else { return nil }
         return thumbnail(m.fileName, maxPixel: maxPixel)
     }
 
@@ -41,10 +44,10 @@ public enum ShotImage {
     }
 
     @discardableResult
-    public static func warm(_ m: Moment, maxPixel: CGFloat) -> UIImage? {
+    public static func warm(_ m: Moment, maxPixel: CGFloat) async -> UIImage? {
         let id = cacheID(m)
         if let hit = peek(id, maxPixel: maxPixel) { return hit }
-        guard let img = thumbnail(m, maxPixel: maxPixel) else { return nil }
+        guard let img = await thumbnail(m, maxPixel: maxPixel) else { return nil }
         cache.setObject(img, forKey: key(id, maxPixel),
                         cost: Int(img.size.width * img.size.height * 4))
         return img

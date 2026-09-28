@@ -5,13 +5,14 @@ import UIKit
 /// Shared 의 `AssetImageSource` 를 사진 앱으로 채우는 실제 구현. 앱 타깃에서만 Photos 를 안다.
 final class PhotoAssetSource: AssetImageSource, @unchecked Sendable {
 
-    func image(assetID: String, maxPixel: CGFloat) -> UIImage? {
-        guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil).firstObject else {
+    func image(assetID: String, maxPixel: CGFloat) async -> UIImage? {
+        guard !Task.isCancelled,
+              let asset = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil).firstObject else {
             return nil
         }
 
         let options = PHImageRequestOptions()
-        options.isSynchronous = true
+        options.isSynchronous = false
         options.deliveryMode = .highQualityFormat
         options.isNetworkAccessAllowed = true
         options.resizeMode = .fast
@@ -27,13 +28,88 @@ final class PhotoAssetSource: AssetImageSource, @unchecked Sendable {
             contentMode = .aspectFill
         }
 
-        var image: UIImage?
-        PHImageManager.default().requestImage(
-            for: asset, targetSize: targetSize, contentMode: contentMode, options: options
-        ) { result, _ in
-            image = result
+        let manager = PHImageManager.default()
+        return await ImageRequestBridge.run(
+            start: { deliver in
+                manager.requestImage(for: asset, targetSize: targetSize, contentMode: contentMode,
+                                     options: options) { result, info in
+                    let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                    let cancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+                    let failed = info?[PHImageErrorKey] != nil
+                    // .highQualityFormat 도 드물게 저화질을 먼저 준다 — 저화질이면 기다리고, 취소·실패면 바로 끝낸다.
+                    if degraded && !cancelled && !failed && result != nil { return }
+                    deliver(cancelled ? nil : result)
+                }
+            },
+            cancel: { manager.cancelImageRequest($0) }
+        )
+    }
+}
+
+/// 콜백 한 번짜리 요청을 async 로 — 콜백이 두 번 와도, 취소가 먼저 와도 continuation 은 한 번만 푼다.
+/// 취소되면 요청을 거두고 바로 nil 로 돌아간다(뒤늦은 콜백은 버린다).
+enum ImageRequestBridge {
+
+    static func run<ID: Sendable>(
+        start: (@escaping @Sendable (UIImage?) -> Void) -> ID,
+        cancel: @escaping @Sendable (ID) -> Void
+    ) async -> UIImage? {
+        let box = Box<ID>()
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { (c: CheckedContinuation<UIImage?, Never>) in
+                guard box.install(c) else { return }
+                let id = start { box.finish($0) }
+                if box.setRequest(id) { cancel(id) }
+            }
+        } onCancel: {
+            if let id = box.markCancelled() { cancel(id) }
+            box.finish(nil)
         }
-        return image
+    }
+
+    private final class Box<ID>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<UIImage?, Never>?
+        private var request: ID?
+        private var cancelled = false
+        private var finished = false
+
+        /// 이미 취소됐으면 바로 nil 로 풀고 false — 요청을 시작하지 않는다.
+        func install(_ c: CheckedContinuation<UIImage?, Never>) -> Bool {
+            lock.lock()
+            if cancelled || finished {
+                finished = true
+                lock.unlock()
+                c.resume(returning: nil)
+                return false
+            }
+            continuation = c
+            lock.unlock()
+            return true
+        }
+
+        /// 요청 번호를 남긴다. 그사이 취소가 왔으면 true — 호출부가 거둔다.
+        func setRequest(_ id: ID) -> Bool {
+            lock.lock(); defer { lock.unlock() }
+            request = id
+            return cancelled
+        }
+
+        func markCancelled() -> ID? {
+            lock.lock(); defer { lock.unlock() }
+            cancelled = true
+            return request
+        }
+
+        func finish(_ image: UIImage?) {
+            lock.lock()
+            guard !finished else { lock.unlock(); return }
+            finished = true
+            let c = continuation
+            continuation = nil
+            lock.unlock()
+            c?.resume(returning: image)
+        }
     }
 }
 

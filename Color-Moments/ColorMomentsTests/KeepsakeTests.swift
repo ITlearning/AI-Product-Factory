@@ -120,7 +120,7 @@ final class CardExporterTests: XCTestCase {
         }
     }
 
-    func testPhotoCardFromAssetSourceRendersNonBlank() throws {
+    func testPhotoCardFromAssetSourceRendersNonBlank() async throws {
         let source = FakeAssetSource(image: Self.photo(width: 1600, height: 1200))
         let saved = ShotImage.assetSource
         ShotImage.assetSource = source
@@ -128,7 +128,8 @@ final class CardExporterTests: XCTestCase {
 
         var m = moments[2]
         m.assetID = "fake-asset"
-        let photo = try XCTUnwrap(CardExporter.cardPhoto(m))
+        let fetched = await CardExporter.cardPhoto(m)
+        let photo = try XCTUnwrap(fetched)
         XCTAssertEqual(source.requested, [CardExporter.photoPixels])
         let card = try XCTUnwrap(CardExporter.render(dayKey: "2026-09-23", pebbleMoments: moments, face: m, photo: photo),
                                  "사진 카드가 빈 카드로 걸렸다")
@@ -166,7 +167,7 @@ private final class FakeAssetSource: AssetImageSource, @unchecked Sendable {
 
     init(image: UIImage) { self.image = image }
 
-    func image(assetID: String, maxPixel: CGFloat) -> UIImage? {
+    func image(assetID: String, maxPixel: CGFloat) async -> UIImage? {
         requested.append(maxPixel)
         return image
     }

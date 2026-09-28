@@ -13,9 +13,9 @@ enum CardExporter {
             .flatMap { isBlank($0, region: blankRegion(photo: photo)) ? nil : $0 }
     }
 
-    /// 카드용 사진 — 사진 앱 에셋, 없으면 파일. 받은 기록은 nil(색 면으로 그린다). 메인 밖에서 부른다.
-    static func cardPhoto(_ m: Moment) -> UIImage? {
-        ShotImage.thumbnail(m, maxPixel: photoPixels)
+    /// 카드용 사진 — 사진 앱 에셋, 없으면 파일. 받은 기록은 nil(색 면으로 그린다).
+    static func cardPhoto(_ m: Moment) async -> UIImage? {
+        await ShotImage.thumbnail(m, maxPixel: photoPixels)
     }
 
     static func blankRegion(photo: UIImage?) -> CGRect {
