@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>색 추출 회귀</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 16px; color: #3a2830; background: #fff8f0; }
+  td, th { padding: 4px 10px; text-align: left; }
+  .sw { display: inline-block; width: 18px; height: 18px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+  .ok { color: #1f7a4a; } .bad { color: #b8386a; font-weight: 600; }
+</style>
+</head>
+<body>
+<p>원본 <code>ColorExtractorTests.testSymbolicColorMatchesRecordedValues</code> 와 같은 표 — 채널 차이 3 이하면 통과.
+상위 폴더(AI-Product-Factory)를 정적 서버 루트로 띄워야 원본 픽스처를 읽는다(원본은 읽기만 한다).</p>
+<table id="t"><tr><th>사진</th><th>기대</th><th>웹</th><th>차이</th></tr></table>
+<p id="sum"></p>
+<script type="module">
+import { symbolicColor } from '../js/color.js';
+
+const expected = [
+  ['IMG_2493', '#9D917C'], ['IMG_2788', '#3873B5'], ['IMG_4794', '#496A92'], ['IMG_5005', '#6C6362'],
+  ['IMG_5098', '#8C9788'], ['IMG_5278', '#2A2812'], ['IMG_5354', '#B4B1A7'], ['IMG_5471', '#85847B'],
+  ['IMG_5874', '#B0B7BA'], ['IMG_6233', '#24365F'], ['IMG_6245', '#5E82D6'],
+];
+const ch = (h, i) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+const delta = (a, b) => Math.max(...[0, 1, 2].map((i) => Math.abs(ch(a, i) - ch(b, i))));
+const t = document.getElementById('t');
+let pass = 0;
+const results = [];
+for (const [name, hex] of expected) {
+  const blob = await (await fetch(`../../Color-Moments/ColorMomentsTests/Fixtures/${name}.jpg`)).blob();
+  const bmp = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+  const got = symbolicColor(bmp, bmp.width, bmp.height);
+  const d = delta(got, hex);
+  if (d <= 3) pass++;
+  results.push({ name, hex, got, d });
+  t.insertAdjacentHTML('beforeend', `<tr><td>${name}</td><td><span class="sw" style="background:${hex}"></span>${hex}</td><td><span class="sw" style="background:${got}"></span>${got}</td><td class="${d <= 3 ? 'ok' : 'bad'}">${d}</td></tr>`);
+}
+document.getElementById('sum').textContent = `${pass}/${expected.length} 통과`;
+window.__extractor = { pass, total: expected.length, results };
+</script>
+</body>
+</html>
