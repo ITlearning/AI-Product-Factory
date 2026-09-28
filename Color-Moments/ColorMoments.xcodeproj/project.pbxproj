@@ -142,6 +142,7 @@
 		949E6A04EB1AAF5A89ABF42D /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		94A5AAD5168196D819A1E2B1 /* PhotoLabelerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB99387BD580BB034A37204A /* PhotoLabelerTests.swift */; };
 		951908AFCC6771BD1ED1A17C /* KeepsakeShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F19654907C3A03D6D4487F6 /* KeepsakeShareSheet.swift */; };
+		9545F574956A6D7BD3F037B6 /* OnboardingRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB9FE6755D9C20776E4A17EB /* OnboardingRules.swift */; };
 		97BEEB530BE9186A6F1A872A /* DayTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */; };
 		98852006EFA9EF70BC5E5A9E /* PhotoLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFAD57FEE541A2BCBE917E6 /* PhotoLabeler.swift */; };
 		9A77BBAEF56777997F97B086 /* WordPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4EE32C11490405892AA591 /* WordPicker.swift */; };
@@ -161,6 +162,7 @@
 		A72BCF9D6E87301BA1102FF9 /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		A8B410E526DB99857E8666B2 /* NanumMyeongjo-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */; };
 		A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
+		AC0C35B3AC3700E7493FB7BB /* OnboardingRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA584CF5AC77CB4D9554F70D /* OnboardingRulesTests.swift */; };
 		AE0857AF5EDACD9DBF05DC32 /* GiftSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CECA91205032542A8E6CBAD /* GiftSchedule.swift */; };
 		AE398008B7E64F3E92398B36 /* OnboardingGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */; };
 		AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0539FB03BB33151F171D2BD /* HomeShell.swift */; };
@@ -372,6 +374,7 @@
 		9F19654907C3A03D6D4487F6 /* KeepsakeShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepsakeShareSheet.swift; sourceTree = "<group>"; };
 		A0A48C2B255FB6B7DFA973C5 /* words.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = words.json; sourceTree = "<group>"; };
 		A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreLoadTests.swift; sourceTree = "<group>"; };
+		AA584CF5AC77CB4D9554F70D /* OnboardingRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingRulesTests.swift; sourceTree = "<group>"; };
 		ACD34409978D5C9CDE7304E7 /* WordList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordList.swift; sourceTree = "<group>"; };
 		ACF0FEAA69BCAAE696688328 /* WidgetSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotTests.swift; sourceTree = "<group>"; };
 		B180428138319F72B026C570 /* PebbleNameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNameTests.swift; sourceTree = "<group>"; };
@@ -416,6 +419,7 @@
 		F941673D190732D3ADB0055C /* ShotThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotThumbnail.swift; sourceTree = "<group>"; };
 		FACCB0D6CE5A9643C54DF3DB /* AsyncGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncGate.swift; sourceTree = "<group>"; };
 		FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftScheduleTests.swift; sourceTree = "<group>"; };
+		FB9FE6755D9C20776E4A17EB /* OnboardingRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingRules.swift; sourceTree = "<group>"; };
 		FD91667DFE3E8160A212B1DA /* CloudIDMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudIDMapper.swift; sourceTree = "<group>"; };
 		FFFAD57FEE541A2BCBE917E6 /* PhotoLabeler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLabeler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -547,6 +551,7 @@
 				77CBA56139EDB549235ABCB2 /* MemoriesTests.swift */,
 				6CB97C7E8769569A500FCFF1 /* MomentMergeTests.swift */,
 				B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */,
+				AA584CF5AC77CB4D9554F70D /* OnboardingRulesTests.swift */,
 				B180428138319F72B026C570 /* PebbleNameTests.swift */,
 				BE9BFF0980144C315646D9E5 /* PebbleRenderTests.swift */,
 				E79F2C0C75680FBE51A5A26C /* PebbleSilhouetteTests.swift */,
@@ -587,6 +592,14 @@
 				D0844BACDE0CCD29DEBE8DAC /* Frameworks */,
 				57A9638C65291DC60DDCCA01 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		72A219C7C6C24FA690620F65 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				FB9FE6755D9C20776E4A17EB /* OnboardingRules.swift */,
+			);
+			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		81F56E8EE6123F5ADAE40B58 /* Shared */ = {
@@ -734,6 +747,7 @@
 				1D525796B906EE56730E76C2 /* Capture */,
 				655F8750105E7B8477772151 /* Keepsake */,
 				BDD818AF0CC95296C53EAD23 /* Library */,
+				72A219C7C6C24FA690620F65 /* Onboarding */,
 				9C03CCFAB58103589012E7FB /* Sync */,
 			);
 			path = ColorMoments;
@@ -1004,6 +1018,7 @@
 				109FF5C751CBDCD455979AD7 /* MemoriesTests.swift in Sources */,
 				A34E2A2A8AF2BCCDCCE21452 /* MomentMergeTests.swift in Sources */,
 				8AFDFD1FC5C8C602F84B0EBB /* OnboardingGiftTests.swift in Sources */,
+				AC0C35B3AC3700E7493FB7BB /* OnboardingRulesTests.swift in Sources */,
 				12C3CD61E7A606425EFD41CA /* PebbleNameTests.swift in Sources */,
 				307336BE9B12FD503EBF66EC /* PebbleRenderTests.swift in Sources */,
 				294A77897542943DC92B2BE2 /* PebbleSilhouetteTests.swift in Sources */,
@@ -1077,6 +1092,7 @@
 				50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */,
 				2B4617290F37676DF89566DF /* MomentMerge.swift in Sources */,
 				40B9D26FE9CD8258E04D8053 /* OnboardingGift.swift in Sources */,
+				9545F574956A6D7BD3F037B6 /* OnboardingRules.swift in Sources */,
 				79D65BD202CFDFFD16EB6354 /* PebbleCard.swift in Sources */,
 				1BA230406A06170D47C94E8E /* PebbleName.swift in Sources */,
 				F1CEB3009284EB172D1766E8 /* PebbleView.swift in Sources */,
