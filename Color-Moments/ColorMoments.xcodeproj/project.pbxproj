@@ -66,6 +66,7 @@
 		34991A672B219A9EF99F78D8 /* DayStoreLoadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */; };
 		37BEA1D1B07AEF6FF452A7E3 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		38CA87D9341976C98CBA90ED /* ColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */; };
+		39247208574B16CCDC024E57 /* PhotoSuggester.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD970EDA69058A0E687ACA1E /* PhotoSuggester.swift */; };
 		39421DA397F79B0CEBD66E06 /* CaptureInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACF53F5E6B06B0DF394CC92 /* CaptureInbox.swift */; };
 		3B621E81F1788754521FF3EA /* AsyncGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACCB0D6CE5A9643C54DF3DB /* AsyncGate.swift */; };
 		3CDC3B977191BC7C08488E35 /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
@@ -401,6 +402,7 @@
 		D7284FE09B31C6D29E4790FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D9C7A51085814AAD190D567A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStore.swift; sourceTree = "<group>"; };
+		DD970EDA69058A0E687ACA1E /* PhotoSuggester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSuggester.swift; sourceTree = "<group>"; };
 		DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
 		E016D510A0FA71B454E57DF6 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 		E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoContext.swift; sourceTree = "<group>"; };
@@ -598,6 +600,7 @@
 			isa = PBXGroup;
 			children = (
 				FB9FE6755D9C20776E4A17EB /* OnboardingRules.swift */,
+				DD970EDA69058A0E687ACA1E /* PhotoSuggester.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -1099,6 +1102,7 @@
 				1F708EB7D0F030E7D61A9217 /* PhotoAssets.swift in Sources */,
 				EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */,
 				98852006EFA9EF70BC5E5A9E /* PhotoLabeler.swift in Sources */,
+				39247208574B16CCDC024E57 /* PhotoSuggester.swift in Sources */,
 				13113400A994950BF4DBE791 /* ShotImage.swift in Sources */,
 				20BA6C3D955339FFEE5D1C78 /* ShotStore.swift in Sources */,
 				9EB023C629B1882BE6E7995C /* ShotThumbnail.swift in Sources */,
