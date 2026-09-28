@@ -39,6 +39,8 @@ public final class CoalescingWriter: @unchecked Sendable {
     private let queue: DispatchQueue
     private let lock = NSLock()
     private var pending: (@Sendable () -> Data?)?
+    /// 마지막 쓰기가 끝내 실패했는지 — 큐 위에서만 읽고 쓴다.
+    private var lastWriteFailed = false
 
     private init(url: URL) {
         self.url = url
@@ -64,8 +66,13 @@ public final class CoalescingWriter: @unchecked Sendable {
     }
 
     /// 밀린 쓰기까지 끝날 때까지 기다린다 — 앱이 background 로 갈 때·같은 파일을 다시 읽기 전에.
-    public func flush() {
-        queue.sync { drain() }
+    /// false 면 마지막 쓰기가 디스크에 닿지 못했다 — 되돌릴 수 없는 일(파일 삭제 등)은 하지 않는다.
+    @discardableResult
+    public func flush() -> Bool {
+        queue.sync {
+            drain()
+            return !lastWriteFailed
+        }
     }
 
     /// 밀린 쓰기가 디스크에 닿은 뒤 같은 큐에서 work 를 돌린다 — 다른 파일이 이 파일보다 먼저 남으면 안 될 때.
@@ -86,8 +93,10 @@ public final class CoalescingWriter: @unchecked Sendable {
         guard let make, let data = make() else { return }
         do {
             try data.write(to: url, options: .atomic)
+            lastWriteFailed = false
         } catch {
-            try? data.write(to: url, options: .atomic)
+            lastWriteFailed = (try? data.write(to: url, options: .atomic)) == nil
+            if lastWriteFailed { print("CoalescingWriter: \(url.lastPathComponent) 쓰기 실패 \(error)") }
         }
     }
 }

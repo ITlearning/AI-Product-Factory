@@ -70,6 +70,28 @@ final class CoalescingWriterTests: XCTestCase {
         XCTAssertEqual(begun.get(), released.get(), "붙잡은 만큼 놓아야 한다 — 안 놓으면 시스템이 앱을 죽인다")
     }
 
+    func testFlushReportsFailedWriteUntilNextSuccess() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nodir-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
+        let writer = CoalescingWriter.forFile(dir.appendingPathComponent("x.json"))
+        writer.write { Data("A".utf8) }
+        XCTAssertFalse(writer.flush(), "폴더가 없어 못 썼다 — 호출부가 파일을 지우면 안 된다")
+        XCTAssertFalse(writer.flush(), "밀린 게 없어도 마지막 실패는 그대로 알린다")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        writer.write { Data("B".utf8) }
+        XCTAssertTrue(writer.flush())
+    }
+
+    @MainActor
+    func testFlushAfterLoadIsFalseWhenWriteFails() async {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nodir-\(UUID().uuidString)")
+        let store = DayStore(fileURL: dir.appendingPathComponent("days.json"),
+                             closures: DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        store.add(Moment(capturedAt: Date(), colorHex: "#112233", fileName: "a.jpg", source: .app))
+        let written = await store.flushAfterLoad()
+        XCTAssertFalse(written)
+    }
+
     func testDefaultExpiringActivityReleases() {
         let release = CoalescingWriter.expiringActivity("test")
         release()

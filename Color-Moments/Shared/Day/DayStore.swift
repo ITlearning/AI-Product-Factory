@@ -723,14 +723,18 @@ public final class DayStore {
 
     static func encodeDate(_ date: Date) -> String { fractionalDate.string(from: date) }
 
-    /// 밀린 저장을 지금 끝낸다 — 앱이 background 로 갈 때 부른다.
-    public func flush() { writer.flush() }
+    /// 밀린 저장을 지금 끝낸다 — 앱이 background 로 갈 때 부른다. false 면 마지막 쓰기가 실패했다.
+    @discardableResult
+    public func flush() -> Bool { writer.flush() }
 
     /// 로드 전이면 로드(미뤄 둔 저장)까지 기다린 뒤 flush — 파일 삭제·세션 무효화처럼 되돌릴 수 없는 일 직전에.
+    /// true 일 때만 지금 기록이 디스크에 있다(쓰기 실패·저장 막힘이면 false) — 되돌릴 수 없는 일은 true 일 때만.
     @MainActor
-    public func flushAfterLoad() async {
+    @discardableResult
+    public func flushAfterLoad() async -> Bool {
         await waitUntilLoaded()
-        flush()
+        let written = flush()
+        return written && !isSaveBlocked
     }
 
     /// 지금까지의 저장이 디스크에 닿은 뒤 work 를 돌린다(메인을 막지 않는다).

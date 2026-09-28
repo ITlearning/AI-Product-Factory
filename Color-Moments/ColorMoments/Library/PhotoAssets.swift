@@ -300,11 +300,10 @@ enum AssetAdopter {
             print("AssetAdopter: \(current.id) 는 저장 중 이미 입양돼 파일을 지우지 않음")
             return false
         }
-        // 파일이 유일한 사본이던 기록 — 입양이 디스크에 닿기 전에 지우면 kill 뒤 기록이 빈 파일을 가리킨다.
-        await store.flushAfterLoad()
         stats.adoptSucceeded += 1
-        // 저장이 막혀 있으면 입양이 디스크에 없다 — 파일을 남겨야 다음 실행에 다시 입양된다.
-        guard !store.isSaveBlocked else { return true }
+        // 파일이 유일한 사본이던 기록 — 입양이 디스크에 닿기 전에 지우면 kill 뒤 기록이 빈 파일을 가리킨다.
+        // 쓰기 실패·저장 막힘이면 파일을 남겨야 다음 실행에 다시 입양된다.
+        guard await store.flushAfterLoad() else { return true }
         env.removeFile(fileURL)
         return true
     }
@@ -343,9 +342,8 @@ enum AssetAdopter {
             print("AssetAdopter: \(current.id) 는 다시 저장하는 사이 바뀌어 파일을 지우지 않음")
             return false
         }
-        await store.flushAfterLoad()
         stats.readoptSucceeded += 1
-        guard !store.isSaveBlocked else { return true }
+        guard await store.flushAfterLoad() else { return true }
         env.removeFile(fileURL)
         return true
     }

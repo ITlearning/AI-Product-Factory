@@ -93,7 +93,10 @@ final class CaptureInbox {
         // 그래야 다음 앱 실행에서 같은 세션이 재전달돼도(무효화가 실패했거나 타이밍이 겹친 경우)
         // add 의 fileName/originalName 중복 판정이 입양 시도보다 먼저 걸린다.
         // 무효화는 되돌릴 수 없다 — 방금 넣은 기록이 디스크에 닿은 뒤에 끊는다.
-        await dayStore?.flushAfterLoad()
+        if let dayStore, !(await dayStore.flushAfterLoad()) {
+            note("기록 쓰기 실패 — 원본을 무효화하지 않음(다음 실행에 다시 들여옴)")
+            return
+        }
         do {
             try await LockedCameraCaptureManager.shared.invalidateSessionContent(at: url)
             note("원본 무효화 완료")
