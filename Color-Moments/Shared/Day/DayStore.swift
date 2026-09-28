@@ -394,6 +394,8 @@ public final class DayStore {
             let resolved = reassetted(all[i], assetID: assetID)
             ops.append(.remove(all[i])); ops.append(.insert(resolved))
             all[i] = resolved
+            // 방금 assetID 가 붙었다 — 이 자산을 그리던 칸(색 면으로 남아 있었을 수 있는)이 다시 요청하도록.
+            ShotImage.generation.bump(assetID: assetID)
         }
         guard !ops.isEmpty else { return }
         patchIndex(since: before, ops: ops)
@@ -408,6 +410,7 @@ public final class DayStore {
             guard let i = index[id], let old = all[i].assetID, old != assetID else { continue }
             all[i] = reassetted(all[i], assetID: assetID)
             changed = true
+            ShotImage.generation.bump(assetID: assetID)
         }
         if changed { save() }
     }

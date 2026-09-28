@@ -202,6 +202,8 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
     func photoLibraryDidChange(_ changeInstance: PHChange) {
         Task { @MainActor [weak self] in
             guard let self else { return }
+            // 어떤 자산이 바뀐 건지는 모른다 — iCloud 사진이 막 내려왔을 수도 있으니 뜬 화면에 다시 물어보라고만 알린다.
+            ShotImage.generation.bump()
             // 제한 접근에서는 선택 해제도 removedObjects 로 온다 — 지운 게 아니므로 전체 접근일 때만 반영.
             // 직접 지우지 않고 reconcile() 을 부른다 — cloudID 재조회·상한 판정을 한 곳에서만 한다.
             if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized,
