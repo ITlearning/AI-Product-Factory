@@ -1,4 +1,5 @@
 import CoreLocation
+import ImageIO
 import Photos
 import UIKit
 
@@ -196,15 +197,32 @@ enum AssetSaver {
     }
 
     /// 찍은 시각이 같고 최근 1분 안에 생긴(바뀐) 사진 — 실패로 보인 저장이 실제로 남긴 것.
-    static func recentAsset(creationDate: Date, since: Date) -> String? {
+    /// 같은 초에 시스템 카메라로 찍은 남의 사진을 가져가지 않게 픽셀 크기까지 맞춰 본다(가로·세로 뒤바뀜 허용).
+    static func recentAsset(creationDate: Date, since: Date, pixelSize: CGSize?) -> String? {
         let options = PHFetchOptions()
         // 사진 앱은 시각을 잘라 저장할 수 있다 — 정확히 같다 대신 ±1초.
         options.predicate = NSPredicate(format: "creationDate >= %@ AND creationDate <= %@ AND modificationDate >= %@",
                                         creationDate.addingTimeInterval(-1) as NSDate,
                                         creationDate.addingTimeInterval(1) as NSDate, since as NSDate)
         options.sortDescriptors = [NSSortDescriptor(key: "modificationDate", ascending: false)]
-        options.fetchLimit = 1
-        return PHAsset.fetchAssets(with: .image, options: options).firstObject?.localIdentifier
+        options.fetchLimit = 5
+        guard let size = pixelSize else { return nil }
+        var match: String?
+        PHAsset.fetchAssets(with: .image, options: options).enumerateObjects { a, _, stop in
+            let w = CGFloat(a.pixelWidth), h = CGFloat(a.pixelHeight)
+            if (w == size.width && h == size.height) || (w == size.height && h == size.width) {
+                match = a.localIdentifier; stop.pointee = true
+            }
+        }
+        return match
+    }
+
+    static func pixelSize(of url: URL) -> CGSize? {
+        guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+              let w = props[kCGImagePropertyPixelWidth] as? CGFloat,
+              let h = props[kCGImagePropertyPixelHeight] as? CGFloat else { return nil }
+        return CGSize(width: w, height: h)
     }
 
     static func save(fileURL: URL, creationDate: Date, location: CLLocation?) async -> Report {
@@ -229,7 +247,7 @@ enum AssetSaver {
                     $0.addResource(with: .photo, data: jpeg, options: nil)
                 }
             }),
-        ], findRecent: { recentAsset(creationDate: creationDate, since: since) })
+        ], findRecent: { recentAsset(creationDate: creationDate, since: since, pixelSize: pixelSize(of: fileURL)) })
     }
 
     // 재인코딩본엔 원본 EXIF 가 없다 — 찍은 시각·장소는 늘 요청에 직접 적는다.
@@ -365,8 +383,8 @@ enum AssetAdopter {
         let found = await env.existing(ids)
 
         // 사진첩에서 담은 옛 사본은 이미 assetID 가 있어 에셋으로 그려진다 — 남은 파일만 고아라 지운다.
-        // 단, 그 assetID 가 실제로 사진 앱에서 찾아질 때만 지운다. 못 찾으면(기기 복원 등으로 assetID 가
-        // 어긋난 경우) 파일을 남긴다 — ShotImage 가 에셋을 못 찾으면 파일로 폴백해 계속 그려진다.
+        // 단, 그 assetID 가 실제로 사진 앱에서 찾아질 때만 여기서 지운다. 못 찾으면 여기선 두고 정리(AssetReconciler)가
+        // 「사진 앱에서 지운 것」으로 기록과 함께 지운다(2026-09-28 Tabber 결정 — 사본으로 되살리지 않는다).
         // 사본이 아예 없는 fileBacked 파일(assetID == nil)은 여기서 지우지 않는다 — 반드시 adopt 를 거쳐 저장한 뒤에만 지운다.
         for m in snapshot where m.fileName.hasPrefix("library-") && m.assetID.map(found.contains) == true {
             env.removeFile(ShotImage.url(m.fileName))
