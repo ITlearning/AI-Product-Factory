@@ -42,6 +42,7 @@
 		2106F212ED450D8F5C0130AB /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
 		222B37199099F7A940817E14 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
 		270CAD891873FBDB57862C11 /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
+		2776BED233E8B1FDCD4FBC6D /* CatchUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F205E2DDC888B76CB362D3 /* CatchUp.swift */; };
 		27984D8E5256CDD497E302CA /* DayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */; };
 		27C5EAD62A7776F63166FB51 /* ShotImageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C5D16CF875C68C5FD50755 /* ShotImageTests.swift */; };
 		28F26F75652070839EAEC48C /* DayClosures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349DC3F413BF9EC93E6C0C60 /* DayClosures.swift */; };
@@ -82,6 +83,7 @@
 		514505456085E71117B1CB61 /* HandfulView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98A134A4F6BE326D43F6C9AB /* HandfulView.swift */; };
 		53FC9FB6BA05FAAB48AF84DC /* DayClosures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349DC3F413BF9EC93E6C0C60 /* DayClosures.swift */; };
 		559AA75241F4C7C05F596871 /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
+		5614CA587EEB5764D1EFBFF2 /* CatchUpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968F502570F6DB221F4BBB06 /* CatchUpTests.swift */; };
 		598A255826789B22B6C05C2D /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
 		59F0C1E84E0A9E36B6A7FF64 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		5C46EE00CA3DADB1F2965E39 /* GiftScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */; };
@@ -350,7 +352,9 @@
 		915F51F76D8105385A924494 /* SpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpikeView.swift; sourceTree = "<group>"; };
 		926BDBAFE04F7B17464F627E /* DayTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimeline.swift; sourceTree = "<group>"; };
 		927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeCeremony.swift; sourceTree = "<group>"; };
+		93F205E2DDC888B76CB362D3 /* CatchUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchUp.swift; sourceTree = "<group>"; };
 		953A1415A221B2ED1198C5E8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		968F502570F6DB221F4BBB06 /* CatchUpTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatchUpTests.swift; sourceTree = "<group>"; };
 		98A134A4F6BE326D43F6C9AB /* HandfulView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandfulView.swift; sourceTree = "<group>"; };
 		98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingGift.swift; sourceTree = "<group>"; };
 		9D560E148CF707BADEB351E9 /* DayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreTests.swift; sourceTree = "<group>"; };
@@ -507,6 +511,7 @@
 				1281321FBB1F3353036C3B6B /* ArrivalsTests.swift */,
 				08DC1AC8E491F5D81CA2D80E /* AssetReconcilerTests.swift */,
 				6B08C254EE7734793A5D983D /* BulkReceivePerformanceTests.swift */,
+				968F502570F6DB221F4BBB06 /* CatchUpTests.swift */,
 				547A7E4D2CDA31CFFB9F1A84 /* ChunkedApplyTests.swift */,
 				8DF99FB450EAE23B687B3D6F /* CoalescingWriterTests.swift */,
 				B3676D77CA8F72C6175CC066 /* ColorExtractorTests.swift */,
@@ -670,6 +675,7 @@
 				D9C7A51085814AAD190D567A /* AppDelegate.swift */,
 				11362570D9E4DD826EDC96B0 /* ArrivalNotice.swift */,
 				7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */,
+				93F205E2DDC888B76CB362D3 /* CatchUp.swift */,
 				41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */,
 				2407ADFA49967AECDDB4BDC8 /* FirstRunOverlay.swift */,
 				F0539FB03BB33151F171D2BD /* HomeShell.swift */,
@@ -958,6 +964,7 @@
 				9047EFA053684284BB0879F8 /* ArrivalsTests.swift in Sources */,
 				1C168A0124D91CA852713BBF /* AssetReconcilerTests.swift in Sources */,
 				748224A3F99B2F1DB6C87D1F /* BulkReceivePerformanceTests.swift in Sources */,
+				5614CA587EEB5764D1EFBFF2 /* CatchUpTests.swift in Sources */,
 				C880AD6491173648CF11DAE3 /* ChunkedApplyTests.swift in Sources */,
 				EB1E620E065C68D6A4D9F88C /* CoalescingWriterTests.swift in Sources */,
 				A6B7C20174D02F20249A5B7F /* ColorExtractorTests.swift in Sources */,
@@ -1007,6 +1014,7 @@
 				39421DA397F79B0CEBD66E06 /* CaptureInbox.swift in Sources */,
 				59F0C1E84E0A9E36B6A7FF64 /* CaptureScreen.swift in Sources */,
 				12DA912B4DD7AFA0F13B59FF /* CardExporter.swift in Sources */,
+				2776BED233E8B1FDCD4FBC6D /* CatchUp.swift in Sources */,
 				DE9A46A0F358B2CDCB9B89F9 /* CloudIDMapper.swift in Sources */,
 				0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */,
 				2E6829C3D027ABE7FD401891 /* CoalescingWriter.swift in Sources */,

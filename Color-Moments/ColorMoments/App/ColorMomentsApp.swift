@@ -7,9 +7,10 @@ struct ColorMomentsApp: App {
     @State private var store: DayStore
     @State private var closures: DayClosures
     @State private var inbox = CaptureInbox()
-    @State private var gifts = GiftLog()
+    @State private var gifts: GiftLog
     @State private var reconcilerObserver: AssetReconcilerObserver?
     @State private var sync: CloudSync?
+    @State private var catchUp: CatchUp
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
@@ -20,7 +21,19 @@ struct ColorMomentsApp: App {
         // store 가 같은 closures 인스턴스를 봐야 「마무리하기」가 그 자리에서 반영된다.
         let closures = DayClosures()
         _closures = State(initialValue: closures)
-        _store = State(initialValue: DayStore(closures: closures, loadsInBackground: true))
+        let store = DayStore(closures: closures, loadsInBackground: true)
+        _store = State(initialValue: store)
+        let gifts = GiftLog()
+        _gifts = State(initialValue: gifts)
+        _catchUp = State(initialValue: CatchUp(steps: [
+            {
+                let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                if status == .authorized || status == .limited { await AssetAdopter.adoptAll(store: store) }
+            },
+            { await AssetReconciler.reconcile(store: store) },
+            { await CloudIDMapper.refresh(store: store) },
+            { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) },
+        ]))
     }
 
     var body: some Scene {
@@ -39,18 +52,11 @@ struct ColorMomentsApp: App {
                     inbox.loadExisting()
                     inbox.start()
 
-                    let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-                    if status == .authorized || status == .limited {
-                        await AssetAdopter.adoptAll(store: store)
-                    }
-
-                    await AssetReconciler.reconcile(store: store)
+                    // 로드 직후 입양·정리·위젯까지 한꺼번에 몰리면 첫 화면이 끊긴다 — 첫 차례는 조금 쉬었다 한 줄로(active 전환과 합친다).
+                    await catchUp.run()
                     if reconcilerObserver == nil {
                         reconcilerObserver = AssetReconcilerObserver(store: store)
                     }
-
-                    await CloudIDMapper.refresh(store: store)
-                    await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts)
                 }
                 // 푸시로 잠금 해제 전에 깨어나면 days.json 을 못 읽는다 — 풀리는 순간 다시 읽어야 저장이 풀린다.
                 .onReceive(NotificationCenter.default.publisher(
@@ -66,13 +72,7 @@ struct ColorMomentsApp: App {
                 Task {
                     await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()
-                    let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-                    if status == .authorized || status == .limited {
-                        await AssetAdopter.adoptAll(store: store)
-                    }
-                    await AssetReconciler.reconcile(store: store)
-                    await CloudIDMapper.refresh(store: store)
-                    await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts)
+                    await catchUp.run()
                 }
             case .background:
                 // 저장은 백그라운드 큐에 밀려 있을 수 있다 — 멈추기 전에 끝낸다.
