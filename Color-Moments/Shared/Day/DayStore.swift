@@ -55,6 +55,21 @@ public final class DayStore {
     @ObservationIgnored private var loadWaiters: [CheckedContinuation<Void, Never>] = []
     @ObservationIgnored private var saveDeferred = false
 
+    public enum LoadIssue: Equatable, Sendable {
+        case partial(skipped: Int)
+        case unreadable
+    }
+    /// days.json 을 온전히 못 읽었으면 그 사정. 원본은 corruptBackupURL 로 복사돼 있다.
+    public private(set) var loadIssue: LoadIssue?
+    public private(set) var corruptBackupURL: URL?
+
+    /// 저장을 거부하는 중인지 — 원본 백업이 없거나, 통째로 못 읽었는데 새 기록도 없을 때.
+    public var isSaveBlocked: Bool {
+        guard let loadIssue else { return false }
+        guard corruptBackupURL != nil else { return true }
+        return loadIssue == .unreadable && moments.isEmpty
+    }
+
     // closures 는 기본값을 주지 않는다 — 묵시적으로 .standard 를 공유하면 테스트가 실기기 저장소를 건드린다.
     /// loadsInBackground — 앱 시작용. 디코딩을 메인 밖에서 하고, 끝나면 메인에서 한 번에 채운다.
     public init(fileURL: URL? = nil, closures: DayClosures, loadsInBackground: Bool = false) {
@@ -68,16 +83,17 @@ public final class DayStore {
         isLoaded = false
         let url = self.fileURL
         Task.detached(priority: .userInitiated) { [weak self] in
-            let loaded = (try? Data(contentsOf: url)).map(Self.decodeMoments) ?? []
+            let loaded = Self.readFile(url)
             await MainActor.run { self?.finishLoading(loaded) }
         }
     }
 
     /// 로드 전에 들어온 기록(카메라 등)은 읽은 기록 뒤에 같은 중복 규칙으로 붙인다.
     @MainActor
-    private func finishLoading(_ loaded: [Moment]) {
+    private func finishLoading(_ loaded: Loaded) {
+        adoptIssue(loaded)
         let early = moments
-        var merged = loaded
+        var merged = loaded.moments
         for m in early where !merged.contains(where: {
             $0.id == m.id || $0.fileName == m.fileName || (m.originalName != nil && $0.originalName == m.originalName)
         }) { merged.append(m) }
@@ -401,6 +417,7 @@ public final class DayStore {
 
     /// 이 기기 초기화 전용 — 알리면 다른 기기 기록까지 모두 지워진다.
     public func removeAll() {
+        loadIssue = nil
         moments = []
         save()
         flush()
@@ -419,11 +436,45 @@ public final class DayStore {
     private static let wholeSecondDate = ISO8601DateFormatter()
 
     private func load() {
-        guard let data = try? Data(contentsOf: fileURL) else { return }
-        moments = Self.decodeMoments(data)
+        let loaded = Self.readFile(fileURL)
+        adoptIssue(loaded)
+        moments = loaded.moments
     }
 
-    static func decodeMoments(_ data: Data) -> [Moment] {
+    private func adoptIssue(_ loaded: Loaded) {
+        loadIssue = loaded.issue
+        corruptBackupURL = loaded.backup
+    }
+
+    struct Loaded: Sendable {
+        var moments: [Moment] = []
+        var issue: LoadIssue?
+        var backup: URL?
+    }
+
+    /// 읽다 걸린 게 있으면 어떤 저장보다 먼저 원본을 옆에 복사해 둔다.
+    static func readFile(_ url: URL) -> Loaded {
+        guard let data = try? Data(contentsOf: url) else {
+            // 있는데 못 읽으면(잠금 중 파일 보호 등) 없는 것으로 보고 새로 쓰면 전부 날아간다.
+            return FileManager.default.fileExists(atPath: url.path) ? Loaded(issue: .unreadable) : Loaded()
+        }
+        guard !data.isEmpty else { return Loaded() }
+        let decoded = decodeReport(data)
+        guard let issue = decoded.issue else { return Loaded(moments: decoded.moments) }
+        let stamp = Int(Date().timeIntervalSince1970 * 1000)
+        let backup = url.deletingLastPathComponent().appendingPathComponent("\(url.lastPathComponent).corrupt-\(stamp)")
+        let copied = (try? data.write(to: backup, options: .atomic)) != nil
+        return Loaded(moments: decoded.moments, issue: issue, backup: copied ? backup : nil)
+    }
+
+    static func decodeMoments(_ data: Data) -> [Moment] { decodeReport(data).moments }
+
+    private struct Failable<T: Decodable>: Decodable {
+        let value: T?
+        init(from decoder: Decoder) throws { value = try? T(from: decoder) }
+    }
+
+    static func decodeReport(_ data: Data) -> (moments: [Moment], issue: LoadIssue?) {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { d in
             let c = try d.singleValueContainer()
@@ -434,12 +485,15 @@ public final class DayStore {
             }
             return date
         }
-        let decoded = (try? decoder.decode([Moment].self, from: data)) ?? []
-        return decoded.map { m in
+        guard let items = try? decoder.decode([Failable<Moment>].self, from: data) else { return ([], .unreadable) }
+        let decoded = items.compactMap(\.value)
+        let skipped = items.count - decoded.count
+        let moments = decoded.map { m in
             var m = m
             if m.labels == nil { m.word = nil }
             return m
         }
+        return (moments, skipped > 0 ? .partial(skipped: skipped) : nil)
     }
 
     static func encodeDate(_ date: Date) -> String { fractionalDate.string(from: date) }
@@ -453,6 +507,8 @@ public final class DayStore {
     private func save() {
         // 로드 전 저장은 디스크의 전체 기록을 일부로 덮어쓴다 — 로드 끝에 한 번 쓴다.
         guard isLoaded else { saveDeferred = true; return }
+        // 못 읽은 원본을 빈(또는 일부) 목록으로 덮으면 되돌릴 길이 없다.
+        guard !isSaveBlocked else { return }
         let snapshot = moments
         writer.write { Self.encode(snapshot) }
     }

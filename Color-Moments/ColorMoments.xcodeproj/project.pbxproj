@@ -213,6 +213,7 @@
 		F4F24DB7F05FD86971A0E962 /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */; };
 		F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
+		F7D0586574B35D5D31A02C46 /* DayStoreRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */; };
 		FA88E2179DF699A37AE7FDA4 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
 		FBC024F294753C132ABCD31B /* SystemFieldsCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FCB350488EA3C0C8613C63F /* SystemFieldsCache.swift */; };
 		FC46BEA6E0E7103FDFAD4E28 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
@@ -309,6 +310,7 @@
 		41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMomentsApp.swift; sourceTree = "<group>"; };
 		431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Subset.ttf"; sourceTree = "<group>"; };
 		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
+		4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreRecoveryTests.swift; sourceTree = "<group>"; };
 		503FB3A2F6076A7563C32074 /* ColorMomentsControl.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ColorMomentsControl.entitlements; sourceTree = "<group>"; };
 		526B0FDC22A5B2557DA62A18 /* FramePause.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FramePause.swift; sourceTree = "<group>"; };
 		547A7E4D2CDA31CFFB9F1A84 /* ChunkedApplyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkedApplyTests.swift; sourceTree = "<group>"; };
@@ -502,6 +504,7 @@
 				05C70E667A14B10F8000505A /* DayClosuresTests.swift */,
 				001315A7B5573B9974966AF7 /* DayGradientTests.swift */,
 				A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */,
+				4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */,
 				9D560E148CF707BADEB351E9 /* DayStoreTests.swift */,
 				F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */,
 				219FB2ED514DBE95A9AFAB53 /* Fixtures */,
@@ -948,6 +951,7 @@
 				C6042960F0442084AB0338E3 /* DayClosuresTests.swift in Sources */,
 				3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */,
 				34991A672B219A9EF99F78D8 /* DayStoreLoadTests.swift in Sources */,
+				F7D0586574B35D5D31A02C46 /* DayStoreRecoveryTests.swift in Sources */,
 				1996A6A10339037B3A5CCC8F /* DayStoreTests.swift in Sources */,
 				97BEEB530BE9186A6F1A872A /* DayTimelineTests.swift in Sources */,
 				2D2DCAAA1704F58B8D38A822 /* FontSubsetTests.swift in Sources */,
