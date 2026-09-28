@@ -113,6 +113,7 @@
 		7DF8236D94540E4E4AC11388 /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		8015ACB59A07B863B0AD5348 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
 		80F4FB04FFD483801C03AE38 /* FramePause.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526B0FDC22A5B2557DA62A18 /* FramePause.swift */; };
+		835CDE59A664CBBDFB986590 /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
 		839143816019CFB52E8335B2 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B689D73DBFBD16C7B857686 /* Tokens.swift */; };
 		851F47DC9109F3E17C510A45 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
 		85404B43045C16239CA26FB5 /* ColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */; };
@@ -122,6 +123,7 @@
 		8AFDFD1FC5C8C602F84B0EBB /* OnboardingGiftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */; };
 		8B1F7FBF239684E48BA39B1A /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
 		8F8B15F8CCD32B424B99892B /* WordListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8272505EF16B075931B8224 /* WordListTests.swift */; };
+		9047EFA053684284BB0879F8 /* ArrivalsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1281321FBB1F3353036C3B6B /* ArrivalsTests.swift */; };
 		90B7A542F814159743E818D2 /* words.json in Resources */ = {isa = PBXBuildFile; fileRef = A0A48C2B255FB6B7DFA973C5 /* words.json */; };
 		9175EB1B2C0330E56094383F /* FramePause.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526B0FDC22A5B2557DA62A18 /* FramePause.swift */; };
 		923895A999E487D30889239A /* LibrarySections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */; };
@@ -170,6 +172,7 @@
 		C5345168432CE41677778207 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
 		C551F0362332CF997FF491B8 /* BackgroundHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */; };
 		C6042960F0442084AB0338E3 /* DayClosuresTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C70E667A14B10F8000505A /* DayClosuresTests.swift */; };
+		C60F65BA453B7C15942834E6 /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
 		C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		C6592BFBDEAAB5F814989180 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
 		C6B84EDC7E5B3C86DD325A3C /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
@@ -183,6 +186,7 @@
 		CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		D0232AF91965F3F9595ABB68 /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
+		D5E1E5C4EBF105326E1862DF /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
 		D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */; };
 		D8DACCD04F834BF5660772B8 /* PebbleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39920A44AE81D3E3BD8864A /* PebbleCard.swift */; };
 		DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
@@ -276,6 +280,7 @@
 		0ACF53F5E6B06B0DF394CC92 /* CaptureInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureInbox.swift; sourceTree = "<group>"; };
 		0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySectionsTests.swift; sourceTree = "<group>"; };
 		11362570D9E4DD826EDC96B0 /* ArrivalNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrivalNotice.swift; sourceTree = "<group>"; };
+		1281321FBB1F3353036C3B6B /* ArrivalsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrivalsTests.swift; sourceTree = "<group>"; };
 		14DF86BF8B735F363B7A3449 /* AssetReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetReconciler.swift; sourceTree = "<group>"; };
 		160019A37882F81114DE5A27 /* HomeNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigationTests.swift; sourceTree = "<group>"; };
 		1782AA90AE018A879A1B0885 /* HomeNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigation.swift; sourceTree = "<group>"; };
@@ -286,6 +291,7 @@
 		227C8DF6F16D015FA44EBC49 /* CoalescingWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoalescingWriter.swift; sourceTree = "<group>"; };
 		22EDA0910CC8E79B482D32B2 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
 		2407ADFA49967AECDDB4BDC8 /* FirstRunOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunOverlay.swift; sourceTree = "<group>"; };
+		29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arrivals.swift; sourceTree = "<group>"; };
 		2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordPickerTests.swift; sourceTree = "<group>"; };
 		2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorCaptureIntent.swift; sourceTree = "<group>"; };
 		2CECA91205032542A8E6CBAD /* GiftSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftSchedule.swift; sourceTree = "<group>"; };
@@ -488,6 +494,7 @@
 			isa = PBXGroup;
 			children = (
 				D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */,
+				1281321FBB1F3353036C3B6B /* ArrivalsTests.swift */,
 				08DC1AC8E491F5D81CA2D80E /* AssetReconcilerTests.swift */,
 				547A7E4D2CDA31CFFB9F1A84 /* ChunkedApplyTests.swift */,
 				8DF99FB450EAE23B687B3D6F /* CoalescingWriterTests.swift */,
@@ -588,6 +595,7 @@
 		A367C7D09D3B5E69C8A79847 /* Design */ = {
 			isa = PBXGroup;
 			children = (
+				29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */,
 				3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */,
 				F1ED0B6B00F288E843C5C783 /* DayBlock.swift */,
 				1782AA90AE018A879A1B0885 /* HomeNavigation.swift */,
@@ -878,6 +886,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				835CDE59A664CBBDFB986590 /* Arrivals.swift in Sources */,
 				6A0F51CB079F9D7531B64347 /* BadgeCeremony.swift in Sources */,
 				DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */,
 				76AADA98FD5F2F767CDE36DA /* CaptureScreen.swift in Sources */,
@@ -931,6 +940,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB2A2EFB0C185E4CF5E6A42C /* ArrivalNoticeTests.swift in Sources */,
+				9047EFA053684284BB0879F8 /* ArrivalsTests.swift in Sources */,
 				1C168A0124D91CA852713BBF /* AssetReconcilerTests.swift in Sources */,
 				C880AD6491173648CF11DAE3 /* ChunkedApplyTests.swift in Sources */,
 				EB1E620E065C68D6A4D9F88C /* CoalescingWriterTests.swift in Sources */,
@@ -971,6 +981,7 @@
 			files = (
 				46F2AF21817056E13AD7F919 /* AppDelegate.swift in Sources */,
 				879D785A8FD06689896263E6 /* ArrivalNotice.swift in Sources */,
+				C60F65BA453B7C15942834E6 /* Arrivals.swift in Sources */,
 				60CFD40171F7C16075470127 /* AssetReconciler.swift in Sources */,
 				C551F0362332CF997FF491B8 /* BackgroundHold.swift in Sources */,
 				9350B45953F4B84683162C30 /* BadgeCeremony.swift in Sources */,
@@ -1040,6 +1051,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D5E1E5C4EBF105326E1862DF /* Arrivals.swift in Sources */,
 				FD5B3C99974A94C925D4C1F0 /* BadgeCeremony.swift in Sources */,
 				1DD1FF00D5EDCFB073D97FBE /* CaptureEngine.swift in Sources */,
 				49AF51B739C09C90ABF6DF8B /* CaptureExtension.swift in Sources */,

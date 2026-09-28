@@ -29,6 +29,9 @@ struct HomeView: View {
     // 빈 첫 화면의 "지난 며칠 담기" 제안을 누르면 HomeShell 이 기존 사진첩 담기 화면을 띄운다.
     var onRequestLibraryPicker: () -> Void = {}
 
+    // 카메라·사진첩·시트가 홈을 가리는 동안 true — 새 줄 등장 연출을 걷힐 때까지 미룬다.
+    var holdsArrivals: Bool = false
+
     // 기록이 한 번이라도 생기면 true — 그 뒤엔 사진첩 제안 문구를 다시 보이지 않는다.
     @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
 
@@ -41,6 +44,8 @@ struct HomeView: View {
     // 스크롤이 멈춘 뒤에도 1.2초는 알약 띠를 살려 둔다 — 손을 떼자마자 사라지면 못 잡는다.
     @State private var lingering = false
     @State private var lingerTask: Task<Void, Never>?
+
+    @State private var arrivals = Arrivals()
 
     @State private var pillY: CGFloat = 0
     @State private var scrubMonth: String?
@@ -71,6 +76,36 @@ struct HomeView: View {
     private var lastYearDayKey: String? { Memories.lastYear(today: todayKey, giftedDays: giftedDays) }
 
     private var handfulMonths: Set<String> { Set(Memories.months(giftedDays: giftedDays, today: todayKey)) }
+
+    private static let progressID = "progress"
+
+    // 화면 위→아래 순서의 줄 id — 등장 연출이 새로 생긴 줄을 가려내는 기준.
+    private var appearanceIDs: [String] {
+        var ids: [String] = todayInProgress ? [Self.progressID] : []
+        let handful = handfulMonths
+        var previousMonth: Substring?
+        for key in days {
+            let month = key.prefix(7)
+            if month != previousMonth, handful.contains(String(month)) { ids.append("month-\(month)") }
+            previousMonth = month
+            ids.append(key)
+        }
+        return ids
+    }
+
+    private func noteArrivals(_ ids: [String]) {
+        schedule(arrivals.update(ids: ids, loaded: store.isLoaded, held: holdsArrivals))
+    }
+
+    private func schedule(_ animated: [String]) {
+        guard !animated.isEmpty else { return }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(Arrivals.sweepAfter * 1_000_000_000))
+            arrivals.finish(animated)
+        }
+    }
+
+    private func arrivalPhase(_ id: String) -> Arrivals.Phase { arrivals.phase(id) }
 
     private func giftedPebbleGroups(forMonth month: String) -> [[Moment]] {
         days.filter { $0.hasPrefix(month) && gifts.isGifted($0) }.map { store.pebbleMoments(on: $0) }
@@ -111,6 +146,12 @@ struct HomeView: View {
         .onChange(of: sharingDayKey?.id) { _, value in if value != nil { keepsakePresented = true } }
         .onChange(of: openedMonth?.id) { _, value in if value != nil { keepsakePresented = true } }
         .task { if !store.moments.isEmpty { didOfferLibraryOnboarding = true } }
+        .onAppear { noteArrivals(appearanceIDs) }
+        .onChange(of: appearanceIDs) { _, ids in noteArrivals(ids) }
+        .onChange(of: store.isLoaded) { _, _ in noteArrivals(appearanceIDs) }
+        .onChange(of: holdsArrivals) { _, held in
+            if !held { schedule(arrivals.release(order: appearanceIDs)) }
+        }
         .onChange(of: store.moments.isEmpty) { _, isEmpty in
             if !isEmpty { didOfferLibraryOnboarding = true }
         }
@@ -160,6 +201,7 @@ struct HomeView: View {
                                 // 04시를 넘긴 뒤 눌렀을 때 방금 열린 새 날짜가 열려 버린다.
                                 let capturedDayKey = todayKey
                                 todayProgressBlock(width: blockWidth)
+                                    .arrival(arrivalPhase(Self.progressID)) { arrivals.finish([Self.progressID]) }
                                     .contentShape(Rectangle())
                                     .onTapGesture { open(capturedDayKey) }
                             } else if !todayClosedWithMoments {
@@ -186,10 +228,12 @@ struct HomeView: View {
                                         if hasHeader {
                                             // 위 여백 > 아래 여백 — 머리글이 앞 달 마지막 블록의 캡션처럼 붙지 않게.
                                             monthHandfulHeader(month)
+                                                .arrival(arrivalPhase("month-\(month)")) { arrivals.finish(["month-\(month)"]) }
                                                 .padding(.top, index == 0 ? 0 : 56)
                                                 .id("month-\(month)")
                                         }
                                         dayRow(key, width: blockWidth)
+                                            .arrival(arrivalPhase(key)) { arrivals.finish([key]) }
                                             .contentShape(Rectangle())
                                             .onTapGesture { open(key) }
 

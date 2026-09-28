@@ -63,7 +63,8 @@ struct HomeShell: View {
                          daySheetPresented: $daySheetPresented,
                          keepsakePresented: $keepsakePresented,
                          onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } },
-                         onRequestLibraryPicker: openLibraryPicker)
+                         onRequestLibraryPicker: openLibraryPicker,
+                         holdsArrivals: progress > 0 || libraryCoverUp || daySheetPresented || keepsakePresented)
                     .offset(x: progress * w)
                     .disabled(progress > 0.01)
 
