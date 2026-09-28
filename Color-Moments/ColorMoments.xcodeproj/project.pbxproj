@@ -120,6 +120,7 @@
 		7DF8236D94540E4E4AC11388 /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		7E4CF1AE86D465AE928C5A44 /* ThumbnailLoadingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74311A97D566985BF731BB7F /* ThumbnailLoadingTests.swift */; };
 		8015ACB59A07B863B0AD5348 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
+		805E280E94D34EC2CFA32297 /* AssetDiagnosticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CEE6ECDE3B4A71986BA27EE /* AssetDiagnosticsTests.swift */; };
 		80F4FB04FFD483801C03AE38 /* FramePause.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526B0FDC22A5B2557DA62A18 /* FramePause.swift */; };
 		835CDE59A664CBBDFB986590 /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
 		839143816019CFB52E8335B2 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B689D73DBFBD16C7B857686 /* Tokens.swift */; };
@@ -202,6 +203,7 @@
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
 		D5E1E5C4EBF105326E1862DF /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
 		D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */; };
+		D7F8ADB1DA0E943D1CEA6CAD /* AssetDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A571B3502388E791F90524 /* AssetDiagnostics.swift */; };
 		D8DACCD04F834BF5660772B8 /* PebbleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39920A44AE81D3E3BD8864A /* PebbleCard.swift */; };
 		DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
 		DBB09AAD1137F1515A685A4D /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
@@ -302,6 +304,7 @@
 		160019A37882F81114DE5A27 /* HomeNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigationTests.swift; sourceTree = "<group>"; };
 		1782AA90AE018A879A1B0885 /* HomeNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigation.swift; sourceTree = "<group>"; };
 		19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySections.swift; sourceTree = "<group>"; };
+		1CEE6ECDE3B4A71986BA27EE /* AssetDiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDiagnosticsTests.swift; sourceTree = "<group>"; };
 		1D91C5926BF3700AE2D67318 /* KeepsakeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepsakeTests.swift; sourceTree = "<group>"; };
 		20A09F696F5607382E065E46 /* SyncRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecords.swift; sourceTree = "<group>"; };
 		219FB2ED514DBE95A9AFAB53 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fixtures; path = ColorMomentsTests/Fixtures; sourceTree = SOURCE_ROOT; };
@@ -380,6 +383,7 @@
 		B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingGiftTests.swift; sourceTree = "<group>"; };
 		B3649A8DB3B4FF16005111AC /* Keepsake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keepsake.swift; sourceTree = "<group>"; };
 		B3676D77CA8F72C6175CC066 /* ColorExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractorTests.swift; sourceTree = "<group>"; };
+		B7A571B3502388E791F90524 /* AssetDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDiagnostics.swift; sourceTree = "<group>"; };
 		BB99387BD580BB034A37204A /* PhotoLabelerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLabelerTests.swift; sourceTree = "<group>"; };
 		BDB546AAD2C0C80DB7EF1B50 /* PhotoContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoContextTests.swift; sourceTree = "<group>"; };
 		BDCE9183C112FFB37E007824 /* PebbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleView.swift; sourceTree = "<group>"; };
@@ -525,6 +529,7 @@
 				D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */,
 				1281321FBB1F3353036C3B6B /* ArrivalsTests.swift */,
 				A5A76D592E61169869C59A93 /* AssetAdopterTests.swift */,
+				1CEE6ECDE3B4A71986BA27EE /* AssetDiagnosticsTests.swift */,
 				08DC1AC8E491F5D81CA2D80E /* AssetReconcilerTests.swift */,
 				6B08C254EE7734793A5D983D /* BulkReceivePerformanceTests.swift */,
 				968F502570F6DB221F4BBB06 /* CatchUpTests.swift */,
@@ -681,6 +686,7 @@
 		BDD818AF0CC95296C53EAD23 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				B7A571B3502388E791F90524 /* AssetDiagnostics.swift */,
 				14DF86BF8B735F363B7A3449 /* AssetReconciler.swift */,
 				F38C217645C6BE7612CAB2C8 /* LibraryImporter.swift */,
 				9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */,
@@ -984,6 +990,7 @@
 				BB2A2EFB0C185E4CF5E6A42C /* ArrivalNoticeTests.swift in Sources */,
 				9047EFA053684284BB0879F8 /* ArrivalsTests.swift in Sources */,
 				9E35ACE2ECF46DE3794871E0 /* AssetAdopterTests.swift in Sources */,
+				805E280E94D34EC2CFA32297 /* AssetDiagnosticsTests.swift in Sources */,
 				1C168A0124D91CA852713BBF /* AssetReconcilerTests.swift in Sources */,
 				748224A3F99B2F1DB6C87D1F /* BulkReceivePerformanceTests.swift in Sources */,
 				5614CA587EEB5764D1EFBFF2 /* CatchUpTests.swift in Sources */,
@@ -1033,6 +1040,7 @@
 				46F2AF21817056E13AD7F919 /* AppDelegate.swift in Sources */,
 				879D785A8FD06689896263E6 /* ArrivalNotice.swift in Sources */,
 				C60F65BA453B7C15942834E6 /* Arrivals.swift in Sources */,
+				D7F8ADB1DA0E943D1CEA6CAD /* AssetDiagnostics.swift in Sources */,
 				60CFD40171F7C16075470127 /* AssetReconciler.swift in Sources */,
 				3B621E81F1788754521FF3EA /* AsyncGate.swift in Sources */,
 				C551F0362332CF997FF491B8 /* BackgroundHold.swift in Sources */,

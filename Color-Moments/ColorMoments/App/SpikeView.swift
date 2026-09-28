@@ -9,6 +9,10 @@ struct SpikeView: View {
     @State private var confirmingWipe = false
 
     @State private var previewing = false
+    #if DEBUG
+    @State private var diagnostics: AssetDiagnostics.Snapshot?
+    @State private var diagnosing = false
+    #endif
 
     init(inbox: CaptureInbox, store: DayStore, gifts: GiftLog, closures: DayClosures) {
         self.inbox = inbox
@@ -132,6 +136,10 @@ struct SpikeView: View {
                     }
                 }
 
+                #if DEBUG
+                assetDiagnosticsSection
+                #endif
+
                 Section {
                     Button(role: .destructive) { confirmingWipe = true } label: {
                         Label("전부 지우기", systemImage: "trash")
@@ -178,6 +186,9 @@ struct SpikeView: View {
                     }
                 }
             }
+            #if DEBUG
+            .task { await refreshDiagnostics() }
+            #endif
             .navigationTitle("Gate · 잠금화면 촬영")
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $previewing) {
@@ -209,4 +220,64 @@ struct SpikeView: View {
             Text(text).font(.subheadline)
         }
     }
+
+    #if DEBUG
+    @ViewBuilder
+    private var assetDiagnosticsSection: some View {
+        Section {
+            if let d = diagnostics {
+                let c = d.counts
+                row("권한", AssetDiagnostics.statusText(d.status))
+                row("loadIssue", d.loadIssue.map { "\($0)" } ?? "없음")
+                row("isSaveBlocked", d.isSaveBlocked ? "예" : "아니오")
+                row("전체 기록", "\(d.total)")
+                row("① 파일만·파일 있음", "\(c.fileOnly)")
+                row("② 파일만·파일 없음", "\(c.fileOnlyMissing)")
+                row("③ 에셋 없음·파일 있음 (library-/그 밖)", "\(c.lostWithLibraryFile) / \(c.lostWithOtherFile)")
+                row("④ 에셋 없음·파일 없음", "\(c.lostNoFile)")
+                row("⑤ 에셋 있음·cloudID 없음", "\(c.foundNoCloud)")
+                row("⑥ cloudID 없음 전체", "\(c.noCloud)")
+                row("이번 실행 입양 시도/성공", "\(d.stats.adoptTried)/\(d.stats.adoptSucceeded)")
+                row("이번 실행 다시 입양 시도/성공", "\(d.stats.readoptTried)/\(d.stats.readoptSucceeded)")
+                Text("마지막 저장 실패: \(d.stats.lastFailure?.summary ?? "없음")")
+                    .font(.caption2.monospaced()).textSelection(.enabled)
+                if let fallback = d.stats.lastFallback {
+                    Text("대안으로 성공: \(fallback.summary)")
+                        .font(.caption2.monospaced()).textSelection(.enabled)
+                }
+                ForEach(c.examples, id: \.self) { line in
+                    Text(line).font(.caption2.monospaced()).foregroundStyle(.secondary).textSelection(.enabled)
+                }
+            } else {
+                Text("세는 중…").foregroundStyle(.secondary)
+            }
+            Button {
+                Task {
+                    diagnosing = true
+                    await AssetAdopter.adoptAll(store: store)
+                    await refreshDiagnostics()
+                    diagnosing = false
+                }
+            } label: {
+                Label(diagnosing ? "옮기는 중…" : "지금 다시 옮기기", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(diagnosing)
+            Button("다시 세기") { Task { await refreshDiagnostics() } }
+        } header: {
+            Text("사진 앱 옮기기 진단")
+        }
+    }
+
+    private func row(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title).font(.caption)
+            Spacer()
+            Text(value).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+        }
+    }
+
+    private func refreshDiagnostics() async {
+        diagnostics = await AssetDiagnostics.snapshot(store: store)
+    }
+    #endif
 }
