@@ -58,6 +58,7 @@
 		2C3933EF51B4D3EC2FD3D7C7 /* SceneParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5258FDE46C2C5A5B132F12CE /* SceneParts.swift */; };
 		2C727EDB8CA45364E0477CA6 /* ColorCaptureControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71305FB203F40AC7A2172D6E /* ColorCaptureControl.swift */; };
 		2CA6C72D06C591D64413160C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C0C341B4E32F784A77CC08D /* WidgetKit.framework */; };
+		2CCA67A120B811D482986FE1 /* gowun-ksx1001.txt in Resources */ = {isa = PBXBuildFile; fileRef = AC174529DCE0CC7AD709E79B /* gowun-ksx1001.txt */; };
 		2D2DCAAA1704F58B8D38A822 /* FontSubsetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FA4218B93874BE76730863 /* FontSubsetTests.swift */; };
 		2E6829C3D027ABE7FD401891 /* CoalescingWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227C8DF6F16D015FA44EBC49 /* CoalescingWriter.swift */; };
 		2EB93D8ABBF2916AEEE1F2F1 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953A1415A221B2ED1198C5E8 /* HomeView.swift */; };
@@ -115,6 +116,7 @@
 		6A0F51CB079F9D7531B64347 /* BadgeCeremony.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */; };
 		6A4D2B0604051564D2D1FFA3 /* CoalescingWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227C8DF6F16D015FA44EBC49 /* CoalescingWriter.swift */; };
 		6C99F65B250841163E8552BA /* ReceivedScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2300A98000CD64ED5B65BE1 /* ReceivedScene.swift */; };
+		6CA39F2C860F5EE4C3DBBC9F /* gowun-ksx1001.txt in Resources */ = {isa = PBXBuildFile; fileRef = AC174529DCE0CC7AD709E79B /* gowun-ksx1001.txt */; };
 		6E63B1180625307D2D9020E7 /* GowunDodum-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 22E8B4A3D3D73280C35C4EB3 /* GowunDodum-OFL.txt */; };
 		6F73AD74AAA1F0FCDFC49A50 /* HowToScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C12F80D57140B2EAC08F9BD /* HowToScene.swift */; };
 		7010D21E2960DAB1D241EA53 /* WordPickerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */; };
@@ -145,6 +147,7 @@
 		877E43AAF37024762DCE5DF1 /* ImageRequestBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D562234B79316343C1D670F5 /* ImageRequestBridgeTests.swift */; };
 		879D785A8FD06689896263E6 /* ArrivalNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11362570D9E4DD826EDC96B0 /* ArrivalNotice.swift */; };
 		88DEBB08C5DAE8F2DAB58525 /* HandfulShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5583A72771B7EFB830B260C5 /* HandfulShareSheet.swift */; };
+		8A710B6C590510525CFFD18D /* gowun-ksx1001.txt in Resources */ = {isa = PBXBuildFile; fileRef = AC174529DCE0CC7AD709E79B /* gowun-ksx1001.txt */; };
 		8AFDFD1FC5C8C602F84B0EBB /* OnboardingGiftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */; };
 		8B1F7FBF239684E48BA39B1A /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
 		8C1B32B95A5B015BC08259B5 /* IntroScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE6446ECFB36AA3C48DB549 /* IntroScene.swift */; };
@@ -409,6 +412,7 @@
 		A5A76D592E61169869C59A93 /* AssetAdopterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetAdopterTests.swift; sourceTree = "<group>"; };
 		A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreLoadTests.swift; sourceTree = "<group>"; };
 		AA584CF5AC77CB4D9554F70D /* OnboardingRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingRulesTests.swift; sourceTree = "<group>"; };
+		AC174529DCE0CC7AD709E79B /* gowun-ksx1001.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "gowun-ksx1001.txt"; sourceTree = "<group>"; };
 		ACD34409978D5C9CDE7304E7 /* WordList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordList.swift; sourceTree = "<group>"; };
 		ACF0FEAA69BCAAE696688328 /* WidgetSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotTests.swift; sourceTree = "<group>"; };
 		B180428138319F72B026C570 /* PebbleNameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNameTests.swift; sourceTree = "<group>"; };
@@ -719,6 +723,7 @@
 		AC7AA6BC5EE27D8ADDE47C88 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
+				AC174529DCE0CC7AD709E79B /* gowun-ksx1001.txt */,
 				FC37FA4015A2627C80032174 /* gowun-mini-chars.txt */,
 				2B6B7DB6B065C94A4568E524 /* GowunDodum-Hangul.ttf */,
 				85E74F70575B7C32C600F8C6 /* GowunDodum-Mini.ttf */,
@@ -964,6 +969,7 @@
 				E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */,
 				A041753AF25EE0A48189568C /* NanumMyeongjo-Subset.ttf in Resources */,
 				949E6A04EB1AAF5A89ABF42D /* README.md in Resources */,
+				8A710B6C590510525CFFD18D /* gowun-ksx1001.txt in Resources */,
 				D151122EFFD53DFECF743789 /* gowun-mini-chars.txt in Resources */,
 				CF0F9BAAA1D2412A2B0E61E3 /* subset-chars.txt in Resources */,
 				48DC2D9847C7C2A96BE21B7C /* words.json in Resources */,
@@ -980,6 +986,7 @@
 				C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */,
 				304C4D029F8CB37B61C85F48 /* NanumMyeongjo-Subset.ttf in Resources */,
 				F2C689ACD107EA2CD0F669E4 /* README.md in Resources */,
+				6CA39F2C860F5EE4C3DBBC9F /* gowun-ksx1001.txt in Resources */,
 				840FABD274915AE2D4C6F5A6 /* gowun-mini-chars.txt in Resources */,
 				689F997E07A401BE5FFA343A /* subset-chars.txt in Resources */,
 				E7F3453CCDED443C24380E0B /* words.json in Resources */,
@@ -1003,6 +1010,7 @@
 				270CAD891873FBDB57862C11 /* NanumMyeongjo-OFL.txt in Resources */,
 				A8B410E526DB99857E8666B2 /* NanumMyeongjo-Subset.ttf in Resources */,
 				02B89DF8BE3E0E3688F10090 /* README.md in Resources */,
+				2CCA67A120B811D482986FE1 /* gowun-ksx1001.txt in Resources */,
 				999603B577728CC6CC8BDA0C /* gowun-mini-chars.txt in Resources */,
 				021C81F3EA6698F332E9DD69 /* subset-chars.txt in Resources */,
 				90B7A542F814159743E818D2 /* words.json in Resources */,

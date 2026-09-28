@@ -73,19 +73,22 @@ final class FontSubsetTests: XCTestCase {
 
     func testBundledSansIsRegisteredFromAppBundle() throws {
         XCTAssertTrue(Face.ensureRegistered())
-        XCTAssertNotNil(Bundle.main.url(forResource: "GowunDodum-Hangul", withExtension: "ttf"), "앱엔 한글 전체 판")
+        XCTAssertNotNil(Bundle.main.url(forResource: "GowunDodum-Hangul", withExtension: "ttf"), "앱엔 한글 2,350자 판")
         XCTAssertNil(Bundle.main.url(forResource: "GowunDodum-Mini", withExtension: "ttf"), "앱에 확장용 판이 섞였다")
         XCTAssertNotNil(Bundle.main.url(forResource: "GowunDodum-OFL", withExtension: "txt"), "OFL 라이선스가 번들에 없다")
         _ = try sansFont()
     }
 
-    func testSansCoversEveryHangulSyllable() throws {
+    // KS X 1001 2,350자만 담는다 — 드문 글자(똠·뷁 등)는 iOS 가 그 글자만 시스템 서체로 대신 그린다.
+    func testSansCoversCommonHangulAndAppText() throws {
         let font = try sansFont()
-        for s in ["가", "힣", "뷁", "똠", "쀍", "ㅋ", "A", "7", "·", "「", "」"] {
+        for s in ["가", "힝", "몽", "돌", "ㅋ", "A", "7", "·", "「", "」"] {
             XCTAssertTrue(glyphExists(s.unicodeScalars.first!, in: font), "\(s) 글리프가 없다")
         }
-        let missing = (0xAC00...0xD7A3).compactMap(Unicode.Scalar.init).filter { !glyphExists($0, in: font) }
-        XCTAssertEqual(missing.count, 0, "빠진 한글 음절 \(missing.count)자")
+        let common = try String(contentsOf: Self.fontsDir.appendingPathComponent("gowun-ksx1001.txt"), encoding: .utf8)
+        let missing = common.unicodeScalars.filter { !glyphExists($0, in: font) }
+        XCTAssertEqual(missing.count, 0, "빠진 한글 \(missing.count)자")
+        XCTAssertEqual(common.count, 2350)
     }
 
     // monospacedDigit() 는 tnum 으로 간다 — 서브셋에서 tnum 이 빠지면 시각이 흔들린다.
