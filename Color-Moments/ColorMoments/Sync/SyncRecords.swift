@@ -68,6 +68,24 @@ enum SyncRecords {
                       batchID: (r["batchID"] as? String).flatMap(UUID.init(uuidString:)), cloudID: cloudID)
     }
 
+    /// 받은 레코드를 메인 밖에서 미리 풀어 둔 것 — 메인에서는 사전 넣기와 applyRemote 만 한다.
+    struct Decoded: @unchecked Sendable {
+        var archived: [(recordName: String, data: Data)] = []
+        var moments: [(recordName: String, moment: Moment)] = []
+        var days: [(recordName: String, day: DayState)] = []
+    }
+
+    static func decode(_ records: [CKRecord]) -> Decoded {
+        var out = Decoded()
+        for r in records {
+            let name = r.recordID.recordName
+            out.archived.append((name, SystemFieldsCache.archive(r)))
+            if let m = moment(from: r) { out.moments.append((name, m)) }
+            else if let d = day(from: r) { out.days.append((name, d)) }
+        }
+        return out
+    }
+
     static func fill(_ r: CKRecord, with d: DayState) {
         r["closedAt"] = d.closedAt
         r["gifted"] = d.gifted ? 1 : 0

@@ -142,6 +142,25 @@ public final class DayStore {
         return true
     }
 
+    /// 여러 장을 한 번에 — 저장·알림·화면 갱신이 한 번이다. 중복 규칙은 add 와 같고, 넣은 것만 돌려준다.
+    @discardableResult
+    public func add(contentsOf incoming: [Moment]) -> [Moment] {
+        var names = Set(moments.map(\.fileName))
+        var originals = Set(moments.compactMap(\.originalName))
+        var added: [Moment] = []
+        for m in incoming {
+            guard !names.contains(m.fileName), !(m.originalName.map(originals.contains) ?? false) else { continue }
+            names.insert(m.fileName)
+            if let o = m.originalName { originals.insert(o) }
+            added.append(m)
+        }
+        guard !added.isEmpty else { return [] }
+        moments.append(contentsOf: added)
+        save()
+        notify(added.map { .upsert($0.id) })
+        return added
+    }
+
     public func assignWord(_ id: Moment.ID, _ word: PhotoWord) {
         guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].word == nil else { return }
         moments[i].word = word
@@ -333,6 +352,27 @@ public final class DayStore {
             if moments.count != before { changed = true }
         }
         if changed { save() }
+        return push
+    }
+
+    public static let remoteChunkThreshold = 50
+    public static let remoteChunkSize = 40
+
+    /// 큰 묶음은 40건씩 나눠 넣고 사이에 pause 로 화면을 한 번 그리게 한다. deletes 는 마지막 조각에 — upsert 먼저 규칙 그대로.
+    @MainActor
+    @discardableResult
+    public func applyRemoteInChunks(upserts: [Moment], deletes: Set<Moment.ID>,
+                                    pause: () async -> Void) async -> [StoreChange] {
+        guard upserts.count > Self.remoteChunkThreshold else { return applyRemote(upserts: upserts, deletes: deletes) }
+        var push: [StoreChange] = []
+        var start = 0
+        while start < upserts.count {
+            let end = min(start + Self.remoteChunkSize, upserts.count)
+            let last = end == upserts.count
+            push += applyRemote(upserts: Array(upserts[start..<end]), deletes: last ? deletes : [])
+            start = end
+            if !last { await pause() }
+        }
         return push
     }
 

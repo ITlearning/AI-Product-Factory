@@ -26,11 +26,16 @@ final class SystemFieldsCache {
         return CKRecord(recordType: type, recordID: id)
     }
 
-    func remember(_ r: CKRecord) {
+    func remember(_ r: CKRecord) { remember(Self.archive(r), for: r.recordID.recordName) }
+
+    func remember(_ archived: Data, for recordName: String) { fields[recordName] = archived }
+
+    /// 3,000건에 90ms 가까이 든다 — 받은 묶음은 메인 밖에서 이걸로 굽고 remember(_:for:) 로 넣는다.
+    nonisolated static func archive(_ r: CKRecord) -> Data {
         let coder = NSKeyedArchiver(requiringSecureCoding: true)
         r.encodeSystemFields(with: coder)
         coder.finishEncoding()
-        fields[r.recordID.recordName] = coder.encodedData
+        return coder.encodedData
     }
 
     func forget(_ id: CKRecord.ID) { fields[id.recordName] = nil }

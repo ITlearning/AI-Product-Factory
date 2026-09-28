@@ -39,6 +39,43 @@ final class SyncPerformanceTests: XCTestCase {
         time("g.remember3000") { for r in all { fields.remember(r) } }
     }
 
+    /// 고친 뒤 메인 몫 — 변환·아카이브는 밖에서, 메인은 사전 넣기 + 조각 applyRemote + 쓰기 예약만.
+    /// 조각 사이 쉬는 틈마다 끊어 가장 긴 한 덩어리(프레임을 막는 시간)도 잰다.
+    func testReceiveMainShareAfterOffMainDecode() async {
+        let all = records(3_000)
+        let dir = FileManager.default.temporaryDirectory
+        let url = dir.appendingPathComponent("sf-\(UUID().uuidString).json")
+        let daysURL = dir.appendingPathComponent("days-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url); try? FileManager.default.removeItem(at: daysURL) }
+        let fields = SystemFieldsCache(fileURL: url)
+        let store = DayStore(fileURL: daysURL, closures: DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        store.onLocalChange = { _ in }
+        var total = 0.0, longest = 0.0
+        var mark = CFAbsoluteTimeGetCurrent()
+        func lap() {
+            let ms = (CFAbsoluteTimeGetCurrent() - mark) * 1000
+            total += ms
+            longest = max(longest, ms)
+        }
+        for chunk in stride(from: 0, to: all.count, by: 200) {
+            let batch = Array(all[chunk..<min(chunk + 200, all.count)])
+            let decoded = await Task.detached { SyncRecords.decode(batch) }.value
+            mark = CFAbsoluteTimeGetCurrent()
+            for (name, data) in decoded.archived { fields.remember(data, for: name) }
+            await store.applyRemoteInChunks(upserts: decoded.moments.map(\.moment), deletes: []) {
+                lap()
+                await Task.yield()
+                mark = CFAbsoluteTimeGetCurrent()
+            }
+            fields.persist()
+            lap()
+        }
+        print("measured perf.g.mainShare15x200: \(String(format: "%.1f", total)) ms")
+        print("measured perf.g.longestMainSlice: \(String(format: "%.1f", longest)) ms")
+        XCTAssertEqual(store.moments.count, 3_000)
+        XCTAssertLessThan(longest, 25)
+    }
+
     /// 3,000건을 200건씩 15묶음으로 받을 때 메인에서 쓰는 시간 — 묶음마다 누적된 시스템 필드 전체를 파일로 쓴다.
     func testReceiveFifteenBatchesOfSystemFields() {
         let all = records(3_000)

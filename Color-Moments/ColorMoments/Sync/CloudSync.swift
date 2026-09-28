@@ -94,33 +94,36 @@ final class CloudSync: CKSyncEngineDelegate {
         }
     }
 
-    private func remember(_ r: CKRecord) { systemFields.remember(r) }
-
     private func forget(_ id: CKRecord.ID) { systemFields.forget(id) }
 
     private func persistSystemFields() { systemFields.persist() }
 
     // MARK: 받은 것
 
-    private func apply(modified: [CKRecord], deleted: [CKRecord.ID]) {
+    private func apply(modified: [CKRecord], deleted: [CKRecord.ID]) async {
+        let current = engine
+        let decoded = modified.isEmpty ? SyncRecords.Decoded()
+            : await Task.detached(priority: .userInitiated) { SyncRecords.decode(modified) }.value
+        // 기다리는 사이 계정이 바뀌었으면 버린다 — 새 엔진이 처음부터 다시 받는다.
+        guard engine === current else { return }
         // 이 기기에서 지우고 아직 못 올린 기록을 받은 변경으로 되살리지 않는다.
         let pendingDeletes = Set((engine?.state.pendingRecordZoneChanges ?? []).compactMap {
             if case .deleteRecord(let id) = $0 { id.recordName } else { nil }
         })
-        var upserts: [Moment] = []
+        for (name, data) in decoded.archived { systemFields.remember(data, for: name) }
+        let upserts = decoded.moments.filter { !pendingDeletes.contains($0.recordName) }.map(\.moment)
         var dayChanged = false
-        for r in modified {
-            remember(r)
-            if pendingDeletes.contains(r.recordID.recordName) { continue }
-            if let m = SyncRecords.moment(from: r) { upserts.append(m) }
-            else if let d = SyncRecords.day(from: r) { dayChanged = applyDay(d) || dayChanged }
+        for (name, d) in decoded.days where !pendingDeletes.contains(name) {
+            dayChanged = applyDay(d) || dayChanged
         }
         var deletes = Set<UUID>()
         for id in deleted {
             forget(id)
             if case .moment(let uuid) = SyncRecords.ref(id) { deletes.insert(uuid) }
         }
-        enqueue(store.applyRemote(upserts: upserts, deletes: deletes))
+        let push = await store.applyRemoteInChunks(upserts: upserts, deletes: deletes, pause: FramePause.next)
+        guard engine === current else { return }
+        enqueue(push)
         persistSystemFields()
         if !upserts.isEmpty { Task { await CloudIDMapper.resolveCoalesced(store: store) } }
         if dayChanged || !upserts.isEmpty || !deletes.isEmpty { refreshSurfaces() }
@@ -162,11 +165,25 @@ final class CloudSync: CKSyncEngineDelegate {
 
     // MARK: CKSyncEngineDelegate
 
+    // 받은 묶음 적용이 메인 밖 변환·조각 사이에서 쉬는 동안 다음 이벤트(특히 상태 저장)가 끼어들면
+    // 토큰이 기록보다 먼저 디스크에 남는다 — 이벤트는 이 꼬리에 줄 세워 하나씩 끝낸다.
+    private var eventTail: Task<Void, Never>?
+
     nonisolated func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
-        await handle(event, from: syncEngine)
+        await serially(event, from: syncEngine)
     }
 
-    private func handle(_ event: CKSyncEngine.Event, from syncEngine: CKSyncEngine) {
+    private func serially(_ event: CKSyncEngine.Event, from syncEngine: CKSyncEngine) async {
+        let previous = eventTail
+        let task = Task { @MainActor in
+            await previous?.value
+            await self.handle(event, from: syncEngine)
+        }
+        eventTail = task
+        await task.value
+    }
+
+    private func handle(_ event: CKSyncEngine.Event, from syncEngine: CKSyncEngine) async {
         // 계정이 바뀌어 새 엔진으로 갈아탄 뒤 옛 엔진이 늦게 보낸 이벤트 — 버린 상태를 되살리지 않게 무시한다.
         guard syncEngine === engine else { return }
         switch event {
@@ -201,7 +218,7 @@ final class CloudSync: CKSyncEngineDelegate {
             }
 
         case .fetchedRecordZoneChanges(let e):
-            apply(modified: e.modifications.map(\.record), deleted: e.deletions.map(\.recordID))
+            await apply(modified: e.modifications.map(\.record), deleted: e.deletions.map(\.recordID))
 
         case .sentDatabaseChanges(let e):
             for f in e.failedZoneSaves {
@@ -209,7 +226,12 @@ final class CloudSync: CKSyncEngineDelegate {
             }
 
         case .sentRecordZoneChanges(let e):
-            e.savedRecords.forEach(remember)
+            let saved = e.savedRecords
+            let archived = saved.isEmpty ? [] : await Task.detached(priority: .utility) {
+                saved.map { ($0.recordID.recordName, SystemFieldsCache.archive($0)) }
+            }.value
+            guard syncEngine === engine else { return }
+            for (name, data) in archived { systemFields.remember(data, for: name) }
             e.deletedRecordIDs.forEach(forget)
             for failure in e.failedRecordSaves {
                 let id = failure.record.recordID
@@ -217,7 +239,7 @@ final class CloudSync: CKSyncEngineDelegate {
                 case .serverRecordChanged:
                     guard let server = failure.error.serverRecord else { break }
                     // 합친 결과가 서버와 다를 때만 apply 가 다시 올린다 — 무조건 다시 넣으면 충돌이 끝없이 돈다.
-                    apply(modified: [server], deleted: [])
+                    await apply(modified: [server], deleted: [])
                 case .zoneNotFound:
                     saveZone()
                     forget(id)
