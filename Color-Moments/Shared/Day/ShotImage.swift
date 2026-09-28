@@ -75,7 +75,7 @@ public enum ShotImage {
     }
 
     /// 뜬 채로 못 받았을 때 다시 물어볼 간격 — iCloud 사진이 늦게 내려오는 창.
-    static let retryDelaysNanoseconds: [UInt64] = [2_000_000_000, 5_000_000_000, 15_000_000_000]
+    public static let retryDelaysNanoseconds: [UInt64] = [2_000_000_000, 5_000_000_000, 15_000_000_000]
 
     /// assetID 가 있는데(사진 앱에 있어야 하는데) 못 받았으면 `delays` 만큼 뒤에 다시 시도한다.
     /// 취소되면(뷰가 사라지면) 바로 멈춘다. 캐시에 이미 있으면 warm() 이 그대로 돌려주고 재시도로 안 들어간다.
