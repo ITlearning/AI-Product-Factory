@@ -23,15 +23,17 @@ struct OnboardingText: View {
     let title: String
     var detail: String?
 
+    @Environment(\.onboardingInk) private var ink
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(Face.lineCeremony)
-                .foregroundStyle(Tone.primary)
+                .foregroundStyle(ink.primary)
             if let detail {
                 Text(detail)
                     .font(Face.line)
-                    .foregroundStyle(Tone.secondary)
+                    .foregroundStyle(ink.secondary)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -45,16 +47,18 @@ struct PrimaryAction: View {
     var working = false
     let action: () -> Void
 
+    @Environment(\.onboardingInk) private var ink
+
     var body: some View {
         Button(action: action) {
             ZStack {
                 Text(title).opacity(working ? 0 : 1)
-                if working { ProgressView().tint(Tone.base) }
+                if working { ProgressView().tint(ink.buttonText) }
             }
             .font(Face.lineCeremony)
-            .foregroundStyle(Tone.base)
+            .foregroundStyle(ink.buttonText)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .background(Tone.primary.opacity(enabled ? 1 : 0.4), in: Capsule())
+            .background(ink.buttonFill.opacity(enabled ? 1 : 0.4), in: Capsule())
         }
         .disabled(!enabled || working)
     }
@@ -64,11 +68,13 @@ struct SecondaryAction: View {
     let title: String
     let action: () -> Void
 
+    @Environment(\.onboardingInk) private var ink
+
     var body: some View {
         Button(action: action) {
             Text(title)
                 .font(Face.line)
-                .foregroundStyle(Tone.secondary)
+                .foregroundStyle(ink.secondary)
                 .frame(maxWidth: .infinity, minHeight: Shape2.minTouch)
         }
     }
@@ -416,11 +422,13 @@ struct StartStep: View {
     let onCamera: () -> Void
     let onStart: () -> Void
 
+    @Environment(\.onboardingInk) private var ink
+
     var body: some View {
         OnboardingPage {
             VStack(alignment: .leading, spacing: 0) {
                 Spacer()
-                Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                Text("몽돌").font(Face.wordmark).foregroundStyle(ink.primary)
                 Spacer().frame(height: 14)
                 OnboardingText(title: "준비됐어요", detail: "오늘 담은 것은 자정에 조약돌이 돼요.")
                 Spacer().frame(height: 36)

@@ -31,6 +31,11 @@ enum BackdropPalette {
         tones(hexes) { h, s, v in hsv(h, min(s * 0.55, 0.42), min(max(v * 0.5, 0.10), 0.22)) }
     }
 
+    /// 밝은 쪽(「준비됐어요」) — 같은 색을 파스텔로. 어두운 글자(Tone.inkSecondary) 대비 4.5:1 을 지킨다.
+    static func light(_ hexes: [String]) -> [RGB] {
+        tones(hexes) { h, s, _ in hsv(h, min(s * 0.4, 0.2), 0.96) }
+    }
+
     static func tones(_ hexes: [String], _ map: (Double, Double, Double) -> RGB) -> [RGB] {
         let rgbs = hexes.compactMap(PebbleNaming.rgb(fromHex:))
         let source = rgbs.isEmpty ? Tone.backdropWarm.compactMap(PebbleNaming.rgb(fromHex:)) : rgbs
@@ -38,12 +43,12 @@ enum BackdropPalette {
     }
 
     /// 3×3 격자 색. 아래 줄은 더 어둡게 — 글·버튼이 놓이는 자리다.
-    static func mesh(_ tones: [RGB], bottom: Double) -> [RGB] {
+    static func mesh(_ tones: [RGB], bottom: Double, center: Double = 0.85, bottomMiddle: Double? = nil) -> [RGB] {
         let t = (0..<maxColors).map { tones.isEmpty ? RGB(r: 0, g: 0, b: 0) : tones[$0 % tones.count] }
         func scaled(_ c: RGB, _ k: Double) -> RGB { RGB(r: c.r * k, g: c.g * k, b: c.b * k) }
         return [t[0], t[1], t[2],
-                t[3], scaled(t[0], 0.85), t[1],
-                scaled(t[2], bottom), scaled(t[3], bottom * 0.8), scaled(t[1], bottom)]
+                t[3], scaled(t[0], center), t[1],
+                scaled(t[2], bottom), scaled(t[3], bottomMiddle ?? bottom * 0.8), scaled(t[1], bottom)]
     }
 
     /// 격자 점 — 모서리는 고정, 나머지는 서로 다른 주기의 사인 곡선으로 아주 천천히 흐른다.
@@ -57,6 +62,12 @@ enum BackdropPalette {
             [1, 0.5 + wave(26, 0.10, phase: 3)],
             [0, 1], [0.5 + wave(33, 0.14, phase: 4), 1], [1, 1],
         ]
+    }
+
+    static func darkMesh(_ hexes: [String]) -> [RGB] { mesh(dark(hexes), bottom: 0.45) }
+
+    static func lightMesh(_ hexes: [String]) -> [RGB] {
+        mesh(light(hexes), bottom: 0.97, center: 0.94, bottomMiddle: 0.95)
     }
 
     static func hsv(_ h: Double, _ s: Double, _ v: Double) -> RGB {
@@ -119,16 +130,54 @@ struct SceneClock<Content: View>: View {
     }
 }
 
+/// 글자·버튼 색 — 밝은 배경에선 뒤집는다.
+struct OnboardingInk {
+    let primary: Color
+    let secondary: Color
+    let hairline: Color
+    let buttonFill: Color
+    let buttonText: Color
+
+    static let dark = OnboardingInk(primary: Tone.primary, secondary: Tone.secondary, hairline: Tone.hairline,
+                                    buttonFill: Tone.primary, buttonText: Tone.base)
+    static let light = OnboardingInk(primary: Tone.inkPrimary, secondary: Tone.inkSecondary, hairline: Tone.inkHairline,
+                                     buttonFill: Tone.inkPrimary, buttonText: Tone.paper)
+}
+
+private struct InkKey: EnvironmentKey { static let defaultValue = OnboardingInk.dark }
+
+extension EnvironmentValues {
+    var onboardingInk: OnboardingInk {
+        get { self[InkKey.self] }
+        set { self[InkKey.self] = newValue }
+    }
+}
+
 struct SceneBackdrop: View {
     let hexes: [String]
+    var light = false
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static func colors(_ tones: [BackdropPalette.RGB]) -> [Color] {
+        tones.map { Color(red: $0.r, green: $0.g, blue: $0.b) }
+    }
 
     var body: some View {
-        let colors = BackdropPalette.mesh(BackdropPalette.dark(hexes), bottom: 0.45)
-            .map { Color(red: $0.r, green: $0.g, blue: $0.b) }
+        let dark = Self.colors(BackdropPalette.darkMesh(hexes))
+        let bright = Self.colors(BackdropPalette.lightMesh(hexes))
         SceneClock { t, _ in
-            MeshGradient(width: 3, height: 3, points: BackdropPalette.points(at: t), colors: colors)
+            let points = BackdropPalette.points(at: t)
+            ZStack {
+                MeshGradient(width: 3, height: 3, points: points, colors: dark)
+                if light {
+                    MeshGradient(width: 3, height: 3, points: points, colors: bright)
+                        .transition(.opacity)
+                }
+            }
         }
-        .background(Tone.base)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 1.0), value: light)
+        .background(light ? Tone.paper : Tone.base)
         .ignoresSafeArea()
     }
 }

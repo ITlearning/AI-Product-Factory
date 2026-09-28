@@ -38,11 +38,16 @@ struct OnboardingView: View {
         OnboardingFlow.remoteDayCount(dayKeys: store.dayKeys, importedDayKeys: importedDayKeys)
     }
 
+    // 마지막 「준비됐어요」만 밝게 — 안내는 어둡게 두고 끝에서 번지듯 밝아진다.
+    private var light: Bool { step == .start }
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var ready: Bool { working == 0 || waitedLongEnough }
 
     var body: some View {
         ZStack {
-            SceneBackdrop(hexes: BackdropPalette.sourceHexes(store: store, gifts: gifts))
+            SceneBackdrop(hexes: BackdropPalette.sourceHexes(store: store, gifts: gifts), light: light)
             VStack(spacing: 0) {
                 topBar
                 ZStack {
@@ -56,6 +61,8 @@ struct OnboardingView: View {
                 .clipped()
             }
         }
+        .environment(\.onboardingInk, light ? .light : .dark)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 1.0), value: light)
         .environment(\.onboardingScenesPaused, ceremonyDay != nil || pickingLibrary)
         .contentShape(Rectangle())
         .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { v in
@@ -93,12 +100,14 @@ struct OnboardingView: View {
 
     // MARK: 틀
 
+    private var ink: OnboardingInk { light ? .light : .dark }
+
     private var topBar: some View {
         ZStack {
             HStack(spacing: 7) {
                 ForEach(steps.indices, id: \.self) { i in
                     Circle()
-                        .fill(i == index ? Tone.primary : Tone.hairline)
+                        .fill(i == index ? ink.primary : ink.hairline)
                         .frame(width: 6, height: 6)
                 }
             }
@@ -107,7 +116,7 @@ struct OnboardingView: View {
                 Button(action: back) {
                     Image(systemName: "chevron.left")
                         .font(Face.lineCeremony)
-                        .foregroundStyle(Tone.secondary)
+                        .foregroundStyle(ink.secondary)
                         .frame(width: Shape2.minTouch, height: Shape2.minTouch)
                 }
                 .opacity(canGoBack ? 1 : 0)

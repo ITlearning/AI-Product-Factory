@@ -30,7 +30,7 @@ final class BackdropPaletteTests: XCTestCase {
     func testDarkMeshKeepsWhiteTextContrast() {
         let samples = ["#FFFFFF", "#FFD640", "#FF3B30", "#34C759", "#9DB7CF", "#E7B98A"] + Tone.backdropWarm
         for hex in samples {
-            for bg in BackdropPalette.mesh(BackdropPalette.dark([hex]), bottom: 0.45) {
+            for bg in BackdropPalette.darkMesh([hex]) {
                 let c = BackdropPalette.contrast(text: white, alpha: Tone.secondaryAlpha, over: bg)
                 XCTAssertGreaterThanOrEqual(c, 4.5, "\(hex) 위 보조 글자 대비 \(c)")
             }
@@ -41,5 +41,28 @@ final class BackdropPaletteTests: XCTestCase {
         let red = BackdropPalette.dark(["#FF0000"])[0]
         XCTAssertLessThanOrEqual(PebbleNaming.saturation(red), 0.42 + 1e-9)
         XCTAssertLessThanOrEqual(PebbleNaming.value(red), 0.22 + 1e-9)
+    }
+
+    func testLightMeshKeepsDarkInkContrast() {
+        let ink = PebbleNaming.rgb(fromHex: Tone.inkSecondaryHex)!
+        let samples = ["#FFFFFF", "#FFD640", "#FF3B30", "#0A3DFF", "#34C759", "#9DB7CF", "#000000"] + Tone.backdropWarm
+        for hex in samples {
+            for bg in BackdropPalette.lightMesh([hex]) {
+                let c = BackdropPalette.contrast(text: ink, alpha: 1, over: bg)
+                XCTAssertGreaterThanOrEqual(c, 4.5, "\(hex) 파스텔 위 어두운 보조 글자 대비 \(c)")
+            }
+        }
+    }
+
+    func testLightButtonTextContrast() {
+        let fill = PebbleNaming.rgb(fromHex: Tone.inkPrimaryHex)!
+        let text = PebbleNaming.rgb(fromHex: Tone.paperHex)!
+        XCTAssertGreaterThanOrEqual(BackdropPalette.contrast(text: text, alpha: 1, over: fill), 4.5)
+    }
+
+    func testLightToneIsPastel() {
+        let red = BackdropPalette.light(["#FF0000"])[0]
+        XCTAssertLessThanOrEqual(PebbleNaming.saturation(red), 0.2 + 1e-9)
+        XCTAssertGreaterThan(PebbleNaming.value(red), 0.9)
     }
 }

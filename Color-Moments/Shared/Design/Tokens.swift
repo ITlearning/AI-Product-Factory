@@ -20,6 +20,15 @@ public enum Tone {
 
     /// 온보딩 배경 — 받은 조약돌이 없을 때의 따뜻한 중간 톤(어둡게 눌러 쓴다).
     public static let backdropWarm = ["#B98A6A", "#8E6E86", "#C9A27A", "#6F7F8E"]
+
+    // 밝은 화면(온보딩 「준비됐어요」) 위 글자·버튼 — 파스텔 배경 대비 4.5:1 이상.
+    public static let inkPrimaryHex = "#1E1B18"
+    public static let inkPrimary = Color(hex: inkPrimaryHex)
+    public static let inkSecondaryHex = "#3E3832"
+    public static let inkSecondary = Color(hex: inkSecondaryHex)
+    public static let inkHairline = Color(hex: inkPrimaryHex).opacity(0.24)
+    public static let paperHex = "#F7F2EA"
+    public static let paper = Color(hex: paperHex)
 }
 
 final class SharedBundleMarker {}

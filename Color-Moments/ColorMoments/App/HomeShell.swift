@@ -53,6 +53,9 @@ struct HomeShell: View {
     #endif
     #endif
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private static let onboardingFade = Animation.easeInOut(duration: 0.8)
+
     private static let commitDistance: CGFloat = 0.42
     private static let commitVelocity: CGFloat = 420
 
@@ -131,7 +134,7 @@ struct HomeShell: View {
         }
         .sheet(isPresented: $showingGate) { SpikeView(inbox: inbox, store: store, gifts: gifts, closures: closures) }
         #endif
-        .overlay { onboardingLayer.animation(.easeInOut(duration: 0.45), value: onboarding) }
+        .overlay { onboardingLayer.animation(reduceMotion ? nil : Self.onboardingFade, value: onboarding) }
         .onChange(of: store.isLoaded, initial: true) { _, _ in
             if liveOnboarding == .full { onboardingLatched = true }
         }
@@ -194,7 +197,8 @@ struct HomeShell: View {
             makeCamera()
             progress = 1
         }
-        withAnimation(.easeInOut(duration: 0.45)) { onboardingLatched = false }
+        // 밝은 마지막 화면에서 어두운 홈으로 — 길게 겹쳐 튀지 않게 한다.
+        withAnimation(reduceMotion ? nil : Self.onboardingFade) { onboardingLatched = false }
     }
 
     @ViewBuilder

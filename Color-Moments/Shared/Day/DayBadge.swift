@@ -65,12 +65,16 @@ struct PebbleShape: InsettableShape {
 /// 점선 조약돌 — 아직 색이 없는 자리(첫날 빈 블록·오늘 진행 중 블록)에 쓴다.
 public struct DashedPebble: View {
     private let height: CGFloat
+    private let stroke: Color
 
-    public init(height: CGFloat) { self.height = height }
+    public init(height: CGFloat, stroke: Color = Tone.hairline) {
+        self.height = height
+        self.stroke = stroke
+    }
 
     public var body: some View {
         PebbleShape(top: 0.44, bottom: 0.40)
-            .strokeBorder(Tone.hairline, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+            .strokeBorder(stroke, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
             .frame(width: max(0, height) * Shape2.pebbleRatio, height: max(0, height))
             .frame(height: max(0, height) * 1.16)
     }
