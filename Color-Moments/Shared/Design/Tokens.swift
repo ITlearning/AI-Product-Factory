@@ -70,6 +70,7 @@ public enum Face {
     }
 
     // 굵기가 하나뿐이다 — .bold() 를 걸면 가짜 굵기가 된다. 강조는 크기로.
+    // 고운돋움은 같은 pt 에서 SF 보다 작아 보인다 — 크기는 SF 시절보다 약 2pt 크게 잡았다(2026-09-28 Tabber).
     private static func sans(_ size: CGFloat) -> Font {
         ensureRegistered()
         return .custom(sansName, size: size)
@@ -82,17 +83,17 @@ public enum Face {
     public static let nameCompact = serif(17)
     public static let word = serif(30)
 
-    public static let wordMeaning = sans(11)
-    public static let wordMeta = sans(10.5)
+    public static let wordMeaning = sans(13)
+    public static let wordMeta = sans(12)
 
-    public static let lineCeremony = sans(16)
-    public static let line = sans(13)
-    public static let today = sans(13)
-    public static let caption = sans(11)
-    public static let time = sans(10)
-    public static let action = sans(15)
-    public static let noticeApp = sans(14)
-    public static let guide = sans(12)
+    public static let lineCeremony = sans(17.5)
+    public static let line = sans(15)
+    public static let today = sans(15)
+    public static let caption = sans(13)
+    public static let time = sans(12)
+    public static let action = sans(17)
+    public static let noticeApp = sans(15)
+    public static let guide = sans(14)
     public static let hex = Font.system(size: 16, design: .monospaced)
 }
 
