@@ -114,22 +114,106 @@ enum ImageRequestBridge {
 }
 
 /// 파일 → 사진 앱 저장. placeholder 의 localIdentifier 는 performChanges 블록 밖에서는 못 읽으므로 안에서 꺼내둔다.
+/// 파일 경로로 실패하면 데이터로, 그래도 실패하면 다시 인코딩한 JPEG 로 한 번씩 더 — 시도마다 결과를 남긴다.
 enum AssetSaver {
 
-    static func save(fileURL: URL, creationDate: Date, location: CLLocation?) async -> String? {
-        var placeholderID: String?
-        do {
-            try await PHPhotoLibrary.shared().performChanges {
-                let request = PHAssetCreationRequest.forAsset()
-                request.addResource(with: .photo, fileURL: fileURL, options: nil)
-                request.creationDate = creationDate
-                request.location = location
-                placeholderID = request.placeholderForCreatedAsset?.localIdentifier
-            }
-            return placeholderID
-        } catch {
-            return nil
+    enum Method: String, Sendable {
+        case file = "파일 경로"
+        case data = "파일 데이터"
+        case reencoded = "JPEG 재인코딩"
+    }
+
+    struct Attempt: Equatable, Sendable {
+        let method: Method
+        /// nil 이면 성공.
+        let error: String?
+    }
+
+    struct Report: Equatable, Sendable {
+        let fileName: String
+        var assetID: String?
+        var attempts: [Attempt] = []
+        /// 파일이 없어 시도조차 못 했다.
+        var fileMissing = false
+
+        var failed: Bool { assetID == nil }
+        var summary: String {
+            if fileMissing { return "\(fileName): 파일 없음" }
+            let steps = attempts.map { "\($0.method.rawValue) \($0.error ?? "성공")" }.joined(separator: " → ")
+            return "\(fileName): \(steps)"
         }
+    }
+
+    struct NoPlaceholder: LocalizedError {
+        var errorDescription: String? { "placeholder 없음" }
+    }
+
+    struct Undecodable: LocalizedError {
+        var errorDescription: String? { "이미지로 읽을 수 없음" }
+    }
+
+    static func describe(_ error: Error) -> String {
+        let e = error as NSError
+        var text = "\(e.domain) \(e.code): \(e.localizedDescription)"
+        if let under = e.userInfo[NSUnderlyingErrorKey] as? NSError {
+            text += " (\(under.domain) \(under.code))"
+        }
+        return text
+    }
+
+    /// 순수 흐름 — 시도를 차례로 돌리고 처음 성공에서 멈춘다.
+    static func run(fileName: String, attempts: [(Method, () async throws -> String)]) async -> Report {
+        var report = Report(fileName: fileName)
+        for (method, attempt) in attempts {
+            do {
+                let id = try await attempt()
+                report.attempts.append(Attempt(method: method, error: nil))
+                report.assetID = id
+                return report
+            } catch {
+                report.attempts.append(Attempt(method: method, error: describe(error)))
+            }
+        }
+        return report
+    }
+
+    static func save(fileURL: URL, creationDate: Date, location: CLLocation?) async -> Report {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return Report(fileName: fileURL.lastPathComponent, fileMissing: true)
+        }
+        return await run(fileName: fileURL.lastPathComponent, attempts: [
+            (.file, { try await create(creationDate: creationDate, location: location) {
+                $0.addResource(with: .photo, fileURL: fileURL, options: nil)
+            } }),
+            (.data, {
+                let data = try Data(contentsOf: fileURL)
+                return try await create(creationDate: creationDate, location: location) {
+                    $0.addResource(with: .photo, data: data, options: nil)
+                }
+            }),
+            (.reencoded, {
+                let data = try Data(contentsOf: fileURL)
+                guard let jpeg = UIImage(data: data)?.jpegData(compressionQuality: 0.92) else { throw Undecodable() }
+                return try await create(creationDate: creationDate, location: location) {
+                    $0.addResource(with: .photo, data: jpeg, options: nil)
+                }
+            }),
+        ])
+    }
+
+    // 재인코딩본엔 원본 EXIF 가 없다 — 찍은 시각·장소는 늘 요청에 직접 적는다.
+    private static func create(creationDate: Date, location: CLLocation?,
+                               add: @escaping (PHAssetCreationRequest) -> Void) async throws -> String {
+        var placeholderID: String?
+        try await PHPhotoLibrary.shared().performChanges {
+            let request = PHAssetCreationRequest.forAsset()
+            add(request)
+            request.creationDate = creationDate
+            request.location = location
+            placeholderID = request.placeholderForCreatedAsset?.localIdentifier
+        }
+        guard let placeholderID else { throw NoPlaceholder() }
+        return placeholderID
     }
 }
 
@@ -139,7 +223,7 @@ enum AssetAdopter {
     /// 사진 앱·디스크에 닿는 부분 — 테스트는 가짜로 바꾼다.
     struct Env {
         var access: () -> PHAuthorizationStatus
-        var save: (URL, Date, CLLocation?) async -> String?
+        var save: (URL, Date, CLLocation?) async -> AssetSaver.Report
         var existing: ([String]) async -> Set<String>
         var localIDs: ([String]) async -> [String: String]
         var localFiles: ([String]) async -> Set<String>
@@ -155,6 +239,29 @@ enum AssetAdopter {
             removeFile: { try? FileManager.default.removeItem(at: $0) },
             assignMissing: { await CloudIDMapper.assignMissing(store: $0) }
         )
+    }
+
+    /// 이번 실행의 입양 기록 — 진단 화면이 읽는다.
+    struct Stats: Equatable {
+        var adoptTried = 0
+        var adoptSucceeded = 0
+        var readoptTried = 0
+        var readoptSucceeded = 0
+        var lastFailure: AssetSaver.Report?
+        /// 첫 방법이 실패하고 대안으로 성공한 마지막 저장.
+        var lastFallback: AssetSaver.Report?
+    }
+    @MainActor private(set) static var stats = Stats()
+
+    @MainActor
+    private static func record(_ report: AssetSaver.Report, readopt: Bool) {
+        if readopt { stats.readoptTried += 1 } else { stats.adoptTried += 1 }
+        if report.failed {
+            stats.lastFailure = report
+            print("AssetSaver: 저장 실패 \(report.summary)")
+        } else if report.attempts.count > 1 {
+            stats.lastFallback = report
+        }
     }
 
     // 같은 Moment 를 캡처 직후 흐름과 adoptAll 이 동시에 부를 수 있어, 저장이 두 번 나가지 않게 막는다.
@@ -182,9 +289,9 @@ enum AssetAdopter {
 
         let fileURL = ShotImage.url(current.fileName)
         let location = current.place.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
-        guard let assetID = await env.save(fileURL, current.capturedAt, location) else {
-            return false
-        }
+        let report = await env.save(fileURL, current.capturedAt, location)
+        record(report, readopt: false)
+        guard let assetID = report.assetID else { return false }
 
         // 저장은 성공했어도 그사이 다른 경로가 먼저 입양했을 수 있다 — store.adopt 가 true 일 때만 지운다.
         // false 면 파일은 그대로 두고 로그만 남긴다(고아 에셋이 사진 앱에 남지만, 로컬 파일이
@@ -195,6 +302,7 @@ enum AssetAdopter {
         }
         // 파일이 유일한 사본이던 기록 — 입양이 디스크에 닿기 전에 지우면 kill 뒤 기록이 빈 파일을 가리킨다.
         await store.flushAfterLoad()
+        stats.adoptSucceeded += 1
         // 저장이 막혀 있으면 입양이 디스크에 없다 — 파일을 남겨야 다음 실행에 다시 입양된다.
         guard !store.isSaveBlocked else { return true }
         env.removeFile(fileURL)
@@ -227,13 +335,16 @@ enum AssetAdopter {
 
         let fileURL = ShotImage.url(current.fileName)
         let location = current.place.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
-        guard let newID = await env.save(fileURL, current.capturedAt, location) else { return false }
+        let report = await env.save(fileURL, current.capturedAt, location)
+        record(report, readopt: true)
+        guard let newID = report.assetID else { return false }
 
         guard store.readopt(current.id, from: old, to: newID) else {
             print("AssetAdopter: \(current.id) 는 다시 저장하는 사이 바뀌어 파일을 지우지 않음")
             return false
         }
         await store.flushAfterLoad()
+        stats.readoptSucceeded += 1
         guard !store.isSaveBlocked else { return true }
         env.removeFile(fileURL)
         return true

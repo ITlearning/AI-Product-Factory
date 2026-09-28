@@ -23,7 +23,10 @@ final class AssetAdopterTests: XCTestCase {
                 save: { url, _, _ in
                     self.saved.append(url.lastPathComponent)
                     await self.saveGate?()
-                    return self.nextID
+                    var report = AssetSaver.Report(fileName: url.lastPathComponent)
+                    report.attempts = [.init(method: .file, error: self.nextID == nil ? "PHPhotosErrorDomain 3302: 실패" : nil)]
+                    report.assetID = self.nextID
+                    return report
                 },
                 existing: { ids in Set(ids).intersection(self.found) },
                 localIDs: { clouds in self.cloudToLocal.filter { clouds.contains($0.key) } },
@@ -147,5 +150,60 @@ final class AssetAdopterTests: XCTestCase {
         await AssetAdopter.adoptAll(store: store, env: fake.env)
 
         XCTAssertEqual(fake.saved, ["shot-a.jpg"], "같은 사진이 두 번 저장되면 사진 앱에 중복이 생긴다")
+    }
+
+    func testFailedSaveIsRecordedForDiagnostics() async {
+        let before = AssetAdopter.stats
+        store.add(moment("shot-a.jpg", asset: "OLD")); store.add(moment("asset-b", asset: "B"))
+        store.add(moment("shot-f.jpg", asset: nil))
+        let fake = Fake()
+        fake.found = ["B"]; fake.onDisk = ["shot-a.jpg"]; fake.nextID = nil
+
+        await AssetAdopter.adoptAll(store: store, env: fake.env)
+
+        let after = AssetAdopter.stats
+        XCTAssertEqual(after.readoptTried - before.readoptTried, 1)
+        XCTAssertEqual(after.readoptSucceeded, before.readoptSucceeded)
+        XCTAssertEqual(after.adoptTried - before.adoptTried, 1)
+        XCTAssertEqual(after.adoptSucceeded, before.adoptSucceeded)
+        XCTAssertEqual(after.lastFailure?.fileName, "shot-f.jpg")
+        XCTAssertEqual(after.lastFailure?.attempts.first?.error, "PHPhotosErrorDomain 3302: 실패")
+    }
+
+    // MARK: 저장 대안 경로
+
+    private struct Boom: Error {}
+
+    func testSaverFallsBackInOrderAndStopsAtFirstSuccess() async {
+        var ran: [AssetSaver.Method] = []
+        let report = await AssetSaver.run(fileName: "old.jpg", attempts: [
+            (.file, { ran.append(.file); throw NSError(domain: "PHPhotosErrorDomain", code: 3300) }),
+            (.data, { ran.append(.data); return "ID-2" }),
+            (.reencoded, { ran.append(.reencoded); return "ID-3" }),
+        ])
+        XCTAssertEqual(ran, [.file, .data], "성공하면 다음 방법은 시도하지 않는다")
+        XCTAssertEqual(report.assetID, "ID-2")
+        XCTAssertEqual(report.attempts.map(\.method), [.file, .data])
+        XCTAssertTrue(report.attempts[0].error?.hasPrefix("PHPhotosErrorDomain 3300") == true, "도메인·코드가 남아야 원인을 좁힌다")
+        XCTAssertNil(report.attempts[1].error)
+        XCTAssertFalse(report.failed)
+    }
+
+    func testSaverRecordsEveryFailedAttempt() async {
+        let report = await AssetSaver.run(fileName: "old.jpg", attempts: [
+            (.file, { throw Boom() }), (.data, { throw Boom() }), (.reencoded, { throw AssetSaver.Undecodable() }),
+        ])
+        XCTAssertTrue(report.failed)
+        XCTAssertEqual(report.attempts.count, 3)
+        XCTAssertTrue(report.attempts[2].error?.contains("이미지로 읽을 수 없음") == true)
+        XCTAssertTrue(report.summary.hasPrefix("old.jpg: 파일 경로 "))
+    }
+
+    func testSaverReportsMissingFileWithoutTrying() async {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("none-\(UUID().uuidString).jpg")
+        let report = await AssetSaver.save(fileURL: url, creationDate: Date(), location: nil)
+        XCTAssertTrue(report.fileMissing)
+        XCTAssertTrue(report.failed)
+        XCTAssertTrue(report.attempts.isEmpty)
     }
 }
