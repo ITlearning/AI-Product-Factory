@@ -71,8 +71,8 @@ public struct DashedPebble: View {
     public var body: some View {
         PebbleShape(top: 0.44, bottom: 0.40)
             .strokeBorder(Tone.hairline, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
-            .frame(width: height * Shape2.pebbleRatio, height: height)
-            .frame(height: height * 1.16)
+            .frame(width: max(0, height) * Shape2.pebbleRatio, height: max(0, height))
+            .frame(height: max(0, height) * 1.16)
     }
 }
 

@@ -190,7 +190,7 @@ struct LibraryPickerView: View {
 
     private func grid(_ library: Library) -> some View {
         GeometryReader { geo in
-            let side = (geo.size.width - Self.gridSpacing * 2) / 3
+            let side = max(0, (geo.size.width - Self.gridSpacing * 2) / 3)
             let columns = Array(repeating: GridItem(.fixed(side), spacing: Self.gridSpacing), count: 3)
 
             ScrollView {

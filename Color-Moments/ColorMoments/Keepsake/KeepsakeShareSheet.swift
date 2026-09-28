@@ -52,7 +52,7 @@ struct KeepsakeShareSheet: View {
     private func page(_ m: Moment) -> some View {
         GeometryReader { geo in
             let size = PebbleCardLayout.canvas
-            let scale = min(geo.size.width / size.width, (geo.size.height - 36) / size.height)
+            let scale = max(0, min(geo.size.width / size.width, (geo.size.height - 36) / size.height))
             Group {
                 if let loaded = photos[m.id] {
                     PebbleCard(dayKey: dayKey, pebbleMoments: pebbleMoments, face: m, photo: loaded)
@@ -65,7 +65,7 @@ struct KeepsakeShareSheet: View {
             .frame(width: size.width * scale, height: size.height * scale)
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
-            .frame(width: geo.size.width, height: geo.size.height - 36)
+            .frame(width: geo.size.width, height: max(0, geo.size.height - 36))
         }
         .padding(.horizontal, 40)
     }

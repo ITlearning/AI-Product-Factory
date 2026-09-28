@@ -27,9 +27,9 @@ public struct CaptureScreen: View {
 
     public var body: some View {
         GeometryReader { geo in
-            let w = geo.size.width - Self.sideInset * 2
+            let w = max(0, geo.size.width - Self.sideInset * 2)
             let hintRoom: CGFloat = showsDismissHint ? 44 : 0
-            let room = geo.size.height - (Self.windowTop - geo.safeAreaInsets.top)
+            let room = max(0, geo.size.height - (Self.windowTop - geo.safeAreaInsets.top))
                 - Self.controlsHeight - hintRoom - 12
             let h = max(0, min(w * Self.windowRatio, room))
 

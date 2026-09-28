@@ -179,7 +179,7 @@ struct HomeView: View {
 
     private var content: some View {
         GeometryReader { geo in
-            let blockWidth = geo.size.width - 56
+            let blockWidth = max(0, geo.size.width - 56)  // 첫 배치에서 geo 가 0 이면 음수 프레임이 된다
             ScrollViewReader { proxy in
                 ZStack(alignment: .trailing) {
                     ScrollView {
@@ -463,7 +463,7 @@ struct HomeView: View {
 
 struct EmptyDayBlock: View {
     let width: CGFloat
-    private var k: CGFloat { width / 334 }
+    private var k: CGFloat { max(0, width) / 334 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
