@@ -1,6 +1,11 @@
 import SwiftUI
 import UIKit
 
+private struct DayPhotoLoadKey: Equatable {
+    let fileName: String
+    let generation: Int
+}
+
 struct DayPhotoView: View {
     let momentID: Moment.ID
     let store: DayStore
@@ -28,7 +33,10 @@ struct DayPhotoView: View {
                 }
                 .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
-                .task(id: moment.fileName) { await load(moment) }
+                .task(id: DayPhotoLoadKey(fileName: moment.fileName,
+                                          generation: ShotImage.generation.value(for: moment.assetID))) {
+                    await load(moment)
+                }
                 .task(id: moment.id) { await assignWordIfNeeded(moment) }
             }
             HStack {
@@ -100,7 +108,7 @@ struct DayPhotoView: View {
 
     /// 원본은 iCloud 에서 받느라 오래 걸릴 수 있다 — 목록 썸네일을 먼저 보이고 원본이 오면 바꾼다.
     private func load(_ m: Moment) async {
-        async let original = ShotImage.full(m)
+        async let original = ShotImage.fullWithRetry(m)
         if image == nil {
             if let cached = ShotImage.peek(m, maxPixel: Self.previewPixels) {
                 image = cached

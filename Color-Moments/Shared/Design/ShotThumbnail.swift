@@ -1,6 +1,11 @@
 import SwiftUI
 import UIKit
 
+private struct LoadKey: Equatable {
+    let fileName: String
+    let generation: Int
+}
+
 public struct ShotThumbnail: View {
     private let moment: Moment
     private let maxPixel: CGFloat
@@ -26,10 +31,11 @@ public struct ShotThumbnail: View {
                 Color(hex: moment.colorHex)
             }
         }
-        .task(id: moment.fileName) {
+        // 세대 번호를 id 에 같이 물려둔다 — 옵저버·재배정이 세대를 올리면 뜬 칸이 다시 요청한다.
+        .task(id: LoadKey(fileName: moment.fileName, generation: ShotImage.generation.value(for: moment.assetID))) {
             let m = moment, name = moment.fileName, px = maxPixel
             guard ShotImage.peek(m, maxPixel: px) == nil else { return }
-            let img = await ShotImage.warm(m, maxPixel: px)
+            let img = await ShotImage.warmWithRetry(m, maxPixel: px)
             guard !Task.isCancelled, name == moment.fileName else { return }
             loaded = img
             loadedName = name
