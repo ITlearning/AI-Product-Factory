@@ -191,11 +191,10 @@ struct FirstPebbleStep: View {
                         }
                     }
                 }
+                // 여백은 스크롤 안쪽(콘텐츠)에만 — 스크롤 뷰 자체에 padding 을 주면 그 선에서 사진이 잘려 보인다.
                 .contentMargins(.top, 20, for: .scrollContent)
-                .contentMargins(.bottom, 24, for: .scrollContent)
+                .contentMargins(.bottom, 36, for: .scrollContent)
                 .scrollIndicators(.hidden)
-                // 스크롤 안쪽 여백과 별개로, 버튼과 맞닿지 않게 고정 간격을 하나 더 둔다.
-                .padding(.bottom, 12)
             }
         }
         .padding(.top, 12)
