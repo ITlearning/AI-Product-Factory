@@ -213,4 +213,37 @@ final class AssetReconcilerTests: XCTestCase {
         store.remove(ids: [UUID()])
         XCTAssertEqual(changes.count, 1, "지운 게 없으면 알리지 않는다")
     }
+
+    // MARK: 로컬 파일이 남은 기록 — 지우지 않고 복구 입양으로 넘긴다
+
+    func testLostAssetWithLocalFileIsNotRemoved() {
+        let ids = Set((0..<10).map { "id\($0)" })
+        let found = ids.subtracting(["id8", "id9"])
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: [:], keptByFile: ["id8"], fullAccess: true)
+        XCTAssertEqual(plan.remove, ["id9"], "에셋이 사라져도 이 기기에 파일이 남은 기록은 유일한 사본이다 — 지우면 안 된다")
+    }
+
+    func testKeptByFileDoesNotLoosenCap() {
+        let ids = Set((0..<10).map { "id\($0)" })
+        let found = ids.subtracting(["id6", "id7", "id8", "id9"])
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: [:], keptByFile: ["id9"], fullAccess: true)
+        XCTAssertTrue(plan.remove.isEmpty, "파일로 보류한 기록을 빼고 상한을 다시 재면 안 된다 — 4개가 빠진 회차는 그대로 건너뛴다")
+    }
+
+    func testHoldsLocalFileSkipsPlaceholderNames() {
+        let exists: (String) -> Bool = { _ in true }
+        XCTAssertTrue(AssetReconciler.holdsLocalFile(fileName: "shot-1.jpg", exists: exists))
+        XCTAssertTrue(AssetReconciler.holdsLocalFile(fileName: "library-2.jpg", exists: exists))
+        XCTAssertFalse(AssetReconciler.holdsLocalFile(fileName: "asset-abc", exists: exists), "자리 이름은 파일이 없다")
+        XCTAssertFalse(AssetReconciler.holdsLocalFile(fileName: "remote-xyz", exists: exists))
+        XCTAssertFalse(AssetReconciler.holdsLocalFile(fileName: "shot-1.jpg", exists: { _ in false }))
+    }
+
+    func testKeptByFileCollectsLostAssetIDsWithFiles() {
+        let a = Moment(capturedAt: Date(), colorHex: "#111111", fileName: "shot-a.jpg", source: .library, assetID: "A")
+        let b = Moment(capturedAt: Date(), colorHex: "#222222", fileName: "asset-b", source: .library, assetID: "B")
+        let c = Moment(capturedAt: Date(), colorHex: "#333333", fileName: "library-c.jpg", source: .library, assetID: "C")
+        let kept = AssetReconciler.keptByFile(lost: [a, b, c], exists: { $0 != "library-c.jpg" })
+        XCTAssertEqual(kept, ["A"])
+    }
 }

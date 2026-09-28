@@ -30,8 +30,9 @@ enum AssetReconciler {
     /// 순수 함수 — `relocated` 는 못 찾은 assetID 중 cloudID 로 다시 찾은 것(옛 → 새).
     /// 다시 찾은 것은 지우지 않고 바꿔 끼우고, 남은 것만 `missing()` 규칙(빈 조회·상한)으로 판정한다.
     /// `otherAssetIDs`: 이 판정 밖에 있는 다른 기록들이 이미 쓰고 있는 assetID — 충돌 판정에 쓴다.
+    /// `keptByFile`: 에셋은 사라졌지만 이 기기에 파일이 남은 assetID — 지우지 않고 복구 입양으로 넘긴다.
     static func plan(ids: Set<String>, found: Set<String>, relocated: [String: String],
-                      otherAssetIDs: Set<String> = [], fullAccess: Bool) -> Plan {
+                      otherAssetIDs: Set<String> = [], keptByFile: Set<String> = [], fullAccess: Bool) -> Plan {
         guard fullAccess else { return Plan() }
         let candidates = ids.subtracting(found)
 
@@ -54,8 +55,31 @@ enum AssetReconciler {
         let deferred = Set(changed.keys).subtracting(reassign.keys)
 
         let located = found.union(reassign.keys).union(confirmedLocated)
-        let remove = missing(ids: ids, found: located, fullAccess: fullAccess).subtracting(deferred)
+        // 상한은 보류 전 후보 수로 잰다 — 보류분을 먼저 빼면 같은 회차에서 더 많이 지워진다.
+        let remove = missing(ids: ids, found: located, fullAccess: fullAccess)
+            .subtracting(deferred).subtracting(keptByFile)
         return Plan(reassign: reassign, remove: remove)
+    }
+
+    /// 이 기기에 실제 파일이 있는 이름인지 — 자리 이름(asset-·remote-)은 파일이 없다.
+    static func holdsLocalFile(fileName: String, exists: (String) -> Bool) -> Bool {
+        !fileName.hasPrefix("asset-") && !fileName.hasPrefix("remote-") && exists(fileName)
+    }
+
+    /// 에셋을 못 찾은 기록 중 파일이 남은 것들의 assetID.
+    static func keptByFile(lost: [Moment], exists: (String) -> Bool) -> Set<String> {
+        Set(lost.filter { holdsLocalFile(fileName: $0.fileName, exists: exists) }.compactMap(\.assetID))
+    }
+
+    /// 실제 디스크 확인 — 메인 밖에서.
+    static func localFileNames(_ fileNames: [String]) async -> Set<String> {
+        guard !fileNames.isEmpty else { return [] }
+        return await Task.detached(priority: .utility) {
+            let fm = FileManager.default
+            return Set(fileNames.filter {
+                holdsLocalFile(fileName: $0, exists: { fm.fileExists(atPath: ShotImage.url($0).path) })
+            })
+        }.value
     }
 
     /// 24시간 창 안의 누적 삭제 상태. 나눠서 조금씩 지우는 걸 막는다 — 지운 기록은 iCloud 로 모든 기기에 번진다.
@@ -124,7 +148,9 @@ enum AssetReconciler {
             }
         }
 
-        let plan = plan(ids: ids, found: found, relocated: relocated, fullAccess: fullAccess)
+        let onDisk = await localFileNames(lost.map(\.fileName))
+        let kept = keptByFile(lost: lost, exists: onDisk.contains)
+        let plan = plan(ids: ids, found: found, relocated: relocated, keptByFile: kept, fullAccess: fullAccess)
         if !plan.reassign.isEmpty {
             store.reassignAssets(store.moments.compactMap { m in
                 m.assetID.flatMap { plan.reassign[$0] }.map { (m.id, $0) }
