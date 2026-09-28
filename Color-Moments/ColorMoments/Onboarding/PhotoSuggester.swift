@@ -69,16 +69,25 @@ enum PhotoSuggester {
         options.isNetworkAccessAllowed = false
         let manager = PHImageManager.default()
         let size = CGSize(width: thumbPixel, height: thumbPixel)
+        let fallback = DegradedHold()
         return await ImageRequestBridge.run(
             start: { deliver in
                 manager.requestImage(for: asset, targetSize: size, contentMode: .aspectFill,
                                      options: options) { result, info in
                     let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
-                    if degraded && result != nil && info?[PHImageErrorKey] == nil { return }
-                    deliver(result)
+                    if degraded && result != nil && info?[PHImageErrorKey] == nil { fallback.keep(result); return }
+                    // 원본이 iCloud 에만 있으면 마지막엔 nil 이 온다 — 먼저 받은 저화질로라도 점수를 매긴다.
+                    deliver(result ?? fallback.take())
                 }
             },
             cancel: { manager.cancelImageRequest($0) }
         )
     }
+}
+
+private final class DegradedHold: @unchecked Sendable {
+    private let lock = NSLock()
+    private var image: UIImage?
+    func keep(_ image: UIImage?) { lock.lock(); self.image = image; lock.unlock() }
+    func take() -> UIImage? { lock.lock(); defer { lock.unlock() }; return image }
 }

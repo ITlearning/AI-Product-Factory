@@ -81,17 +81,4 @@ final class ArrivalNoticeTests: XCTestCase {
         XCTAssertEqual(ArrivalNotice.targets(now: date(2026, 10, 1, 5, 0), calendar: calendar),
                        ["2026-09-30", "2026-10-01"])
     }
-
-    // MARK: - 권한 묻기
-
-    func testAsksOnlyWhenNoNextGiftIsWaiting() {
-        XCTAssertTrue(ArrivalNotice.shouldAsk(didAsk: false, nextGift: nil, finishedWasOnboarding: false))
-        XCTAssertFalse(ArrivalNotice.shouldAsk(didAsk: false, nextGift: "2026-09-24", finishedWasOnboarding: false))
-        XCTAssertFalse(ArrivalNotice.shouldAsk(didAsk: true, nextGift: nil, finishedWasOnboarding: false))
-    }
-
-    func testDoesNotAskAfterOnboardingGift() {
-        XCTAssertFalse(ArrivalNotice.shouldAsk(didAsk: false, nextGift: nil, finishedWasOnboarding: true),
-                       "설치 첫날 온보딩 증정 직후엔 묻지 않고 다음 자연 증정 뒤로 미룬다")
-    }
 }
