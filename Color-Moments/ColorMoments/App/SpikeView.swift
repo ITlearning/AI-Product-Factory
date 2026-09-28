@@ -2,6 +2,9 @@ import SwiftUI
 
 struct SpikeView: View {
     @Environment(\.dismiss) private var dismiss
+    #if DEBUG
+    @State private var showingEmptyHome = false
+    #endif
     @Bindable var inbox: CaptureInbox
     @Bindable var store: DayStore
     private let gifts: GiftLog
@@ -149,9 +152,15 @@ struct SpikeView: View {
                     } label: {
                         Label("온보딩 다시 보기", systemImage: "arrow.counterclockwise")
                     }
+                    Button {
+                        showingEmptyHome = true
+                    } label: {
+                        Label("빈 홈 미리 보기", systemImage: "square.dashed")
+                    }
                 } footer: {
-                    Text("기록은 그대로 두고 첫 화면부터 다시 봅니다. 권한 창은 이미 답했으면 다시 뜨지 않아요.")
+                    Text("기록은 그대로 두고 첫 화면부터 다시 봅니다. 권한 창은 이미 답했으면 다시 뜨지 않아요. 빈 홈은 실제 기록과 떨어진 빈 저장소로 그립니다.")
                 }
+                .fullScreenCover(isPresented: $showingEmptyHome) { EmptyHomePreview() }
                 #endif
 
                 Section {
@@ -320,3 +329,41 @@ struct SpikeView: View {
     }
     #endif
 }
+
+#if DEBUG
+/// 실제 기록·설정과 떨어진 빈 저장소로 홈을 그린다 — 첫날 홈이 어떻게 보이는지 확인용.
+private struct EmptyHomePreview: View {
+    @Environment(\.dismiss) private var dismiss
+    private static let suite = "debug-empty-home"
+    @State private var closures = DayClosures(defaults: UserDefaults(suiteName: suite)!)
+    @State private var gifts = GiftLog(defaults: UserDefaults(suiteName: suite)!)
+    @State private var store: DayStore?
+    @State private var focusDay: String?
+    @State private var scrubbing = false
+    @State private var daySheetPresented = false
+    @State private var keepsakePresented = false
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            if let store {
+                HomeView(store: store, gifts: gifts, showsSwipeHint: true,
+                         focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
+                         daySheetPresented: $daySheetPresented,
+                         keepsakePresented: $keepsakePresented)
+                    .defaultAppStorage(UserDefaults(suiteName: Self.suite)!)
+            }
+            Button("닫기") { dismiss() }
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(.thinMaterial, in: Capsule())
+                .padding(.trailing, 20).padding(.top, 60)
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            UserDefaults(suiteName: Self.suite)!.removePersistentDomain(forName: Self.suite)
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("debug-empty-home.json")
+            try? FileManager.default.removeItem(at: url)
+            store = DayStore(fileURL: url, closures: closures)
+        }
+    }
+}
+#endif
