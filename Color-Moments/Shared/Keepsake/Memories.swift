@@ -20,6 +20,11 @@ public enum Memories {
         return calendar.date(from: c)
     }
 
+    private static func key(_ date: Date) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
     private static func date(from dayKey: String) -> Date? {
         guard let c = components(dayKey) else { return nil }
         return date(c.y, c.m, c.d)
@@ -30,8 +35,11 @@ public enum Memories {
         guard let t = components(today) else { return nil }
         let anchorDay = (t.m == 2 && t.d == 29) ? 28 : t.d
         guard let anchor = date(t.y - 1, t.m, anchorDay) else { return nil }
+        // 받은 날이 수백 개면 날마다 달력 계산이 홈 한 번에 수 ms — 문자열 범위로 먼저 거른다.
+        let lo = key(calendar.date(byAdding: .day, value: -3, to: anchor) ?? anchor)
+        let hi = key(calendar.date(byAdding: .day, value: 3, to: anchor) ?? anchor)
 
-        let candidates: [(key: String, diff: Int)] = giftedDays.compactMap { key in
+        let candidates: [(key: String, diff: Int)] = giftedDays.filter { $0 >= lo && $0 <= hi }.compactMap { key in
             guard let d = date(from: key) else { return nil }
             let diff = abs(calendar.dateComponents([.day], from: anchor, to: d).day ?? Int.max)
             guard diff <= 3 else { return nil }
