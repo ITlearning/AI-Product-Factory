@@ -195,6 +195,16 @@ struct FirstPebbleStep: View {
                 .contentMargins(.top, 20, for: .scrollContent)
                 .contentMargins(.bottom, 36, for: .scrollContent)
                 .scrollIndicators(.hidden)
+                // 스크롤 가장자리에서 사진이 칼같이 잘리지 않고 배경으로 스며들게.
+                .mask {
+                    VStack(spacing: 0) {
+                        LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                            .frame(height: 14)
+                        Color.black
+                        LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                            .frame(height: 48)
+                    }
+                }
             }
         }
         .padding(.top, 12)
