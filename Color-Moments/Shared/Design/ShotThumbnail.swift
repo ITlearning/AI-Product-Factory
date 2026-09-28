@@ -34,5 +34,10 @@ public struct ShotThumbnail: View {
             loaded = img
             loadedName = name
         }
+        // 캐시가 이미 들고 있다 — 화면 밖 칸까지 붙잡으면 캐시 상한이 무의미해진다. 다시 보이면 .task 가 다시 돈다.
+        .onDisappear {
+            loaded = nil
+            loadedName = nil
+        }
     }
 }

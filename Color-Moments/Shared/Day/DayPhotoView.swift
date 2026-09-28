@@ -98,9 +98,23 @@ struct DayPhotoView: View {
         .animation(.easeOut(duration: 0.25), value: m.word)
     }
 
+    /// 원본은 iCloud 에서 받느라 오래 걸릴 수 있다 — 목록 썸네일을 먼저 보이고 원본이 오면 바꾼다.
     private func load(_ m: Moment) async {
-        image = await ShotImage.full(m)
+        async let original = ShotImage.full(m)
+        if image == nil {
+            if let cached = ShotImage.peek(m, maxPixel: Self.previewPixels) {
+                image = cached
+            } else if let preview = await ShotImage.warm(m, maxPixel: Self.previewPixels),
+                      !Task.isCancelled, image == nil {
+                image = preview
+            }
+        }
+        guard let full = await original, !Task.isCancelled else { return }
+        image = full
     }
+
+    /// DayMomentsView 사진 카드와 같은 크기 — 거기서 데운 캐시를 그대로 쓴다.
+    private static let previewPixels: CGFloat = 600
 
     private func assignWordIfNeeded(_ m: Moment) async {
         guard m.word == nil else { return }
