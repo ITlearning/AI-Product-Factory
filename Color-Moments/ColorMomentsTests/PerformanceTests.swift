@@ -151,14 +151,15 @@ final class PerformanceTests: XCTestCase {
         XCTAssertLessThan(allRows, 60, "수정 전 3.5초")
     }
 
-    /// 앱 시작 때 DayStore init 이 메인에서 days.json 을 읽는 비용 — 이번엔 고치지 않고 기록만.
+    /// 앱 시작 때 days.json 을 읽는 비용(수정 전 159ms — 대부분 ISO8601 파싱).
     func testLoadThreeThousandFromDisk() {
         let store = freshStore()
         store.applyRemote(upserts: synthetic(), deletes: [])
         store.flush()
         var reopened: DayStore?
-        time("h.load3000") { reopened = DayStore(fileURL: tempFile, closures: closures) }
+        let load = time("h.load3000") { reopened = DayStore(fileURL: tempFile, closures: closures) }
         XCTAssertEqual(reopened?.moments.count, Self.momentCount)
+        XCTAssertLessThan(load, 175)
     }
 
     /// 시작 로드 쪼개기 — 파일 읽기·JSON 디코딩·날짜 파싱 중 어디가 무거운지.
@@ -175,6 +176,8 @@ final class PerformanceTests: XCTestCase {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         time("h.iso8601Parse6000") { for t in texts { _ = iso.date(from: t) } }
+        let fast = time("h.fastParse6000") { for t in texts { _ = ISODate.parse(t) } }
+        XCTAssertLessThan(fast, 50, "ISO8601DateFormatter 는 146ms")
     }
 
     func testWidgetSnapshotMake() {

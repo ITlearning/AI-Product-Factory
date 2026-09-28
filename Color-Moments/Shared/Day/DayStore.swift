@@ -353,7 +353,8 @@ public final class DayStore {
         decoder.dateDecodingStrategy = .custom { d in
             let c = try d.singleValueContainer()
             let text = try c.decode(String.self)
-            guard let date = Self.fractionalDate.date(from: text) ?? Self.wholeSecondDate.date(from: text) else {
+            guard let date = ISODate.parse(text) ?? Self.fractionalDate.date(from: text)
+                    ?? Self.wholeSecondDate.date(from: text) else {
                 throw DecodingError.dataCorruptedError(in: c, debugDescription: "날짜 형식 아님: \(text)")
             }
             return date
