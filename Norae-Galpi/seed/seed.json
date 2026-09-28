@@ -1,0 +1,245 @@
+{
+  "_meta": {
+    "description": "노래갈피 v1 시드 — 곡 11개 + 기억 11편",
+    "source": "docs/designs/norae-galpi-seed.md (드라이런 2026-09-16~17)",
+    "itunes_measured_at": "2026-09-17",
+    "note": "title/artist/artwork_url은 itunes lookup?country=kr 실측값. _us_track_name은 골든 테스트 입력이며 DB에 넣지 않는다."
+  },
+  "songs": [
+    {
+      "ref": "lamour",
+      "source": "itunes",
+      "itunes_artist_id": 920659922,
+      "itunes_track_id": 1590088606,
+      "title_key": "lamourlesbaguettesparis",
+      "title_key_rev": 1,
+      "title": "L’Amour, Les Baguettes, Paris",
+      "artist": "스텔라장",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e1/ba/95/e1ba95ec-d9be-7cc9-0993-624179a2f036/cover.jpg/100x100bb.jpg",
+      "youtube_video_id": "XtYGk-kvWP0",
+      "_us_track_name": "L’Amour, Les Baguettes, Paris"
+    },
+    {
+      "ref": "credit",
+      "source": "itunes",
+      "itunes_artist_id": 854857065,
+      "itunes_track_id": 1611261708,
+      "title_key": "credit",
+      "title_key_rev": 1,
+      "title": "Credit (feat. YUMDDA, GIRIBOY & Zion.T)",
+      "artist": "릴보이",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d1/50/ad/d150ade8-3bc4-f6ac-c06e-539dad74b053/888272072853_Cover.jpg/100x100bb.jpg",
+      "youtube_video_id": "KoWgusQpS9Q",
+      "_us_track_name": "Credit (feat. YUMDDA, GIRIBOY & Zion.T)"
+    },
+    {
+      "ref": "geurae-uri-hamkke",
+      "source": "youtube",
+      "itunes_artist_id": null,
+      "itunes_track_id": null,
+      "title_key": "그래우리함께",
+      "title_key_rev": 1,
+      "title": "그래 우리 함께",
+      "artist": "무한도전",
+      "artwork_url": null,
+      "youtube_video_id": null,
+      "_us_track_name": null
+    },
+    {
+      "ref": "golmokgil-eogwieseo",
+      "source": "itunes",
+      "itunes_artist_id": 514808441,
+      "itunes_track_id": 1570572496,
+      "title_key": "attheentrancetothealley",
+      "title_key_rev": 1,
+      "title": "골목길 어귀에서",
+      "artist": "버스커버스커",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/43/d8/6f/43d86fe5-632a-8226-be7c-7b5dee99a461/08809309174588_Cover.jpg/100x100bb.jpg",
+      "youtube_video_id": null,
+      "_us_track_name": "At the Entrance to the Alley"
+    },
+    {
+      "ref": "namu",
+      "source": "itunes",
+      "itunes_artist_id": 1020577647,
+      "itunes_track_id": 1459990044,
+      "title_key": "tree",
+      "title_key_rev": 1,
+      "title": "나무",
+      "artist": "카더가든",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/b8/72/09/b87209dc-363e-ae11-90c2-14199b2e47b5/cover-_Car_the_garden_DS.jpg/100x100bb.jpg",
+      "youtube_video_id": null,
+      "_us_track_name": "Tree"
+    },
+    {
+      "ref": "neoneun-naui-munhak",
+      "source": "itunes",
+      "itunes_artist_id": 1343958570,
+      "itunes_track_id": 1575171628,
+      "title_key": "youaremyliterature",
+      "title_key_rev": 1,
+      "title": "너는 나의 문학",
+      "artist": "박소은",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fa/0a/f4/fa0af4db-8a4c-d5fd-7edf-e426e5a50e13/190560022182.jpg/100x100bb.jpg",
+      "youtube_video_id": null,
+      "_us_track_name": "You Are My Literature"
+    },
+    {
+      "ref": "bamsanchaek",
+      "source": "itunes",
+      "itunes_artist_id": 1178907631,
+      "itunes_track_id": 1559888158,
+      "title_key": "dodumchit",
+      "title_key_rev": 1,
+      "title": "밤산책",
+      "artist": "김세정",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/b3/fb/94/b3fb94fc-44ee-5a72-b528-85eb92ced91f/cover.jpg/100x100bb.jpg",
+      "youtube_video_id": null,
+      "_us_track_name": "Do Dum Chit"
+    },
+    {
+      "ref": "geudaeraneun-si",
+      "source": "itunes",
+      "itunes_artist_id": 435966642,
+      "itunes_track_id": 1804658810,
+      "title_key": "그대라는시",
+      "title_key_rev": 1,
+      "title": "그대라는 시",
+      "artist": "태연",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/66/9d/cb669d9f-6bb1-3f29-c6b9-6a7a59821b8b/cover_KM0008761_1.jpg/100x100bb.jpg",
+      "youtube_video_id": null,
+      "_us_track_name": "그대라는 시"
+    },
+    {
+      "ref": "noraebangeseo",
+      "source": "itunes",
+      "itunes_artist_id": 910423281,
+      "itunes_track_id": 1457171018,
+      "title_key": "karaoke",
+      "title_key_rev": 1,
+      "title": "노래방에서",
+      "artist": "장범준",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg",
+      "youtube_video_id": null,
+      "_us_track_name": "Karaoke"
+    },
+    {
+      "ref": "feel-my-rhythm",
+      "source": "itunes",
+      "itunes_artist_id": 906961899,
+      "itunes_track_id": 1614179710,
+      "title_key": "feelmyrhythm",
+      "title_key_rev": 1,
+      "title": "Feel My Rhythm",
+      "artist": "레드벨벳",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg",
+      "youtube_video_id": null,
+      "_us_track_name": "Feel My Rhythm"
+    },
+    {
+      "ref": "epilogue",
+      "source": "itunes",
+      "itunes_artist_id": 949319364,
+      "itunes_track_id": 1692136562,
+      "title_key": "epilogue",
+      "title_key_rev": 1,
+      "title": "에필로그",
+      "artist": "정승환",
+      "artwork_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/0c/35/c4/0c35c435-f357-0ae8-860b-2d730c980d09/8804775288340.jpg/100x100bb.jpg",
+      "youtube_video_id": null,
+      "_us_track_name": "Epilogue"
+    }
+  ],
+  "memories": [
+    {
+      "song_ref": "lamour",
+      "body": "초가을 날씨에 떠난 유럽 여행의 시작을 맞이한 노래. 파리에서 에펠탑을 보며 이 노래를 무한 재생하며 멍하니 바라보곤 했다.\n그날의 공기, 온도, 사람들이 움직이는 모습, 얼굴의 행복한 웃음, 그 모든것을 느끼며 한걸음 한걸음 걸어다녔다.\n어쩌면 내 인생에 유럽 특히나 파리를 이렇게 자유롭게 돌아다닐 수 있는 날이 얼마나 될까?\n그때 당시에는 아무런 생각없이 행복하게..지금도 들으면 기분이 좋아지는 이 노래를 들으며 파리 시내를 돌아다녔다.",
+      "season": "autumn",
+      "era": null,
+      "is_public": true,
+      "_source_heading": "1. L'Amour, Les Baguettes, Paris — 스텔라장"
+    },
+    {
+      "song_ref": "credit",
+      "body": "군생활 중 아마 상병달떄였나? 상병 달고 나서 인가. 그때쯤 쇼미더머니 결승이 겨울때쯤이었다. 후임,동기,선임 이렇게 삼삼오오 모여서 작은 티비 하나로 밤에 연등하면서 보던게 엊그제 처럼 생생하다. 이 때 릴보이가 이 노래를 들고 나왔는데, 그 때 겨울에 내리는 눈도 그렇고 군생활이었지만 몽글몽글한게 기분이 묘했다. 아직도 이 노래를 들으면 그 때 그 생활관이 생각난다. 특히 결승 무대에서 릴보이 마지막에 하늘인가? 올려다 보면서 보는 그게 잊히지 않는다. 진짜 크레딧이 올라가면서 한 해가 마무리되는 기분이랄까. 나도 엔딩 크레딧이 올라가는 성공적인 영화의 주인공이 될 수 있을까 하는 그런 막연한 상상.",
+      "season": "winter",
+      "era": "military",
+      "is_public": true,
+      "_source_heading": "2. Credit — 릴보이"
+    },
+    {
+      "song_ref": "geurae-uri-hamkke",
+      "body": "고등학생이었나 중학생이었나 그랬을거다. 정확히 이유는 기억이 안나지만, 아마 기분이 매우 안좋고 저기압이었을텐데 이 노래를 듣고 위안이 너무 됐었던 기억이 난다. 새벽 내내 울면서 이 노래를 듣고 가사를 곱씹어보고, 그랬던 기억이 난다. 아, 중학교 전학 오고 나서 1년간 적응을 못했던 그때쯤인 것 같다. 하루는 너무 힘들어서 이렇게 울면서 잤던 것 같다. 그 때 위안이 됐던 노래라 기억이 난다.",
+      "season": null,
+      "era": "school",
+      "is_public": true,
+      "_source_heading": "3. 그래 우리 함께 — 무한도전 &nbsp;`source=youtube`"
+    },
+    {
+      "song_ref": "golmokgil-eogwieseo",
+      "body": "대학생때 버스킹을 할 때 열심히 연습했던 곡이다. 1학년때인가, 기타치는 친구와 함께 밤새 연습해서 무대에 서서 노래 부르고 관객들 호응도 한몸에 받고..그랬던 기억이 새록새록하다. 나에게는 버스커버스커의 노래들이 대학시절에 잊지 못할 선물을 준 노래들이다. 맨날 속으로만 노래를 사람들에게 들려주고 싶다라고만 생각했던 사람이, 버스킹을 하고, 밴드를 하고, 카페에 가서 노래 부르는 사람으로 활동한 모든 흔적들에 버스커버스커가 있었다.",
+      "season": null,
+      "era": "university",
+      "is_public": true,
+      "_source_heading": "4. 골목길 어귀에서 — 버스커버스커"
+    },
+    {
+      "song_ref": "namu",
+      "body": "나에게는 좀 특별한 곡이다. 한번은 대학교 무대 예선? 을 봤어야 했는데, 심사 보는 사람들이 나 들어가서 소개할때까지만 해도 거들떠 보지도 않고 있었다. 그러다, 이 노래의 처음 부분을 불렀을 때 눈이 휘둥그래지면서 나를 바라보고, 하이라이트인 가성부분을 부르니 사람들이 \"와\" 하면서 바라만 보던 기억이 난다. 바로 합격하고 무대에 올랐고, 반응도 좋았었다. 이때 느낀 감정은 이루 말할 수 없었기에, 이 곡이 나에게는 의미있고, 그때 그 시절을 떠오르게 한다.",
+      "season": null,
+      "era": "university",
+      "is_public": true,
+      "_source_heading": "5. 나무 — 카더가든"
+    },
+    {
+      "song_ref": "neoneun-naui-munhak",
+      "body": "날씨가 추우면서도 따뜻했던 계절에 자주 들었던 노래.\n밤에 산책하면서 들으면 공허하면서도 가사를 곱씹어볼 수 있는 묘한 노래.",
+      "season": null,
+      "era": null,
+      "is_public": true,
+      "_source_heading": "6. 너는 나의 문학 — 박소은"
+    },
+    {
+      "song_ref": "bamsanchaek",
+      "body": "서울 올라와서 힘들때가 많았는데, 그 때마다 이 노래를 들으면서 나도 밤 산책을 했었다.\n밤에 약간 추운 공기와 함께 듣던 곡",
+      "season": null,
+      "era": null,
+      "is_public": true,
+      "_source_heading": "7. 밤산책 — 김세정"
+    },
+    {
+      "song_ref": "geudaeraneun-si",
+      "body": "드라마가 방영되고 있을때도 자주 들었고 이후에도 들은 노래.\n이 노래를 듣기만 하면 구찬성이 주위에서 보이는 것만 같다. 이어질 수 없다는걸 알면서도 피하지 않는.",
+      "season": null,
+      "era": null,
+      "is_public": true,
+      "_source_heading": "8. 그대라는 시 — 태연"
+    },
+    {
+      "song_ref": "noraebangeseo",
+      "body": "대학생때 이 노래를 들으면서 애들이랑 산책했던 기억이 난다.\n보통 기억은 밤에 이뤄지는 것 같은데, 밤공기와 친구들과 떠들던 그 공간이 좋아서 그런지도 모르겠다.",
+      "season": null,
+      "era": "university",
+      "is_public": true,
+      "_source_heading": "9. 노래방에서 — 장범준",
+      "_label_note": "본문 \"대학생때 이 노래를 들으면서\" 근거. 시드 문서엔 라벨이 미기록이었다"
+    },
+    {
+      "song_ref": "feel-my-rhythm",
+      "body": "친구들이랑 태안여행이었나? 아침에 모여서 늦은 친구를 막 뭐라고 하면서 딱 듣는 고정된 플레이리스트의 끝판왕.\n황홀한 사운드와 아름다운 화음이 여행을 출발할때 눈부신 햇살과 함께 어울리는 노래였다.\n지금도 이 노래를 들으면 친구들과 놀러갔던 그때가 떠오른다.",
+      "season": null,
+      "era": null,
+      "is_public": true,
+      "_source_heading": "10. Feel My Rhythm — 레드벨벳"
+    },
+    {
+      "song_ref": "epilogue",
+      "body": "여름의 화창한 햇빛이 떠오르는 노래다.\n작은 취미가 코노 혼자가서 노래 부르기인데, 그때 이 노래를 열창하면 참 좋았던 기억이 난다.\n\n---",
+      "season": "summer",
+      "era": null,
+      "is_public": true,
+      "_source_heading": "11. 에필로그 — 정승환",
+      "_label_note": "본문 \"여름의 화창한 햇빛이 떠오르는 노래다\" 근거. 시드 문서엔 라벨이 미기록이었다"
+    }
+  ]
+}

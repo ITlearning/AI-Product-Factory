@@ -16,6 +16,7 @@
 | [`Date-Soragodong`](Date-Soragodong) | 커플 데이트 코스 뽑기 웹 앱 | active |
 | [`CodeStudy/iOS`](CodeStudy/iOS) | 코드 학습 iOS 앱 (CodeStudy) | active (1.2.1 출시) |
 | [`Seoul-Youth-Rent-Checker`](Seoul-Youth-Rent-Checker) | 서울 청년월세지원 자격 체커 v0.1 | active |
+| [`Norae-Galpi`](Norae-Galpi) | 노래갈피 — 노래에 얽힌 기억 아카이브 | active (시드 단계) |
 | `UGGK` | 초기 단계; 디렉토리 미생성, 명시적 구현 요청이 없으면 docs/spec-first | spec-first |
 | [`docs`](docs) | 계획, 설계 노트, 프로세스 문서 | active |
 
@@ -95,6 +96,7 @@
 - `Date-Soragodong`
 - `CodeStudy/iOS`
 - `Seoul-Youth-Rent-Checker`
+- `Norae-Galpi`
 - `UGGK`
 - `docs`
 
@@ -122,6 +124,7 @@
 | [`Date-Soragodong`](Date-Soragodong) | `cd Date-Soragodong && npm run verify` |
 | [`CodeStudy/iOS`](CodeStudy/iOS) | Xcode build (서비스 README 참고) |
 | [`Seoul-Youth-Rent-Checker`](Seoul-Youth-Rent-Checker) | `cd Seoul-Youth-Rent-Checker && npm run verify` |
+| [`Norae-Galpi`](Norae-Galpi) | `cd Norae-Galpi && npm run verify` |
 | `UGGK` | 표준 검증 명령 없음 (디렉토리 미생성) |
 | docs/planning 파일만 변경 | [`docs/process/DOC_LINT.md`](docs/process/DOC_LINT.md) 수동 체크리스트 수행 |
 

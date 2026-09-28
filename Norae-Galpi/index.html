@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>노래갈피</title>
+    <meta
+      name="description"
+      content="노래에 얽힌 기억을 적어두는 곳. 로그인 없이, 곡 하나에 기억 한 편씩."
+    />
+    <!-- 늦은 밤 화면이라 브라우저 UI 색도 맞춘다. 안 맞추면 상단 바만 밝게 떠 조립한 페이지로 보인다. -->
+    <meta name="theme-color" content="#0e0d0c" />
+    <meta name="color-scheme" content="dark" />
+
+    <meta property="og:title" content="노래갈피" />
+    <meta property="og:description" content="노래에 얽힌 기억을 적어두는 곳." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ko_KR" />
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <p style="padding: 24px; line-height: 1.7">
+        노래갈피는 자바스크립트가 필요해요. 브라우저 설정에서 켜주세요.
+      </p>
+    </noscript>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

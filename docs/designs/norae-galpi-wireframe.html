@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>노래갈피 와이어프레임</title>
+<!--
+  노래갈피 (Songmark) — v1 와이어프레임
+  2026-09-16 / office-hours 세션 산출물
+
+  이 문서는 "무엇이 어디에 있나"만 정한다. 색·서체·여백의 미감은 아직 정하지 않았다.
+  회색 톤인 것은 의도이며, 지금 예쁘게 만들면 v1 범위를 자르기 전에 미감이 먼저 굳는다.
+
+  선행 결정 (세션에서 확정):
+  - 로그인 없음. 기기 비밀키의 해시만 서버 보관
+  - 곡 검색 = iTunes Search API (media=music), 재생 = 유튜브 임베드
+  - 곡 키 = itunes_artist_id + 정규화 곡명 (싱글판/앨범판 분리 방지)
+  - 좋아요만 있고 싫어요 없음. 개수는 비공개, 정렬에만 사용
+  - 라벨(계절·시절)은 전부 선택 사항
+-->
+<style>
+  :root{ --bg:#f5f4f1; --ink:#15130f; --sub:#7a746a; --line:#cfc9bf; --panel:#fff; --ghost:#e6e2da; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --bg:#111110; --ink:#efece6; --sub:#8e8880; --line:#33302b; --panel:#1a1917; --ghost:#26241f; } }
+  :root[data-theme="dark"]{ --bg:#111110; --ink:#efece6; --sub:#8e8880; --line:#33302b; --panel:#1a1917; --ghost:#26241f; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;padding:28px 16px 72px}
+  .wrap{max-width:1240px;margin:0 auto}
+  h1{font-size:19px;font-weight:600;margin:0 0 4px;letter-spacing:-.02em}
+  .lede{color:var(--sub);font-size:13px;margin:0 0 6px}
+  .warn{font-size:12px;color:var(--sub);border-left:2px solid var(--line);padding-left:10px;margin:14px 0 26px}
+  h2{font-size:13px;margin:36px 0 14px;font-weight:600}
+  .grid{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:236px}
+  .cap{font-size:12px;font-weight:600;margin:0 0 3px}
+  .why{font-size:11px;color:var(--sub);margin:0 0 9px;min-height:44px;line-height:1.45}
+
+  .phone{width:236px;height:472px;border:1px solid var(--line);border-radius:26px;background:var(--panel);
+    padding:9px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .notch{width:64px;height:4px;background:var(--line);border-radius:3px;margin:2px auto 9px}
+  .body{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .brand{font-size:12px;font-weight:600;letter-spacing:-.01em;padding:0 2px 8px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 2px 8px}
+  .topbar .brand{padding:0}
+  .galpi{font-size:13px;line-height:1}
+  .sorts{display:flex;gap:5px;padding:0 2px 9px}
+  .sorts span{border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:9.5px;color:var(--sub)}
+  .sorts span.on{border-color:var(--ink);color:var(--ink);font-weight:600}
+  .back{font-size:12px;color:var(--sub);padding:0 2px 6px}
+  .bigart{height:96px;border-radius:10px;background:var(--ghost);margin-bottom:9px}
+  .count{font-size:10px;color:var(--sub);border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:7px}
+  .noidx{font-size:9px;color:var(--sub);border:1px dashed var(--line);border-radius:6px;padding:5px 7px;margin-top:auto;line-height:1.45}
+  .glist{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+  .grow{border:1px solid var(--line);border-radius:9px;padding:7px 8px;display:flex;gap:8px}
+  .grow .art{width:26px;height:26px}
+  .grow .t{font-size:10px;font-weight:600;line-height:1.3}
+  .grow .x{font-size:10px;line-height:1.5;margin-top:3px}
+  .pill{font-size:8.5px;border:1px solid var(--line);border-radius:999px;padding:1px 6px;color:var(--sub);white-space:nowrap}
+
+  /* 공통 조각 */
+  .q{font-size:13px;font-weight:600;line-height:1.5;margin:14px 2px 12px}
+  .field{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--sub);background:var(--bg)}
+  .skip{margin-top:auto;text-align:center;font-size:11px;color:var(--sub);text-decoration:underline;padding:10px 0 2px}
+  .btn{border:1px solid var(--ink);border-radius:9px;text-align:center;font-size:11px;font-weight:600;padding:9px 0;margin-top:9px}
+  .btn.ghost{border-color:var(--line);color:var(--sub);font-weight:400}
+  .muted{font-size:10px;color:var(--sub);line-height:1.45}
+
+  /* 검색 결과 행 */
+  .res{display:flex;flex-direction:column;gap:6px;margin-top:9px}
+  .hit{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+  .hit.sel{border-color:var(--ink)}
+  .art{width:30px;height:30px;border-radius:5px;background:var(--ghost);flex:none}
+  .hit .t{font-size:10.5px;font-weight:500;line-height:1.3}
+  .hit .s{font-size:9.5px;color:var(--sub);line-height:1.3}
+
+  /* 유튜브 후보 */
+  .yt{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+  .yt.sel{border-color:var(--ink)}
+  .thumb{width:44px;height:26px;border-radius:4px;background:var(--ghost);flex:none;position:relative}
+  .thumb::after{content:"";position:absolute;inset:0;margin:auto;width:0;height:0;
+    border-left:7px solid var(--sub);border-top:4.5px solid transparent;border-bottom:4.5px solid transparent}
+
+  /* 칩 */
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 8px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:4px 9px;font-size:10px;color:var(--sub)}
+  .chip.on{border-color:var(--ink);color:var(--ink);font-weight:600}
+  .lab{font-size:10px;color:var(--sub);margin:10px 2px 5px}
+
+  /* 입력창 */
+  .ta{border:1px solid var(--ink);border-radius:9px;padding:9px 10px;font-size:11px;line-height:1.6;min-height:86px}
+  .ta .pre{color:var(--sub)}
+  .caret{display:inline-block;width:1px;height:11px;background:var(--ink);vertical-align:-1px;margin-left:1px}
+
+  /* 곡 카드 (피드) */
+  .feed{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:9px}
+  .card{border:1px solid var(--line);border-radius:12px;padding:9px;background:var(--panel)}
+  .chead{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .chead .t{font-size:11.5px;font-weight:600;line-height:1.25}
+  .chead .s{font-size:10px;color:var(--sub)}
+  .player{height:64px;border-radius:8px;background:var(--ghost);position:relative;margin-bottom:9px}
+  .player::after{content:"";position:absolute;inset:0;margin:auto;width:0;height:0;
+    border-left:12px solid var(--sub);border-top:8px solid transparent;border-bottom:8px solid transparent}
+  .player .pl{position:absolute;top:5px;left:7px;font-size:9px;color:var(--sub)}
+  .mem{border-top:1px solid var(--line);padding-top:7px;margin-top:7px}
+  .mem:first-of-type{border-top:0;padding-top:0;margin-top:0}
+  .mem .txt{font-size:10.5px;line-height:1.55}
+  .mem .foot{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+  .tags{font-size:9.5px;color:var(--sub)}
+  .heart{font-size:10px;color:var(--sub)}
+  .more{font-size:10px;color:var(--sub);text-decoration:underline;margin-top:5px}
+  .addmine{border:1px dashed var(--line);border-radius:8px;text-align:center;font-size:10px;color:var(--sub);padding:7px;margin-top:9px}
+
+  /* 스티키 미니 플레이어 */
+  .mini{border-top:1px solid var(--line);margin-top:7px;padding-top:7px;display:flex;align-items:center;gap:8px}
+  .mini .sq{width:22px;height:22px;border-radius:4px;background:var(--ghost);flex:none}
+  .mini .t{font-size:10px;font-weight:500;line-height:1.3}
+  .mini .s{font-size:9px;color:var(--sub)}
+  .mini .pause{margin-left:auto;font-size:11px;color:var(--sub)}
+
+  /* 오버레이(공개 확인) */
+  .dim{position:absolute;inset:0;background:rgba(0,0,0,.34);display:flex;align-items:center;justify-content:center;padding:18px}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 14px;width:100%}
+  .sheet .h{font-size:12.5px;font-weight:600;margin-bottom:7px}
+  .sheet .b{font-size:10.5px;color:var(--sub);line-height:1.6}
+  .sheet .row{display:flex;gap:7px;margin-top:13px}
+  .sheet .row div{flex:1;border:1px solid var(--line);border-radius:8px;text-align:center;font-size:10.5px;padding:8px 0;color:var(--sub)}
+  .sheet .row div.p{border-color:var(--ink);color:var(--ink);font-weight:600}
+
+  /* 하단 노트 */
+  .note{margin-top:34px;font-size:12px;color:var(--sub);line-height:1.8;max-width:820px}
+  .note b{color:var(--ink);font-weight:600}
+  .note code{background:var(--panel);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:11px}
+  .note ul{padding-left:17px;margin:8px 0 18px}
+  .note li{margin-bottom:6px}
+  .open{font-size:12px;color:var(--sub);line-height:1.8;max-width:820px;border-left:2px solid var(--line);padding-left:12px;margin-top:8px}
+  .open b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>노래갈피 — 와이어프레임</h1>
+  <p class="lede">v1 화면 일곱. 곡을 찾고 → 영상을 정하고 → 기억을 적고 → 피드에서 읽는다.</p>
+  <p class="warn">
+    배치만 정한 문서다. 색·서체·여백의 미감은 아직 없다. 회색인 건 의도이며,
+    지금 예쁘게 만들면 v1 범위를 자르기 전에 미감이 먼저 굳는다.
+  </p>
+
+  <h2>흐름 일곱 화면</h2>
+  <div class="grid">
+
+    <!-- ① 온보딩: 아무것도 묻지 않는다. 계정도 약관도 없다. -->
+    <div class="col">
+      <p class="cap">① 온보딩</p>
+      <p class="why">첫 화면에서 계정·약관·권한을 묻지 않는다. 질문 하나와 검색창뿐.
+        "다음에 적을게요"가 항상 보여야 갇힌 느낌이 안 든다.</p>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="body">
+          <div class="brand">노래갈피</div>
+          <div class="q">추억이 있는 노래가<br>있으세요?</div>
+          <div class="field">밤편지</div>
+          <div class="res">
+            <div class="hit"><div class="art"></div><div><div class="t">밤편지</div><div class="s">아이유</div></div></div>
+            <div class="hit"><div class="art"></div><div><div class="t">밤편지 (Cover)</div><div class="s">형제사진관</div></div></div>
+            <div class="hit"><div class="art"></div><div><div class="t">밤편지 (Piano)</div><div class="s">Flow Music</div></div></div>
+          </div>
+          <div class="btn ghost" style="margin-top:9px">찾는 곡이 없어요</div>
+          <p class="muted" style="margin-top:8px"><b>자동 선택이 없다.</b> 검색은 0건보다
+            그럴듯한 오답이 더 위험하다 — 실측에서 「그래 우리 함께」가 「봄날 / 방탄소년단」을 반환했다.
+            "찾는 곡이 없어요"는 결과가 있을 때도 항상 보인다.</p>
+          <div class="skip">다음에 적을게요</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 영상 확정: 그 곡의 "첫 사람"에게만 뜬다. 두 번째 사람부터는 이 화면이 없다. -->
+    <div class="col">
+      <p class="cap">② 영상 확정 <span style="color:var(--sub);font-weight:400">— 첫 사람만</span></p>
+      <p class="why">그 곡의 첫 작성자만 본다. 이후 모든 사람은 이 화면을 건너뛴다.
+        검색 API 호출이 사용자 수가 아니라 곡 수에 비례하게 만드는 장치.</p>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="body">
+          <div class="brand">노래갈피</div>
+          <div class="chead" style="margin-top:12px">
+            <div class="art"></div>
+            <div><div class="t">밤편지</div><div class="s">아이유</div></div>
+          </div>
+          <p class="muted" style="margin:6px 0 10px">이 곡은 아직 아무도 안 적었어요.<br>어떤 영상이 맞나요?</p>
+          <div class="res">
+            <div class="yt sel"><div class="thumb"></div><div><div class="t" style="font-size:10px">[MV] IU(아이유) _ 밤편지</div><div class="s" style="font-size:9px">1theK (원더케이)</div></div></div>
+            <div class="yt"><div class="thumb"></div><div><div class="t" style="font-size:10px">아이유 - 밤편지 [가사]</div><div class="s" style="font-size:9px">Lyrics Channel</div></div></div>
+            <div class="yt"><div class="thumb"></div><div><div class="t" style="font-size:10px">밤편지 (Live)</div><div class="s" style="font-size:9px">IU Official</div></div></div>
+          </div>
+          <div class="btn ghost" style="margin-top:11px">유튜브 링크 직접 넣기</div>
+          <p class="muted" style="margin-top:9px">고른 영상이 이 곡의 기본이 돼요.<br>나중에 신고로 바꿀 수 있어요.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 글쓰기: 빈 텍스트박스는 사람을 얼어붙게 한다. 첫 칩이 미리 들어가 있다. -->
+    <div class="col">
+      <p class="cap">③ 기억 적기</p>
+      <p class="why"><b>칩도 예시도 없다.</b> 대신 곡을 크게 보여준다 — 빈 칸 앞이 아니라
+        <b>곡 앞에서 쓰는 것</b>이 되게. 실측에서 글 5편 중 0편이 칩으로 시작하지 않았다.</p>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="body">
+          <div class="bigart" style="height:88px;margin-top:2px"></div>
+          <div style="text-align:center;margin-bottom:10px">
+            <div class="t" style="font-size:14px;font-weight:600">밤편지</div>
+            <div class="s">아이유</div>
+          </div>
+          <div class="ta" style="min-height:104px">
+            군생활 중 아마 상병달 때였나. 그때쯤 쇼미더머니 결승이 겨울이었다.<span class="caret"></span>
+          </div>
+          <div class="lab" style="opacity:.75">봄 · 여름 · 가을 · 겨울 · 시절</div>
+          <div class="chips" style="margin:0 0 6px">
+            <span class="chip">봄</span><span class="chip">여름</span><span class="chip">가을</span><span class="chip on">겨울</span>
+          </div>
+          <div class="chips" style="margin:0">
+            <span class="chip">어릴 때</span><span class="chip on">학창시절</span><span class="chip">스무 살 무렵</span><span class="chip">사회 초년</span><span class="chip">요즘</span>
+          </div>
+          <div class="btn" style="margin-top:auto">올리기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 공개 확인: 기본값이 공개이므로, 되돌릴 수 없는 순간에 한 번 멈춰 세운다. -->
+    <div class="col">
+      <p class="cap">④ 공개 확인</p>
+      <p class="why">기본값이 공개라서 이 한 장이 필요하다.
+        "이름은 남지 않아요"가 핵심 문장 — 사람들이 가장 걱정하는 게 그거다.</p>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="body" style="opacity:.45">
+          <div class="chead" style="margin-top:2px"><div class="art"></div><div><div class="t">밤편지</div><div class="s">아이유</div></div></div>
+          <div class="chips"><span class="chip on">이 노래 들으면</span><span class="chip">그때 나는</span></div>
+          <div class="ta"><span class="pre">이 노래 들으면</span> 야자 끝나고 혼자 걸어가던 그 길이…</div>
+        </div>
+        <div class="dim">
+          <div class="sheet">
+            <div class="h">이 글은 공개됩니다</div>
+            <div class="b">노래갈피에 오는 누구나 볼 수 있어요.<br><b style="color:var(--ink)">이름은 남지 않아요.</b></div>
+            <div class="row">
+              <div>나만 간직</div>
+              <div class="p">올리기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑤ 홈 피드: 곡 카드가 세로로 흐른다. 곡을 검색해 들어가는 페이지가 아니다. -->
+    <div class="col">
+      <p class="cap">⑤ 홈 피드</p>
+      <p class="why">곡 카드가 세로로 흐른다. <b>재생은 없다</b> — 유튜브 약관상 작은 플레이어를 띄울 수 없어서,
+        듣는 일은 전부 ⑥으로 옮겼다.</p>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="body">
+          <div class="topbar"><span class="brand">노래갈피</span><span class="galpi">🔖</span></div>
+          <div class="sorts"><span class="on">지금 계절</span><span>최신</span><span>오래 남은</span></div>
+          <div class="feed">
+            <div class="card">
+              <div class="chead"><div class="art"></div><div><div class="t">밤편지</div><div class="s">아이유</div></div></div>
+              <div class="mem">
+                <div class="txt">이 노래 들으면 야자 끝나고 혼자 걸어가던 그 길이 생각난다. 이어폰 한쪽이…</div>
+                <div class="more">더 보기</div>
+                <div class="foot"><span class="tags">겨울 · 학창시절</span><span class="heart">♡</span></div>
+              </div>
+              <div class="mem">
+                <div class="txt">그때 나는 고3이었고, 새벽에 이 노래를 틀어놓고 공부하는 척했다.</div>
+                <div class="foot"><span class="tags">겨울 · 학창시절</span><span class="heart">♡</span></div>
+              </div>
+              <div class="addmine">나도 적기</div>
+            </div>
+            <div class="card">
+              <div class="chead"><div class="art"></div><div><div class="t">Steal The Show</div><div class="s">Lauv</div></div></div>
+              <div class="mem">
+                <div class="txt">그때 나는 퇴사를 고민하고 있었다. 출근길에 이것만 반복해서…</div>
+                <div class="foot"><span class="tags">가을 · 사회 초년</span><span class="heart">♡</span></div>
+              </div>
+              <div class="mem">
+                <div class="txt">퇴근길에 들으면 또 다르게 들린다. 같은 노래인데.</div>
+                <div class="foot"><span class="tags">가을 · 요즘</span><span class="heart">♡</span></div>
+              </div>
+            </div>
+          </div>
+          <p class="muted" style="margin:7px 2px 0">피드에서는 재생하지 않는다. 카드를 탭해야 들린다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑥ 곡 상세: 카드를 탭하면 그 곡의 기억 전부. v1에서는 noindex. -->
+    <div class="col">
+      <p class="cap">⑥ 곡 상세 <span style="color:var(--sub);font-weight:400">— 카드 탭</span></p>
+      <p class="why"><b>이 제품에서 소리가 나는 유일한 화면.</b> 플레이어가 상단에 고정되고 기억만 스크롤된다.
+        v1은 검색엔진에 열지 않는다 — 곡당 평균 5편을 넘으면 그때.</p>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="body">
+          <div class="back">←</div>
+          <div class="bigart"></div>
+          <div class="chead" style="margin-bottom:9px">
+            <div><div class="t" style="font-size:13px">밤편지</div><div class="s">아이유</div></div>
+          </div>
+          <div class="player" style="height:118px"><span class="pl">YouTube · 상단 고정</span></div>
+          <div class="count">기억 7편 &nbsp;·&nbsp; 아래만 스크롤됩니다</div>
+          <div style="flex:1;overflow:hidden">
+            <div class="mem">
+              <div class="txt">이 노래 들으면 야자 끝나고 혼자 걸어가던 그 길이 생각난다.</div>
+              <div class="foot"><span class="tags">겨울 · 학창시절</span><span class="heart">♡</span></div>
+            </div>
+            <div class="mem">
+              <div class="txt">그때 나는 고3이었고, 새벽에 이 노래를 틀어놓고 공부하는 척했다.</div>
+              <div class="foot"><span class="tags">겨울 · 학창시절</span><span class="heart">♡</span></div>
+            </div>
+            <div class="mem">
+              <div class="txt">처음 들었을 때 아무 생각 없었는데, 헤어지고 나서 다르게 들렸다.</div>
+              <div class="foot"><span class="tags">봄 · 스무 살 무렵</span><span class="heart">♡</span></div>
+            </div>
+          </div>
+          <div class="addmine" style="margin-top:7px">나도 적기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑦ 내 갈피: 계정이 아니라 "이 기기에 끼워둔 것". 사람 아이콘을 안 쓰는 이유. -->
+    <div class="col">
+      <p class="cap">⑦ 내 갈피 <span style="color:var(--sub);font-weight:400">— 🔖 탭</span></p>
+      <p class="why">계정 화면이 아니라 <b>이 기기에 끼워둔 것</b>. 그래서 사람 아이콘이 아니라 갈피 표시다 —
+        이름·아이콘·기능이 한 줄로 이어진다.</p>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="body">
+          <div class="topbar"><span class="brand">🔖 내 갈피</span><span class="galpi" style="opacity:.35">←</span></div>
+          <p class="muted" style="margin:2px 2px 10px">이 기기에 저장된 글이에요.</p>
+          <div class="glist">
+            <div class="grow">
+              <div class="art"></div>
+              <div style="min-width:0">
+                <div class="t">밤편지 · 아이유</div>
+                <div class="x">이 노래 들으면 야자 끝나고 혼자 걸어가던…</div>
+                <div class="foot" style="margin-top:5px"><span class="tags">겨울 · 학창시절</span><span class="pill">공개</span></div>
+              </div>
+            </div>
+            <div class="grow">
+              <div class="art"></div>
+              <div style="min-width:0">
+                <div class="t">Steal The Show · Lauv</div>
+                <div class="x">그때 나는 퇴사를 고민하고 있었다. 출근길에…</div>
+                <div class="foot" style="margin-top:5px"><span class="tags">가을 · 사회 초년</span><span class="pill">나만</span></div>
+              </div>
+            </div>
+            <div class="grow">
+              <div class="art"></div>
+              <div style="min-width:0">
+                <div class="t">벚꽃 엔딩 · 버스커 버스커</div>
+                <div class="x">처음 들었을 때 좋아하는 애랑 걷고 있었다.</div>
+                <div class="foot" style="margin-top:5px"><span class="tags">봄 · 학창시절</span><span class="pill">공개</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="noidx">브라우저 데이터를 지우면 이 목록과의 연결이 끊어져요.
+            서버는 누가 썼는지 모릅니다 — 해시만 갖고 있어요.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>재생은 ⑥에서만 — 유튜브 약관이 정한 형태</h2>
+  <div class="note" style="margin-top:0">
+    처음 설계는 <s>재생 중인 카드가 화면을 벗어나면 하단 미니 플레이어로 줄어들어 따라오는</s> 것이었다.
+    <b>유튜브 약관 확인 결과 그 형태가 불가능해서 폐기했다.</b> 확인된 조항은 셋이다.
+    <ul>
+      <li><b>플레이어 최소 크기</b> — Required Minimum Functionality: <i>"Embedded players must have a viewport that is at least 200px by 200px."</i>
+        16:9로 높이 200px을 맞추면 너비가 356px이다. 375px 폰에서 화면을 꽉 채우므로 "미니"가 성립하지 않는다.</li>
+      <li><b>오디오 분리 금지</b> — Developer Policies III.I: <i>"separate, isolate, or modify the audio or video components"</i>.
+        축소하면서 영상을 숨기고 소리만 남기는 것이 금지된다.</li>
+      <li><b>오버레이 금지</b> — RMF: <i>"must not display overlays, frames, or other visual elements in front of any part of a YouTube embedded player"</i>.
+        플레이어 <i>위에</i> 곡 제목이나 닫기 버튼을 덮을 수 없다. 옆이나 아래는 된다.</li>
+    </ul>
+    참고로 background player 금지 조항에는 걸리지 않았다 — 그 정의가 "사용자가 보는 화면에 표시되지 않는 플레이어"라서,
+    보이는 미니 플레이어는 해당이 안 된다. 죽인 것은 크기 규정이다.
+    또한 <b>API 키 없이 순수 <code>&lt;iframe&gt;</code>만 써도</b> Developer Policies와 RMF가 적용되고, 무료·비상업 예외는 없다.
+
+    <p style="margin:14px 0 0"><b>그래서 재생을 ⑥ 곡 상세로 옮겼다.</b> 플레이어를 상단에 고정하고 기억만 스크롤시키면
+    플레이어가 항상 200px 이상으로 화면에 보이므로 세 조항을 전부 통과한다. 그리고
+    <b>노래가 흐르는 동안 남의 기억을 읽어 내려간다</b>는 원래 목적은 그대로다.</p>
+    <ul>
+      <li>피드에 iframe을 하나도 깔지 않으므로 피드가 훨씬 가볍다. iframe 하나가 수 MB다.</li>
+      <li>"한 페이지에 자동 재생 플레이어는 하나만"이라는 RMF 규정이 자동으로 지켜진다.</li>
+      <li>자동 재생은 <i>"플레이어의 절반 이상이 보이기 전에는 시작할 수 없다"</i>. 상단 고정이므로 조건을 충족한다.
+        다만 모바일 브라우저의 소리 자동재생 차단은 별개라 첫 재생은 사용자가 눌러야 한다. <code>요확인</code></li>
+      <li>잃는 것 — 피드를 훑으며 음악을 듣는 경험은 없다. 들으려면 카드를 탭해 들어가야 한다.</li>
+    </ul>
+  </div>
+
+  <h2>배치에 담긴 결정</h2>
+  <div class="note" style="margin-top:0">
+    <ul>
+      <li><b>①에 계정·약관·권한이 없다.</b> 서버는 기기 비밀키의 해시만 갖는다. 수집하는 개인정보가 0건이라 물어볼 게 없다.</li>
+      <li><b>②는 그 곡의 첫 사람만 본다.</b> 두 번째 사람부터는 영상이 이미 정해져 있어 이 화면을 건너뛴다. 유튜브 검색 호출이 <i>사용자 수</i>가 아니라 <i>곡 수</i>에 비례하게 되는 지점.</li>
+      <li><b>③의 칩은 전부 사람으로 시작한다.</b> "이 노래는" 같은 칩을 일부러 뺐다 — 그쪽으로 새면 기억이 아니라 곡 감상평이 된다.</li>
+      <li><b>③의 라벨은 전부 선택 사항</b>이고 올리기 버튼 바로 위에 있다. 안 고르고 눌러도 아무 일 없다. 계절 라벨이 쌓이면 <b>겨울에 겨울 글을 먼저 보여줄 수 있다</b> — 푸시도 스트릭도 없이 돌아올 이유가 된다.</li>
+      <li><b>⑤에 좋아요 숫자가 없다.</b> ♡만 있고 개수는 안 보인다. 누군가의 진심이 "♡ 0"으로 박히면 안 되기 때문. 개수는 DB에만 있고 정렬에만 쓴다.</li>
+      <li><b>⑤에 싫어요가 없다.</b> 기억에는 틀린 게 없다.</li>
+      <li><b>카드의 "나도 적기"</b>가 ③으로 돌아가는 두 번째 입구다. 온보딩에서 "다음에 적을게요"로 빠져나간 사람이 남의 글을 읽다 여기서 잡힌다.</li>
+      <li><b>⑤의 정렬 기본값은 "지금 계절"이다.</b> 9월이면 가을 글이 위로 온다. 겨울이 오면 홈이 저절로 바뀐다 —
+        푸시도 스트릭도 없이 계절이 사람을 부른다. "오래 남은"은 좋아요 순인데, 숫자를 안 보여주기로 했으니 이름에서도 숫자 냄새를 뺐다.</li>
+      <li><b>⑦이 사람 아이콘이 아니라 갈피인 이유.</b> 로그인이 없는 제품에서 프로필 자리에 사람이 앉아 있으면
+        "로그인해야 하나" 싶어진다. 갈피는 서비스 이름과 같은 은유라, 이름·아이콘·기능이 한 줄로 이어진다.</li>
+      <li><b>⑥은 v1에서 noindex.</b> "밤편지 가사 의미"로 검색해 들어온 사람이 글 3편을 보면 유튜브 수만 개와 바로 비교된다.
+        <b>곡당 평균 5편</b>을 넘으면 그때 열기로 기준을 숫자로 박아뒀다.</li>
+    </ul>
+  </div>
+
+  <h2>모더레이션 — 대기열을 만들지 않는다</h2>
+  <div class="note" style="margin-top:0">
+    "걸린 글은 운영자가 확인"으로 설계하면 <b>매일 대기열을 봐야 하는 제품</b>이 된다. 하루만 안 봐도 사람들 글이 멈춘다.
+    그래서 자동 필터를 <b>좁은 그물</b>로 만들고, <code>pending</code> 상태를 아예 두지 않는다.
+    <ul>
+      <li><b>즉시 돌려줌</b> — 전화번호·계좌·실명+소속 같은 명백한 개인정보. "이 부분은 빼주세요"로 고칠 기회를 준다.</li>
+      <li><b>즉시 거절</b> — 노골적 유해물.</li>
+      <li><b>그냥 통과</b> — 애매한 것 전부. 문제가 되면 신고로 잡힌다.</li>
+    </ul>
+    그래서 <code>status</code>는 <code>visible / hidden / removed</code> 셋이면 끝난다.
+    운영자는 <b>신고가 들어온 것만</b> 보고, 그건 Vercel 대시보드의 Data editor에서 행을 직접 지우면 된다 — 어드민 화면을 만들 필요가 없다.
+  </div>
+
+  <h2>이 그림이 아직 안 정한 것</h2>
+  <div class="open">
+    <b>③에서 자동 필터에 걸렸을 때의 화면.</b> "이 부분은 빼주세요"를 어떤 톤으로 보여줄지. 여기서 기분이 상하면 그 사람은 안 돌아온다.<br>
+    <b>글이 0개일 때의 ⑤.</b> 시드는 Tabber가 곡 8~10개 · 기억 12~15편을 직접 적는다.
+    <b>시드는 콘텐츠가 아니라 규범이다</b> — 사람들은 앞사람 글을 보고 자기 글의 길이와 톤을 맞춘다. 운영자 표시는 달지 않는다.<br>
+    <b>②를 v1에 넣을지.</b> 일곱 화면 중 유일하게 무겁다(유튜브 검색 → 후보 렌더 → 직접 링크 → 검증).
+    다만 빼면 첫 사람이 모바일에서 유튜브 앱을 오가며 링크를 복사해와야 한다 — 새 곡이 안 쌓일 위험.<br>
+    <b>남은 미확인.</b> 모바일 자동재생 정책 실측 · Neon 콜드스타트 실측 · 개인정보처리방침 필요 여부.
+  </div>
+
+  <h2>확인 끝난 것 (2026-09-16)</h2>
+  <div class="note" style="margin-top:0">
+    <ul>
+      <li><b>유튜브 임베드 약관</b> — 표준 IFrame 임베드는 허용. 미니 플레이어만 불가(위 참조). 제재 사례는 전부
+        광고 우회·비공식 플레이어(Musi·Invidious·Vanced)였고, 표준 임베드 서비스는 생존 중(Watch2Gether).</li>
+      <li><b>YouTube Data API 쿼터</b> — <b>2026-06-01에 모델이 바뀌었다.</b> <code>search.list</code>가 전용 버킷으로 분리되어
+        <b>하루 100 calls가 경성 상한</b>이다. 다른 호출을 아껴도 늘릴 수 없다. 즉 <b>신규 곡 하루 100개</b>.
+        반면 <code>videos.list</code>는 공용 10,000 units 풀이라 캐시된 곡 조회는 사실상 무제한 — 곡당 1회만 검색하는 설계가 정확했다.</li>
+      <li><b>API 키 발급 장벽 없음</b> — 감사(audit)는 기본 할당량 <i>초과</i> 요청 시에만 요구된다. GCP 프로젝트 + 키로 즉시 시작.
+        단 <b>90일 연속 미사용 시 접근이 차단될 수 있다</b>(Developer Policies III.D.4) — 직접 링크 폴백을 항상 열어둘 이유.</li>
+      <li><b>곡 검색·메타데이터</b> — iTunes Search API(<code>media=music</code>, <code>country=us</code>), 무인증.
+        한국어 질의 정확. <code>entity=song</code>+<code>country=kr</code> 조합만 항상 0을 반환하는 함정이 있다.</li>
+      <li><b>DB</b> — Neon Postgres. 리포에 이미 있다([CodeStudy/Backend]). 무료 0.5GB, 5분 비활성 시 자동 정지.
+        그래서 피드 첫 페이지는 60초 캐시로 DB를 안 건드리게 한다.</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

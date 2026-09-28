@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>노래갈피 — 모션 랩</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<link rel="stylesheet" href="./src/styles.css" />
+<style>
+  /* 랩 전용. 제품 CSS를 건드리지 않는다. */
+  body { padding: 0 0 80px; }
+  .lab { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+  .lab h1 { font-size: 22px; margin: 0 0 6px; }
+  .lab .sub { color: var(--color-text-secondary); font-size: 15px; margin: 0 0 32px; line-height: 1.7; }
+
+  .row { border-top: 1px solid var(--color-line); padding: 28px 0; }
+  .row h2 { font-size: 16px; margin: 0 0 4px; }
+  .row .why { color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; margin: 0 0 4px; }
+  .row .tag { color: var(--color-text-tertiary); font-size: 12px; letter-spacing: .02em; margin: 0 0 16px; }
+  .row .warn { color: var(--color-danger); font-size: 13px; line-height: 1.6; margin: 8px 0 0; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 620px) { .pair { grid-template-columns: 1fr; } }
+  .pane { border: 1px solid var(--color-line); border-radius: var(--radius-card); padding: 14px; background: var(--color-surface); }
+  .pane > .cap { font-size: 12px; color: var(--color-text-tertiary); margin: 0 0 12px; }
+  .pane--new > .cap { color: var(--color-accent); }
+  .stage { min-height: 120px; display: flex; align-items: center; justify-content: center; }
+  .play { margin-top: 12px; width: 100%; min-height: 40px; font-size: 13px; border: 1px solid var(--color-line); border-radius: 6px; color: var(--color-text-secondary); }
+
+  /* ── 스프링 이징 토큰 (제안) ─────────────────────────────────────────
+     CSS linear() 로 실제 스프링 곡선을 근사한다. iOS 의 느낌은 거의 전부
+     "감쇠 진동으로 자리를 잡는다"에서 온다. cubic-bezier 는 그걸 못 낸다. */
+  :root {
+    --ease-spring: linear(
+      0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%,
+      0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%,
+      1.001 79%, 1
+    );
+    --ease-spring-soft: linear(
+      0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017,
+      1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%,
+      1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.98 57.1%,
+      0.998 69.8%, 1.004 76.9%, 1
+    );
+    --dur-spring: 520ms;
+  }
+
+  /* A. 앨범아트 연속성 */
+  .mini { display:flex; gap:10px; align-items:center; }
+  .mini img, .mini .ph { width:52px; height:52px; border-radius:6px; object-fit:cover; background:var(--color-surface-raised); }
+  .big img, .big .ph { width:100%; aspect-ratio:1; border-radius:8px; object-fit:cover; background:var(--color-surface-raised); max-width:180px; }
+  .screen-box { position:relative; overflow:hidden; border-radius:8px; height:190px; background:var(--color-bg); border:1px solid var(--color-line); }
+  .screen-box > div { position:absolute; inset:0; padding:12px; }
+  .cut-in { animation: cut-in 1ms; }
+  @keyframes cut-in { from { opacity:1 } to { opacity:1 } }
+  .morph-art { transition: all var(--dur-spring) var(--ease-spring); }
+
+  /* B. 스켈레톤 shimmer */
+  .sk { border-radius:6px; background:
+      linear-gradient(100deg, var(--color-surface-raised) 30%, #262220 48%, var(--color-surface-raised) 66%);
+      background-size: 280% 100%; }
+  .sk.on { animation: shimmer 1.6s linear infinite; }
+  @keyframes shimmer { from { background-position: 180% 0 } to { background-position: -80% 0 } }
+
+  /* C. ♡ punch */
+  .heart-demo { font-size:30px; line-height:1; color:var(--color-text-tertiary); min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+  .heart-demo.liked { color: var(--color-accent); }
+  .heart-demo.punch { animation: punch 420ms var(--ease-spring-soft); }
+  @keyframes punch { 0%{transform:scale(1)} 22%{transform:scale(.86)} 100%{transform:scale(1)} }
+
+  /* D. 정렬 pill 인디케이터 */
+  .segs { position:relative; display:inline-flex; gap:0; border:1px solid var(--color-line); border-radius:999px; padding:3px; }
+  .segs button { position:relative; z-index:1; font-size:13px; padding:0 14px; min-height:34px; color:var(--color-text-tertiary); border-radius:999px; }
+  .segs button[aria-pressed=true] { color: var(--color-bg); }
+  .segs .thumb { position:absolute; top:3px; bottom:3px; border-radius:999px; background:var(--color-text); z-index:0; }
+  .segs--new .thumb { transition: transform var(--dur-spring) var(--ease-spring), width var(--dur-spring) var(--ease-spring); }
+  .segs--old .thumb { display:none; }
+  .segs--old button[aria-pressed=true] { color: var(--color-text); }
+
+  /* E. 더 보기 */
+  .clampy { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:15px; line-height:1.7; margin:0; }
+  .grid-open { display:grid; grid-template-rows:0fr; transition: grid-template-rows 420ms var(--ease-spring); }
+  .grid-open > div { overflow:hidden; }
+  .grid-open.open { grid-template-rows:1fr; }
+
+  /* F. 시트 */
+  .sheet-box { position:relative; height:190px; overflow:hidden; border:1px solid var(--color-line); border-radius:8px; background:var(--color-bg); }
+  .sheet-demo { position:absolute; left:0; right:0; bottom:0; background:var(--color-surface-raised); border-radius:14px 14px 0 0; padding:14px; transform:translateY(110%); }
+  .sheet-demo.in-old { animation: s-old 240ms var(--ease-out) forwards; }
+  .sheet-demo.in-new { animation: s-new var(--dur-spring) var(--ease-spring) forwards; }
+  @keyframes s-old { from{transform:translateY(110%)} to{transform:translateY(0)} }
+  @keyframes s-new { from{transform:translateY(110%)} to{transform:translateY(0)} }
+  .scrim { position:absolute; inset:0; background:rgba(0,0,0,.6); opacity:0; }
+  .scrim.in-new { animation: fade 320ms var(--ease-out) forwards; }
+  .scrim.in-old { animation: fade 1ms forwards; }
+  @keyframes fade { to { opacity:1 } }
+</style>
+</head>
+<body>
+<div class="lab">
+  <h1>모션 랩</h1>
+  <p class="sub">
+    왼쪽이 <b>지금</b>, 오른쪽이 <b>제안</b>. 각 칸의 버튼을 눌러 돌려보세요.<br />
+    분류는 GetStream <code>purposeful-ios-animations</code> 의 것을 씁니다 — 이 제품에 맞는 것만 골랐습니다.
+  </p>
+  <div id="rows"></div>
+</div>
+
+<script type="module">
+const ART = 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d1/50/ad/d150ade8-3bc4-f6ac-c06e-539dad74b053/888272072853_Cover.jpg/300x300bb.jpg';
+
+const rows = document.getElementById('rows');
+
+function row({ id, title, why, tag, warn, autoplay = false, old: oldFn, neu: newFn }) {
+  const el = document.createElement('section');
+  el.className = 'row';
+  el.innerHTML = `<h2>${title}</h2><p class="why">${why}</p><p class="tag">${tag}</p>
+    <div class="pair">
+      <div class="pane"><p class="cap">지금</p><div class="stage" id="${id}-old"></div><button class="play" data-t="old">돌려보기</button></div>
+      <div class="pane pane--new"><p class="cap">제안</p><div class="stage" id="${id}-new"></div><button class="play" data-t="new">돌려보기</button></div>
+    </div>${warn ? `<p class="warn">${warn}</p>` : ''}`;
+  rows.append(el);
+  const oldStage = el.querySelector(`#${id}-old`);
+  const newStage = el.querySelector(`#${id}-new`);
+  const oldPlay = oldFn(oldStage);
+  const newPlay = newFn(newStage);
+  el.querySelectorAll('.play').forEach((b) =>
+    b.addEventListener('click', () => (b.dataset.t === 'old' ? oldPlay() : newPlay())));
+  // 쉬는 상태가 곧 출발점인 행은 자동 재생하지 않는다 — 눌러야 차이가 보인다.
+  if (autoplay) { oldPlay(); newPlay(); }
+}
+
+/* ── A. 앨범아트 연속성 ───────────────────────────────────────────── */
+function artScreens(stage, morph) {
+  stage.innerHTML = `<div class="screen-box" style="width:100%">
+    <div class="feed"><div class="mini"><img src="${ART}" alt=""/><div><div style="font-size:14px;font-weight:600">Credit</div><div style="font-size:12px;color:var(--color-text-secondary)">릴보이</div></div></div>
+      <p style="font-size:13px;color:var(--color-text-secondary);margin:10px 0 0;line-height:1.6">상병 달고 나서인가. 그때쯤 쇼미더머니 결승이…</p></div>
+    <div class="detail" style="display:none"><div class="big"><img src="${ART}" alt=""/></div>
+      <div style="font-size:14px;font-weight:600;margin-top:8px">Credit</div></div>
+  </div>`;
+  const box = stage.querySelector('.screen-box');
+  const feed = box.querySelector('.feed');
+  const detail = box.querySelector('.detail');
+  let showing = 'feed';
+  return () => {
+    const goDetail = showing === 'feed';
+    if (!morph) {
+      feed.style.display = goDetail ? 'none' : '';
+      detail.style.display = goDetail ? '' : 'none';
+      showing = goDetail ? 'detail' : 'feed';
+      return;
+    }
+    // FLIP — 떠나는 화면의 아트 위치를 재서 도착 화면의 아트로 이어 붙인다.
+    const fromImg = (goDetail ? feed : detail).querySelector('img');
+    const from = fromImg.getBoundingClientRect();
+    feed.style.display = goDetail ? 'none' : '';
+    detail.style.display = goDetail ? '' : 'none';
+    const toImg = (goDetail ? detail : feed).querySelector('img');
+    const to = toImg.getBoundingClientRect();
+    const dx = from.left - to.left, dy = from.top - to.top;
+    const sx = from.width / to.width, sy = from.height / to.height;
+    toImg.style.transformOrigin = 'top left';
+    toImg.style.transition = 'none';
+    toImg.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+    requestAnimationFrame(() => {
+      toImg.style.transition = 'transform var(--dur-spring) var(--ease-spring)';
+      toImg.style.transform = 'none';
+    });
+    showing = goDetail ? 'detail' : 'feed';
+  };
+}
+
+row({
+  id: 'a', title: 'A. 곡 카드 → ⑥ 곡 상세 — 앨범아트가 이어진다',
+  why: '지금은 화면이 뚝 끊겨서 "어디로 왔는지" 감각이 없습니다. 앨범아트가 그 자리에서 커지면 같은 곡이라는 게 몸으로 읽힙니다. iOS 의 <code>matchedGeometryEffect</code> 와 같은 것.',
+  tag: '분류: 연속성 / 방향감 · DESIGN.md 가 이미 허용한 유일한 연출 순간(⑥ 진입)을 제대로 하는 것',
+  old: (s) => artScreens(s, false), neu: (s) => artScreens(s, true),
+});
+
+/* ── B. 로딩 ─────────────────────────────────────────────────────── */
+row({
+  id: 'b', title: 'B. 로딩 — 글자 한 줄 → 카드 모양 스켈레톤',
+  why: 'Neon 이 5분 비활성이면 잠들어서 <b>콜드스타트가 실재합니다</b>. 지금은 "불러오는 중이에요…" 한 줄이라 그 시간이 통째로 빈 화면입니다. 카드 모양 그대로 자리를 잡아두면 레이아웃이 안 튀고 기다림이 짧게 느껴집니다.',
+  tag: '분류: Feedback and Hinting (레포의 Animated Placeholders — Facebook·Slack·Twitter 방식)',
+  autoplay: true,
+  old: (s) => {
+    s.innerHTML = `<p style="color:var(--color-text-tertiary);font-size:15px">불러오는 중이에요…</p>`;
+    return () => {};
+  },
+  neu: (s) => {
+    s.innerHTML = `<div style="width:100%">
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="sk on" style="width:52px;height:52px;flex:0 0 52px"></div>
+        <div style="flex:1"><div class="sk on" style="height:13px;width:58%"></div>
+        <div class="sk on" style="height:11px;width:34%;margin-top:7px"></div></div>
+      </div>
+      <div class="sk on" style="height:12px;margin-top:14px"></div>
+      <div class="sk on" style="height:12px;margin-top:8px;width:88%"></div>
+      <div class="sk on" style="height:12px;margin-top:8px;width:52%"></div>
+    </div>`;
+    return () => {
+      s.querySelectorAll('.sk').forEach((n) => { n.classList.remove('on'); void n.offsetWidth; n.classList.add('on'); });
+    };
+  },
+});
+
+/* ── C. ♡ ────────────────────────────────────────────────────────── */
+function heart(stage, punch) {
+  stage.innerHTML = `<button class="heart-demo">♡</button>`;
+  const h = stage.querySelector('.heart-demo');
+  return () => {
+    const on = !h.classList.contains('liked');
+    h.classList.toggle('liked', on);
+    h.textContent = on ? '♥' : '♡';
+    if (punch) { h.classList.remove('punch'); void h.offsetWidth; h.classList.add('punch'); }
+  };
+}
+row({
+  id: 'c', title: 'C. ♡ 토글 — 색만 바뀜 → 아주 짧은 눌림',
+  why: '트위터처럼 파티클을 튀기지는 않습니다. 이 제품 톤이 아니고, 무엇보다 <b>개수를 숨기는 제품</b>이라 요란해지면 거짓말이 됩니다. 손끝이 눌렸다는 것만 420ms 안에 돌려줍니다.',
+  tag: '분류: Augment Feeling — 단, 최대한 절제',
+  warn: '⚠ DESIGN.md 와 충돌합니다: "♡ 토글은 --dur-quick(120ms), 바운스 이징을 쓰지 않는다". 제안은 420ms + 스프링입니다. Tabber 결정 필요.',
+  old: (s) => heart(s, false), neu: (s) => heart(s, true),
+});
+
+/* ── D. 정렬 pill ────────────────────────────────────────────────── */
+function segs(stage, animated) {
+  stage.innerHTML = `<div class="segs ${animated ? 'segs--new' : 'segs--old'}">
+    <span class="thumb"></span>
+    <button aria-pressed="true">지금 계절</button><button aria-pressed="false">최신</button><button aria-pressed="false">오래 남은</button></div>`;
+  const wrap = stage.querySelector('.segs');
+  const thumb = wrap.querySelector('.thumb');
+  const btns = [...wrap.querySelectorAll('button')];
+  const place = (b) => {
+    thumb.style.width = `${b.offsetWidth}px`;
+    thumb.style.transform = `translateX(${b.offsetLeft - 3}px)`;
+  };
+  requestAnimationFrame(() => place(btns[0]));
+  btns.forEach((b) => b.addEventListener('click', () => {
+    btns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    place(b);
+  }));
+  let i = 0;
+  return () => { i = (i + 1) % btns.length; btns[i].click(); };
+}
+row({
+  id: 'd', title: 'D. 정렬 전환 — 색만 바뀜 → 인디케이터가 미끄러진다',
+  why: '지금은 어느 쪽에서 어느 쪽으로 옮겨갔는지 흔적이 없습니다. 인디케이터가 이동하면 <b>내가 방금 무엇을 바꿨는지</b>가 남습니다. iOS 세그먼트 컨트롤이 하는 일.',
+  tag: '분류: State Change (레포의 Menu to close 와 같은 계열)',
+  old: (s) => segs(s, false), neu: (s) => segs(s, true),
+});
+
+/* ── E. 더 보기 ──────────────────────────────────────────────────── */
+function more(stage, animated) {
+  const text = '군생활 중 아마 상병달떄였나? 상병 달고 나서 인가. 그때쯤 쇼미더머니 결승이 겨울때쯤이었다. 후임,동기,선임 이렇게 삼삼오오 모여서 작은 티비 하나로 밤에 연등하면서 보던게 엊그제 처럼 생생하다.';
+  stage.innerHTML = `<div style="width:100%">
+    <div class="clip"><p class="body">${text}</p></div>
+    <button class="toggle" style="font-size:13px;color:var(--color-text-secondary);padding:6px 0">더 보기</button>
+    <div class="after" style="font-size:12px;color:var(--color-text-tertiary);border-top:1px solid var(--color-line);padding-top:8px">↓ 다음 카드</div>
+  </div>`;
+  const clip = stage.querySelector('.clip');
+  const body = stage.querySelector('.body');
+  const btn = stage.querySelector('.toggle');
+  Object.assign(body.style, { fontSize: '15px', lineHeight: '1.7', margin: '0' });
+  // 두 쪽 모두 같은 접힘 상태에서 출발한다. 차이는 "펼칠 때 높이가 튀느냐"뿐이다.
+  const CLOSED = 15 * 1.7 * 2; // 2줄
+  clip.style.overflow = 'hidden';
+  clip.style.height = `${CLOSED}px`;
+  if (animated) clip.style.transition = 'height 420ms var(--ease-spring)';
+
+  let open = false;
+  const run = () => {
+    open = !open;
+    btn.textContent = open ? '접기' : '더 보기';
+    clip.style.height = open ? `${body.scrollHeight}px` : `${CLOSED}px`;
+  };
+  btn.addEventListener('click', run);
+  return run;
+}
+
+row({
+  id: 'e', title: 'E. 더 보기 — 즉시 펼쳐짐 → 높이가 자란다',
+  why: '지금은 세 줄이 갑자기 열 줄이 되면서 아래 카드가 툭 밀립니다. 높이가 자라면 읽던 자리를 잃지 않습니다.',
+  tag: '분류: 연속성',
+  old: (s) => more(s, false), neu: (s) => more(s, true),
+});
+
+/* ── F. 시트 ─────────────────────────────────────────────────────── */
+function sheet(stage, spring) {
+  stage.innerHTML = `<div class="sheet-box" style="width:100%">
+    <div style="position:absolute;inset:0;padding:12px;font-size:13px;color:var(--color-text-tertiary)">③ 기억 적기</div>
+    <div class="scrim"></div>
+    <div class="sheet-demo"><div style="font-size:15px;font-weight:600">이 글은 공개돼요</div>
+      <p style="font-size:13px;color:var(--color-text-secondary);margin:6px 0 0">낯선 사람들의 피드로 흘러가요. 이름은 남지 않아요.</p></div></div>`;
+  const sh = stage.querySelector('.sheet-demo');
+  const sc = stage.querySelector('.scrim');
+  const cls = spring ? 'in-new' : 'in-old';
+  const run = () => {
+    [sh, sc].forEach((n) => { n.classList.remove('in-old', 'in-new'); void n.offsetWidth; n.classList.add(cls); });
+  };
+  run();
+  return run;
+}
+row({
+  id: 'f', title: 'F. ④ 공개 확인 시트 — 12px 밀어올리기 → 스프링 + 배경 어두워짐',
+  why: '지금은 시트가 12px 만 움직여서 "어디서 왔는지"가 안 보이고, 백드롭이 즉시 검게 깔려 툭 끊깁니다. 아래에서 올라오면서 배경이 같이 어두워지면 한 동작이 됩니다.',
+  tag: '분류: State Change',
+  autoplay: true,
+  old: (s) => sheet(s, false), neu: (s) => sheet(s, true),
+});
+
+/* ── G. 이징 ─────────────────────────────────────────────────────── */
+row({
+  id: 'g', title: 'G. 바탕 — 이징 하나(ease-out) → 스프링을 더한다',
+  why: '"iOS 같다"는 느낌의 거의 전부가 여기서 옵니다. ease-out 은 목표에 도달하고 멈추지만, 스프링은 <b>살짝 지나쳤다가 자리를 잡습니다</b>. CSS <code>linear()</code> 로 실제 스프링 곡선을 씁니다 — JS 애니메이션 라이브러리가 필요 없습니다.',
+  tag: '분류: 바탕 토큰 — A·D·E·F 가 전부 이 위에 얹힙니다',
+  old: (s) => {
+    s.innerHTML = `<div style="width:100%"><div id="g-old" style="width:34px;height:34px;border-radius:8px;background:var(--color-text-secondary)"></div></div>`;
+    const b = s.querySelector('#g-old');
+    let on = false;
+    return () => { on = !on; b.style.transition = 'transform 520ms var(--ease-out)'; b.style.transform = on ? 'translateX(180px)' : 'none'; };
+  },
+  neu: (s) => {
+    s.innerHTML = `<div style="width:100%"><div id="g-new" style="width:34px;height:34px;border-radius:8px;background:var(--color-accent)"></div></div>`;
+    const b = s.querySelector('#g-new');
+    let on = false;
+    return () => { on = !on; b.style.transition = 'transform var(--dur-spring) var(--ease-spring)'; b.style.transform = on ? 'translateX(180px)' : 'none'; };
+  },
+});
+</script>
+</body>
+</html>
