@@ -439,7 +439,7 @@ struct HomeView: View {
                 .fill(Tone.tertiary)
                 .frame(width: 3, height: 34)
             Text("쓸면 담기")
-                .font(.system(size: 11))
+                .font(Face.caption)
                 .foregroundStyle(Tone.tertiary)
                 .fixedSize()
                 .rotationEffect(.degrees(-90))

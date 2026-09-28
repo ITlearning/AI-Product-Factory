@@ -95,7 +95,7 @@ public struct DayMomentsView: View {
     private var closeButton: some View {
         Button { dismiss() } label: {
             Text("닫기")
-                .font(.system(size: 13))
+                .font(Face.line)
                 .foregroundStyle(Tone.primary)
                 .padding(.horizontal, 16)
                 .frame(minHeight: Shape2.minTouch)
@@ -184,7 +184,7 @@ public struct DayMomentsView: View {
             ForEach(Array(placements.enumerated()), id: \.element.moment.id) { i, p in
                 if p.showsTime {
                     Text(DayGradient.timeText(p.moment.capturedAt))
-                        .font(.system(size: 10, design: .rounded)).monospacedDigit()
+                        .font(Face.time).monospacedDigit()
                         .foregroundStyle(Tone.tertiary)
                         .frame(width: Self.labelWidth, alignment: .trailing)
                         .frame(height: Self.tick)

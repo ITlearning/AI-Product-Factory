@@ -74,7 +74,7 @@ struct LibraryPickerView: View {
         HStack {
             Button { dismiss() } label: {
                 Text("닫기")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Face.action)
                     .foregroundStyle(Tone.secondary)
                     .padding(.horizontal, 14).padding(.vertical, 8)
                     .background(Tone.hairline, in: Capsule())
@@ -84,7 +84,7 @@ struct LibraryPickerView: View {
             .opacity(isImporting ? 0.4 : 1)
 
             Spacer()
-            Text("사진첩").font(.system(size: 15, weight: .semibold)).foregroundStyle(Tone.primary)
+            Text("사진첩").font(Face.lineCeremony).foregroundStyle(Tone.primary)
             Spacer()
 
             Group {
@@ -93,7 +93,7 @@ struct LibraryPickerView: View {
                 } else {
                     Button { Task { await importSelected() } } label: {
                         Text("담기 \(selected.count)")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(Face.action)
                             .foregroundStyle(Tone.pure)
                             .padding(.horizontal, 14).padding(.vertical, 8)
                             .background(Tone.primary, in: Capsule())
@@ -177,7 +177,7 @@ struct LibraryPickerView: View {
                 UIApplication.shared.open(url)
             } label: {
                 Text("설정 열기")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(Face.action)
                     .foregroundStyle(Tone.pure)
                     .padding(.horizontal, 16).padding(.vertical, 9)
                     .background(Tone.primary, in: Capsule())

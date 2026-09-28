@@ -47,7 +47,7 @@ public struct BadgeCeremony: View {
 
             VStack(spacing: 22) {
                 Text(Self.openingLine(for: moments, now: Date()))
-                    .font(.system(size: 15, weight: .medium))
+                    .font(Face.lineCeremony)
                     .foregroundStyle(Tone.secondary)
                     .opacity(lit ? 1 : 0)
                     .offset(y: risen ? 0 : 8)
@@ -91,7 +91,7 @@ public struct BadgeCeremony: View {
                 Spacer()
                 Button { isPresented = false } label: {
                     Text("닫기")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(Face.action)
                         .foregroundStyle(Tone.secondary)
                         .padding(.horizontal, 22).padding(.vertical, 10)
                 }

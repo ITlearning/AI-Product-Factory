@@ -42,23 +42,37 @@ public enum Face {
     public static let serifName = "NanumMyeongjo"
     static let serifFile = "NanumMyeongjo-Subset"
 
-    @discardableResult
-    public static func ensureRegistered() -> Bool { registered }
+    /// 본문 고운돋움 — 앱엔 한글 11,172자 전체, 확장엔 쓰는 글자만 구운 작은 판(이름은 같다).
+    public static let sansName = "GowunDodum-Regular"
+    static let sansFiles = ["GowunDodum-Hangul", "GowunDodum-Mini"]
 
-    private static let registered: Bool = {
+    @discardableResult
+    public static func ensureRegistered() -> Bool { serifRegistered && sansRegistered }
+
+    private static let serifRegistered = register([serifFile])
+    private static let sansRegistered = register(sansFiles)
+
+    private static func register(_ files: [String]) -> Bool {
         let bundle = Bundle(for: SharedBundleMarker.self)
-        guard let url = bundle.url(forResource: serifFile, withExtension: "ttf") else { return false }
+        guard let url = files.lazy.compactMap({ bundle.url(forResource: $0, withExtension: "ttf") }).first
+        else { return false }
         var error: Unmanaged<CFError>?
         let ok = CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
 
         if !ok, let code = error?.takeRetainedValue(),
            CFErrorGetCode(code) == CTFontManagerError.alreadyRegistered.rawValue { return true }
         return ok
-    }()
+    }
 
     private static func serif(_ size: CGFloat) -> Font {
         ensureRegistered()
         return .custom(serifName, size: size)
+    }
+
+    // 굵기가 하나뿐이다 — .bold() 를 걸면 가짜 굵기가 된다. 강조는 크기로.
+    private static func sans(_ size: CGFloat) -> Font {
+        ensureRegistered()
+        return .custom(sansName, size: size)
     }
 
     public static let wordmark = serif(30)
@@ -68,15 +82,17 @@ public enum Face {
     public static let nameCompact = serif(17)
     public static let word = serif(30)
 
-    public static let wordMeaning = Font.system(size: 11)
-    public static let wordMeta = Font.system(size: 10.5, design: .rounded)
+    public static let wordMeaning = sans(11)
+    public static let wordMeta = sans(10.5)
 
-    public static let lineCeremony = Font.system(size: 16)
-    public static let line = Font.system(size: 13)
-    public static let today = Font.system(size: 13)
-    public static let caption = Font.system(size: 11, design: .rounded)
-    public static let noticeApp = Font.system(size: 13, weight: .semibold)
-    public static let guide = Font.system(size: 12)
+    public static let lineCeremony = sans(16)
+    public static let line = sans(13)
+    public static let today = sans(13)
+    public static let caption = sans(11)
+    public static let time = sans(10)
+    public static let action = sans(15)
+    public static let noticeApp = sans(14)
+    public static let guide = sans(12)
     public static let hex = Font.system(size: 16, design: .monospaced)
 }
 

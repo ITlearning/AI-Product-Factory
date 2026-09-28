@@ -16,7 +16,10 @@ targets:
   ColorMoments:
     type: application
     platform: iOS
-    sources: [ColorMoments, Shared]
+    sources:
+      - ColorMoments
+      - path: Shared
+        excludes: ["Design/Fonts/GowunDodum-Mini.ttf"]
     dependencies:
       - sdk: AVKit.framework
       - target: ColorMomentsCapture
@@ -56,7 +59,10 @@ targets:
   ColorMomentsCapture:
     type: extensionkit-extension
     platform: iOS
-    sources: [ColorMomentsCapture, Shared]
+    sources:
+      - ColorMomentsCapture
+      - path: Shared
+        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf"]  # 확장엔 쓰는 글자만 담은 Mini 판
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.itlearning.colormoments.capture
@@ -75,7 +81,10 @@ targets:
   ColorMomentsControl:
     type: app-extension
     platform: iOS
-    sources: [ColorMomentsControl, Shared]
+    sources:
+      - ColorMomentsControl
+      - path: Shared
+        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf"]
     dependencies:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework

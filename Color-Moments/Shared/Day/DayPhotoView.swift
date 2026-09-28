@@ -53,7 +53,7 @@ struct DayPhotoView: View {
     private var closeButton: some View {
         Button { dismiss() } label: {
             Text("닫기")
-                .font(.system(size: 13))
+                .font(Face.line)
                 .foregroundStyle(Tone.primary)
                 .padding(.horizontal, 16)
                 .frame(minHeight: Shape2.minTouch)

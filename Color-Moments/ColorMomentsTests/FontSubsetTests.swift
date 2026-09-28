@@ -59,4 +59,68 @@ final class FontSubsetTests: XCTestCase {
         XCTAssertLessThan(bytes, 60_000,
             "폰트가 \(bytes / 1024)KB — 전체 한글이 들어간 것 같다. 서브셋으로 되돌릴 것")
     }
+
+    // MARK: 고운돋움
+
+    private static let fontsDir = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .appendingPathComponent("Shared/Design/Fonts")
+
+    private func sansFont(_ size: CGFloat = 20) throws -> CTFont {
+        Face.ensureRegistered()
+        return try XCTUnwrap(UIFont(name: Face.sansName, size: size), "\(Face.sansName) 가 등록되지 않았다") as CTFont
+    }
+
+    func testBundledSansIsRegisteredFromAppBundle() throws {
+        XCTAssertTrue(Face.ensureRegistered())
+        XCTAssertNotNil(Bundle.main.url(forResource: "GowunDodum-Hangul", withExtension: "ttf"), "앱엔 한글 전체 판")
+        XCTAssertNil(Bundle.main.url(forResource: "GowunDodum-Mini", withExtension: "ttf"), "앱에 확장용 판이 섞였다")
+        XCTAssertNotNil(Bundle.main.url(forResource: "GowunDodum-OFL", withExtension: "txt"), "OFL 라이선스가 번들에 없다")
+        _ = try sansFont()
+    }
+
+    func testSansCoversEveryHangulSyllable() throws {
+        let font = try sansFont()
+        for s in ["가", "힣", "뷁", "똠", "쀍", "ㅋ", "A", "7", "·", "「", "」"] {
+            XCTAssertTrue(glyphExists(s.unicodeScalars.first!, in: font), "\(s) 글리프가 없다")
+        }
+        let missing = (0xAC00...0xD7A3).compactMap(Unicode.Scalar.init).filter { !glyphExists($0, in: font) }
+        XCTAssertEqual(missing.count, 0, "빠진 한글 음절 \(missing.count)자")
+    }
+
+    // monospacedDigit() 는 tnum 으로 간다 — 서브셋에서 tnum 이 빠지면 시각이 흔들린다.
+    func testSansDigitsAlignWithMonospacedDigit() throws {
+        let base = CTFontCopyFontDescriptor(try sansFont(16))
+        let attrs: [CFString: Any] = [kCTFontFeatureSettingsAttribute: [[
+            kCTFontFeatureTypeIdentifierKey: kNumberSpacingType,
+            kCTFontFeatureSelectorIdentifierKey: kMonospacedNumbersSelector,
+        ]]]
+        let desc = CTFontDescriptorCreateCopyWithAttributes(base, attrs as CFDictionary)
+        let mono = CTFontCreateWithFontDescriptor(desc, 16, nil)
+        func width(_ s: String) -> Double {
+            let line = CTLineCreateWithAttributedString(NSAttributedString(string: s, attributes: [.font: mono]))
+            return CTLineGetTypographicBounds(line, nil, nil, nil)
+        }
+        XCTAssertEqual(width("1111"), width("0000"), accuracy: 0.01)
+    }
+
+    func testExtensionSansCoversExtensionText() throws {
+        let data = try Data(contentsOf: Self.fontsDir.appendingPathComponent("GowunDodum-Mini.ttf"))
+        XCTAssertLessThan(data.count, 150_000, "확장용 판이 \(data.count / 1024)KB — 한글 전체가 들어간 것 같다")
+        let provider = try XCTUnwrap(CGDataProvider(data: data as CFData))
+        let font = CTFontCreateWithGraphicsFont(try XCTUnwrap(CGFont(provider)), 20, nil, nil)
+        let root = Self.fontsDir.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let sources = ["Shared/Capture/CaptureScreen.swift", "Shared/Capture/ShotViewer.swift",
+                       "Shared/Capture/CaptureEngine.swift", "ColorMomentsControl/PebbleWidget.swift",
+                       "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift"]
+        var needed = Set<Unicode.Scalar>()
+        for path in sources {
+            let text = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            needed.formUnion(text.unicodeScalars.filter { (0xAC00...0xD7A3).contains($0.value) })
+        }
+        XCTAssertGreaterThan(needed.count, 20, "소스를 못 읽어 이 검사가 헛돈다")
+        let missing = needed.filter { !glyphExists($0, in: font) }.map(String.init).sorted()
+        XCTAssertTrue(missing.isEmpty,
+            "확장용 판에 없는 글자 \(missing.joined()) — Shared/Design/Fonts/README.md 대로 다시 구울 것")
+    }
 }

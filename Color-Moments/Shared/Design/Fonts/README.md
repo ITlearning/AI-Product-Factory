@@ -1,7 +1,7 @@
-# 나눔명조 서브셋
+# 번들 글꼴 — 나눔명조 서브셋 · 고운돋움
 
 `DESIGN.md` §2.2 — 명조는 **조약돌 이름 19개 + 워드마크 「몽돌」 + 사진 한 단어(`Shared/Word/words.json`)에만** 쓴다.
-날짜·안내·버튼은 전부 SF다.
+날짜·안내·버튼·캡션은 고운돋움이다(아래).
 
 | | |
 |---|---|
@@ -33,3 +33,42 @@ pyftsubset /tmp/nm.ttf --text-file=Shared/Design/Fonts/subset-chars.txt \
 ```
 
 **전체 한글(2MB+)을 넣지 말 것.** 명조로 찍히는 글자는 100자 미만이다.
+
+## 고운돋움 (본문)
+
+| | 파일 | 담긴 것 | 크기 | 들어가는 타깃 |
+|---|---|---|---|---|
+| 원본 | Gowun Dodum Regular (Google Fonts) | | 7,229KB(7.2MB) | |
+| 라이선스 | SIL OFL 1.1 — [`GowunDodum-OFL.txt`](GowunDodum-OFL.txt) | | | 모두 |
+| 앱 | `GowunDodum-Hangul.ttf` | 한글 음절 11,172 + 호환 자모 + 라틴·숫자·구두점·기호 | 6,770KB | ColorMoments |
+| 확장 | `GowunDodum-Mini.ttf` | 확장 소스에 나오는 한글(`gowun-mini-chars.txt`) + ASCII | 68KB | Capture·Control |
+
+한글 음절이 거의 전부라 서브셋으로 4%밖에 안 준다(KS X 1001 2,350자로 줄이면 1.2MB지만 사용자 글이 깨진다).
+둘은 PostScript 이름(`GowunDodum-Regular`)이 같다 — `Face` 는 타깃에 있는 쪽을 등록한다. 어느 타깃에 무엇이 가는지는 `project.yml` 의 `excludes`.
+
+**`tnum`·`kern` 을 layout-features 에서 빼지 말 것** — `monospacedDigit()` 가 tnum 으로 간다.
+캡처·위젯 화면(`CaptureScreen`·`ShotViewer`·`CaptureEngine`·`PebbleWidget`·`WidgetSnapshot`)에 한글 문구를 더하면 확장용 판을 다시 굽는다.
+`FontSubsetTests.testExtensionSansCoversExtensionText` 가 빠진 글자를 잡는다.
+
+```bash
+curl -L -o /tmp/gd.ttf https://github.com/google/fonts/raw/main/ofl/gowundodum/GowunDodum-Regular.ttf
+# pyftsubset 셸뱅이 깨져 있으면 python3 -m fontTools.subset 으로
+python3 -m fontTools.subset /tmp/gd.ttf \
+  --unicodes="U+0020-007E,U+00A0-00FF,U+2010-206F,U+20A9,U+2190-2199,U+2460-2473,U+25A0-25FF,U+2600-26FF,U+3000-303F,U+3131-318E,U+AC00-D7A3,U+FF01-FF5E" \
+  --layout-features='kern,tnum,pnum,ccmp,locl,mark,mkmk' --no-hinting --desubroutinize \
+  --name-IDs='0,1,2,3,4,5,6,13,14' --drop-tables+=DSIG,vhea,vmtx \
+  --output-file=Shared/Design/Fonts/GowunDodum-Hangul.ttf
+
+python3 - <<'PY'   # 확장 소스의 한글만
+import re, pathlib
+files = ["Shared/Capture/CaptureScreen.swift", "Shared/Capture/ShotViewer.swift", "Shared/Capture/CaptureEngine.swift",
+         "ColorMomentsControl/PebbleWidget.swift", "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift"]
+chars = set()
+for f in files: chars |= set(re.findall(r'[가-힣]', pathlib.Path(f).read_text()))
+pathlib.Path("Shared/Design/Fonts/gowun-mini-chars.txt").write_text("".join(sorted(chars)))
+PY
+python3 -m fontTools.subset /tmp/gd.ttf --text-file=Shared/Design/Fonts/gowun-mini-chars.txt \
+  --unicodes="U+0020-007E,U+00B7,U+2013,U+2014,U+2026" --layout-features='kern,tnum,pnum' \
+  --no-hinting --desubroutinize --name-IDs='0,1,2,3,4,5,6,13,14' --drop-tables+=DSIG,vhea,vmtx \
+  --output-file=Shared/Design/Fonts/GowunDodum-Mini.ttf
+```

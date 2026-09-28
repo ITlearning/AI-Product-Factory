@@ -32,7 +32,7 @@ struct ShotViewer: View {
                     Spacer()
                     if items.count > 1 {
                         Text("\(index + 1) / \(items.count)")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .font(Face.line)
                             .monospacedDigit()
                             .foregroundStyle(.white)
                             .padding(.horizontal, 10).padding(.vertical, 5)
@@ -43,7 +43,7 @@ struct ShotViewer: View {
                 .padding(.top, 8)
                 Spacer()
                 Text("색은 자정에 열려요")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Face.guide)
                     .foregroundStyle(.white.opacity(0.55))
                     .padding(.bottom, 24)
             }
