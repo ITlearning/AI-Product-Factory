@@ -374,6 +374,7 @@ extension AssetAdopter {
         guard let newID = report.assetID else { return false }
 
         guard store.readopt(current.id, from: old, to: newID) else {
+            // 방금 만든 에셋을 지우지 않는다 — 삭제 요청이 사용자 사진을 잘못 겨누면 되돌릴 수 없다(고아가 낫다).
             print("AssetAdopter: \(current.id) 는 다시 저장하는 사이 바뀌어 파일을 지우지 않음(새 에셋 \(newID) 는 사진 앱에 남음)")
             return false
         }
