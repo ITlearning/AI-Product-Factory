@@ -102,6 +102,17 @@ enum SuggestionScore {
         let capturedAt: Date
     }
 
+    /// 격자에 보일 순서. 고르거나 스크롤하기 전(frozen false)엔 상위 limit 을 그대로,
+    /// 그 뒤엔 보이던 칸은 제자리에 두고 새로 상위에 든 것만 maxShown 까지 뒤에 붙인다.
+    static func layout(shown: [String], frozen: Bool, ranked: [Candidate], limit: Int, maxShown: Int) -> [String] {
+        let top = ranked.prefix(limit).map(\.id)
+        guard frozen else { return top }
+        var result = shown
+        var seen = Set(shown)
+        for id in top where result.count < maxShown && seen.insert(id).inserted { result.append(id) }
+        return result
+    }
+
     /// 점수 높은 순, 같으면 최근 순, 그래도 같으면 id — 들어온 순서와 무관하게 늘 같은 줄.
     static func ranked(_ candidates: [Candidate], limit: Int) -> [Candidate] {
         Array(candidates.sorted {

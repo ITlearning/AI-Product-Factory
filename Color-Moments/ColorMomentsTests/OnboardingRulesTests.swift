@@ -98,6 +98,23 @@ final class OnboardingRulesTests: XCTestCase {
                        SuggestionScore.labelBonus, accuracy: 1e-6)
     }
 
+    func testLayoutFollowsRankingUntilFrozen() {
+        let d = Date(timeIntervalSince1970: 1_000)
+        let ranked = [("c", 0.9), ("a", 0.5), ("b", 0.4)].map { SuggestionScore.Candidate(id: $0.0, score: $0.1, capturedAt: d) }
+        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b"], frozen: false, ranked: ranked, limit: 2, maxShown: 4),
+                       ["c", "a"], "고르기 전엔 점수 순")
+    }
+
+    func testFrozenLayoutKeepsCellsAndAppendsNew() {
+        let d = Date(timeIntervalSince1970: 1_000)
+        let ranked = [("c", 0.9), ("d", 0.8), ("a", 0.5), ("b", 0.4)]
+            .map { SuggestionScore.Candidate(id: $0.0, score: $0.1, capturedAt: d) }
+        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b"], frozen: true, ranked: ranked, limit: 2, maxShown: 4),
+                       ["a", "b", "c", "d"], "보이던 칸은 제자리, 새 상위는 뒤에")
+        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b"], frozen: true, ranked: ranked, limit: 2, maxShown: 3),
+                       ["a", "b", "c"], "뒤에 붙이는 것도 상한까지만")
+    }
+
     func testRankingIsStable() {
         let d0 = Date(timeIntervalSince1970: 1_000), d1 = Date(timeIntervalSince1970: 2_000)
         let a = SuggestionScore.Candidate(id: "a", score: 0.5, capturedAt: d0)

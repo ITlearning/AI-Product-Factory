@@ -196,6 +196,7 @@ struct FirstPebbleStep: View {
                     }
                 }
                 .scrollIndicators(.hidden)
+                .onScrollPhaseChange { _, phase in if phase.isScrolling { model.freeze() } }
             }
         }
         .padding(.top, 12)
