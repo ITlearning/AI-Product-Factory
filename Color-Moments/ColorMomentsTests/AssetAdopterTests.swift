@@ -236,6 +236,60 @@ final class AssetAdopterTests: XCTestCase {
         XCTAssertTrue(report.summary.hasPrefix("old.jpg: 파일 경로 "))
     }
 
+    func testSaverDoesNotRetryAfterNoPlaceholder() async {
+        var ran: [AssetSaver.Method] = []
+        let report = await AssetSaver.run(fileName: "old.jpg", attempts: [
+            (.file, { ran.append(.file); throw AssetSaver.NoPlaceholder() }),
+            (.data, { ran.append(.data); return "ID-2" }),
+        ])
+        XCTAssertEqual(ran, [.file], "커밋 뒤 실패는 사진이 이미 생겼을 수 있다 — 다시 저장하면 중복")
+        XCTAssertTrue(report.failed)
+        XCTAssertEqual(report.attempts.first?.error, "placeholder 없음")
+    }
+
+    func testSaverUsesAssetFoundAfterNoPlaceholder() async {
+        let report = await AssetSaver.run(fileName: "old.jpg", attempts: [
+            (.file, { throw AssetSaver.NoPlaceholder() }),
+            (.data, { XCTFail("다시 저장하면 안 된다"); return "ID-2" }),
+        ], findRecent: { "MADE" })
+        XCTAssertEqual(report.assetID, "MADE")
+        XCTAssertEqual(report.attempts.map(\.method), [.file, .existing])
+    }
+
+    func testSaverChecksForCreatedAssetBeforeNextAttempt() async {
+        var ran: [AssetSaver.Method] = []
+        var lookups = 0
+        let report = await AssetSaver.run(fileName: "old.jpg", attempts: [
+            (.file, { ran.append(.file); throw Boom() }),
+            (.data, { ran.append(.data); return "ID-2" }),
+        ], findRecent: { lookups += 1; return "MADE" })
+        XCTAssertEqual(ran, [.file], "앞 시도가 사진을 남겼으면 다음 방법으로 또 저장하지 않는다")
+        XCTAssertEqual(lookups, 1, "첫 시도 전엔 찾지 않는다")
+        XCTAssertEqual(report.assetID, "MADE")
+        XCTAssertEqual(report.attempts.map(\.method), [.file, .existing])
+        XCTAssertTrue(report.summary.hasSuffix("이미 생긴 사진 성공"))
+    }
+
+    func testSaverMovesOnWhenNothingWasCreated() async {
+        var lookups = 0
+        let report = await AssetSaver.run(fileName: "old.jpg", attempts: [
+            (.file, { throw Boom() }), (.data, { throw Boom() }), (.reencoded, { "ID-3" }),
+        ], findRecent: { lookups += 1; return nil })
+        XCTAssertEqual(lookups, 2)
+        XCTAssertEqual(report.assetID, "ID-3")
+    }
+
+    func testFoundAssetAlreadyUsedByAnotherRecordIsRejected() {
+        store.add(moment("asset-b", asset: "B"))
+        var report = AssetSaver.Report(fileName: "shot-a.jpg", assetID: "B")
+        report.attempts = [.init(method: .file, error: "x"), .init(method: .existing, error: nil)]
+        let checked = AssetAdopter.unclaimed(report, store: store)
+        XCTAssertTrue(checked.failed, "같은 초에 찍은 다른 기록의 사진을 가져다 쓰면 안 된다")
+        var fresh = report
+        fresh.assetID = "C"
+        XCTAssertEqual(AssetAdopter.unclaimed(fresh, store: store).assetID, "C")
+    }
+
     func testSaverReportsMissingFileWithoutTrying() async {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("none-\(UUID().uuidString).jpg")
         let report = await AssetSaver.save(fileURL: url, creationDate: Date(), location: nil)

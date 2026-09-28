@@ -121,6 +121,8 @@ enum AssetSaver {
         case file = "파일 경로"
         case data = "파일 데이터"
         case reencoded = "JPEG 재인코딩"
+        /// 앞 시도가 실패로 보였지만 실제로는 사진이 생겨 있어 그것을 결과로 썼다.
+        case existing = "이미 생긴 사진"
     }
 
     struct Attempt: Equatable, Sendable {
@@ -162,14 +164,23 @@ enum AssetSaver {
     }
 
     /// 순수 흐름 — 시도를 차례로 돌리고 처음 성공에서 멈춘다.
-    static func run(fileName: String, attempts: [(Method, () async throws -> String)]) async -> Report {
+    /// 실패한 시도도 사진은 이미 만들었을 수 있다 — 다음 시도 전에 `findRecent` 로 찾아 있으면 그것을 쓴다(중복 방지).
+    /// NoPlaceholder 는 커밋 뒤의 실패라 사진이 생겼을 가능성이 크다 — 찾아보기만 하고 다시 저장하지 않는다.
+    static func run(fileName: String, attempts: [(Method, () async throws -> String)],
+                    findRecent: () async -> String? = { nil }) async -> Report {
         var report = Report(fileName: fileName)
         for (method, attempt) in attempts {
+            if !report.attempts.isEmpty, let id = await findRecent() {
+                return found(id, in: report)
+            }
             do {
                 let id = try await attempt()
                 report.attempts.append(Attempt(method: method, error: nil))
                 report.assetID = id
                 return report
+            } catch is NoPlaceholder {
+                report.attempts.append(Attempt(method: method, error: NoPlaceholder().errorDescription))
+                return await findRecent().map { found($0, in: report) } ?? report
             } catch {
                 report.attempts.append(Attempt(method: method, error: describe(error)))
             }
@@ -177,10 +188,30 @@ enum AssetSaver {
         return report
     }
 
+    private static func found(_ id: String, in report: Report) -> Report {
+        var report = report
+        report.attempts.append(Attempt(method: .existing, error: nil))
+        report.assetID = id
+        return report
+    }
+
+    /// 찍은 시각이 같고 최근 1분 안에 생긴(바뀐) 사진 — 실패로 보인 저장이 실제로 남긴 것.
+    static func recentAsset(creationDate: Date, since: Date) -> String? {
+        let options = PHFetchOptions()
+        // 사진 앱은 시각을 잘라 저장할 수 있다 — 정확히 같다 대신 ±1초.
+        options.predicate = NSPredicate(format: "creationDate >= %@ AND creationDate <= %@ AND modificationDate >= %@",
+                                        creationDate.addingTimeInterval(-1) as NSDate,
+                                        creationDate.addingTimeInterval(1) as NSDate, since as NSDate)
+        options.sortDescriptors = [NSSortDescriptor(key: "modificationDate", ascending: false)]
+        options.fetchLimit = 1
+        return PHAsset.fetchAssets(with: .image, options: options).firstObject?.localIdentifier
+    }
+
     static func save(fileURL: URL, creationDate: Date, location: CLLocation?) async -> Report {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return Report(fileName: fileURL.lastPathComponent, fileMissing: true)
         }
+        let since = Date().addingTimeInterval(-60)
         return await run(fileName: fileURL.lastPathComponent, attempts: [
             (.file, { try await create(creationDate: creationDate, location: location) {
                 $0.addResource(with: .photo, fileURL: fileURL, options: nil)
@@ -198,7 +229,7 @@ enum AssetSaver {
                     $0.addResource(with: .photo, data: jpeg, options: nil)
                 }
             }),
-        ])
+        ], findRecent: { recentAsset(creationDate: creationDate, since: since) })
     }
 
     // 재인코딩본엔 원본 EXIF 가 없다 — 찍은 시각·장소는 늘 요청에 직접 적는다.
@@ -264,6 +295,18 @@ enum AssetAdopter {
         }
     }
 
+    /// 찾아 쓴 「이미 생긴 사진」이 다른 기록 것이면 실패로 — 같은 초에 찍은 기록끼리 한 사진을 나눠 갖지 않게.
+    @MainActor
+    static func unclaimed(_ report: AssetSaver.Report, store: DayStore) -> AssetSaver.Report {
+        guard report.attempts.last?.method == .existing, let id = report.assetID, store.containsAsset(id) else {
+            return report
+        }
+        var failed = report
+        failed.assetID = nil
+        failed.attempts[failed.attempts.count - 1] = .init(method: .existing, error: "다른 기록이 쓰는 사진")
+        return failed
+    }
+
     // 같은 Moment 를 캡처 직후 흐름과 adoptAll 이 동시에 부를 수 있어, 저장이 두 번 나가지 않게 막는다.
     @MainActor private static var adopting: Set<Moment.ID> = []
     @MainActor private static var isAdoptingAll = false
@@ -289,7 +332,7 @@ enum AssetAdopter {
 
         let fileURL = ShotImage.url(current.fileName)
         let location = current.place.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
-        let report = await env.save(fileURL, current.capturedAt, location)
+        let report = unclaimed(await env.save(fileURL, current.capturedAt, location), store: store)
         record(report, readopt: false)
         guard let assetID = report.assetID else { return false }
 
@@ -369,7 +412,7 @@ extension AssetAdopter {
 
         let fileURL = ShotImage.url(current.fileName)
         let location = current.place.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
-        let report = await env.save(fileURL, current.capturedAt, location)
+        let report = unclaimed(await env.save(fileURL, current.capturedAt, location), store: store)
         record(report, readopt: true)
         guard let newID = report.assetID else { return false }
 
