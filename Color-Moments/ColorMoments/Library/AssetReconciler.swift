@@ -30,9 +30,9 @@ enum AssetReconciler {
     /// 순수 함수 — `relocated` 는 못 찾은 assetID 중 cloudID 로 다시 찾은 것(옛 → 새).
     /// 다시 찾은 것은 지우지 않고 바꿔 끼우고, 남은 것만 `missing()` 규칙(빈 조회·상한)으로 판정한다.
     /// `otherAssetIDs`: 이 판정 밖에 있는 다른 기록들이 이미 쓰고 있는 assetID — 충돌 판정에 쓴다.
-    /// `keptByFile`: 에셋은 사라졌지만 이 기기에 파일이 남은 assetID — 지우지 않고 복구 입양으로 넘긴다.
+    /// 이 기기에 사본 파일이 남았어도 사진 앱에서 지운 것으로 본다 — 지운 뒤 사본도 지운다(`leftoverFiles`).
     static func plan(ids: Set<String>, found: Set<String>, relocated: [String: String],
-                      otherAssetIDs: Set<String> = [], keptByFile: Set<String> = [], fullAccess: Bool) -> Plan {
+                      otherAssetIDs: Set<String> = [], fullAccess: Bool) -> Plan {
         guard fullAccess else { return Plan() }
         let candidates = ids.subtracting(found)
 
@@ -56,8 +56,7 @@ enum AssetReconciler {
 
         let located = found.union(reassign.keys).union(confirmedLocated)
         // 상한은 보류 전 후보 수로 잰다 — 보류분을 먼저 빼면 같은 회차에서 더 많이 지워진다.
-        let remove = missing(ids: ids, found: located, fullAccess: fullAccess)
-            .subtracting(deferred).subtracting(keptByFile)
+        let remove = missing(ids: ids, found: located, fullAccess: fullAccess).subtracting(deferred)
         return Plan(reassign: reassign, remove: remove)
     }
 
@@ -66,9 +65,12 @@ enum AssetReconciler {
         !fileName.hasPrefix("asset-") && !fileName.hasPrefix("remote-") && exists(fileName)
     }
 
-    /// 에셋을 못 찾은 기록 중 파일이 남은 것들의 assetID.
-    static func keptByFile(lost: [Moment], exists: (String) -> Bool) -> Set<String> {
-        Set(lost.filter { holdsLocalFile(fileName: $0.fileName, exists: exists) }.compactMap(\.assetID))
+    /// 순수 함수 — 지운 기록의 사본 파일 이름 중 남은 기록이 아무도 안 쓰는 것. 자리 이름은 파일이 없어 뺀다.
+    static func leftoverFiles(removed: [Moment], remaining: [Moment]) -> Set<String> {
+        let inUse = Set(remaining.map(\.fileName))
+        return Set(removed.map(\.fileName).filter {
+            holdsLocalFile(fileName: $0, exists: { _ in true }) && !inUse.contains($0)
+        })
     }
 
     /// 실제 디스크 확인 — 메인 밖에서.
@@ -148,9 +150,7 @@ enum AssetReconciler {
             }
         }
 
-        let onDisk = await localFileNames(lost.map(\.fileName))
-        let kept = keptByFile(lost: lost, exists: onDisk.contains)
-        let plan = plan(ids: ids, found: found, relocated: relocated, keptByFile: kept, fullAccess: fullAccess)
+        let plan = plan(ids: ids, found: found, relocated: relocated, fullAccess: fullAccess)
         if !plan.reassign.isEmpty {
             store.reassignAssets(store.moments.compactMap { m in
                 m.assetID.flatMap { plan.reassign[$0] }.map { (m.id, $0) }
@@ -162,7 +162,16 @@ enum AssetReconciler {
         let (allowed, budget) = budgetAllows(removing: plan.remove.count, now: Date(), state: state, tracked: ids.count)
         saveBudget(budget, defaults: defaults)
         guard allowed else { return }
-        store.remove(ids: removalIDs(snapshot: snapshot, remove: plan.remove, current: store.moments))
+        let doomed = removalIDs(snapshot: snapshot, remove: plan.remove, current: store.moments)
+        let removed = snapshot.filter { doomed.contains($0.id) }
+        store.remove(ids: doomed)
+        // 삭제가 디스크에 닿기 전에 사본을 지우면 kill 뒤 되살아난 기록이 빈 파일을 가리킨다.
+        guard await store.flushAfterLoad() else { return }
+        let files = leftoverFiles(removed: removed, remaining: store.moments)
+        guard !files.isEmpty else { return }
+        await Task.detached(priority: .utility) {
+            for name in files { try? FileManager.default.removeItem(at: ShotImage.url(name)) }
+        }.value
     }
 
     /// 판정한 스냅샷 안의 기록만 — assetID 로 지우면 조회 대기 중 같은 사진으로 새로 담긴 기록까지 지워진다.
@@ -170,7 +179,7 @@ enum AssetReconciler {
         Set(snapshot.filter { $0.assetID.map(remove.contains) ?? false }.map(\.id))
     }
 
-    /// 조회를 기다리는 사이 파일로 다시 입양돼 assetID 가 바뀐 기록은 뺀다 — 파일도 이미 지워져 보류에 안 걸린다.
+    /// 조회를 기다리는 사이 수동 복구로 assetID 가 바뀐 기록은 뺀다 — 이제 새 사진을 가리킨다.
     static func removalIDs(snapshot: [Moment], remove: Set<String>, current: [Moment]) -> Set<Moment.ID> {
         let now = Dictionary(current.map { ($0.id, $0.assetID) }, uniquingKeysWith: { a, _ in a })
         return removalIDs(snapshot: snapshot, remove: remove).filter { id in
