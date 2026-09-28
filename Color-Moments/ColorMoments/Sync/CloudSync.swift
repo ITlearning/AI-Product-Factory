@@ -127,7 +127,7 @@ final class CloudSync: CKSyncEngineDelegate {
         guard engine === current else { return }
         enqueue(push)
         persistSystemFields()
-        if !upserts.isEmpty { Task { await CloudIDMapper.resolveCoalesced(store: store) } }
+        if !upserts.isEmpty { CloudIDMapper.resolveAfterReceiving(store: store) }
         if dayChanged || !upserts.isEmpty || !deletes.isEmpty { refreshSurfaces() }
     }
 

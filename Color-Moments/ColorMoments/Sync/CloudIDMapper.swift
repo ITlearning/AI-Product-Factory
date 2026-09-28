@@ -42,6 +42,20 @@ enum CloudIDMapper {
         } while resolveAgain
     }
 
+    @MainActor private static var settling: Task<Void, Never>?
+
+    /// 받은 묶음이 잇달아 올 때 — 조용해진 뒤 한 번만 찾는다. 묶음마다 찾으면 못 찾은 기록 전체를 매번 PhotoKit 에 다시 묻는다.
+    @MainActor
+    static func resolveAfterReceiving(store: DayStore, quiet: UInt64 = 400_000_000) {
+        settling?.cancel()
+        settling = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: quiet)
+            guard !Task.isCancelled else { return }
+            settling = nil
+            await resolveCoalesced(store: store)
+        }
+    }
+
     /// cloudID → 이 기기 로컬 ID. 못 찾은 것은 빠진다.
     static func localIDs(forCloudIDs clouds: [String]) async -> [String: String] {
         guard !clouds.isEmpty else { return [:] }
