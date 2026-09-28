@@ -4,29 +4,118 @@ import Observation
 @Observable
 public final class DayStore {
 
-    public private(set) var moments: [Moment] = [] {
-        didSet { dayIndex = nil }
+    @ObservationIgnored private var all: [Moment] = [] {
+        didSet { revision &+= 1; changed() }
+    }
+    @ObservationIgnored private var revision = 0
+
+    // 관찰은 이 값으로만 한다 — 대량 수신 중엔 all 이 조각마다 바뀌어도 화면에는 묶어서 알린다.
+    private var published = 0
+    @ObservationIgnored private var bulkDepth = 0
+    @ObservationIgnored private var unpublished = false
+    @ObservationIgnored private var publishTask: Task<Void, Never>?
+
+    /// 대량 수신 중 화면에 알리는 간격.
+    public static let bulkPublishInterval: UInt64 = 100_000_000
+
+    public var moments: [Moment] {
+        _ = published
+        return all
+    }
+
+    private func changed() {
+        guard bulkDepth > 0 else { published &+= 1; return }
+        unpublished = true
+        guard publishTask == nil else { return }
+        publishTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: Self.bulkPublishInterval)
+            guard let self, !Task.isCancelled else { return }
+            self.publishTask = nil
+            self.publishNow()
+        }
+    }
+
+    private func publishNow() {
+        guard unpublished else { return }
+        unpublished = false
+        published &+= 1
+    }
+
+    private func endBulk() {
+        bulkDepth -= 1
+        guard bulkDepth == 0 else { return }
+        publishTask?.cancel()
+        publishTask = nil
+        publishNow()
     }
 
     private struct DayIndex {
-        let byDay: [String: [Moment]]
-        let keys: [String]
+        var byDay: [String: [Moment]]
+        var keys: [String]
         let zone: String
+        var revision: Int
     }
     @ObservationIgnored private var dayIndex: DayIndex?
 
-    // 캐시가 맞아도 moments 를 읽는다 — 안 읽으면 뷰가 이 저장소를 관찰하지 않아 새 기록을 못 본다.
+    // 캐시가 맞아도 published 를 읽는다 — 안 읽으면 뷰가 이 저장소를 관찰하지 않아 새 기록을 못 본다.
     private var index: DayIndex {
-        let current = moments
+        _ = published
         let zone = Moment.zoneIdentifier
-        if let dayIndex, dayIndex.zone == zone { return dayIndex }
+        if let dayIndex, dayIndex.zone == zone, dayIndex.revision == revision { return dayIndex }
         var byDay: [String: [Moment]] = [:]
-        for m in current { byDay[m.dayKey, default: []].append(m) }
+        for m in all { byDay[m.dayKey, default: []].append(m) }
         for key in byDay.keys { byDay[key]?.sort { $0.capturedAt < $1.capturedAt } }
-        let built = DayIndex(byDay: byDay, keys: byDay.keys.sorted(by: >), zone: zone)
+        let built = DayIndex(byDay: byDay, keys: byDay.keys.sorted(by: >), zone: zone, revision: revision)
         dayIndex = built
         return built
     }
+
+    /// 바뀐 것만 인덱스에 반영한다 — before 는 바꾸기 전 revision. 그때 인덱스가 최신이 아니었으면 다음에 통째로 다시 만든다.
+    private func patchIndex(since before: Int, ops: [IndexOp]) {
+        guard !ops.isEmpty else { return }
+        guard var idx = dayIndex, idx.revision == before, idx.zone == Moment.zoneIdentifier else { return }
+        dayIndex = nil
+        var presentBefore: [String: Bool] = [:]
+        for op in ops {
+            switch op {
+            case .remove(let m):
+                let key = m.dayKey
+                if presentBefore[key] == nil { presentBefore[key] = idx.byDay[key] != nil }
+                guard var list = idx.byDay[key], let p = list.firstIndex(of: m) else { return }
+                list.remove(at: p)
+                idx.byDay[key] = list
+            case .insert(let m):
+                let key = m.dayKey
+                if presentBefore[key] == nil { presentBefore[key] = idx.byDay[key] != nil }
+                idx.byDay[key, default: []].append(m)
+            }
+        }
+        var keysChanged = false
+        for (key, was) in presentBefore {
+            let list = idx.byDay[key] ?? []
+            idx.byDay[key] = list.isEmpty ? nil : list.sorted { $0.capturedAt < $1.capturedAt }
+            if was == list.isEmpty { keysChanged = true }
+        }
+        if keysChanged { idx.keys = idx.byDay.keys.sorted(by: >) }
+        idx.revision = revision
+        dayIndex = idx
+    }
+
+    /// 테스트 전용 — 고쳐 붙인 인덱스가 처음부터 만든 것과 같은지.
+    func indexMatchesRebuild() -> Bool {
+        let patched = index
+        dayIndex = nil
+        let rebuilt = index
+        return patched.keys == rebuilt.keys && patched.byDay.mapValues { $0.map(\.id) } == rebuilt.byDay.mapValues { $0.map(\.id) }
+    }
+
+    // 조각마다 전체 기록으로 id·cloudID 사전을 새로 만들지 않게 — 마지막 applyRemote 뒤 아무것도 안 바뀌었을 때만 이어 쓴다.
+    private struct Lookup {
+        var byID: [Moment.ID: Int]
+        var byCloud: [String: Int]
+        var revision: Int
+    }
+    @ObservationIgnored private var lookup: Lookup?
 
     /// 이 기기에서 실제로 바뀐 것만 — applyRemote 는 부르지 않는다(되돌아 올라가면 끝없이 돈다).
     /// 구독 전에 생긴 변경은 모아 두었다가 설정되는 순간 한 번에 넘긴다.
@@ -120,7 +209,7 @@ public final class DayStore {
         for m in early where !merged.contains(where: {
             $0.id == m.id || $0.fileName == m.fileName || (m.originalName != nil && $0.originalName == m.originalName)
         }) { merged.append(m) }
-        moments = merged
+        all = merged
         isLoaded = true
         if saveDeferred { saveDeferred = false; save() }
         let held = heldAfterSaved
@@ -178,7 +267,9 @@ public final class DayStore {
             existing.fileName == moment.fileName ||
             (moment.originalName != nil && existing.originalName == moment.originalName)
         }) else { return false }
-        moments.append(moment)
+        let before = revision
+        all.append(moment)
+        patchIndex(since: before, ops: [.insert(moment)])
         save()
         notify([.upsert(moment.id)])
         return true
@@ -197,22 +288,24 @@ public final class DayStore {
             added.append(m)
         }
         guard !added.isEmpty else { return [] }
-        moments.append(contentsOf: added)
+        let before = revision
+        all.append(contentsOf: added)
+        patchIndex(since: before, ops: added.map { .insert($0) })
         save()
         notify(added.map { .upsert($0.id) })
         return added
     }
 
     public func assignWord(_ id: Moment.ID, _ word: PhotoWord) {
-        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].word == nil else { return }
-        moments[i].word = word
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].word == nil else { return }
+        all[i].word = word
         save()
         notify([.upsert(id)])
     }
 
     public func setLabels(_ id: Moment.ID, _ labels: [String]) {
-        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].labels == nil else { return }
-        moments[i].labels = labels
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].labels == nil else { return }
+        all[i].labels = labels
         save()
         notify([.upsert(id)])
     }
@@ -245,8 +338,8 @@ public final class DayStore {
     /// 호출부(AssetAdopter)는 이 값으로만 로컬 파일을 지울지 판단해야 한다.
     @discardableResult
     public func adopt(_ id: Moment.ID, assetID: String) -> Bool {
-        guard let i = moments.firstIndex(where: { $0.id == id }), moments[i].assetID == nil else { return false }
-        moments[i] = reassetted(moments[i], assetID: assetID)
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].assetID == nil else { return false }
+        all[i] = reassetted(all[i], assetID: assetID)
         save()
         return true
     }
@@ -257,23 +350,27 @@ public final class DayStore {
     }
 
     public func resolveAssets(_ pairs: [(Moment.ID, String)]) {
-        let index = Dictionary(moments.indices.map { (moments[$0].id, $0) }, uniquingKeysWith: { a, _ in a })
-        var changed = false
+        let index = Dictionary(all.indices.map { (all[$0].id, $0) }, uniquingKeysWith: { a, _ in a })
+        let before = revision
+        var ops: [IndexOp] = []
         for (id, assetID) in pairs {
-            guard let i = index[id], moments[i].assetID == nil else { continue }
-            moments[i] = reassetted(moments[i], assetID: assetID)
-            changed = true
+            guard let i = index[id], all[i].assetID == nil else { continue }
+            let resolved = reassetted(all[i], assetID: assetID)
+            ops.append(.remove(all[i])); ops.append(.insert(resolved))
+            all[i] = resolved
         }
-        if changed { save() }
+        guard !ops.isEmpty else { return }
+        patchIndex(since: before, ops: ops)
+        save()
     }
 
     /// 복원 등으로 바뀐 에셋 ID 로 갈아 끼운다. 알리지 않는다 — assetID 는 이 기기 전용.
     public func reassignAssets(_ pairs: [(Moment.ID, String)]) {
-        let index = Dictionary(moments.indices.map { (moments[$0].id, $0) }, uniquingKeysWith: { a, _ in a })
+        let index = Dictionary(all.indices.map { (all[$0].id, $0) }, uniquingKeysWith: { a, _ in a })
         var changed = false
         for (id, assetID) in pairs {
-            guard let i = index[id], let old = moments[i].assetID, old != assetID else { continue }
-            moments[i] = reassetted(moments[i], assetID: assetID)
+            guard let i = index[id], let old = all[i].assetID, old != assetID else { continue }
+            all[i] = reassetted(all[i], assetID: assetID)
             changed = true
         }
         if changed { save() }
@@ -287,7 +384,7 @@ public final class DayStore {
         guard !assetIDs.isEmpty else { return }
         let removed = moments.filter { $0.assetID.map(assetIDs.contains) ?? false }
         guard !removed.isEmpty else { return }
-        moments.removeAll { $0.assetID.map(assetIDs.contains) ?? false }
+        all.removeAll { $0.assetID.map(assetIDs.contains) ?? false }
         save()
         notify(removed.map { .delete($0.id) })
     }
@@ -296,7 +393,7 @@ public final class DayStore {
         guard !ids.isEmpty else { return }
         let removed = moments.filter { ids.contains($0.id) }
         guard !removed.isEmpty else { return }
-        moments.removeAll { ids.contains($0.id) }
+        all.removeAll { ids.contains($0.id) }
         save()
         notify(removed.map { .delete($0.id) })
     }
@@ -308,33 +405,33 @@ public final class DayStore {
     /// 같은 cloudID 기록이 이미 있으면 combine 으로 합친다. 저장·알림은 한 번.
     public func setCloudIDs(_ pairs: [(Moment.ID, String)]) {
         var index: [Moment.ID: Int] = [:], byCloud: [String: Int] = [:]
-        for (i, m) in moments.enumerated() {
+        for (i, m) in all.enumerated() {
             index[m.id] = i
             if let c = m.cloudID { byCloud[c] = i }
         }
         var dropped = Set<Int>()
         var changes: [StoreChange] = []
         for (id, cloudID) in pairs {
-            guard let i = index[id], !dropped.contains(i), moments[i].cloudID == nil else { continue }
-            moments[i].cloudID = cloudID
+            guard let i = index[id], !dropped.contains(i), all[i].cloudID == nil else { continue }
+            all[i].cloudID = cloudID
             guard let j = byCloud[cloudID], j != i, !dropped.contains(j) else {
                 byCloud[cloudID] = i
                 changes.append(.upsert(id))
                 continue
             }
-            let combined = MomentMerge.combine(moments[i], moments[j])
-            let (keep, drop) = combined.id == moments[i].id ? (i, j) : (j, i)
+            let combined = MomentMerge.combine(all[i], all[j])
+            let (keep, drop) = combined.id == all[i].id ? (i, j) : (j, i)
             // i 가 남으면 서버의 i 에는 cloudID 가 없다 — 항상 올린다.
-            let needsUpsert = keep == i || !MomentMerge.syncedEqual(combined, moments[j])
-            changes.append(.delete(moments[drop].id))
+            let needsUpsert = keep == i || !MomentMerge.syncedEqual(combined, all[j])
+            changes.append(.delete(all[drop].id))
             if needsUpsert { changes.append(.upsert(combined.id)) }
-            moments[keep] = combined
+            all[keep] = combined
             dropped.insert(drop)
             byCloud[cloudID] = keep
         }
         guard !changes.isEmpty else { return }
-        let droppedIDs = Set(dropped.map { moments[$0].id })
-        moments = moments.enumerated().filter { !dropped.contains($0.offset) }.map(\.element)
+        let droppedIDs = Set(dropped.map { all[$0].id })
+        all = all.enumerated().filter { !dropped.contains($0.offset) }.map(\.element)
         changes.removeAll { if case .upsert(let id) = $0 { return droppedIDs.contains(id) } else { return false } }
         save()
         notify(changes)
@@ -343,58 +440,92 @@ public final class DayStore {
     /// upserts 먼저, deletes 나중 — 다른 기기의 delete(a)+upsert(b)(같은 cloudID)를 받을 때 a 의 사진 연결을 b 로 넘기려고.
     @discardableResult
     public func applyRemote(upserts: [Moment], deletes: Set<Moment.ID>) -> [StoreChange] {
+        let (push, changed) = applyRemoteCore(upserts: upserts, deletes: deletes)
+        if changed { save() }
+        return push
+    }
+
+    private enum IndexOp {
+        case remove(Moment)
+        case insert(Moment)
+    }
+
+    private func applyRemoteCore(upserts: [Moment], deletes: Set<Moment.ID>) -> ([StoreChange], Bool) {
+        let before = revision
         var push: [StoreChange] = []
         var changed = false
-        var index: [Moment.ID: Int] = [:], byCloud: [String: Int] = [:]
-        for (i, m) in moments.enumerated() {
-            index[m.id] = i
-            if let c = m.cloudID { byCloud[c] = i }
+        var ops: [IndexOp] = []
+        var index: [Moment.ID: Int], byCloud: [String: Int]
+        if let lookup, lookup.revision == revision {
+            (index, byCloud) = (lookup.byID, lookup.byCloud)
+        } else {
+            index = [:]; byCloud = [:]
+            index.reserveCapacity(all.count + upserts.count)
+            for (i, m) in all.enumerated() {
+                index[m.id] = i
+                if let c = m.cloudID { byCloud[c] = i }
+            }
         }
+        lookup = nil
         for incoming in upserts {
             let remote = incoming.withDeviceFields(
                 fileName: Moment.receivedFileName(cloudID: incoming.cloudID, id: incoming.id),
                 assetID: nil, originalName: nil)
-            if let i = index[remote.id] {
-                let merged = MomentMerge.merge(local: moments[i], remote: remote)
-                if merged != moments[i] { moments[i] = merged; changed = true }
+            // 이어 쓴 사전은 옛 자리를 가리킬 수 있다 — 가리킨 기록이 정말 그 id·cloudID 일 때만 믿는다.
+            if let i = index[remote.id], all[i].id == remote.id {
+                let merged = MomentMerge.merge(local: all[i], remote: remote)
+                if merged != all[i] {
+                    ops.append(.remove(all[i])); ops.append(.insert(merged))
+                    all[i] = merged; changed = true
+                }
                 if let c = merged.cloudID { byCloud[c] = i }
                 if !MomentMerge.syncedEqual(merged, remote) { push.append(.upsert(merged.id)) }
-            } else if let cid = remote.cloudID, let j = byCloud[cid] {
-                let local = moments[j]
+            } else if let cid = remote.cloudID, let j = byCloud[cid], all[j].cloudID == cid {
+                let local = all[j]
                 let combined = MomentMerge.combine(local, remote)
                 let remoteWins = combined.id == remote.id
                 push.append(.delete(remoteWins ? local.id : remote.id))
                 if !MomentMerge.syncedEqual(combined, remoteWins ? remote : local) { push.append(.upsert(combined.id)) }
                 if combined != local {
-                    moments[j] = combined
+                    ops.append(.remove(local)); ops.append(.insert(combined))
+                    all[j] = combined
                     index[local.id] = nil
                     index[combined.id] = j
                     changed = true
                 }
             } else {
-                moments.append(remote)
-                index[remote.id] = moments.count - 1
-                if let c = remote.cloudID { byCloud[c] = moments.count - 1 }
+                all.append(remote)
+                ops.append(.insert(remote))
+                index[remote.id] = all.count - 1
+                if let c = remote.cloudID { byCloud[c] = all.count - 1 }
                 changed = true
             }
         }
+        var shifted = false
         if !deletes.isEmpty {
-            for i in moments.indices where deletes.contains(moments[i].id) {
-                let doomed = moments[i]
+            for i in all.indices where deletes.contains(all[i].id) {
+                let doomed = all[i]
                 guard doomed.assetID != nil, let cid = doomed.cloudID,
-                      let k = moments.indices.first(where: {
-                          $0 != i && moments[$0].cloudID == cid && moments[$0].assetID == nil
-                              && !deletes.contains(moments[$0].id)
+                      let k = all.indices.first(where: {
+                          $0 != i && all[$0].cloudID == cid && all[$0].assetID == nil
+                              && !deletes.contains(all[$0].id)
                       }) else { continue }
-                moments[k] = moments[k].withDeviceFields(fileName: doomed.fileName, assetID: doomed.assetID,
-                                                         originalName: doomed.originalName)
+                let handed = all[k].withDeviceFields(fileName: doomed.fileName, assetID: doomed.assetID,
+                                                     originalName: doomed.originalName)
+                ops.append(.remove(all[k])); ops.append(.insert(handed))
+                all[k] = handed
             }
-            let before = moments.count
-            moments.removeAll { deletes.contains($0.id) }
-            if moments.count != before { changed = true }
+            let doomed = all.filter { deletes.contains($0.id) }
+            if !doomed.isEmpty {
+                ops += doomed.map { .remove($0) }
+                all.removeAll { deletes.contains($0.id) }
+                changed = true
+                shifted = true
+            }
         }
-        if changed { save() }
-        return push
+        if !shifted { lookup = Lookup(byID: index, byCloud: byCloud, revision: revision) }
+        patchIndex(since: before, ops: ops)
+        return (push, changed)
     }
 
     public static let remoteChunkThreshold = 50
@@ -402,6 +533,7 @@ public final class DayStore {
 
     /// 큰 묶음은 40건씩 나눠 넣고 사이에 pause 로 화면을 한 번 그리게 한다. deletes 는 마지막 조각에 — upsert 먼저 규칙 그대로.
     /// excluding 은 조각마다 다시 읽는다 — 쉬는 사이 이 기기에서 지운 기록을 뒤 조각이 되살리지 않게.
+    /// 도는 동안 화면 알림은 bulkPublishInterval 마다 한 번, days.json 저장은 끝에 한 번이다.
     @MainActor
     @discardableResult
     public func applyRemoteInChunks(upserts: [Moment], deletes: Set<Moment.ID>,
@@ -411,17 +543,23 @@ public final class DayStore {
             let skip = excluding()
             return applyRemote(upserts: skip.isEmpty ? upserts : upserts.filter { !skip.contains($0.id) }, deletes: deletes)
         }
+        bulkDepth += 1
+        defer { endBulk() }
         var push: [StoreChange] = []
+        var changed = false
         var start = 0
         while start < upserts.count {
             let end = min(start + Self.remoteChunkSize, upserts.count)
             let last = end == upserts.count
             let skip = excluding()
             let chunk = skip.isEmpty ? Array(upserts[start..<end]) : upserts[start..<end].filter { !skip.contains($0.id) }
-            push += applyRemote(upserts: chunk, deletes: last ? deletes : [])
+            let (p, c) = applyRemoteCore(upserts: chunk, deletes: last ? deletes : [])
+            push += p
+            changed = changed || c
             start = end
             if !last { await pause() }
         }
+        if changed { save() }
         return push
     }
 
@@ -451,7 +589,7 @@ public final class DayStore {
     /// 이 기기 초기화 전용 — 알리면 다른 기기 기록까지 모두 지워진다.
     public func removeAll() {
         loadIssue = nil
-        moments = []
+        all = []
         save()
         flush()
         let fm = FileManager.default
@@ -471,7 +609,7 @@ public final class DayStore {
     private func load() {
         guard let loaded = Self.readFile(fileURL, read: readData) else { isLoaded = false; return }
         adoptIssue(loaded)
-        moments = loaded.moments
+        all = loaded.moments
     }
 
     private func adoptIssue(_ loaded: Loaded) {
