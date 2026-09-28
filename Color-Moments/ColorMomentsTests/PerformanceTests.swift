@@ -161,6 +161,22 @@ final class PerformanceTests: XCTestCase {
         XCTAssertEqual(reopened?.moments.count, Self.momentCount)
     }
 
+    /// 시작 로드 쪼개기 — 파일 읽기·JSON 디코딩·날짜 파싱 중 어디가 무거운지.
+    func testLoadBreakdown() throws {
+        let store = freshStore()
+        store.applyRemote(upserts: synthetic(), deletes: [])
+        store.flush()
+        var data = Data()
+        time("h.read3000") { data = (try? Data(contentsOf: tempFile)) ?? Data() }
+        var decoded: [Moment] = []
+        time("h.decode3000") { decoded = DayStore.decodeMoments(data) }
+        XCTAssertEqual(decoded.count, Self.momentCount)
+        let texts = decoded.flatMap { [$0.capturedAt, $0.addedAt!] }.map { DayStore.encodeDate($0) }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        time("h.iso8601Parse6000") { for t in texts { _ = iso.date(from: t) } }
+    }
+
     func testWidgetSnapshotMake() {
         let store = freshStore()
         store.applyRemote(upserts: synthetic(), deletes: [])

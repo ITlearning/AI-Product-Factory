@@ -345,6 +345,10 @@ public final class DayStore {
 
     private func load() {
         guard let data = try? Data(contentsOf: fileURL) else { return }
+        moments = Self.decodeMoments(data)
+    }
+
+    static func decodeMoments(_ data: Data) -> [Moment] {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { d in
             let c = try d.singleValueContainer()
@@ -355,12 +359,14 @@ public final class DayStore {
             return date
         }
         let decoded = (try? decoder.decode([Moment].self, from: data)) ?? []
-        moments = decoded.map { m in
+        return decoded.map { m in
             var m = m
             if m.labels == nil { m.word = nil }
             return m
         }
     }
+
+    static func encodeDate(_ date: Date) -> String { fractionalDate.string(from: date) }
 
     /// 밀린 저장을 지금 끝낸다 — 앱이 background 로 갈 때 부른다.
     public func flush() { writer.flush() }
@@ -377,7 +383,7 @@ public final class DayStore {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .custom { date, e in
             var c = e.singleValueContainer()
-            try c.encode(fractionalDate.string(from: date))
+            try c.encode(encodeDate(date))
         }
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return try? encoder.encode(moments)

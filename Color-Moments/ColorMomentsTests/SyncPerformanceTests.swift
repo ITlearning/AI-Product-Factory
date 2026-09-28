@@ -20,12 +20,23 @@ final class SyncPerformanceTests: XCTestCase {
         }
     }
 
+    @discardableResult
     private func time(_ label: String, _ block: () -> Void) -> Double {
         let t = CFAbsoluteTimeGetCurrent()
         block()
         let ms = (CFAbsoluteTimeGetCurrent() - t) * 1000
         print("measured perf.\(label): \(String(format: "%.1f", ms)) ms")
         return ms
+    }
+
+    /// 받은 레코드 처리 쪼개기 — 레코드 → Moment 변환과 시스템 필드 아카이브 중 어디가 무거운지.
+    func testReceiveBreakdown() {
+        let all = records(3_000)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("sf-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let fields = SystemFieldsCache(fileURL: url)
+        time("g.convert3000") { for r in all { _ = SyncRecords.moment(from: r) } }
+        time("g.remember3000") { for r in all { fields.remember(r) } }
     }
 
     /// 3,000건을 200건씩 15묶음으로 받을 때 메인에서 쓰는 시간 — 묶음마다 누적된 시스템 필드 전체를 파일로 쓴다.
