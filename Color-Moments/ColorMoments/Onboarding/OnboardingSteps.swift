@@ -191,7 +191,11 @@ struct FirstPebbleStep: View {
                         }
                     }
                 }
+                .contentMargins(.top, 20, for: .scrollContent)
+                .contentMargins(.bottom, 24, for: .scrollContent)
                 .scrollIndicators(.hidden)
+                // 스크롤 안쪽 여백과 별개로, 버튼과 맞닿지 않게 고정 간격을 하나 더 둔다.
+                .padding(.bottom, 12)
             }
         }
         .padding(.top, 12)
