@@ -41,7 +41,8 @@ struct ColorMomentsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures)
+            HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures,
+                      prepare: { [catchUp] in await catchUp.run() })
                 .task {
                     await store.waitUntilLoaded()
                     // 모든 저장소 쓰기보다 먼저 켠다 — 구독 전 변경은 저장소가 쌓아 두지만 그건 이중 안전장치일 뿐이다.

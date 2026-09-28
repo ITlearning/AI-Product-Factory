@@ -10,7 +10,7 @@ final class CloudSync: CKSyncEngineDelegate {
     private var engine: CKSyncEngine?
     private let log = Logger(subsystem: "com.itlearning.colormoments", category: "sync")
 
-    private static let container = "iCloud.com.itlearning.colormoments"
+    static let containerID = "iCloud.com.itlearning.colormoments"
     private let stateURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("sync-state.json")
     private let systemFields = SystemFieldsCache(fileURL: FileManager.default
@@ -26,7 +26,7 @@ final class CloudSync: CKSyncEngineDelegate {
         guard engine == nil else { return }
         let state = (try? Data(contentsOf: stateURL))
             .flatMap { try? JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: $0) }
-        let db = CKContainer(identifier: Self.container).privateCloudDatabase
+        let db = CKContainer(identifier: Self.containerID).privateCloudDatabase
         engine = CKSyncEngine(CKSyncEngine.Configuration(database: db, stateSerialization: state, delegate: self))
 
         store.onLocalChange = { [weak self] changes in self?.enqueue(changes) }

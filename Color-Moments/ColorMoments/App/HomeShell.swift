@@ -1,12 +1,13 @@
 import Photos
 import SwiftUI
-import UserNotifications
 
 struct HomeShell: View {
     let store: DayStore
     let inbox: CaptureInbox
     let gifts: GiftLog
     let closures: DayClosures
+    // 입양·정리·cloudID·위젯 한 차례 — 온보딩이 넘기는 동안 뒤에서 돌리고 끝나기를 기다린다.
+    var prepare: () async -> Void = {}
 
     @State private var progress: CGFloat = 0
     @State private var dragging = false
@@ -37,12 +38,13 @@ struct HomeShell: View {
     @State private var recordsWereEmptyBeforeLibraryImport = false
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
-    @AppStorage("didSeeFirstRun") private var didSeeFirstRun = false
-    // 첫 증정이 끝난 뒤 딱 한 번만 아침 도착 소식을 물어본다 — 실제로 답을 받았을 때만 true.
+    @AppStorage("didFinishOnboarding") private var didFinishOnboarding = false
+    // 온보딩 또는 기존 사용자 한 장에서 실제로 답을 받았을 때만 true.
     @AppStorage("didAskArrivalNotice") private var didAskArrivalNotice = false
     // 기록 0개에서 사진첩으로 처음 담았을 때 고른 하루 — 증정 뒤 이 값을 지운다.
     @AppStorage("onboardingGiftDay") private var onboardingGiftDay: String?
-    @State private var showingArrivalNoticeAsk = false
+    // 온보딩 도중 사진을 담으면 기록이 생겨 판정이 바뀐다 — 한 번 띄웠으면 끝낼 때까지 붙잡는다.
+    @State private var onboardingLatched = false
     #if DEBUG
     @State private var showingGate = false
     #endif
@@ -57,7 +59,7 @@ struct HomeShell: View {
             ZStack {
                 Tone.pure.ignoresSafeArea()
 
-                HomeView(store: store, gifts: gifts, showsSwipeHint: !didSwipe && didSeeFirstRun && progress == 0,
+                HomeView(store: store, gifts: gifts, showsSwipeHint: !didSwipe && !didFinishOnboarding && progress == 0,
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          onDaySheetDismissed: { daySheetDismissedTick += 1 },
                          daySheetPresented: $daySheetPresented,
@@ -73,15 +75,6 @@ struct HomeShell: View {
             }
             .contentShape(Rectangle())
             .simultaneousGesture(swipe(width: w))
-            .overlay {
-                // 이미 쓸어 본 사람에게는 띄우지 않는다 — 기존 설치본도 여기로 들어온다.
-                if !didSeeFirstRun && !didSwipe {
-                    FirstRunOverlay {
-                        withAnimation(.easeOut(duration: 0.25)) { didSeeFirstRun = true }
-                    }
-                }
-            }
-
             .onChange(of: progress) { _, p in
                 if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start() }
             }
@@ -96,20 +89,9 @@ struct HomeShell: View {
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
                  blocksPresentation: daySheetPresented || keepsakePresented || pickingLibrary || libraryCoverUp
-                     || progress > 0 || showingArrivalNoticeAsk,
+                     || progress > 0 || onboarding != .none,
                  onboardingGiftDay: onboardingGiftDay,
                  onCeremonyFinished: handleCeremonyFinished)
-        .alert("조약돌이 도착하면 아침에 알려 드릴까요?", isPresented: $showingArrivalNoticeAsk) {
-            Button("알려 주세요") {
-                didAskArrivalNotice = true
-                Task {
-                    let granted = (try? await UNUserNotificationCenter.current()
-                        .requestAuthorization(options: [.alert, .sound])) ?? false
-                    if granted { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
-                }
-            }
-            Button("괜찮아요", role: .cancel) { didAskArrivalNotice = true }
-        }
         .onChange(of: pickingLibrary) { _, up in if up { libraryCoverUp = true } }
         .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
             libraryCoverUp = false
@@ -136,7 +118,7 @@ struct HomeShell: View {
         #if DEBUG
         .overlay(alignment: .topTrailing) {
 
-            if progress == 0 {
+            if progress == 0 && onboarding == .none {
                 Button { showingGate = true } label: {
                     Image(systemName: "wrench.adjustable").foregroundStyle(Tone.hairline)
                 }
@@ -145,6 +127,44 @@ struct HomeShell: View {
         }
         .sheet(isPresented: $showingGate) { SpikeView(inbox: inbox, store: store, gifts: gifts, closures: closures) }
         #endif
+        .overlay { onboardingLayer.animation(.easeInOut(duration: 0.45), value: onboarding) }
+        .onChange(of: store.isLoaded, initial: true) { _, _ in
+            if liveOnboarding == .full { onboardingLatched = true }
+        }
+    }
+
+    private var liveOnboarding: OnboardingGate.Presentation {
+        OnboardingGate.presentation(isLoaded: store.isLoaded, didFinishOnboarding: didFinishOnboarding,
+                                    hasRecords: !store.dayKeys.isEmpty, didAskArrivalNotice: didAskArrivalNotice)
+    }
+
+    // 로드 전(undecided)에도 증정은 막힌다 — 판정이 서기 전 커버가 먼저 뜨지 않게.
+    private var onboarding: OnboardingGate.Presentation {
+        onboardingLatched ? .full : liveOnboarding
+    }
+
+    @ViewBuilder
+    private var onboardingLayer: some View {
+        switch onboarding {
+        case .full:
+            OnboardingView(store: store, gifts: gifts, closures: closures, prepare: prepare,
+                           onFinish: finishOnboarding)
+                .transition(.opacity)
+        case .arrivalAskOnly:
+            ArrivalAskOverlay(store: store, closures: closures, gifts: gifts)
+                .transition(.opacity)
+        case .undecided, .none:
+            EmptyView()
+        }
+    }
+
+    private func finishOnboarding(openCamera: Bool) {
+        didFinishOnboarding = true
+        if openCamera {
+            makeCamera()
+            progress = 1
+        }
+        withAnimation(.easeInOut(duration: 0.45)) { onboardingLatched = false }
     }
 
     @ViewBuilder
@@ -224,20 +244,10 @@ struct HomeShell: View {
     }
 
     // 4~8시 사이에 앱을 열어 그 자리에서 받았으면 아침 알림이 뒤늦게 오지 않게 그 날짜만 지운다.
-    // 물어보는 건 마무리 여부와 무관하게 "첫 증정" 한 번뿐 — 이 콜백 직후 present() 가 다음 증정을 띄우므로
-    // 남은 증정이 있으면 묻지 않고 그 증정이 끝난 뒤(다음 콜백)로 미룬다.
+    // 아침 소식은 온보딩(기존 사용자는 한 장)에서 이미 묻는다 — 증정 뒤엔 묻지 않는다.
     private func handleCeremonyFinished(_ dayKey: String) {
-        let wasOnboarding = dayKey == onboardingGiftDay
-        if wasOnboarding { onboardingGiftDay = nil }
+        if dayKey == onboardingGiftDay { onboardingGiftDay = nil }
         Task { await ArrivalNotice.clear(dayKey: dayKey) }
         HomeWidget.refresh(store: store, gifts: gifts)
-        let next = GiftSchedule.pending(dayKeys: store.dayKeys,
-                                        today: Moment.dayKey(for: Date()),
-                                        isGifted: gifts.isGifted,
-                                        hasSealedMoments: store.hasSealedMoments,
-                                        isFinished: store.isFinished)
-        guard ArrivalNotice.shouldAsk(didAsk: didAskArrivalNotice, nextGift: next,
-                                      finishedWasOnboarding: wasOnboarding) else { return }
-        showingArrivalNoticeAsk = true
     }
 }
