@@ -127,7 +127,7 @@ struct HomeShell: View {
         }
         .sheet(isPresented: $showingGate) { SpikeView(inbox: inbox, store: store, gifts: gifts, closures: closures) }
         #endif
-        .overlay { onboardingLayer }
+        .overlay { onboardingLayer.animation(.easeInOut(duration: 0.45), value: onboarding) }
         .onChange(of: store.isLoaded, initial: true) { _, _ in
             if liveOnboarding == .full { onboardingLatched = true }
         }
