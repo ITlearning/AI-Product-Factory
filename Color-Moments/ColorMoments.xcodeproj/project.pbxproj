@@ -192,6 +192,7 @@
 		CD0628B4536DF0B722EF1498 /* HomeSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */; };
 		CDD6D930AE9E6FC142AB4E09 /* ShotViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */; };
 		CDEB3F21E0F0C3F13BF5F2AF /* Keepsake.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3649A8DB3B4FF16005111AC /* Keepsake.swift */; };
+		CE276D188F42B46E00715086 /* ShotImageGenerationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64124E7CC109015DBCB4BEC8 /* ShotImageGenerationTests.swift */; };
 		CF0F9BAAA1D2412A2B0E61E3 /* subset-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 311898EF3262DE92643FB442 /* subset-chars.txt */; };
 		CF11D8850579771F69487B97 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
 		CF1B9077022792BE565162B8 /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
@@ -333,6 +334,7 @@
 		5AADBCB38DB09CEFBA41590A /* ColorMoments.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ColorMoments.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B689D73DBFBD16C7B857686 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAssets.swift; sourceTree = "<group>"; };
+		64124E7CC109015DBCB4BEC8 /* ShotImageGenerationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotImageGenerationTests.swift; sourceTree = "<group>"; };
 		662CDEB15BA3A248BA43C279 /* ISODateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ISODateTests.swift; sourceTree = "<group>"; };
 		68CF7D8E8818E871DBABBDBF /* ColorMomentsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ColorMomentsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		69825FD346FEC03526525AE5 /* SheenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheenTests.swift; sourceTree = "<group>"; };
@@ -552,6 +554,7 @@
 				BDB546AAD2C0C80DB7EF1B50 /* PhotoContextTests.swift */,
 				BB99387BD580BB034A37204A /* PhotoLabelerTests.swift */,
 				69825FD346FEC03526525AE5 /* SheenTests.swift */,
+				64124E7CC109015DBCB4BEC8 /* ShotImageGenerationTests.swift */,
 				75C5D16CF875C68C5FD50755 /* ShotImageTests.swift */,
 				915E2C36A82446AD4B2298C3 /* SyncPerformanceTests.swift */,
 				453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */,
@@ -1008,6 +1011,7 @@
 				C0BD8C781712AF5378F41F12 /* PhotoContextTests.swift in Sources */,
 				94A5AAD5168196D819A1E2B1 /* PhotoLabelerTests.swift in Sources */,
 				72CB8811A9F1756D47042377 /* SheenTests.swift in Sources */,
+				CE276D188F42B46E00715086 /* ShotImageGenerationTests.swift in Sources */,
 				27C5EAD62A7776F63166FB51 /* ShotImageTests.swift in Sources */,
 				0D19B56D25DAFD794BE542E9 /* SyncPerformanceTests.swift in Sources */,
 				7D72341D340848C9972CBF03 /* SyncRecordsTests.swift in Sources */,
