@@ -8,7 +8,6 @@ struct CloudScene: View {
     let remoteDays: Int
 
     private static let gap: CGFloat = 72
-    private static let pileMax = 5
 
     var body: some View {
         SceneClock { t, moving in
@@ -49,22 +48,47 @@ struct CloudScene: View {
             .offset(x: -Self.gap + 2 * Self.gap * u, y: -46 * sin(.pi * u))
     }
 
-    /// 받아 오는 동안 한 알씩 떨어져 쌓인다 — 다 차면 비우고 다시.
+    /// 받아 오는 동안 한 알씩 떨어져 먼저 온 돌 위에 살짝 겹쳐 쌓인다 — 다 차면 맨 위만 바뀐다.
     private func pile(t: Double, moving: Bool) -> some View {
         let step = 0.55
-        let shown = receiving && moving ? Int(t / step) % (Self.pileMax + 2) : min(remoteDays, Self.pileMax)
-        let fall = receiving && moving ? SceneEase.inOut((t / step).truncatingRemainder(dividingBy: 1)) : 1
+        let live = receiving && moving
+        let arrived = live ? Int(t / step) + 1 : remoteDays
+        let visible = min(arrived, CloudPile.maxVisible)
+        let fall = live ? SceneEase.inOut((t / step).truncatingRemainder(dividingBy: 1)) : 1
+        let replacing = live && arrived > CloudPile.maxVisible
         return ZStack(alignment: .bottom) {
             Color.clear
-            VStack(spacing: 2) {
-                ForEach(0..<min(shown, Self.pileMax), id: \.self) { i in
-                    let newest = i == 0 && receiving && moving
-                    MiniPebble(height: 16)
-                        .offset(y: newest ? -120 * (1 - fall) : 0)
-                        .opacity(newest ? fall : 1)
+            ZStack(alignment: .bottom) {
+                ForEach(0..<visible, id: \.self) { i in
+                    let top = live && i == visible - 1
+                    if top && replacing { stone(i).opacity(1 - fall) }
+                    stone(i)
+                        .offset(y: top ? -120 * (1 - fall) : 0)
+                        .opacity(top ? fall : 1)
                 }
             }
-            .padding(.bottom, 16)
+            .padding(.bottom, 22)
         }
+    }
+
+    private func stone(_ i: Int) -> some View {
+        let slot = CloudPile.slot(i)
+        return MiniPebble(height: 16)
+            .overlay { PebbleShape(top: 0.44, bottom: 0.40).stroke(Tone.base, lineWidth: 1) }
+            .rotationEffect(.degrees(slot.angle))
+            .offset(x: slot.x, y: -slot.rise)
+    }
+}
+
+/// 오른쪽 폰에 쌓이는 조약돌 자리 — 한 알씩 조금 더 위, 좌우로 엇갈리고 살짝 기운다(늘 같은 자리).
+enum CloudPile {
+    static let maxVisible = 7
+    static let rise: CGFloat = 7
+    private static let xs: [CGFloat] = [0, 4, -3, 5, -5, 2, -2]
+    private static let angles: [Double] = [-3, 5, -6, 4, -2, 6, -4]
+
+    static func slot(_ i: Int) -> (x: CGFloat, rise: CGFloat, angle: Double) {
+        let k = i % xs.count
+        return (xs[k], CGFloat(i) * rise, angles[k])
     }
 }

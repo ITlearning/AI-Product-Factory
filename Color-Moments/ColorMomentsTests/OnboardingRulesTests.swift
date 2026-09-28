@@ -165,4 +165,12 @@ final class OnboardingRulesTests: XCTestCase {
         XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b", "c"], arriving: "d", score: 0.5, maxShown: 3),
                        ["a", "b", "c"], "상한을 넘으면 붙이지 않는다")
     }
+
+    func testCloudPileRisesAndStaysDeterministic() {
+        let slots = (0..<CloudPile.maxVisible).map(CloudPile.slot)
+        for (a, b) in zip(slots, slots.dropFirst()) { XCTAssertGreaterThan(b.rise, a.rise, "한 알씩 조금 더 위") }
+        XCTAssertTrue(slots.allSatisfy { abs($0.angle) <= 6 })
+        XCTAssertLessThan(CloudPile.rise, 16, "앞 돌과 겹칠 만큼만 올라간다")
+        XCTAssertEqual(Set(slots.map(\.x)).count, slots.count, "좌우로 엇갈린다")
+    }
 }
