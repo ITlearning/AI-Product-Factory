@@ -162,6 +162,20 @@ final class PerformanceTests: XCTestCase {
         XCTAssertLessThan(load, 175)
     }
 
+    /// 앱이 실제로 쓰는 경로 — init 은 메인에서 바로 돌아오고 디코딩은 밖에서 한다.
+    func testBackgroundLoadKeepsInitOffMain() async {
+        let store = freshStore()
+        store.applyRemote(upserts: synthetic(), deletes: [])
+        store.flush()
+        var reopened: DayStore!
+        let initMs = time("h.initBackground3000") {
+            reopened = DayStore(fileURL: tempFile, closures: closures, loadsInBackground: true)
+        }
+        await reopened.waitUntilLoaded()
+        XCTAssertEqual(reopened.moments.count, Self.momentCount)
+        XCTAssertLessThan(initMs, 10)
+    }
+
     /// 시작 로드 쪼개기 — 파일 읽기·JSON 디코딩·날짜 파싱 중 어디가 무거운지.
     func testLoadBreakdown() throws {
         let store = freshStore()

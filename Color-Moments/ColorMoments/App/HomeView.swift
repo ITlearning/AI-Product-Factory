@@ -163,13 +163,14 @@ struct HomeView: View {
                                     .contentShape(Rectangle())
                                     .onTapGesture { open(capturedDayKey) }
                             } else if !todayClosedWithMoments {
-                                todayLine
+                                // 로드 전엔 자리만 잡는다 — 「비어 있어요」가 번쩍 떴다 바뀌지 않게.
+                                todayLine.opacity(store.isLoaded ? 1 : 0)
                             }
                             lastYearLine
                             Spacer().frame(height: 38)
 
                             if days.isEmpty {
-                                if !todayInProgress {
+                                if !todayInProgress && store.isLoaded {
                                     EmptyDayBlock(width: blockWidth)
                                     if !didOfferLibraryOnboarding {
                                         Spacer().frame(height: 20)

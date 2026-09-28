@@ -19,13 +19,14 @@ struct ColorMomentsApp: App {
         // store 가 같은 closures 인스턴스를 봐야 「마무리하기」가 그 자리에서 반영된다.
         let closures = DayClosures()
         _closures = State(initialValue: closures)
-        _store = State(initialValue: DayStore(closures: closures))
+        _store = State(initialValue: DayStore(closures: closures, loadsInBackground: true))
     }
 
     var body: some Scene {
         WindowGroup {
             HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures)
                 .task {
+                    await store.waitUntilLoaded()
                     // 모든 저장소 쓰기보다 먼저 켠다 — 구독 전 변경은 저장소가 쌓아 두지만 그건 이중 안전장치일 뿐이다.
                     // 유닛 테스트는 앱을 호스트로 띄운다 — 권한 없는 CKContainer 는 크래시하므로 테스트 중엔 켜지 않는다.
                     if sync == nil, ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
@@ -57,6 +58,7 @@ struct ColorMomentsApp: App {
             switch newPhase {
             case .active:
                 Task {
+                    await store.waitUntilLoaded()
                     let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
                     if status == .authorized || status == .limited {
                         await AssetAdopter.adoptAll(store: store)

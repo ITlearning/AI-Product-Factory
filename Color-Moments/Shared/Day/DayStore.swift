@@ -50,15 +50,50 @@ public final class DayStore {
     private let closures: DayClosures
     @ObservationIgnored private let writer: CoalescingWriter
 
+    /// days.json 을 다 읽었으면 true. 백그라운드 로드 중엔 빈 화면 안내를 띄우면 안 된다.
+    public private(set) var isLoaded = true
+    @ObservationIgnored private var loadWaiters: [CheckedContinuation<Void, Never>] = []
+    @ObservationIgnored private var saveDeferred = false
+
     // closures 는 기본값을 주지 않는다 — 묵시적으로 .standard 를 공유하면 테스트가 실기기 저장소를 건드린다.
-    public init(fileURL: URL? = nil, closures: DayClosures) {
+    /// loadsInBackground — 앱 시작용. 디코딩을 메인 밖에서 하고, 끝나면 메인에서 한 번에 채운다.
+    public init(fileURL: URL? = nil, closures: DayClosures, loadsInBackground: Bool = false) {
         self.fileURL = fileURL ?? FileManager.default
             .urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("days.json")
         self.closures = closures
         self.writer = CoalescingWriter.forFile(self.fileURL)
         writer.flush()
-        load()
+        guard loadsInBackground else { load(); return }
+        isLoaded = false
+        let url = self.fileURL
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let loaded = (try? Data(contentsOf: url)).map(Self.decodeMoments) ?? []
+            await MainActor.run { self?.finishLoading(loaded) }
+        }
+    }
+
+    /// 로드 전에 들어온 기록(카메라 등)은 읽은 기록 뒤에 같은 중복 규칙으로 붙인다.
+    @MainActor
+    private func finishLoading(_ loaded: [Moment]) {
+        let early = moments
+        var merged = loaded
+        for m in early where !merged.contains(where: {
+            $0.id == m.id || $0.fileName == m.fileName || (m.originalName != nil && $0.originalName == m.originalName)
+        }) { merged.append(m) }
+        moments = merged
+        isLoaded = true
+        if saveDeferred { saveDeferred = false; save() }
+        let waiters = loadWaiters
+        loadWaiters = []
+        waiters.forEach { $0.resume() }
+    }
+
+    /// 백그라운드 로드가 끝날 때까지 — 동기화·입양·위젯 맞추기는 이 뒤에 시작해야 빈 목록으로 판단하지 않는다.
+    @MainActor
+    public func waitUntilLoaded() async {
+        guard !isLoaded else { return }
+        await withCheckedContinuation { loadWaiters.append($0) }
     }
 
     public var today: [Moment] { moments(on: Moment.dayKey(for: Date())) }
@@ -376,6 +411,8 @@ public final class DayStore {
     public func afterSaved(_ work: @escaping @Sendable () -> Void) { writer.then(work) }
 
     private func save() {
+        // 로드 전 저장은 디스크의 전체 기록을 일부로 덮어쓴다 — 로드 끝에 한 번 쓴다.
+        guard isLoaded else { saveDeferred = true; return }
         let snapshot = moments
         writer.write { Self.encode(snapshot) }
     }

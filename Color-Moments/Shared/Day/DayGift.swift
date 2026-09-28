@@ -43,6 +43,7 @@ struct DayGiftPresenter: ViewModifier {
             // 호출부는 두 값을 시트·커버의 onDismiss(닫힘 애니메이션이 끝난 뒤)에서만 바꾼다 — 닫히는 도중에
             // 조상의 fullScreenCover 를 띄우면 표시가 씹혀 pending 이 영영 안 풀린다.
             .onChange(of: dismissedTick) { _, _ in present() }
+            .onChange(of: store.isLoaded) { _, loaded in if loaded { present() } }
             .onChange(of: blocksPresentation) { _, blocked in
                 if !blocked { present() }
             }
@@ -64,7 +65,7 @@ struct DayGiftPresenter: ViewModifier {
     }
 
     private func present() {
-        guard pending == nil, !ceremonyUp, !blocksPresentation else { return }
+        guard store.isLoaded, pending == nil, !ceremonyUp, !blocksPresentation else { return }
         guard let key = GiftSchedule.pendingWithOnboarding(onboardingGiftDay: onboardingGiftDay,
                                              isGifted: gifts.isGifted,
                                              dayKeys: store.dayKeys,

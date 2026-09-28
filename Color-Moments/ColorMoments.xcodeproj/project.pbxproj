@@ -60,6 +60,7 @@
 		32A6E9632D4BBA9208258DE4 /* FirstRunOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2407ADFA49967AECDDB4BDC8 /* FirstRunOverlay.swift */; };
 		33F453AFE9E4B766D55AC703 /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
 		341D43357966166F08E749AD /* ColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */; };
+		34991A672B219A9EF99F78D8 /* DayStoreLoadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */; };
 		37BEA1D1B07AEF6FF452A7E3 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		38CA87D9341976C98CBA90ED /* ColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */; };
 		39421DA397F79B0CEBD66E06 /* CaptureInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACF53F5E6B06B0DF394CC92 /* CaptureInbox.swift */; };
@@ -155,9 +156,11 @@
 		B75D6C90A80171E5FF633B14 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
 		B7C3D5AD27CA0A7B12C6EC07 /* ColorMomentsControl.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 820CBC257650B8198BCC2B5E /* ColorMomentsControl.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B8632BE5E9E77D6DC909F70B /* WordPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4EE32C11490405892AA591 /* WordPicker.swift */; };
+		B97C1A8CD64C431D667BB646 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
 		BB2A2EFB0C185E4CF5E6A42C /* ArrivalNoticeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */; };
 		BC08FAC35928BE504FD2119B /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
 		BE6A32DF3751591BADBDD413 /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
+		BF5F91888309FFEC78C6003E /* ISODateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 662CDEB15BA3A248BA43C279 /* ISODateTests.swift */; };
 		BF658B6D51CC90015F869677 /* ColorMomentsCapture.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 7EB1163362CD567B08943EB6 /* ColorMomentsCapture.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C0BD8C781712AF5378F41F12 /* PhotoContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB546AAD2C0C80DB7EF1B50 /* PhotoContextTests.swift */; };
 		C4EEE994B512FF5B448A580C /* DayPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */; };
@@ -182,6 +185,7 @@
 		DBB09AAD1137F1515A685A4D /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		DE9A46A0F358B2CDCB9B89F9 /* CloudIDMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD91667DFE3E8160A212B1DA /* CloudIDMapper.swift */; };
 		E0A11DC00DADAE32564950AC /* LibrarySectionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */; };
+		E3E857371CF94F3C31D07E12 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
 		E3EF71CF767FDFA4AA7CF55D /* HandfulCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DDE9973C653338A1C72CD /* HandfulCard.swift */; };
 		E6B7D3BF033CC827B367D4F7 /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
@@ -203,6 +207,7 @@
 		F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
 		FA88E2179DF699A37AE7FDA4 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
 		FBC024F294753C132ABCD31B /* SystemFieldsCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FCB350488EA3C0C8613C63F /* SystemFieldsCache.swift */; };
+		FC46BEA6E0E7103FDFAD4E28 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
 		FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */; };
 		FCEE317A7C230C41A6485A20 /* SyncRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A09F696F5607382E065E46 /* SyncRecords.swift */; };
 		FD5B3C99974A94C925D4C1F0 /* BadgeCeremony.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */; };
@@ -290,6 +295,7 @@
 		3C0C341B4E32F784A77CC08D /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		3D1B75104310693B48F8D9DE /* ShotImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotImage.swift; sourceTree = "<group>"; };
 		3E880EA384921F9A97C79A87 /* DayMomentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayMomentsView.swift; sourceTree = "<group>"; };
+		3F9F715D0CEA993F93E4A7DC /* ISODate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ISODate.swift; sourceTree = "<group>"; };
 		41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMomentsApp.swift; sourceTree = "<group>"; };
 		431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Subset.ttf"; sourceTree = "<group>"; };
 		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
@@ -299,6 +305,7 @@
 		5AADBCB38DB09CEFBA41590A /* ColorMoments.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ColorMoments.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B689D73DBFBD16C7B857686 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAssets.swift; sourceTree = "<group>"; };
+		662CDEB15BA3A248BA43C279 /* ISODateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ISODateTests.swift; sourceTree = "<group>"; };
 		68CF7D8E8818E871DBABBDBF /* ColorMomentsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ColorMomentsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		69825FD346FEC03526525AE5 /* SheenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheenTests.swift; sourceTree = "<group>"; };
 		6CB97C7E8769569A500FCFF1 /* MomentMergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentMergeTests.swift; sourceTree = "<group>"; };
@@ -329,6 +336,7 @@
 		9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPickerView.swift; sourceTree = "<group>"; };
 		9F19654907C3A03D6D4487F6 /* KeepsakeShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepsakeShareSheet.swift; sourceTree = "<group>"; };
 		A0A48C2B255FB6B7DFA973C5 /* words.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = words.json; sourceTree = "<group>"; };
+		A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreLoadTests.swift; sourceTree = "<group>"; };
 		ACD34409978D5C9CDE7304E7 /* WordList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordList.swift; sourceTree = "<group>"; };
 		ACF0FEAA69BCAAE696688328 /* WidgetSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotTests.swift; sourceTree = "<group>"; };
 		B180428138319F72B026C570 /* PebbleNameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNameTests.swift; sourceTree = "<group>"; };
@@ -459,6 +467,7 @@
 				DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */,
 				926BDBAFE04F7B17464F627E /* DayTimeline.swift */,
 				2CECA91205032542A8E6CBAD /* GiftSchedule.swift */,
+				3F9F715D0CEA993F93E4A7DC /* ISODate.swift */,
 				79FEE28AD42D812B8F599EBC /* Moment.swift */,
 				D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */,
 				98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */,
@@ -477,12 +486,14 @@
 				B3676D77CA8F72C6175CC066 /* ColorExtractorTests.swift */,
 				05C70E667A14B10F8000505A /* DayClosuresTests.swift */,
 				001315A7B5573B9974966AF7 /* DayGradientTests.swift */,
+				A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */,
 				9D560E148CF707BADEB351E9 /* DayStoreTests.swift */,
 				F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */,
 				219FB2ED514DBE95A9AFAB53 /* Fixtures */,
 				08FA4218B93874BE76730863 /* FontSubsetTests.swift */,
 				FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */,
 				160019A37882F81114DE5A27 /* HomeNavigationTests.swift */,
+				662CDEB15BA3A248BA43C279 /* ISODateTests.swift */,
 				1D91C5926BF3700AE2D67318 /* KeepsakeTests.swift */,
 				0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */,
 				77CBA56139EDB549235ABCB2 /* MemoriesTests.swift */,
@@ -882,6 +893,7 @@
 				CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */,
 				D0232AF91965F3F9595ABB68 /* HomeNavigation.swift in Sources */,
 				B75D6C90A80171E5FF633B14 /* HorizontalPan.swift in Sources */,
+				FC46BEA6E0E7103FDFAD4E28 /* ISODate.swift in Sources */,
 				48A9614795ADEF5BA9422B61 /* Keepsake.swift in Sources */,
 				F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */,
 				1193A257CEEFA474C1C26A51 /* Memories.swift in Sources */,
@@ -915,11 +927,13 @@
 				A6B7C20174D02F20249A5B7F /* ColorExtractorTests.swift in Sources */,
 				C6042960F0442084AB0338E3 /* DayClosuresTests.swift in Sources */,
 				3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */,
+				34991A672B219A9EF99F78D8 /* DayStoreLoadTests.swift in Sources */,
 				1996A6A10339037B3A5CCC8F /* DayStoreTests.swift in Sources */,
 				97BEEB530BE9186A6F1A872A /* DayTimelineTests.swift in Sources */,
 				2D2DCAAA1704F58B8D38A822 /* FontSubsetTests.swift in Sources */,
 				5C46EE00CA3DADB1F2965E39 /* GiftScheduleTests.swift in Sources */,
 				17862587A29EF312EF46CBD3 /* HomeNavigationTests.swift in Sources */,
+				BF5F91888309FFEC78C6003E /* ISODateTests.swift in Sources */,
 				4C60C59259AB81C508BEA732 /* KeepsakeTests.swift in Sources */,
 				E0A11DC00DADAE32564950AC /* LibrarySectionsTests.swift in Sources */,
 				109FF5C751CBDCD455979AD7 /* MemoriesTests.swift in Sources */,
@@ -981,6 +995,7 @@
 				2EB93D8ABBF2916AEEE1F2F1 /* HomeView.swift in Sources */,
 				F3230F73D5F251F3B2EE84D2 /* HomeWidget.swift in Sources */,
 				AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */,
+				B97C1A8CD64C431D667BB646 /* ISODate.swift in Sources */,
 				CDEB3F21E0F0C3F13BF5F2AF /* Keepsake.swift in Sources */,
 				951908AFCC6771BD1ED1A17C /* KeepsakeShareSheet.swift in Sources */,
 				172DFE11B4A2ABB242240925 /* LibraryImporter.swift in Sources */,
@@ -1037,6 +1052,7 @@
 				4A6EE87BD3B7C2217011154B /* Haptics.swift in Sources */,
 				BE6A32DF3751591BADBDD413 /* HomeNavigation.swift in Sources */,
 				C6592BFBDEAAB5F814989180 /* HorizontalPan.swift in Sources */,
+				E3E857371CF94F3C31D07E12 /* ISODate.swift in Sources */,
 				B5DB8DA5DC01E0D3A2EF9121 /* Keepsake.swift in Sources */,
 				9DA9DB9E6BBA273B5C90A00F /* LibrarySections.swift in Sources */,
 				632171711E08FE8079B6FF40 /* Memories.swift in Sources */,
