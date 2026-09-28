@@ -61,6 +61,19 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(store.moments(on: "2026-09-22").map(\.fileName), ["early.jpg", "late.jpg"])
     }
 
+    func testSameCapturedAtOrdersByIDAndMatchesRebuild() {
+        let at = date(2026, 9, 22, 12, 0)
+        let a = Moment(id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+                       capturedAt: at, colorHex: "#112233", fileName: "a.jpg", source: .app)
+        let b = Moment(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+                       capturedAt: at, colorHex: "#112233", fileName: "b.jpg", source: .app)
+        store.add(a)
+        store.add(b)
+        XCTAssertEqual(store.moments(on: "2026-09-22").map(\.fileName), ["b.jpg", "a.jpg"],
+                       "capturedAt 이 같으면 id 문자열 순으로 갈라야 한다")
+        XCTAssertTrue(store.indexMatchesRebuild(), "패치로 이어 붙인 순서와 통째로 재구축한 순서가 같아야 한다")
+    }
+
     func testDuplicateFileNameIsIgnored() {
         store.add(moment(date(2026, 9, 22, 12, 0), name: "same.jpg"))
         store.add(moment(date(2026, 9, 22, 13, 0), name: "same.jpg"))

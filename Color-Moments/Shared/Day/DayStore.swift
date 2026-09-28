@@ -57,6 +57,11 @@ public final class DayStore {
     }
     @ObservationIgnored private var dayIndex: DayIndex?
 
+    /// 하루 안 정렬 — capturedAt 이 같으면 id 로 갈라 패치와 재구축이 늘 같은 순서를 내게 한다.
+    private static func dayOrder(_ a: Moment, _ b: Moment) -> Bool {
+        a.capturedAt != b.capturedAt ? a.capturedAt < b.capturedAt : a.id.uuidString < b.id.uuidString
+    }
+
     // 캐시가 맞아도 published 를 읽는다 — 안 읽으면 뷰가 이 저장소를 관찰하지 않아 새 기록을 못 본다.
     private var index: DayIndex {
         _ = published
@@ -64,7 +69,8 @@ public final class DayStore {
         if let dayIndex, dayIndex.zone == zone, dayIndex.revision == revision { return dayIndex }
         var byDay: [String: [Moment]] = [:]
         for m in all { byDay[m.dayKey, default: []].append(m) }
-        for key in byDay.keys { byDay[key]?.sort { $0.capturedAt < $1.capturedAt } }
+        // capturedAt 이 같으면 id 로 갈라야 패치와 재구축이 같은 순서를 낸다.
+        for key in byDay.keys { byDay[key]?.sort(by: Self.dayOrder) }
         let built = DayIndex(byDay: byDay, keys: byDay.keys.sorted(by: >), zone: zone, revision: revision)
         dayIndex = built
         return built
@@ -93,7 +99,7 @@ public final class DayStore {
         var keysChanged = false
         for (key, was) in presentBefore {
             let list = idx.byDay[key] ?? []
-            idx.byDay[key] = list.isEmpty ? nil : list.sorted { $0.capturedAt < $1.capturedAt }
+            idx.byDay[key] = list.isEmpty ? nil : list.sorted(by: Self.dayOrder)
             if was == list.isEmpty { keysChanged = true }
         }
         if keysChanged { idx.keys = idx.byDay.keys.sorted(by: >) }
