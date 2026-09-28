@@ -1,5 +1,6 @@
 import CoreImage
 import ImageIO
+import Observation
 import UIKit
 
 /// 사진 앱 접근을 대신해주는 구멍 — Shared 는 Photos 를 모른다, 앱 타깃이 꽂는다.
@@ -12,6 +13,28 @@ public enum ShotImage {
 
     /// 앱이 시작할 때 꽂는다. 기본 nil 이면 모든 Moment 가 파일 판으로 그려진다.
     public static var assetSource: AssetImageSource?
+
+    /// 사진 앱 변경·assetID 재배정을 알리는 세대 번호 — 값이 바뀌면 떠 있는 뷰가 `.task(id:)` 로 다시 요청한다.
+    /// 정확히 어떤 자산인지 모르면(사진 앱 전체 변경 신호 등) `global` 을, 알면 그 assetID 만 올린다.
+    @Observable
+    public final class Generation {
+        public private(set) var global = 0
+        public private(set) var byAsset: [String: Int] = [:]
+
+        public func bump(assetID: String? = nil) {
+            if let assetID {
+                byAsset[assetID, default: 0] += 1
+            } else {
+                global += 1
+            }
+        }
+
+        public func value(for assetID: String?) -> Int {
+            global + (assetID.flatMap { byAsset[$0] } ?? 0)
+        }
+    }
+
+    public static let generation = Generation()
 
     public static func url(_ fileName: String) -> URL {
         ShotStore.directory.appendingPathComponent(fileName)
@@ -49,6 +72,37 @@ public enum ShotImage {
 
     public static func peek(_ m: Moment, maxPixel: CGFloat) -> UIImage? {
         peek(cacheID(m), maxPixel: maxPixel)
+    }
+
+    /// 뜬 채로 못 받았을 때 다시 물어볼 간격 — iCloud 사진이 늦게 내려오는 창.
+    static let retryDelaysNanoseconds: [UInt64] = [2_000_000_000, 5_000_000_000, 15_000_000_000]
+
+    /// assetID 가 있는데(사진 앱에 있어야 하는데) 못 받았으면 `delays` 만큼 뒤에 다시 시도한다.
+    /// 취소되면(뷰가 사라지면) 바로 멈춘다. 캐시에 이미 있으면 warm() 이 그대로 돌려주고 재시도로 안 들어간다.
+    public static func warmWithRetry(_ m: Moment, maxPixel: CGFloat,
+                                     delays: [UInt64] = retryDelaysNanoseconds) async -> UIImage? {
+        if let img = await warm(m, maxPixel: maxPixel) { return img }
+        guard m.assetID != nil else { return nil }
+        for delay in delays {
+            guard !Task.isCancelled else { return nil }
+            try? await Task.sleep(nanoseconds: delay)
+            guard !Task.isCancelled else { return nil }
+            if let img = await warm(m, maxPixel: maxPixel) { return img }
+        }
+        return nil
+    }
+
+    /// full(_:) 의 재시도판 — 원본판은 캐시하지 않으므로 매번 다시 묻는다.
+    public static func fullWithRetry(_ m: Moment, delays: [UInt64] = retryDelaysNanoseconds) async -> UIImage? {
+        if let img = await full(m) { return img }
+        guard m.assetID != nil else { return nil }
+        for delay in delays {
+            guard !Task.isCancelled else { return nil }
+            try? await Task.sleep(nanoseconds: delay)
+            guard !Task.isCancelled else { return nil }
+            if let img = await full(m) { return img }
+        }
+        return nil
     }
 
     @discardableResult
