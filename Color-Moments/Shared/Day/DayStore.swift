@@ -48,12 +48,16 @@ public final class DayStore {
 
     private let fileURL: URL
     private let closures: DayClosures
+    public typealias FileReader = @Sendable (URL) throws -> Data
+    private let readData: FileReader
     @ObservationIgnored private let writer: CoalescingWriter
 
     /// days.json 을 다 읽었으면 true. 백그라운드 로드 중엔 빈 화면 안내를 띄우면 안 된다.
     public private(set) var isLoaded = true
     @ObservationIgnored private var loadWaiters: [CheckedContinuation<Void, Never>] = []
     @ObservationIgnored private var saveDeferred = false
+    @ObservationIgnored private var loadAttempt: Task<Void, Never>?
+    @ObservationIgnored private var heldAfterSaved: [@Sendable () -> Void] = []
 
     public enum LoadIssue: Equatable, Sendable {
         case partial(skipped: Int)
@@ -72,25 +76,44 @@ public final class DayStore {
 
     // closures 는 기본값을 주지 않는다 — 묵시적으로 .standard 를 공유하면 테스트가 실기기 저장소를 건드린다.
     /// loadsInBackground — 앱 시작용. 디코딩을 메인 밖에서 하고, 끝나면 메인에서 한 번에 채운다.
-    public init(fileURL: URL? = nil, closures: DayClosures, loadsInBackground: Bool = false) {
+    /// 파일이 있는데 못 읽으면(첫 잠금 해제 전 등) 로드 전 상태로 남는다 — retryLoadIfNeeded 로 다시 읽는다.
+    public init(fileURL: URL? = nil, closures: DayClosures, loadsInBackground: Bool = false,
+                readData: @escaping FileReader = { try Data(contentsOf: $0) }) {
         self.fileURL = fileURL ?? FileManager.default
             .urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("days.json")
         self.closures = closures
+        self.readData = readData
         self.writer = CoalescingWriter.forFile(self.fileURL)
         writer.flush()
         guard loadsInBackground else { load(); return }
         isLoaded = false
-        let url = self.fileURL
-        Task.detached(priority: .userInitiated) { [weak self] in
-            let loaded = Self.readFile(url)
+        loadAttempt = startLoadAttempt()
+    }
+
+    private func startLoadAttempt() -> Task<Void, Never> {
+        let url = fileURL, read = readData
+        return Task.detached(priority: .userInitiated) { [weak self] in
+            guard let loaded = Self.readFile(url, read: read) else { return }
             await MainActor.run { self?.finishLoading(loaded) }
         }
+    }
+
+    /// 아직 못 읽었으면 다시 읽는다 — 보호 데이터가 풀렸을 때·앱이 active 가 될 때 앱이 부른다.
+    @MainActor
+    public func retryLoadIfNeeded() async {
+        if let running = loadAttempt { await running.value }
+        guard !isLoaded else { return }
+        let attempt = startLoadAttempt()
+        loadAttempt = attempt
+        await attempt.value
     }
 
     /// 로드 전에 들어온 기록(카메라 등)은 읽은 기록 뒤에 같은 중복 규칙으로 붙인다.
     @MainActor
     private func finishLoading(_ loaded: Loaded) {
+        // 재시도가 겹쳐 두 번 읽혀도 두 번째가 그 사이 바뀐 기록을 디스크 값으로 되돌리지 않게.
+        guard !isLoaded else { return }
         adoptIssue(loaded)
         let early = moments
         var merged = loaded.moments
@@ -100,6 +123,9 @@ public final class DayStore {
         moments = merged
         isLoaded = true
         if saveDeferred { saveDeferred = false; save() }
+        let held = heldAfterSaved
+        heldAfterSaved = []
+        if !isSaveBlocked { held.forEach { writer.then($0) } }
         let waiters = loadWaiters
         loadWaiters = []
         waiters.forEach { $0.resume() }
@@ -443,7 +469,7 @@ public final class DayStore {
     private static let wholeSecondDate = ISO8601DateFormatter()
 
     private func load() {
-        let loaded = Self.readFile(fileURL)
+        guard let loaded = Self.readFile(fileURL, read: readData) else { isLoaded = false; return }
         adoptIssue(loaded)
         moments = loaded.moments
     }
@@ -460,10 +486,11 @@ public final class DayStore {
     }
 
     /// 읽다 걸린 게 있으면 어떤 저장보다 먼저 원본을 옆에 복사해 둔다.
-    static func readFile(_ url: URL) -> Loaded {
-        guard let data = try? Data(contentsOf: url) else {
-            // 있는데 못 읽으면(잠금 중 파일 보호 등) 없는 것으로 보고 새로 쓰면 전부 날아간다.
-            return FileManager.default.fileExists(atPath: url.path) ? Loaded(issue: .unreadable) : Loaded()
+    /// nil — 파일은 있는데 아직 못 읽음(첫 잠금 해제 전 파일 보호·IO 오류). 손상이 아니라 나중에 다시 읽는다.
+    static func readFile(_ url: URL, read: FileReader = { try Data(contentsOf: $0) }) -> Loaded? {
+        guard let data = try? read(url) else {
+            // 있는데 못 읽은 걸 없는 것으로 보고 새로 쓰면 전부 날아간다.
+            return FileManager.default.fileExists(atPath: url.path) ? nil : Loaded()
         }
         guard !data.isEmpty else { return Loaded() }
         let decoded = decodeReport(data)
@@ -516,7 +543,12 @@ public final class DayStore {
     }
 
     /// 지금까지의 저장이 디스크에 닿은 뒤 work 를 돌린다(메인을 막지 않는다).
-    public func afterSaved(_ work: @escaping @Sendable () -> Void) { writer.then(work) }
+    /// 로드 전이면 미뤄 둔 저장 뒤로 넘기고, 저장이 막혀 있으면 버린다 — 기록이 디스크에 없는데 뒤따르는 일(동기화 토큰)만 남지 않게.
+    public func afterSaved(_ work: @escaping @Sendable () -> Void) {
+        guard isLoaded else { heldAfterSaved.append(work); return }
+        guard !isSaveBlocked else { return }
+        writer.then(work)
+    }
 
     private func save() {
         // 로드 전 저장은 디스크의 전체 기록을 일부로 덮어쓴다 — 로드 끝에 한 번 쓴다.

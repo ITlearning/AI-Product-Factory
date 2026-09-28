@@ -1,5 +1,6 @@
 import Photos
 import SwiftUI
+import UIKit
 
 @main
 struct ColorMomentsApp: App {
@@ -51,6 +52,11 @@ struct ColorMomentsApp: App {
                     await CloudIDMapper.refresh(store: store)
                     await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts)
                 }
+                // 푸시로 잠금 해제 전에 깨어나면 days.json 을 못 읽는다 — 풀리는 순간 다시 읽어야 저장이 풀린다.
+                .onReceive(NotificationCenter.default.publisher(
+                    for: UIApplication.protectedDataDidBecomeAvailableNotification)) { _ in
+                    Task { await store.retryLoadIfNeeded() }
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             // 사진이 담기는 경로는 여러 곳이라(잠금화면·라이브러리 입양 등) active/background 전환마다
@@ -58,6 +64,7 @@ struct ColorMomentsApp: App {
             switch newPhase {
             case .active:
                 Task {
+                    await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()
                     let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
                     if status == .authorized || status == .limited {

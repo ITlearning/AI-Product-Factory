@@ -101,4 +101,94 @@ final class DayStoreRecoveryTests: XCTestCase {
         XCTAssertEqual(reopened.moments.count, 1)
         XCTAssertTrue(backups().isEmpty)
     }
+    /// 첫 잠금 해제 전 파일 보호처럼 읽기 자체가 실패하는 상황을 흉내 낸다.
+    private final class Gate: @unchecked Sendable {
+        private let lock = NSLock()
+        private var open = false
+        func unlock() { lock.withLock { open = true } }
+        func read(_ url: URL) throws -> Data {
+            guard lock.withLock({ open }) else { throw CocoaError(.fileReadNoPermission) }
+            return try Data(contentsOf: url)
+        }
+    }
+
+    private func seedTwo() throws -> [Moment] {
+        let store = DayStore(fileURL: file, closures: closures)
+        let base = Date(timeIntervalSince1970: 1_780_000_000)
+        for i in 0..<2 {
+            store.add(Moment(capturedAt: base.addingTimeInterval(Double(i) * 60), colorHex: "#22334\(i)",
+                             fileName: "s\(i).jpg", source: .app))
+        }
+        store.flush()
+        return store.moments
+    }
+
+    /// 못 읽은 건 손상이 아니다 — 백업·저장 차단 없이 로드 전으로 남고, 풀리면 읽은 기록 + 그 사이 추가분을 쓴다.
+    func testReadFailureDefersSaveAndRetryWritesLoadedPlusEarly() async throws {
+        let seeded = try seedTwo()
+        let original = try Data(contentsOf: file)
+        let gate = Gate()
+        let store = DayStore(fileURL: file, closures: closures, readData: { try gate.read($0) })
+        XCTAssertFalse(store.isLoaded)
+        XCTAssertNil(store.loadIssue)
+        XCTAssertFalse(store.isSaveBlocked)
+
+        let early = Moment(capturedAt: Date(), colorHex: "#ABCDEF", fileName: "early.jpg", source: .app)
+        store.add(early)
+        store.flush()
+        XCTAssertEqual(try Data(contentsOf: file), original, "로드 전엔 디스크를 덮지 않는다")
+        XCTAssertTrue(backups().isEmpty)
+
+        await store.retryLoadIfNeeded()
+        XCTAssertFalse(store.isLoaded, "아직 잠겨 있으면 계속 로드 전")
+        XCTAssertEqual(try Data(contentsOf: file), original)
+
+        gate.unlock()
+        await store.retryLoadIfNeeded()
+        XCTAssertTrue(store.isLoaded)
+        XCTAssertEqual(store.moments.map(\.id), seeded.map(\.id) + [early.id])
+        store.flush()
+        XCTAssertEqual(DayStore(fileURL: file, closures: closures).moments.map(\.id), seeded.map(\.id) + [early.id])
+        XCTAssertTrue(backups().isEmpty)
+    }
+
+    func testBackgroundReadFailureWaitsForRetry() async throws {
+        let seeded = try seedTwo()
+        let gate = Gate()
+        let store = DayStore(fileURL: file, closures: closures, loadsInBackground: true, readData: { try gate.read($0) })
+        await store.retryLoadIfNeeded()
+        XCTAssertFalse(store.isLoaded)
+        XCTAssertNil(store.loadIssue)
+
+        let marker = Marker()
+        store.afterSaved { marker.hit() }
+        gate.unlock()
+        await store.retryLoadIfNeeded()
+        XCTAssertTrue(store.isLoaded)
+        XCTAssertEqual(store.moments.map(\.id), seeded.map(\.id))
+        store.flush()
+        XCTAssertTrue(marker.wasHit, "로드 전에 맡긴 뒤따르는 일은 로드 뒤에 돈다")
+    }
+
+    /// 저장이 막혀 기록이 디스크에 없으면 뒤따르는 일(동기화 토큰 쓰기)도 돌지 않는다.
+    func testAfterSavedIsDroppedWhileSaveBlocked() async throws {
+        try Data("{\"이건\": 배열이 아니다".utf8).write(to: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: dir.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dir.path) }
+        let store = DayStore(fileURL: file, closures: closures)
+        XCTAssertEqual(store.loadIssue, .unreadable)
+        XCTAssertNil(store.corruptBackupURL)
+        XCTAssertTrue(store.isSaveBlocked)
+        let marker = Marker()
+        store.afterSaved { marker.hit() }
+        store.flush()
+        XCTAssertFalse(marker.wasHit)
+    }
+
+    private final class Marker: @unchecked Sendable {
+        private let lock = NSLock()
+        private var hits = 0
+        func hit() { lock.withLock { hits += 1 } }
+        var wasHit: Bool { lock.withLock { hits > 0 } }
+    }
 }
