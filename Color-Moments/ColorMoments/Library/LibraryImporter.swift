@@ -6,7 +6,7 @@ import Photos
 @MainActor
 final class LibraryImporter {
 
-    static func fetchOptions() -> PHFetchOptions {
+    nonisolated static func fetchOptions() -> PHFetchOptions {
         let o = PHFetchOptions()
         o.predicate = NSPredicate(
             format: "mediaType == %d AND !((mediaSubtypes & %d) == %d)",

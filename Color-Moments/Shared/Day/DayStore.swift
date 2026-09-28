@@ -346,8 +346,15 @@ public final class DayStore {
         return Set(ordered.prefix(limit).compactMap { $0.word?.wordID })
     }
 
+    @ObservationIgnored private var assetIDCache: (revision: Int, ids: Set<String>)?
+
+    /// 사진첩 격자가 칸마다 부른다 — 칸마다 전체 기록을 훑지 않게 세대마다 한 번 모은다.
     public func containsAsset(_ id: String) -> Bool {
-        moments.contains { $0.assetID == id }
+        _ = published
+        if let assetIDCache, assetIDCache.revision == revision { return assetIDCache.ids.contains(id) }
+        let ids = Set(all.compactMap(\.assetID))
+        assetIDCache = (revision, ids)
+        return ids.contains(id)
     }
 
     /// 이 기기에 원본 파일이 있는 기록만 — 자리 이름(asset-·remote-)은 파일이 없다.
