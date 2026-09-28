@@ -1,0 +1,1020 @@
+{
+  "_meta": {
+    "description": "드라이런 20곡의 iTunes 실제 응답. rankCandidates 골든 테스트 입력.",
+    "captured_at": "2026-09-17",
+    "pipeline": "search(country=us, media=music, limit=6) → lookup(country=kr, 배치 1회)",
+    "note": "네트워크 없이 재생하려고 응답을 그대로 떠둔다. iTunes 카탈로그가 바뀌면 다시 뜬다."
+  },
+  "cases": [
+    {
+      "q": "CREDIT 릴보이",
+      "expectTrackId": 1611261708,
+      "expectKey": "credit",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1611261708,
+          "artistId": 854857065,
+          "trackName": "Credit (feat. YUMDDA, GIRIBOY & Zion.T)",
+          "artistName": "lIlBOI",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d1/50/ad/d150ade8-3bc4-f6ac-c06e-539dad74b053/888272072853_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "Credit (feat. YUMDDA, GIRIBOY & Zion.T)",
+          "krArtistName": "릴보이",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d1/50/ad/d150ade8-3bc4-f6ac-c06e-539dad74b053/888272072853_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1676400167,
+          "artistId": 854857065,
+          "trackName": "CREDIT (Instrumental)",
+          "artistName": "lIlBOI",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/e5/56/d7/e556d73d-b494-d7ba-0a20-5c335ae0fd51/888272073225_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "CREDIT (Instrumental)",
+          "krArtistName": "릴보이",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/e5/56/d7/e556d73d-b494-d7ba-0a20-5c335ae0fd51/888272073225_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1737638782,
+          "artistId": 509602231,
+          "trackName": "Credit",
+          "artistName": "Franchesca",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/6e/39/9d/6e399d3c-23c8-ebee-5fbe-a3ebab9b0280/artwork.jpg/100x100bb.jpg",
+          "krTrackName": "Credit",
+          "krArtistName": "Franchesca",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/6e/39/9d/6e399d3c-23c8-ebee-5fbe-a3ebab9b0280/artwork.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1476937669,
+          "artistId": 1476648958,
+          "trackName": "Credit",
+          "artistName": "Lacker",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/9a/71/67/9a716746-eaa7-7127-6143-08c4500d1d92/194171682193.jpg/100x100bb.jpg",
+          "krTrackName": "Credit",
+          "krArtistName": "Lacker",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/9a/71/67/9a716746-eaa7-7127-6143-08c4500d1d92/194171682193.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1885001092,
+          "artistId": 487841,
+          "trackName": "Credit (Live)",
+          "artistName": "Tower Of Power",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/5f/b4/5a/5fb45a55-77cb-a976-da40-5266a322e169/31055.jpg/100x100bb.jpg",
+          "krTrackName": "Credit (Live)",
+          "krArtistName": "Tower of Power",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/5f/b4/5a/5fb45a55-77cb-a976-da40-5266a322e169/31055.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1638791931,
+          "artistId": 1477661729,
+          "trackName": "Credit",
+          "artistName": "Anaviel The Servant",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/cf/f0/99/cff0991c-cf8f-fa17-fe2d-e596bb820b89/artwork.jpg/100x100bb.jpg",
+          "krTrackName": "Credit",
+          "krArtistName": "Anaviel The Servant",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/cf/f0/99/cff0991c-cf8f-fa17-fe2d-e596bb820b89/artwork.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "너는 나의 문학 박소은",
+      "expectTrackId": 1575171628,
+      "expectKey": "youaremyliterature",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1575171628,
+          "artistId": 1343958570,
+          "trackName": "You Are My Literature",
+          "artistName": "Park Soeun",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fa/0a/f4/fa0af4db-8a4c-d5fd-7edf-e426e5a50e13/190560022182.jpg/100x100bb.jpg",
+          "krTrackName": "너는 나의 문학",
+          "krArtistName": "박소은",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fa/0a/f4/fa0af4db-8a4c-d5fd-7edf-e426e5a50e13/190560022182.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1829868371,
+          "artistId": 1343958570,
+          "trackName": "This Is My Eternity",
+          "artistName": "Park Soeun",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/60/e4/de/60e4de8b-94da-7051-e13b-7cbb5b5262b0/888272158243.jpg/100x100bb.jpg",
+          "krTrackName": "나는 변하지 않아",
+          "krArtistName": "박소은",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/60/e4/de/60e4de8b-94da-7051-e13b-7cbb5b5262b0/888272158243.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1824077848,
+          "artistId": 1343958570,
+          "trackName": "This Is My Eternity",
+          "artistName": "Park Soeun",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/86/51/73/8651731c-193e-46ec-f236-1984f1e9d02d/888272156362.jpg/100x100bb.jpg",
+          "krTrackName": "나는 변하지 않아",
+          "krArtistName": "박소은",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/86/51/73/8651731c-193e-46ec-f236-1984f1e9d02d/888272156362.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1575164279,
+          "artistId": 1343958570,
+          "trackName": "Only If I Have You",
+          "artistName": "Park Soeun",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/05/95/1d/05951d8a-83ec-3008-64a7-59e6a5af6dc4/190560018963.jpg/100x100bb.jpg",
+          "krTrackName": "너만 있으면",
+          "krArtistName": "박소은",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/05/95/1d/05951d8a-83ec-3008-64a7-59e6a5af6dc4/190560018963.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1631313305,
+          "artistId": 1343958570,
+          "trackName": "You",
+          "artistName": "Park Soeun",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/28/6b/3d/286b3d69-b0f6-9041-7e05-c28e54a36cea/1..png/100x100bb.jpg",
+          "krTrackName": "너",
+          "krArtistName": "박소은",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/28/6b/3d/286b3d69-b0f6-9041-7e05-c28e54a36cea/1..png/100x100bb.jpg"
+        },
+        {
+          "trackId": 1575171619,
+          "artistId": 1343958570,
+          "trackName": "Only If I Have You",
+          "artistName": "Park Soeun",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fa/0a/f4/fa0af4db-8a4c-d5fd-7edf-e426e5a50e13/190560022182.jpg/100x100bb.jpg",
+          "krTrackName": "너만 있으면",
+          "krArtistName": "박소은",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fa/0a/f4/fa0af4db-8a4c-d5fd-7edf-e426e5a50e13/190560022182.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "L'Amour, Les Baguettes, Paris 스텔라장",
+      "expectTrackId": 1590088606,
+      "expectKey": "lamourlesbaguettesparis",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1590088606,
+          "artistId": 920659922,
+          "trackName": "L’Amour, Les Baguettes, Paris",
+          "artistName": "Stella Jang",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e1/ba/95/e1ba95ec-d9be-7cc9-0993-624179a2f036/cover.jpg/100x100bb.jpg",
+          "krTrackName": "L’Amour, Les Baguettes, Paris",
+          "krArtistName": "스텔라장",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e1/ba/95/e1ba95ec-d9be-7cc9-0993-624179a2f036/cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1506735199,
+          "artistId": 920659922,
+          "trackName": "Villain",
+          "artistName": "Stella Jang",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/2b/e9/e6/2be9e614-f990-e939-e32d-5f546dbb426a/cover_-.jpg/100x100bb.jpg",
+          "krTrackName": "빌런",
+          "krArtistName": "스텔라장",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/2b/e9/e6/2be9e614-f990-e939-e32d-5f546dbb426a/cover_-.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1464915954,
+          "artistId": 920659922,
+          "trackName": "Colors",
+          "artistName": "Stella Jang",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/64/68/d0/6468d05f-68b1-218b-e708-3827ba106f2e/cover_KM0007995_1.jpg/100x100bb.jpg",
+          "krTrackName": "Colors",
+          "krArtistName": "스텔라장",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/64/68/d0/6468d05f-68b1-218b-e708-3827ba106f2e/cover_KM0007995_1.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1465092727,
+          "artistId": 920659922,
+          "trackName": "Vanishing Paycheck",
+          "artistName": "Stella Jang",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/c0/e2/07/c0e207a4-d1b6-88e8-9780-c2df7bdb1ef6/cover_KM0008006_1.jpg/100x100bb.jpg",
+          "krTrackName": "월급은 통장을 스칠 뿐",
+          "krArtistName": "스텔라장",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/c0/e2/07/c0e207a4-d1b6-88e8-9780-c2df7bdb1ef6/cover_KM0008006_1.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1437500213,
+          "artistId": 920659922,
+          "trackName": "Only You",
+          "artistName": "Stella Jang",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/51/64/ab/5164ab07-e234-ad4c-902f-e38ff6c17ea9/191953016207.jpg/100x100bb.jpg",
+          "krTrackName": "그대만 보여",
+          "krArtistName": "스텔라장",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/51/64/ab/5164ab07-e234-ad4c-902f-e38ff6c17ea9/191953016207.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1601195567,
+          "artistId": 920659922,
+          "trackName": "My Winter Trip",
+          "artistName": "Stella Jang",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/89/b1/06/89b10652-dc09-faef-ace9-e9fa6b39188a/cover_KM0014482_1.jpg/100x100bb.jpg",
+          "krTrackName": "나의 겨울 여행",
+          "krArtistName": "스텔라장",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/89/b1/06/89b10652-dc09-faef-ace9-e9fa6b39188a/cover_KM0014482_1.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "밤산책 김세정",
+      "expectTrackId": 1559888158,
+      "expectKey": "dodumchit",
+      "resultCount": 2,
+      "results": [
+        {
+          "trackId": 1559888158,
+          "artistId": 1178907631,
+          "trackName": "Do Dum Chit",
+          "artistName": "KIMSEJEONG",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/b3/fb/94/b3fb94fc-44ee-5a72-b528-85eb92ced91f/cover.jpg/100x100bb.jpg",
+          "krTrackName": "밤산책",
+          "krArtistName": "김세정",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/b3/fb/94/b3fb94fc-44ee-5a72-b528-85eb92ced91f/cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1600822811,
+          "artistId": 1369078574,
+          "trackName": "Sweet Heart",
+          "artistName": "Vinxen, OVAN, Parc Jae Jung, Piano Man & Im Soo",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/a4/bf/b4/a4bfb43a-aca4-8c00-0c73-0243ced454ed/190296293771.jpg/100x100bb.jpg",
+          "krTrackName": "눈",
+          "krArtistName": "빈첸, 오반, 박재정, 피아노맨 & 임수",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/a4/bf/b4/a4bfb43a-aca4-8c00-0c73-0243ced454ed/190296293771.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "그래 우리 함께 무한도전",
+      "expectTrackId": null,
+      "expectKey": null,
+      "resultCount": 3,
+      "results": [
+        {
+          "trackId": 1804617839,
+          "artistId": 1574871308,
+          "trackName": "냉면",
+          "artistName": "명카드라이브",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/d1/34/ea/d134ea13-0713-32f0-dcdf-2b56ccb130d8/cover_KM0021164_1.jpg/100x100bb.jpg",
+          "krTrackName": "냉면",
+          "krArtistName": "명카드라이브",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/d1/34/ea/d134ea13-0713-32f0-dcdf-2b56ccb130d8/cover_KM0021164_1.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 937681441,
+          "artistId": 371526961,
+          "trackName": "광대 (feat. 김범수)",
+          "artistName": "Park Myung Soo",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/8a/72/88/8a7288a1-339c-baa1-33c6-7e3679962e31/moohan.jpg/100x100bb.jpg",
+          "krTrackName": "광대 (feat. 김범수)",
+          "krArtistName": "박명수",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/8a/72/88/8a7288a1-339c-baa1-33c6-7e3679962e31/moohan.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 937681416,
+          "artistId": 307488499,
+          "trackName": "키 큰 노총각 이야기",
+          "artistName": "Jung Junha",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/8a/72/88/8a7288a1-339c-baa1-33c6-7e3679962e31/moohan.jpg/100x100bb.jpg",
+          "krTrackName": "키 큰 노총각 이야기",
+          "krArtistName": "정준하",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/8a/72/88/8a7288a1-339c-baa1-33c6-7e3679962e31/moohan.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "골목길 어귀에서 버스커버스커",
+      "expectTrackId": 1570572496,
+      "expectKey": "attheentrancetothealley",
+      "resultCount": 1,
+      "results": [
+        {
+          "trackId": 1570572496,
+          "artistId": 514808441,
+          "trackName": "At the Entrance to the Alley",
+          "artistName": "Busker Busker",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/43/d8/6f/43d86fe5-632a-8226-be7c-7b5dee99a461/08809309174588_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "골목길 어귀에서",
+          "krArtistName": "버스커버스커",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/43/d8/6f/43d86fe5-632a-8226-be7c-7b5dee99a461/08809309174588_Cover.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "그대라는 시 태연",
+      "expectTrackId": 1804658810,
+      "expectKey": "그대라는시",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1804658810,
+          "artistId": 435966642,
+          "trackName": "그대라는 시",
+          "artistName": "TAEYEON",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/66/9d/cb669d9f-6bb1-3f29-c6b9-6a7a59821b8b/cover_KM0008761_1.jpg/100x100bb.jpg",
+          "krTrackName": "그대라는 시",
+          "krArtistName": "태연",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/66/9d/cb669d9f-6bb1-3f29-c6b9-6a7a59821b8b/cover_KM0008761_1.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1804658811,
+          "artistId": 435966642,
+          "trackName": "그대라는 시 (Instrumental)",
+          "artistName": "TAEYEON",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/66/9d/cb669d9f-6bb1-3f29-c6b9-6a7a59821b8b/cover_KM0008761_1.jpg/100x100bb.jpg",
+          "krTrackName": "그대라는 시 (Instrumental)",
+          "krArtistName": "태연",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/66/9d/cb669d9f-6bb1-3f29-c6b9-6a7a59821b8b/cover_KM0008761_1.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1804710415,
+          "artistId": 435966642,
+          "trackName": "그대라는 시",
+          "artistName": "TAEYEON",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/75/75/17/7575177e-0ec4-3489-ef8a-f58eebcae4a2/cover_KM0009448_1.jpg/100x100bb.jpg",
+          "krTrackName": "그대라는 시",
+          "krArtistName": "태연",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/75/75/17/7575177e-0ec4-3489-ef8a-f58eebcae4a2/cover_KM0009448_1.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1609049613,
+          "artistId": 435966642,
+          "trackName": "INVU",
+          "artistName": "TAEYEON",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/31/57/83/31578320-668c-39ac-9b69-20beba684835/03_INVU.jpg/100x100bb.jpg",
+          "krTrackName": "INVU",
+          "krArtistName": "태연",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/31/57/83/31578320-668c-39ac-9b69-20beba684835/03_INVU.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1574308371,
+          "artistId": 435966642,
+          "trackName": "Weekend",
+          "artistName": "TAEYEON",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bf/24/e1/bf24e11b-32c4-da05-2331-d94a5f26b0ea/Digital_Cover_TAEYEON_Weekend.jpg/100x100bb.jpg",
+          "krTrackName": "Weekend",
+          "krArtistName": "태연",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bf/24/e1/bf24e11b-32c4-da05-2331-d94a5f26b0ea/Digital_Cover_TAEYEON_Weekend.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1209885620,
+          "artistId": 435966642,
+          "trackName": "Fine",
+          "artistName": "TAEYEON",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/88/c9/34/88c934f9-3443-cdfb-4805-aeb38002e285/Digital_Cover-Main_fix.jpg/100x100bb.jpg",
+          "krTrackName": "Fine",
+          "krArtistName": "태연",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/88/c9/34/88c934f9-3443-cdfb-4805-aeb38002e285/Digital_Cover-Main_fix.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "노래방에서 장범준",
+      "expectTrackId": 1457171018,
+      "expectKey": "karaoke",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1457171018,
+          "artistId": 910423281,
+          "trackName": "Karaoke",
+          "artistName": "Jang Beom June",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg",
+          "krTrackName": "노래방에서",
+          "krArtistName": "장범준",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1569279910,
+          "artistId": 910423281,
+          "trackName": "Your Shampoo Scent in the Flowers",
+          "artistName": "Jang Beom June",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/20/af/87/20af8721-da52-f5d5-e57b-83a61b5ae5d3/8809658316127_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "흔들리는 꽃들 속에서 네 샴푸향이 느껴진거야",
+          "krArtistName": "장범준",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/20/af/87/20af8721-da52-f5d5-e57b-83a61b5ae5d3/8809658316127_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1457171028,
+          "artistId": 910423281,
+          "trackName": "Imagination",
+          "artistName": "Jang Beom June",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg",
+          "krTrackName": "상상속에서",
+          "krArtistName": "장범준",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1457171015,
+          "artistId": 910423281,
+          "trackName": "Every Moment with You",
+          "artistName": "Jang Beom June",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg",
+          "krTrackName": "당신과는 천천히",
+          "krArtistName": "장범준",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1457171017,
+          "artistId": 910423281,
+          "trackName": "Ilsan",
+          "artistName": "Jang Beom June",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg",
+          "krTrackName": "일산으로",
+          "krArtistName": "장범준",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1457171023,
+          "artistId": 910423281,
+          "trackName": "Phone Call to Mom",
+          "artistName": "Jang Beom June",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg",
+          "krTrackName": "엄마 용돈 좀 보내주세요",
+          "krArtistName": "장범준",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/45/c4/f045c4e7-f2bc-5478-3d4f-782778b114f6/cover-.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "우연히 잠시라도 치즈",
+      "expectTrackId": 1544426989,
+      "expectKey": "evenforamoment",
+      "resultCount": 4,
+      "results": [
+        {
+          "trackId": 1544426989,
+          "artistId": 411941427,
+          "trackName": "Even for a Moment",
+          "artistName": "CHEEZE",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/09/37/c1/0937c1e0-79cf-c989-6dd0-b0aec873a095/8809784696292.jpg/100x100bb.jpg",
+          "krTrackName": "우연히 잠시라도",
+          "krArtistName": "치즈",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/09/37/c1/0937c1e0-79cf-c989-6dd0-b0aec873a095/8809784696292.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1538930483,
+          "artistId": 411941427,
+          "trackName": "Even for a Moment",
+          "artistName": "CHEEZE",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7e/f7/01/7ef701d1-ca01-4f06-71ba-08a35d22ac40/8809764953971.jpg/100x100bb.jpg",
+          "krTrackName": "우연히 잠시라도",
+          "krArtistName": "치즈",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7e/f7/01/7ef701d1-ca01-4f06-71ba-08a35d22ac40/8809764953971.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1544427068,
+          "artistId": 411941427,
+          "trackName": "Even For A Moment (Instrumental)",
+          "artistName": "CHEEZE",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/09/37/c1/0937c1e0-79cf-c989-6dd0-b0aec873a095/8809784696292.jpg/100x100bb.jpg",
+          "krTrackName": "우연히 잠시라도 (Instrumental)",
+          "krArtistName": "치즈",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/09/37/c1/0937c1e0-79cf-c989-6dd0-b0aec873a095/8809784696292.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1538930487,
+          "artistId": 411941427,
+          "trackName": "Even for a Moment (Instrumental)",
+          "artistName": "CHEEZE",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7e/f7/01/7ef701d1-ca01-4f06-71ba-08a35d22ac40/8809764953971.jpg/100x100bb.jpg",
+          "krTrackName": "우연히 잠시라도 (Instrumental)",
+          "krArtistName": "치즈",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7e/f7/01/7ef701d1-ca01-4f06-71ba-08a35d22ac40/8809764953971.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "Feel My Rhythm 레드벨벳",
+      "expectTrackId": 1614179710,
+      "expectKey": "feelmyrhythm",
+      "resultCount": 7,
+      "results": [
+        {
+          "trackId": 1614179710,
+          "artistId": 906961899,
+          "trackName": "Feel My Rhythm",
+          "artistName": "Red Velvet",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg",
+          "krTrackName": "Feel My Rhythm",
+          "krArtistName": "레드벨벳",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1614179716,
+          "artistId": 906961899,
+          "trackName": "In My Dreams",
+          "artistName": "Red Velvet",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg",
+          "krTrackName": "In My Dreams",
+          "krArtistName": "레드벨벳",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1614179714,
+          "artistId": 906961899,
+          "trackName": "BAMBOLEO",
+          "artistName": "Red Velvet",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg",
+          "krTrackName": "BAMBOLEO",
+          "krArtistName": "레드벨벳",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1614179713,
+          "artistId": 906961899,
+          "trackName": "Beg For Me",
+          "artistName": "Red Velvet",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg",
+          "krTrackName": "Beg For Me",
+          "krArtistName": "레드벨벳",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1614179712,
+          "artistId": 906961899,
+          "trackName": "Rainbow Halo",
+          "artistName": "Red Velvet",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg",
+          "krTrackName": "Rainbow Halo",
+          "krArtistName": "레드벨벳",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1614179715,
+          "artistId": 906961899,
+          "trackName": "Good, Bad, Ugly",
+          "artistName": "Red Velvet",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg",
+          "krTrackName": "Good, Bad, Ugly",
+          "krArtistName": "레드벨벳",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/bc/ac/99/bcac9968-35ae-0cea-ce08-9eb11600532b/RV_Feel_My_Rhythm-Cover_4000x4000.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1615370658,
+          "artistId": 906961899,
+          "trackName": "Feel My Rhythm",
+          "artistName": "Red Velvet",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Video116/v4/e4/02/bf/e402bf37-0265-78fe-692c-29097b7767e1/KRZ262200081.jpg/100x100bb.jpg",
+          "krTrackName": "Feel My Rhythm",
+          "krArtistName": "레드벨벳",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Video116/v4/e4/02/bf/e402bf37-0265-78fe-692c-29097b7767e1/KRZ262200081.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "잘 자, 안녕 치즈",
+      "expectTrackId": 1541119697,
+      "expectKey": "goodnight",
+      "resultCount": 2,
+      "results": [
+        {
+          "trackId": 1541119697,
+          "artistId": 411941427,
+          "trackName": "Good Night",
+          "artistName": "CHEEZE",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/30/8a/dd/308addd8-d2eb-7bae-d359-b0b985018dee/8809712289039.jpg/100x100bb.jpg",
+          "krTrackName": "잘 자, 안녕",
+          "krArtistName": "치즈",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/30/8a/dd/308addd8-d2eb-7bae-d359-b0b985018dee/8809712289039.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1541119698,
+          "artistId": 411941427,
+          "trackName": "Good Night (Instrumental)",
+          "artistName": "CHEEZE",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/30/8a/dd/308addd8-d2eb-7bae-d359-b0b985018dee/8809712289039.jpg/100x100bb.jpg",
+          "krTrackName": "잘 자, 안녕 (Instrumental)",
+          "krArtistName": "치즈",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/30/8a/dd/308addd8-d2eb-7bae-d359-b0b985018dee/8809712289039.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "그라데이션 10CM",
+      "expectTrackId": 1836310463,
+      "expectKey": "gradation",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1836310463,
+          "artistId": 448032126,
+          "trackName": "Gradation",
+          "artistName": "10CM",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/66/48/ec/6648ec7f-5c8e-88a3-1b1f-db7921480571/8804775229671.jpg/100x100bb.jpg",
+          "krTrackName": "그라데이션",
+          "krArtistName": "10CM",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/66/48/ec/6648ec7f-5c8e-88a3-1b1f-db7921480571/8804775229671.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1836310464,
+          "artistId": 448032126,
+          "trackName": "Gradation (Inst.)",
+          "artistName": "10CM",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/66/48/ec/6648ec7f-5c8e-88a3-1b1f-db7921480571/8804775229671.jpg/100x100bb.jpg",
+          "krTrackName": "그라데이션 (Inst.)",
+          "krArtistName": "10CM",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/66/48/ec/6648ec7f-5c8e-88a3-1b1f-db7921480571/8804775229671.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1812838903,
+          "artistId": 448032126,
+          "trackName": "그라데이션 (B 남자키) [MR]",
+          "artistName": "10CM",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/bc/22/27/bc22279a-9744-a0ec-e079-0a127c65e269/8800309395676_cover.jpg/100x100bb.jpg",
+          "krTrackName": "그라데이션 (B 남자키) [MR]",
+          "krArtistName": "10CM",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/bc/22/27/bc22279a-9744-a0ec-e079-0a127c65e269/8800309395676_cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1669043180,
+          "artistId": 1482285399,
+          "trackName": "Gradation",
+          "artistName": "Shin Giwon",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/5e/fd/1c/5efd1c35-eaca-d5ee-cc96-c3379fcb7999/198009069835.png/100x100bb.jpg",
+          "krTrackName": "그라데이션",
+          "krArtistName": "신기원",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/5e/fd/1c/5efd1c35-eaca-d5ee-cc96-c3379fcb7999/198009069835.png/100x100bb.jpg"
+        },
+        {
+          "trackId": 1812838904,
+          "artistId": 448032126,
+          "trackName": "그라데이션 (E 여자키) [MR]",
+          "artistName": "10CM",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/bc/22/27/bc22279a-9744-a0ec-e079-0a127c65e269/8800309395676_cover.jpg/100x100bb.jpg",
+          "krTrackName": "그라데이션 (E 여자키) [MR]",
+          "krArtistName": "10CM",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/bc/22/27/bc22279a-9744-a0ec-e079-0a127c65e269/8800309395676_cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1502222497,
+          "artistId": 1502216114,
+          "trackName": "Gradation",
+          "artistName": "이재현",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/8e/fa/89/8efa897f-5d3f-1f0d-73b9-06eb0b2cfc13/8809717444709.jpg/100x100bb.jpg",
+          "krTrackName": "그라데이션",
+          "krArtistName": "이재현",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/8e/fa/89/8efa897f-5d3f-1f0d-73b9-06eb0b2cfc13/8809717444709.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "나무 카더가든",
+      "expectTrackId": 1459990044,
+      "expectKey": "tree",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1459990044,
+          "artistId": 1020577647,
+          "trackName": "Tree",
+          "artistName": "Car, the garden",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/b8/72/09/b87209dc-363e-ae11-90c2-14199b2e47b5/cover-_Car_the_garden_DS.jpg/100x100bb.jpg",
+          "krTrackName": "나무",
+          "krArtistName": "카더가든",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/b8/72/09/b87209dc-363e-ae11-90c2-14199b2e47b5/cover-_Car_the_garden_DS.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1721098967,
+          "artistId": 1020577647,
+          "trackName": "Tree (Instrumental)",
+          "artistName": "Car, the garden",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/9e/6f/a0/9e6fa093-de43-eaac-318d-cdf0b1bc15bd/8718857993582.jpg/100x100bb.jpg",
+          "krTrackName": "나무 (Instrumental)",
+          "krArtistName": "카더가든",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/9e/6f/a0/9e6fa093-de43-eaac-318d-cdf0b1bc15bd/8718857993582.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1721098575,
+          "artistId": 1020577647,
+          "trackName": "Tree",
+          "artistName": "Car, the garden",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/9e/6f/a0/9e6fa093-de43-eaac-318d-cdf0b1bc15bd/8718857993582.jpg/100x100bb.jpg",
+          "krTrackName": "나무",
+          "krArtistName": "카더가든",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/9e/6f/a0/9e6fa093-de43-eaac-318d-cdf0b1bc15bd/8718857993582.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1721111145,
+          "artistId": 1020577647,
+          "trackName": "Tree",
+          "artistName": "Car, the garden",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/5e/49/02/5e49023e-f11d-fb42-7d72-8c06bc731782/8718857993650.jpg/100x100bb.jpg",
+          "krTrackName": "나무",
+          "krArtistName": "카더가든",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/5e/49/02/5e49023e-f11d-fb42-7d72-8c06bc731782/8718857993650.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1546059209,
+          "artistId": 1020577647,
+          "trackName": "Home Sweet Home",
+          "artistName": "Car, the garden",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f2/9c/b0/f29cb0b6-ba14-6a2a-4988-c16ea735ff07/8809534468704.jpg/100x100bb.jpg",
+          "krTrackName": "Home Sweet Home",
+          "krArtistName": "카더가든",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f2/9c/b0/f29cb0b6-ba14-6a2a-4988-c16ea735ff07/8809534468704.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1584287424,
+          "artistId": 1020577647,
+          "trackName": "Romantic Sunday",
+          "artistName": "Car, the garden",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/99/d6/84/99d68488-3ff2-582a-b2fa-71f52f73a03d/888272085853_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "로맨틱 선데이",
+          "krArtistName": "카더가든",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/99/d6/84/99d68488-3ff2-582a-b2fa-71f52f73a03d/888272085853_Cover.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "희망고문 이하이",
+      "expectTrackId": 1315997155,
+      "expectKey": "blues",
+      "resultCount": 1,
+      "results": [
+        {
+          "trackId": 1315997155,
+          "artistId": 1484046668,
+          "trackName": "BLUES",
+          "artistName": "LEEHI",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/b1/8c/fc/b18cfc12-7064-7f28-00ec-1baa86aa2e6f/LEEHI_SEOULITE-DS_4000.png/100x100bb.jpg",
+          "krTrackName": "희망고문",
+          "krArtistName": "이하이",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/b1/8c/fc/b18cfc12-7064-7f28-00ec-1baa86aa2e6f/LEEHI_SEOULITE-DS_4000.png/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "에필로그 정승환",
+      "expectTrackId": 1692136562,
+      "expectKey": "epilogue",
+      "resultCount": 4,
+      "results": [
+        {
+          "trackId": 1527243080,
+          "artistId": 949319364,
+          "trackName": "Polaris (Epilogue)",
+          "artistName": "Jung Seung Hwan",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/f6/37/e5/f637e5f4-46b9-982c-ad04-34d2fb80f095/cover_4000px.jpg/100x100bb.jpg",
+          "krTrackName": "북극성 (에필로그)",
+          "krArtistName": "정승환",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/f6/37/e5/f637e5f4-46b9-982c-ad04-34d2fb80f095/cover_4000px.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1692136562,
+          "artistId": 949319364,
+          "trackName": "Epilogue",
+          "artistName": "Jung Seung Hwan",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/0c/35/c4/0c35c435-f357-0ae8-860b-2d730c980d09/8804775288340.jpg/100x100bb.jpg",
+          "krTrackName": "에필로그",
+          "krArtistName": "정승환",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/0c/35/c4/0c35c435-f357-0ae8-860b-2d730c980d09/8804775288340.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1692136563,
+          "artistId": 949319364,
+          "trackName": "To Me",
+          "artistName": "Jung Seung Hwan",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/0c/35/c4/0c35c435-f357-0ae8-860b-2d730c980d09/8804775288340.jpg/100x100bb.jpg",
+          "krTrackName": "너의 내일로부터",
+          "krArtistName": "정승환",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/0c/35/c4/0c35c435-f357-0ae8-860b-2d730c980d09/8804775288340.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1692136564,
+          "artistId": 949319364,
+          "trackName": "I Will",
+          "artistName": "Jung Seung Hwan",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/0c/35/c4/0c35c435-f357-0ae8-860b-2d730c980d09/8804775288340.jpg/100x100bb.jpg",
+          "krTrackName": "I Will",
+          "krArtistName": "정승환",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/0c/35/c4/0c35c435-f357-0ae8-860b-2d730c980d09/8804775288340.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "스며들기 좋은 오늘 백예린",
+      "expectTrackId": 1463023979,
+      "expectKey": "leanonme",
+      "resultCount": 4,
+      "results": [
+        {
+          "trackId": 1463023980,
+          "artistId": 1053924796,
+          "trackName": "Lean on Me (Instrumental)",
+          "artistName": "Yerin Baek",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/75/30/f4/7530f405-1bf4-bf05-0427-856d999d755f/cover-A-TEEN2_Part.1_NEW.jpg/100x100bb.jpg",
+          "krTrackName": "스며들기 좋은 오늘 (Instrumental)",
+          "krArtistName": "백예린",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/75/30/f4/7530f405-1bf4-bf05-0427-856d999d755f/cover-A-TEEN2_Part.1_NEW.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1463023979,
+          "artistId": 1053924796,
+          "trackName": "Lean on Me",
+          "artistName": "Yerin Baek",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/75/30/f4/7530f405-1bf4-bf05-0427-856d999d755f/cover-A-TEEN2_Part.1_NEW.jpg/100x100bb.jpg",
+          "krTrackName": "스며들기 좋은 오늘",
+          "krArtistName": "백예린",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/75/30/f4/7530f405-1bf4-bf05-0427-856d999d755f/cover-A-TEEN2_Part.1_NEW.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1747314948,
+          "artistId": 1053924796,
+          "trackName": "Antifreeze",
+          "artistName": "Yerin Baek",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4b/98/c2/4b98c269-4ca3-9fe6-e510-3dc70fca0968/8809634389206.jpg/100x100bb.jpg",
+          "krTrackName": "Antifreeze",
+          "krArtistName": "백예린",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4b/98/c2/4b98c269-4ca3-9fe6-e510-3dc70fca0968/8809634389206.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1505292571,
+          "artistId": 808626855,
+          "trackName": "Knock (feat. Yerin Baek)",
+          "artistName": "CODE KUNST",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/81/60/76/816076d1-53f4-8668-ad7d-a4a2e524a066/cover_-.jpg/100x100bb.jpg",
+          "krTrackName": "Knock (feat. Yerin Baek)",
+          "krArtistName": "코드 쿤스트",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/81/60/76/816076d1-53f4-8668-ad7d-a4a2e524a066/cover_-.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "라라랜드 신용재",
+      "expectTrackId": 6784520926,
+      "expectKey": "lalaland",
+      "resultCount": 1,
+      "results": [
+        {
+          "trackId": 6784520926,
+          "artistId": 455259301,
+          "trackName": "La La Land",
+          "artistName": "Shin Yong Jae",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/7f/f9/d7/7ff9d7a6-1d9e-db4d-d800-ad9fe2a00b00/cover_KM0024803_1.jpg/100x100bb.jpg",
+          "krTrackName": "라라랜드",
+          "krArtistName": "신용재",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/7f/f9/d7/7ff9d7a6-1d9e-db4d-d800-ad9fe2a00b00/cover_KM0024803_1.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "고백 뜨거운 감자",
+      "expectTrackId": 1470202756,
+      "expectKey": "propose",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1470202756,
+          "artistId": 270004081,
+          "trackName": "Propose",
+          "artistName": "Hot Potato",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/21/2e/84/212e8403-06dc-5b46-fa86-608392ec4262/602527580685.jpg/100x100bb.jpg",
+          "krTrackName": "고백",
+          "krArtistName": "뜨거운 감자",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/21/2e/84/212e8403-06dc-5b46-fa86-608392ec4262/602527580685.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1472677405,
+          "artistId": 270004081,
+          "trackName": "Something (English Version)",
+          "artistName": "Hot Potato",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/ff/be/bf/ffbebf3d-b097-f263-31a2-354bd5666d07/191953040882.jpg/100x100bb.jpg",
+          "krTrackName": "고백 (English Version)",
+          "krArtistName": "뜨거운 감자",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/ff/be/bf/ffbebf3d-b097-f263-31a2-354bd5666d07/191953040882.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1472680803,
+          "artistId": 270004081,
+          "trackName": "Propose",
+          "artistName": "Hot Potato",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/40/82/92/40829202-c7c7-0f64-ed6b-d4eb371f978b/191953040899.jpg/100x100bb.jpg",
+          "krTrackName": "고백",
+          "krArtistName": "뜨거운 감자",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/40/82/92/40829202-c7c7-0f64-ed6b-d4eb371f978b/191953040899.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1650746254,
+          "artistId": 747787305,
+          "trackName": "고백",
+          "artistName": "Music Face",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/86/ff/78/86ff7848-fa64-7556-4426-edfae3c73afe/8809717469306_cover.jpg/100x100bb.jpg",
+          "krTrackName": "고백(뜨거운감자)",
+          "krArtistName": "뮤직페이스",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/86/ff/78/86ff7848-fa64-7556-4426-edfae3c73afe/8809717469306_cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1470578069,
+          "artistId": 270004081,
+          "trackName": "Pillow",
+          "artistName": "Hot Potato",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/a6/d0/2c/a6d02cd8-8794-6dfa-6d22-c174e58cf149/Cover_Who_Doesn_t_Like_Sweet_Things.jpg/100x100bb.jpg",
+          "krTrackName": "팔베개",
+          "krArtistName": "뜨거운 감자",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/a6/d0/2c/a6d02cd8-8794-6dfa-6d22-c174e58cf149/Cover_Who_Doesn_t_Like_Sweet_Things.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1470214240,
+          "artistId": 270004081,
+          "trackName": "Rain Tears",
+          "artistName": "Hot Potato",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/6c/b5/b5/6cb5b5af-e782-0afb-9468-5118911c93eb/602527580678.jpg/100x100bb.jpg",
+          "krTrackName": "비 눈물",
+          "krArtistName": "뜨거운 감자",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/6c/b5/b5/6cb5b5af-e782-0afb-9468-5118911c93eb/602527580678.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "오늘 밤만큼은 로이킴",
+      "expectTrackId": 1650920997,
+      "expectKey": "welltonight",
+      "resultCount": 2,
+      "results": [
+        {
+          "trackId": 1650920997,
+          "artistId": 572430917,
+          "trackName": "Well, Tonight",
+          "artistName": "Roy Kim",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/87/ad/9f/87ad9fe3-a9c6-48ba-dd51-43c4fa7fd5d1/888272107869_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "오늘 밤만큼은",
+          "krArtistName": "로이킴",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/87/ad/9f/87ad9fe3-a9c6-48ba-dd51-43c4fa7fd5d1/888272107869_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1068048805,
+          "artistId": 367775650,
+          "trackName": "This Christmas (feat. 한해)",
+          "artistName": "Lee Moon Sae & Roy Kim",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music69/v4/e0/fe/3f/e0fe3fb8-bc52-9982-784c-a41926aadc08/COVER-_DS.jpg/100x100bb.jpg",
+          "krTrackName": "This Christmas (feat. 한해)",
+          "krArtistName": "이문세 & 로이킴",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music69/v4/e0/fe/3f/e0fe3fb8-bc52-9982-784c-a41926aadc08/COVER-_DS.jpg/100x100bb.jpg"
+        }
+      ]
+    },
+    {
+      "q": "DM fromis_9",
+      "expectTrackId": 1604496376,
+      "expectKey": "dm",
+      "resultCount": 6,
+      "results": [
+        {
+          "trackId": 1604496376,
+          "artistId": 1319150216,
+          "trackName": "DM",
+          "artistName": "fromis_9",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f7/1e/6a/f71e6a37-19e9-8d33-baa2-7d71c76d440f/192641683183_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "DM",
+          "krArtistName": "fromis_9",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f7/1e/6a/f71e6a37-19e9-8d33-baa2-7d71c76d440f/192641683183_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1760411225,
+          "artistId": 1319150216,
+          "trackName": "Supersonic",
+          "artistName": "fromis_9",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/c9/05/b0/c905b007-01a2-3f53-32e3-f30e5593ff24/198704060052_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "Supersonic",
+          "krArtistName": "fromis_9",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/c9/05/b0/c905b007-01a2-3f53-32e3-f30e5593ff24/198704060052_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1569905892,
+          "artistId": 1319150216,
+          "trackName": "LOVE BOMB",
+          "artistName": "fromis_9",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/78/50/47/785047a8-d5ae-c337-d647-d567932088d4/8809603546494_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "LOVE BOMB",
+          "krArtistName": "fromis_9",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/78/50/47/785047a8-d5ae-c337-d647-d567932088d4/8809603546494_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1570577419,
+          "artistId": 1319150216,
+          "trackName": "FUN!",
+          "artistName": "fromis_9",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/c9/c0/28/c9c02882-0bd3-0be8-49cd-e14abf2d959b/8809658312952_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "FUN!",
+          "krArtistName": "fromis_9",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/c9/c0/28/c9c02882-0bd3-0be8-49cd-e14abf2d959b/8809658312952_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1579028464,
+          "artistId": 1319150216,
+          "trackName": "WE GO",
+          "artistName": "fromis_9",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f3/f4/e0/f3f4e0c0-b6be-877f-bf6e-1523c2d491af/00888272080643_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "WE GO",
+          "krArtistName": "fromis_9",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f3/f4/e0/f3f4e0c0-b6be-877f-bf6e-1523c2d491af/00888272080643_Cover.jpg/100x100bb.jpg"
+        },
+        {
+          "trackId": 1606893217,
+          "artistId": 1319150216,
+          "trackName": "Feel Good (SECRET CODE)",
+          "artistName": "fromis_9",
+          "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/a3/23/5c/a3235c13-e7d8-5cd5-2f09-c35bc8642125/888272068313_Cover.jpg/100x100bb.jpg",
+          "krTrackName": "Feel Good (SECRET CODE)",
+          "krArtistName": "fromis_9",
+          "krArtwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/a3/23/5c/a3235c13-e7d8-5cd5-2f09-c35bc8642125/888272068313_Cover.jpg/100x100bb.jpg"
+        }
+      ]
+    }
+  ]
+}

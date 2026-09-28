@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>노래갈피 — 레퍼런스 보드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="./src/styles.css">
+<style>
+ body{padding:0 0 100px}
+ .wrap{max-width:900px;margin:0 auto;padding:28px 16px}
+ h1{font-size:24px;margin:0 0 6px} .lede{color:var(--color-text-secondary);font-size:15px;line-height:1.75;margin:0 0 8px}
+ h2{font-size:18px;margin:44px 0 6px;padding-top:24px;border-top:1px solid var(--color-line)}
+ h3{font-size:15px;margin:26px 0 6px}
+ p,li{font-size:15px;line-height:1.75} ul{padding-left:20px;margin:8px 0}
+ code{font-size:13px;background:var(--color-surface);padding:1px 5px;border-radius:4px}
+ table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+ th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--color-line);vertical-align:top}
+ th{color:var(--color-text-tertiary);font-weight:500;font-size:12px;letter-spacing:.02em}
+ .shots{display:grid;gap:16px;margin:16px 0}
+ /* 폰 스크린샷(375x812)과 데스크톱 캡처(1280x860)는 비율이 완전히 달라 한 격자에 못 담는다.
+    잘라내면(object-fit:cover) 둘 다 알아볼 수 없게 된다 — 원래 비율 그대로 둔다. */
+ /* 폰 스크린샷은 4장이다. auto-fill 로 두면 3열이 잡혀 둘째 줄에 1장만 남고
+    2칸이 검게 비어, 스크롤하다 빈 화면을 만나게 된다. 열 수를 고정한다. */
+ .shots--phone{grid-template-columns:repeat(2,1fr)}
+ @media (min-width:760px){ .shots--phone{grid-template-columns:repeat(4,1fr)} }
+ .shot{border:1px solid var(--color-line);border-radius:10px;overflow:hidden;background:var(--color-surface);margin:0}
+ .shot a{display:block;text-decoration:none}
+ .shot img{width:100%;display:block;height:auto}
+ .shot figcaption{font-size:12px;color:var(--color-text-tertiary);padding:9px 11px;line-height:1.55}
+ .shot figcaption b{color:var(--color-text-secondary)}
+ .hint{font-size:12px;color:var(--color-text-tertiary);margin:0 0 10px}
+ .verdict{border-left:2px solid var(--color-accent);padding:2px 0 2px 14px;margin:14px 0}
+ .bad{border-left-color:var(--color-danger)}
+ .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--color-line);color:var(--color-text-tertiary);margin-right:5px}
+ .num{font-variant-numeric:tabular-nums}
+</style></head><body><div class="wrap">
+
+<h1>레퍼런스 보드</h1>
+<p class="lede">
+에이전트 5축 병렬 조사 + 제가 직접 잰 값. 모든 수치는 <b>실제 CSS를 받아 뽑은 것</b>이거나 브라우저에서 계산한 값입니다.<br>
+<span class="tag">실측</span> 직접 측정 <span class="tag">문서</span> 1차 출처 확인 <span class="tag">판단</span> 해석
+</p>
+
+<h2>지금 상태</h2>
+<p class="hint">iPhone 폭(375&times;812)에서 캡처. 클릭하면 원본 크기로 열립니다.</p>
+<div class="shots shots--phone">
+ <figure class="shot"><a href="./refs/now-feed.png" target="_blank"><img src="./refs/now-feed.png" alt="피드 화면"></a><figcaption><b>⑤ 피드</b></figcaption></figure>
+ <figure class="shot"><a href="./refs/now-song.png" target="_blank"><img src="./refs/now-song.png" alt="곡 상세 화면"></a><figcaption><b>⑥ 곡 상세</b> — 상단 고정 플레이어</figcaption></figure>
+ <figure class="shot"><a href="./refs/now-write.png" target="_blank"><img src="./refs/now-write.png" alt="기억 적기 화면"></a><figcaption><b>③ 기억 적기</b> — 칩·예시 없음</figcaption></figure>
+ <figure class="shot"><a href="./refs/now-mine.png" target="_blank"><img src="./refs/now-mine.png" alt="내 갈피 화면"></a><figcaption><b>⑦ 내 갈피</b></figcaption></figure>
+</div>
+
+<h2>레퍼런스</h2>
+<p class="hint">
+헤드리스 브라우저로 찍어봤는데 <b>쓸 만한 게 안 나왔습니다</b> — Letterboxd는 Cloudflare 봇 검사가 화면을 덮고,
+NTS는 이미지가 지연 로딩이라 검은 박스만 남고, Emil 사이트는 텍스트 목록뿐입니다.
+억지로 넣지 않고 링크로 둡니다. 직접 열어보세요. <b>아래 수치는 전부 배포된 CSS를 받아 뽑은 실측값</b>이라 스크린샷 없이도 그대로 씁니다.
+</p>
+<table>
+<tr><th>레퍼런스</th><th>무엇을 볼 것</th></tr>
+<tr><td><a href="https://letterboxd.com/film/past-lives/" target="_blank">Letterboxd</a> — 영화 감상 기록</td><td>곡(작품) 하나에 여러 사람의 짧은 글. <b>구조적으로 노래갈피와 같습니다.</b> Popular Reviews 구간을 보세요 — 인기 리뷰가 전부 한두 줄입니다</td></tr>
+<tr><td><a href="https://glass.photo/highlights/designing-appreciations" target="_blank">Glass</a> — 유료 사진 커뮤니티</td><td><b>“숫자 없는 ♡”를 실제로 운영한 유일한 사례.</b> 왜 그랬는지 직접 써 뒀습니다</td></tr>
+<tr><td><a href="https://www.nts.live/" target="_blank">NTS Radio</a></td><td>419KB CSS 전체에서 유채색이 딱 하나. 나머지는 전부 아트워크가 담당</td></tr>
+<tr><td><a href="https://herman.bearblog.dev/grow-slowly-stay-small/" target="_blank">Bear Blog</a></td><td>다크 본문 대비 <b>11.96:1</b>. 글이 끝나면 관련글·다음글 <b>아무것도 안 붙입니다</b></td></tr>
+<tr><td><a href="https://brunch.co.kr/@typecode/10" target="_blank">브런치 「글줄길이」</a></td><td>한글 measure에 숫자가 있는 <b>유일한 국문 출처.</b> 그리고 브런치 자신이 모바일 1.615 / 데스크톱 2.00으로 행간을 바꿉니다</td></tr>
+<tr><td><a href="https://www.are.na/explore" target="_blank">Are.na</a></td><td>5px 기반 <b>비선형</b> 간격(5·10·15·20·25·35·45·65·80·100·130), radius 3px 하나</td></tr>
+<tr><td><a href="https://postsecret.com/" target="_blank">PostSecret</a></td><td>글 아래 메타데이터 <b>0개</b>. 날짜·작성자·댓글·좋아요 전무. 주 1회 닫힌 묶음</td></tr>
+<tr><td><a href="https://emilkowal.ski/ui/great-animations" target="_blank">Emil Kowalski — Great Animations</a></td><td>모션 지속시간·이징의 기준선. <i>“UI에 ease-in을 절대 쓰지 마라”</i></td></tr>
+<tr><td><a href="https://rauno.me/craft" target="_blank">rauno.me/craft</a></td><td>읽기 집중 모드·미니맵. 읽기 중심 제품과 직결되는 몇 안 되는 패턴</td></tr>
+<tr><td><a href="https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale" target="_blank">Radix <code>sand-dark</code></a></td><td>노래갈피와 <b>같은 좌표</b>(따뜻한 회색 다크)를 엔지니어링으로 푼 유일한 공개 사례</td></tr>
+</table>
+
+<h2>1. 구조 — Letterboxd가 이미 푼 문제</h2>
+<p>노래갈피의 곡 카드(곡 + 기억 2~3편)와 <b>같은 구조</b>를 이미 운영 중이고, CSS를 받아보면 구현이 다 들어 있습니다. <span class="tag">실측</span></p>
+<table>
+<tr><th>장치</th><th>Letterboxd 실제 값</th><th>노래갈피 환산</th></tr>
+<tr><td>더 보기</td><td>서버가 <span class="num">12</span>편 내려보내고 CSS가 <span class="num">3</span>편만 노출<br><code>:nth-child(n+4 of .listitem){display:none}</code></td><td>네트워크 왕복 없이 즉시 펼침. 지금은 3편만 받아옴</td></tr>
+<tr><td>글 사이 구분</td><td><code>1px solid #2C3440</code> — 배경 대비 약 <b>8%</b>. 카드·그림자 없음</td><td><code>rgba(240,235,228,.08)</code></td></tr>
+<tr><td>산문 칼럼</td><td><code>max-width: 62ch</code> — px가 아니라 <b>ch</b></td><td>한글 17px에서 600px 고정보다 안정적</td></tr>
+<tr><td>본문</td><td>15px / line-height 1.667, 메타 11~12px / 1.5</td><td>토큰에 <code>--body-line-height: 1.75</code> 존재 — 노래갈피와 동일</td></tr>
+</table>
+<div class="verdict"><b>가져올 것</b> — mask 방식 더 보기, 저대비 1px 구분선, <code>ch</code> 칼럼.<br>
+<b>버릴 것</b> — 리뷰 좋아요 수(<code>data-count="85967"</code>)를 실제로 노출합니다. 이 한 줄만 빼면 나머지는 그대로 맞습니다.</div>
+
+<h2>2. 익명인데 쓸쓸하지 않게</h2>
+<p>프로필·팔로우·아바타가 없으면 글이 허공에 뜹니다. 검증된 해법은 <b>“사람을 되살리기”가 아니라 두 가지</b>였습니다.</p>
+<table>
+<tr><th>사례</th><th>장치</th><th>원문</th></tr>
+<tr><td><b>Glass</b> (유료 사진 커뮤니티)</td><td>좋아요 대신 “Appreciation”, <b>카운트가 어디에도 없음</b>. 누가 눌렀는지는 <b>받은 사람만</b> 봄. 반응 버튼을 피드가 아니라 상세에만 둠</td><td>“Showing counts all over Glass would immediately change the tone of the community.”<br>“We wanted the action to be a bit more friction than a mindless double tap.”</td></tr>
+<tr><td><b>Glass</b></td><td>사람이 빠진 자리를 <b>EXIF</b>가 메움 — 카메라·렌즈 정보가 글 옆에</td><td>프로필이 없어도 “어디서 온 것”이 생김</td></tr>
+<tr><td><b>Bandcamp</b></td><td><code>shown_reviews</code>(글 씀) / <code>shown_thumbs</code>(글 없음) <b>분리</b>. 숫자를 인기가 아니라 <b>겹침</b>으로 씀</td><td>“supported by 16 fans who also own …”</td></tr>
+<tr><td><b>宛名のない手紙</b> (일본)</td><td>반응은 스탬프 1종, <b>어느 글에 왔는지 안 알려줌</b>. “답장해야 한다는 피로가 없습니다”를 서비스가 직접 명시</td><td>“읽혔다”만 전달. 숫자 없는 ♡보다 한 발 더</td></tr>
+<tr><td><b>PostSecret</b></td><td>글 아래 메타데이터 <b>0개</b>(날짜·작성자·댓글·좋아요 전무). 주 1회 8~10장 <b>닫힌 묶음</b></td><td>짧은 글 사이에 긴 산문을 끼워 리듬을 만듦</td></tr>
+<tr><td><b>에브리타임</b></td><td>익명 번호가 <b>글 하나 안에서만</b> 유효. 밖으로 안 샘</td><td>정체성의 스코프를 좁히는 원리</td></tr>
+</table>
+<div class="verdict"><b>노래갈피의 “♡만, 숫자 없음”은 Glass가 이미 운영으로 증명했습니다.</b> 피드엔 ♡ 없고 상세에만 두는 규칙까지 일치합니다.<br>
+빈자리를 메울 후보 둘 — ① 기억 아래 <b>맥락 한 줄</b>(Glass의 EXIF 자리), ② <b>글 쓴 사람 / ♡만 누른 사람 분리</b>해서 “혼자가 아니다”만 전달(숫자는 여전히 숨김).</div>
+
+<h2>3. 다크 팔레트 — 바탕은 맞고, 텍스트가 뜨겁다</h2>
+<p>가장 중요한 발견입니다. <b>바탕색은 대비 레버가 아닙니다.</b> <span class="tag">실측</span></p>
+<table>
+<tr><th>바탕</th><th>그 위 <code>#f0ebe4</code>의 APCA</th></tr>
+<tr><td><code>#0e0d0c</code> (현재)</td><td>Lc 94.9</td></tr>
+<tr><td><code>#161413</code></td><td>Lc 94.4</td></tr>
+<tr><td><code>#221f1d</code> (두 배 넘게 밝힘)</td><td>Lc 93.2</td></tr>
+</table>
+<p>바탕을 두 배 넘게 올려도 대비가 <b>Lc 1.7</b>밖에 안 움직입니다. near-black 구간에서는 휘도가 0에 붙어 있어 바탕이 기여하는 몫이 없습니다. → <b>바탕 <code>#0e0d0c</code>는 그대로 두세요.</b></p>
+
+<h3>대신 본문이 상한 밖에 있습니다</h3>
+<table>
+<tr><th>제품</th><th>본문 Lc</th></tr>
+<tr><td>Letterboxd 주력 본문</td><td>45 ~ 54</td></tr>
+<tr><td>Material 2 (87% 흰)</td><td>86</td></tr>
+<tr><td>Radix <code>sand-12</code></td><td>95.5</td></tr>
+<tr><td><b>노래갈피 현재</b></td><td><b>94.4</b></td></tr>
+</table>
+<p>APCA 저자(Myndex)가 실험적으로 제시한 상한은 <b>Lc 85~90</b>입니다. 그리고 결정적으로 — <b>halation은 15~30초 후에 옵니다.</b> <span class="tag">문서</span></p>
+<div class="verdict"><b>“30분 머무는 화면”이라는 목표에 직격입니다.</b> 목업 리뷰나 스크린샷 검토로는 절대 안 잡히는 종류의 문제입니다.<br>
+제안: <code>--color-text: #f0ebe4 → #e8e3dd</code> (Lc 94.4 → 89.4). 색조는 그대로, 밝기만.<br>
+Radix가 Lc 95를 출하하니 “틀렸다”고는 못 합니다. 정확히는 <b>현존 시스템 중 가장 뜨거운 끝에 서 있다</b>는 것이고, 대시보드와 밤에 30분 읽는 제품은 조건이 다릅니다.</div>
+
+<h3>따뜻한 방향은 맞되, 이유를 바꿔야 합니다</h3>
+<ul>
+<li>❌ <b>“블루라이트가 수면을 방해해서”</b> — 기각됐습니다. BYU 연구(167명, 손목 가속도계): Night Shift 켬/끔/폰 미사용 <b>세 집단 간 수면 차이 없음</b> <span class="tag">문서</span></li>
+<li>✅ <b>Helmholtz-Kohlrausch 효과</b> — 채도가 높으면 같은 휘도에서 더 밝게 보입니다. 파랑기 오프화이트가 같은 Lc에서 더 눈부십니다</li>
+<li>✅ <b>5000K대는 “부드럽게”, 9300K대는 “임상적으로”</b> 읽힙니다. DESIGN.md가 쓴 “임상적이지 않다”와 문헌의 <i>clinical</i>이 같은 말을 합니다</li>
+</ul>
+
+<h3>아트워크를 배경으로 확장하지 마세요 — 실패 사례가 최근에 나왔습니다</h3>
+<p>Apple Music iOS 26.4가 UI 색을 앨범아트에 맞추게 바꿨고, 다크모드 사용자들이 <b>“flash bang”</b>이라 부르며 반발했습니다. 대상은 “밤에 화면을 어둡게 유지하려고 다크모드를 쓰는 사람들” — <b>노래갈피 사용자와 같은 집단</b>입니다. <span class="tag">문서</span></p>
+<div class="verdict">문제는 아트워크를 쓴 게 아니라 <b>면적</b>입니다. 52px 썸네일은 화면의 2% 미만이라 앵커로 작동하고, 엣지투엣지로 확장하는 순간 광원이 됩니다.<br>
+<b>지금 안 하고 있으니 “고칠 것”이 아니라 금지 조항으로 박아둘 것</b>입니다. 누군가 반드시 “허전하니 배경에 블러 깔자”고 할 겁니다.</div>
+
+<h2>4. 여백 — 카드가 서로 안 떨어져 보입니다</h2>
+<p>에이전트와 제가 <b>독립적으로 같은 결론</b>에 도달했습니다. <span class="tag">실측</span></p>
+<p><code>.card { padding: 16px; margin-bottom: 16px }</code> — 안쪽과 바깥쪽이 <b>같은 값</b>입니다.</p>
+<blockquote style="border-left:2px solid var(--color-line);padding-left:14px;margin:12px 0;color:var(--color-text-secondary)">
+“internal spacing must always be smaller than external spacing” — Gestalt 근접성 원칙
+</blockquote>
+<p>바깥 = 안쪽이면 뇌가 카드 경계를 여백으로 못 읽고 <b>테두리선에만 의존</b>합니다. 그런데 그 테두리(<code>#2a2624</code> on <code>#161413</code>)는 대비가 <b>1.23:1</b>로 아주 옅습니다. 묶는 신호가 양쪽 다 약합니다.</p>
+<div class="verdict"><code>margin-bottom: 16px → 24px</code> (<code>--space-5</code>, 이미 있는 토큰). 20곡 총 높이는 <b>1.9%만</b> 늘어납니다.<br>
+부수 효과 — 카드 높이의 <b>자연 변주</b>(기억 1편 카드 vs 3편 카드는 높이가 두 배 차이)가 지금은 붙어 있어서 한 덩어리로 뭉개집니다.</div>
+
+<h2>5. 제가 코드에서 확인한 결함 3건</h2>
+<table>
+<tr><th>#</th><th>결함</th><th>확인 방법</th></tr>
+<tr><td>1</td><td><b>위계 역전.</b> 곡 제목 <code>15px/600</code> &lt; 본문 <code>17px/400</code>. 색도 같아서 구분이 굵기 하나뿐</td><td>브라우저 계산값</td></tr>
+<tr><td>2</td><td><b>시트가 중단되면 점프.</b> 올라오는 도중 닫으면 <b>완전히 열린 위치로 튀었다가</b> 내려감</td><td>끊은 시점 Y=<span class="num">177</span> → 클릭 직후 Y=<span class="num">0</span></td></tr>
+<tr><td>3</td><td><b>5000자 초과를 늦게 알림.</b> <code>maxlength</code>가 없어 계속 쳐지고, <b>공개 확인 시트를 연 뒤에야</b> 거부</td><td>5200자 입력 후 재현. <b>글이 날아가진 않음</b></td></tr>
+</table>
+<p>2번의 원인: <code>@keyframes sheet-out</code>에 <code>from</code>이 없어 암묵적 시작값이 <code>transform: none</code>(= 열린 상태)입니다. 고치는 법은 <code>@keyframes</code>를 <b><code>transition</code>으로</b> 바꾸는 것 — transition은 현재 값에서 재조준하고 keyframes는 0에서 다시 시작합니다. Sonner를 만든 Emil Kowalski가 정확히 이 이유로 갈아엎었습니다.</p>
+
+<h2>6. 모션 — 다음 칸</h2>
+<p>이미 넣은 7종 위에 더할 것. <span class="tag">문서</span> Emil Kowalski / Apple</p>
+<table>
+<tr><th></th><th>무엇</th><th>왜</th></tr>
+<tr><td>①</td><td><b>pointer-down 누름 피드백</b> (비대칭 타이밍: 눌릴 때 80ms, 뗄 때 스프링 280ms)</td><td>iOS 감각 3요소 중 <b>가장 싸게 살 수 있는 칸</b>이고 지금 완전히 비어 있음. 지금은 전부 <i>뗄 때</i> 색만 바뀜</td></tr>
+<tr><td>②</td><td><b>시트를 인터럽터블로</b> — <code>@keyframes</code> → <code>transition</code> + <code>@starting-style</code></td><td>위 결함 2의 수정. <b>비주얼은 하나도 안 바뀌고</b> 끊었을 때만 달라짐</td></tr>
+<tr><td>③</td><td><b>읽기 진행바</b> (<code>animation-timeline: scroll()</code>, JS 0줄)</td><td>등장이 아니라 <b>상태 표시</b>라 “피드 카드 등장 금지”와 안 부딪힘. 스크롤과 1:1이라 애니메이션으로 인식되지 않음</td></tr>
+</table>
+<div class="verdict bad"><b>안 할 것</b> — 해시 라우트 전체에 View Transitions. <code>#/song/12</code> 해시가 도착 즉시 스크롤을 유발해 전환과 충돌하고, 중단 시 <b>되돌아가지 않습니다</b>(<code>skipTransition()</code>은 “즉시 끝”이지 “되돌리기”가 아님). iOS 감각의 핵심이 인터럽터블인데 그걸 잃는 교환입니다.</div>
+
+<h2>7. 쓰기 화면 — 지금 판단이 맞습니다</h2>
+<p><b>Day One은 프롬프트를 입력창 안에 안 둡니다.</b> 우측 패널이나 “More…” 안에 있어서 <b>쓰려고 들어온 사람은 프롬프트를 아예 안 만납니다.</b> 노래갈피가 라벨 칩을 텍스트박스 <i>아래</i> 둔 것과 같은 배치입니다. <span class="tag">문서</span></p>
+<p><b>Genius</b>는 빈 입력창이 없고 가사 한 줄을 누르면 그 줄에 붙은 채로 씁니다. “앵커가 있으면 프롬프트가 필요 없다” — 곡을 크게 띄운 판단의 근거입니다.</p>
+<div class="verdict bad"><b>절대 넣지 말 것</b><br>
+① <b>질문형 placeholder / 예시 글 / “영감이 필요하세요?”</b> — 앵커가 둘이 되면 사람은 약한 쪽(질문)을 따라가고 글이 전부 답변체로 수렴합니다. Day One이 프롬프트를 쓰는 건 <b>앵커가 아예 없는 앱이라서</b>이고, 그 대가로 답변체를 감수한 겁니다. 게다가 NN/g의 placeholder 7대 문제 중 <b>회색 대비 미달·기본값 오인·스크린리더 불안정</b>이 다크 테마에 직격입니다.<br>
+② <b>상시 글자수 카운터 / 진행 링</b> — X의 링이 정당한 건 280자가 <b>제품의 정체성</b>이기 때문입니다. 5000자는 형식이 아니라 방어선이라, 진행 링을 붙이면 <b>채워야 할 목표로 읽힙니다.</b></div>
+
+<h2>8. 읽기 타이포 — 폭·크기는 맞고, 줄바꿈이 깨져 있습니다</h2>
+
+<h3>확정 결함: 한글 어절이 쪼개집니다</h3>
+<p><code>.memory__body</code>가 <code>word-break: normal</code> + <code>overflow-wrap: anywhere</code>입니다. <code>keep-all</code>이 없습니다. <span class="tag">실측</span></p>
+<pre style="background:var(--color-surface);padding:14px;border-radius:8px;font-size:14px;line-height:1.7;overflow-x:auto">"그때쯤 쇼미더머니 결승이 <b style="color:var(--color-danger)">겨</b>"
+"<b style="color:var(--color-danger)">울</b>때쯤이었다. 아직도 이 <b style="color:var(--color-danger)">노래</b>"
+"<b style="color:var(--color-danger)">를</b> 들으면 그 때 그 생활관이 "</pre>
+<div class="verdict bad"><code>word-break: keep-all; overflow-wrap: break-word;</code><br>
+모바일 한 줄이 24.5자인 좁은 단에서 어절이 끊기면 짧은 글의 호흡이 그대로 깨집니다. 브런치가 <code>break-all</code>을 쓰지만 그건 오래 비판받은 지점이지 따라 할 모델이 아닙니다.</div>
+
+<h3>폭은 맞습니다 — 영문 66자 규칙을 한글로 옮기면</h3>
+<p><b>Pretendard 한글 자폭 = 0.864em</b> <span class="tag">실측</span>. 한글 1자 ≈ 라틴 1.46자 폭이라, 영문 66자와 같은 물리적 폭에 한글은 45자가 들어갑니다. 그런데 권장치는 25~35자입니다 — <b>한글은 음절문자라 한 글자의 정보량이 훨씬 크기 때문</b>입니다.</p>
+<blockquote style="border-left:2px solid var(--color-line);padding-left:14px;margin:12px 0;color:var(--color-text-secondary)">
+measure의 진짜 단위는 글자가 아니라 <b>낱말</b>입니다. 라틴 66자 ≈ 10~12단어 / 한글 25~35자 ≈ 8~10낱말 — 낱말로 맞추면 두 언어가 일치합니다.
+</blockquote>
+<table>
+<tr><th>제품</th><th>모바일 한 줄 (한글 환산)</th></tr>
+<tr><td>Medium</td><td>21.0자</td></tr>
+<tr><td>브런치</td><td>22.3자</td></tr>
+<tr><td>Substack</td><td>23.4자</td></tr>
+<tr><td><b>노래갈피</b></td><td><b>24.5자</b></td></tr>
+<tr><td>Bear Blog</td><td>24.2자</td></tr>
+</table>
+<p>실측 레퍼런스 전부의 <b>정중앙</b>입니다. 데스크톱 38.8자도 Medium의 한글 환산 39.4자와 사실상 같습니다. <code>max-width: 600px</code>, <code>17px</code>, <code>letter-spacing: -0.003em</code>(Medium과 소수점까지 동일) 전부 그대로 두세요.</p>
+
+<h3>행간은 줄 길이에 연동해야 합니다</h3>
+<p>브런치는 <b>같은 제품 안에서</b> 22.3자 → <code>1.615</code> / 49.0자 → <code>2.00</code>으로 바꿉니다. <span class="tag">실측</span> 노래갈피는 줄 길이가 24.5 → 38.8자로 <b>1.58배</b> 변하는데 행간은 <code>1.75</code> 고정입니다.</p>
+<div class="verdict">모바일 <code>1.7</code> / 600px 이상 <code>1.85</code>. 모바일에서 1.75는 24.5자짜리 짧은 줄에 과하고, 데스크톱 38.8자에서는 되레 모자랍니다.</div>
+
+<h3>본문 대비 — 두 조사가 독립적으로 같은 결론에 왔습니다</h3>
+<table>
+<tr><th>제품</th><th>본문 : 배경</th><th>weight</th></tr>
+<tr><td>Apple Books Night</td><td>8.64:1</td><td>—</td></tr>
+<tr><td>Ghost Casper</td><td>9.77:1</td><td>400</td></tr>
+<tr><td>Bear Blog</td><td>11.96:1</td><td>400</td></tr>
+<tr><td>브런치 모바일</td><td>16.98:1</td><td><b>200</b></td></tr>
+<tr><td><b>노래갈피</b></td><td><b>16.37:1</b></td><td><b>400</b></td></tr>
+</table>
+<div class="verdict">중앙값은 <b>9~12:1</b>입니다. 16:1대는 브런치와 노래갈피뿐인데 <b>브런치는 weight 200으로 상쇄</b>합니다. 노래갈피는 400이라 <b>같은 대비인데 빛나는 면적이 훨씬 넓습니다.</b><br>
+두 조사가 서로 모르고 같은 처방을 냈습니다 — <code>#e8e3dd</code>(APCA 기준) / <code>#e8e2da</code>(WCAG 기준). 사실상 같은 색입니다.<br>
+<b>대비 하향과 굵기 하향을 동시에 넣지 마세요.</b> 하나씩, 실기기에서.</div>
+
+<h3>“더 보기” 임계값이 시드 하한에 걸려 있습니다</h3>
+<p>현재 <code>more.hidden = body.scrollHeight &lt;= body.clientHeight + 1</code> — 3줄을 <b>조금이라도</b> 넘으면 붙습니다. 모바일 3줄 ≈ <b>73자</b>인데 시드 하한이 <b>70자</b>입니다. <span class="tag">실측</span></p>
+<div class="verdict">75자짜리 글이 “더 보기”를 달고, 눌러봐야 두 글자가 더 나옵니다.<br>
+<code>+ 1</code> → <code>+ lineHeight</code>. 최소 한 줄은 더 나올 때만 탭을 요구합니다.</div>
+
+<h2>실기기 확인이 필요한 것</h2>
+<p>수치로 확정 못 하고 <b>불 끈 방 · 자동밝기 · 실제 iPhone · 연속 30분</b> 조건에서만 판정됩니다. 네 조건 중 하나라도 빠지면 halation의 지연 발현을 재현할 수 없습니다.</p>
+<ul>
+<li>본문 Lc 90이 실제로 halation을 없애는가</li>
+<li>반대로 밤 저휘도에서 너무 흐려지지 않는가 (진짜 원인은 대비가 아니라 화면 휘도라는 반론이 있음)</li>
+<li>흰색 앨범 커버 20개가 연속으로 걸린 피드</li>
+<li>카드 첫 기억의 3줄 clamp 완화 — “덜 지치게” vs “한 화면에 덜 들어감”</li>
+</ul>
+
+</div></body></html>
