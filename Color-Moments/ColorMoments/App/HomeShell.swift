@@ -45,6 +45,7 @@ struct HomeShell: View {
     @AppStorage("onboardingGiftDay") private var onboardingGiftDay: String?
     // 온보딩 도중 사진을 담으면 기록이 생겨 판정이 바뀐다 — 한 번 띄웠으면 끝낼 때까지 붙잡는다.
     @State private var onboardingLatched = false
+    @State private var noticePermission: ArrivalAsk.Permission?
     #if DEBUG
     @State private var showingGate = false
     #if DEBUG
@@ -134,6 +135,8 @@ struct HomeShell: View {
         .onChange(of: store.isLoaded, initial: true) { _, _ in
             if liveOnboarding == .full { onboardingLatched = true }
         }
+        .task { noticePermission = await ArrivalNotice.permission() }
+        .onChange(of: settlesArrivalAsk, initial: true) { _, _ in settleArrivalAsk() }
         #if DEBUG
         .onChange(of: showingGate) { _, up in
             if !up && debugReplayOnboarding && store.isLoaded { onboardingLatched = true }
@@ -141,9 +144,25 @@ struct HomeShell: View {
         #endif
     }
 
-    private var liveOnboarding: OnboardingGate.Presentation {
+    private var rawOnboarding: OnboardingGate.Presentation {
         OnboardingGate.presentation(isLoaded: store.isLoaded, didFinishOnboarding: didFinishOnboarding,
                                     hasRecords: !store.dayKeys.isEmpty, didAskArrivalNotice: didAskArrivalNotice)
+    }
+
+    private var liveOnboarding: OnboardingGate.Presentation {
+        OnboardingGate.resolve(rawOnboarding, noticePermission: noticePermission)
+    }
+
+    private var settlesArrivalAsk: Bool {
+        guard !onboardingLatched, rawOnboarding == .arrivalAskOnly, let noticePermission else { return false }
+        return ArrivalAsk.decision(noticePermission) != .ask
+    }
+
+    private func settleArrivalAsk() {
+        guard settlesArrivalAsk, let noticePermission,
+              case .skip(let syncs) = ArrivalAsk.decision(noticePermission) else { return }
+        didAskArrivalNotice = true
+        if syncs { Task { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) } }
     }
 
     // 로드 전(undecided)에도 증정은 막힌다 — 판정이 서기 전 커버가 먼저 뜨지 않게.

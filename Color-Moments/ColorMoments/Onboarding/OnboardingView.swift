@@ -63,6 +63,7 @@ struct OnboardingView: View {
             if v.translation.width > 60 { back() }
         })
         .task { track { await prepare() } }
+        .task { await settleArrivalWithoutAsking() }
         .fullScreenCover(item: $ceremonyDay, onDismiss: ceremonyFinished) { day in
             BadgeCeremony(moments: store.pebbleMoments(on: day.id),
                           isPresented: Binding(get: { ceremonyDay != nil },
@@ -149,6 +150,16 @@ struct OnboardingView: View {
         guard canGoBack else { return }
         forward = false
         withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { index -= 1 }
+    }
+
+    /// 알림 권한이 이미 정해진 기기에선 아침 소식 단계를 빼고 답한 것으로 적는다.
+    private func settleArrivalWithoutAsking() async {
+        guard !didAskArrivalNotice,
+              case .skip(let syncs) = ArrivalAsk.decision(await ArrivalNotice.permission()) else { return }
+        // 이미 그 단계까지 왔으면 빼지 않는다 — 보던 화면이 사라지면 번호가 밀린다.
+        if steps.firstIndex(of: .arrival).map({ index < $0 }) ?? false { asksArrival = false }
+        didAskArrivalNotice = true
+        if syncs { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
     }
 
     private func track(_ work: @escaping () async -> Void) {

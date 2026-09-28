@@ -86,6 +86,14 @@ enum ArrivalNotice {
         if syncing { syncAgain = true }
     }
 
+    static func permission() async -> ArrivalAsk.Permission {
+        switch await UNUserNotificationCenter.current().notificationSettings().authorizationStatus {
+        case .authorized, .provisional, .ephemeral: .allowed
+        case .denied: .denied
+        default: .notDetermined
+        }
+    }
+
     /// DEBUG 전체 초기화용 — arrival-* 를 예약·전달 모두 지운다.
     @MainActor
     static func removeAll() async {

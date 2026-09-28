@@ -31,6 +31,24 @@ final class OnboardingRulesTests: XCTestCase {
                                                    didAskArrivalNotice: true), .none)
     }
 
+    // MARK: 아침 소식 질문
+
+    func testArrivalAskOnlyWhenPermissionUndetermined() {
+        XCTAssertEqual(ArrivalAsk.decision(.notDetermined), .ask)
+        XCTAssertEqual(ArrivalAsk.decision(.allowed), .skip(syncs: true), "허락한 기기는 묻지 않고 예약만 맞춘다")
+        XCTAssertEqual(ArrivalAsk.decision(.denied), .skip(syncs: false))
+    }
+
+    func testArrivalAskOverlayWaitsForPermissionAndSkipsWhenDecided() {
+        XCTAssertEqual(OnboardingGate.resolve(.arrivalAskOnly, noticePermission: nil), .undecided,
+                       "권한을 읽기 전엔 띄우지 않는다 — 떴다 사라지지 않게")
+        XCTAssertEqual(OnboardingGate.resolve(.arrivalAskOnly, noticePermission: .notDetermined), .arrivalAskOnly)
+        XCTAssertEqual(OnboardingGate.resolve(.arrivalAskOnly, noticePermission: .allowed), .none)
+        XCTAssertEqual(OnboardingGate.resolve(.arrivalAskOnly, noticePermission: .denied), .none)
+        XCTAssertEqual(OnboardingGate.resolve(.full, noticePermission: nil), .full, "전체 온보딩은 그대로")
+        XCTAssertEqual(OnboardingGate.resolve(.none, noticePermission: .notDetermined), .none)
+    }
+
     // MARK: 단계
 
     func testFullFlow() {

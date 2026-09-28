@@ -16,6 +16,33 @@ enum OnboardingGate {
         if !didFinishOnboarding && !hasRecords { return .full }
         return didAskArrivalNotice ? .none : .arrivalAskOnly
     }
+
+    /// 기존 사용자 한 장은 알림 권한을 읽기 전엔 띄우지 않고, 이미 결정된 기기면 아예 건너뛴다.
+    static func resolve(_ presentation: Presentation, noticePermission: ArrivalAsk.Permission?) -> Presentation {
+        guard presentation == .arrivalAskOnly else { return presentation }
+        guard let noticePermission else { return .undecided }
+        return ArrivalAsk.decision(noticePermission) == .ask ? .arrivalAskOnly : .none
+    }
+}
+
+/// 아침 소식을 물을지 — 시스템 알림 권한이 이미 정해졌으면 묻지 않는다.
+enum ArrivalAsk {
+
+    enum Permission: Equatable { case notDetermined, allowed, denied }
+
+    enum Decision: Equatable {
+        case ask
+        /// syncs — 이미 허락했으면 묻지 않은 채 예약을 맞춘다.
+        case skip(syncs: Bool)
+    }
+
+    static func decision(_ permission: Permission) -> Decision {
+        switch permission {
+        case .notDetermined: .ask
+        case .allowed: .skip(syncs: true)
+        case .denied: .skip(syncs: false)
+        }
+    }
 }
 
 enum OnboardingStep: Hashable {
