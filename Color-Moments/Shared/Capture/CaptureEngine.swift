@@ -41,10 +41,18 @@ public final class CaptureEngine: NSObject {
 
     public var zoomPresets: [Double] = []
 
+    // capture 큐에서 대입되고 메인(제스처)에서 읽힌다 — 관찰 대상에서 빼고 잠금으로 지킨다.
+    @ObservationIgnored private let deviceLock = NSLock()
+    @ObservationIgnored private var storedDevice: AVCaptureDevice?
+    @ObservationIgnored private var zoomObservation: NSKeyValueObservation?
+
     private var device: AVCaptureDevice? {
-        didSet { observeZoom() }
+        get { deviceLock.lock(); defer { deviceLock.unlock() }; return storedDevice }
+        set {
+            deviceLock.lock(); storedDevice = newValue; deviceLock.unlock()
+            observeZoom()
+        }
     }
-    private var zoomObservation: NSKeyValueObservation?
 
     private func observeZoom() {
         zoomObservation = device?.observe(\.videoZoomFactor, options: [.initial, .new]) { [weak self] dev, _ in

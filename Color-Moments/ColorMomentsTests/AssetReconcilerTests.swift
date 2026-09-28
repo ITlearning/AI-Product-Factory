@@ -186,4 +186,66 @@ final class AssetReconcilerTests: XCTestCase {
         XCTAssertEqual(budget.trackedAtStart, 40, "새 창의 추적 수는 지금 값으로 다시 잡는다")
         XCTAssertEqual(budget.removedSoFar, 2)
     }
+
+    // MARK: 조회 대기 중 새로 연결된 기록
+
+    /// 사진 앱 조회를 기다리는 사이 같은 assetID 로 새 기록이 담겼다 — 판정한 스냅샷의 기록만 지운다.
+    func testRemovalIsLimitedToSnapshotMoments() {
+        let old = Moment(capturedAt: Date(), colorHex: "#111111", fileName: "asset-X", source: .library, assetID: "X")
+        let kept = Moment(capturedAt: Date(), colorHex: "#222222", fileName: "asset-Y", source: .library, assetID: "Y")
+        let ids = AssetReconciler.removalIDs(snapshot: [old, kept], remove: ["X"])
+        XCTAssertEqual(ids, [old.id])
+
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("rec-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = DayStore(fileURL: url, closures: DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        var changes: [StoreChange] = []
+        store.onLocalChange = { changes += $0 }
+        store.add(old)
+        store.add(kept)
+        let fresh = Moment(capturedAt: Date(), colorHex: "#333333", fileName: "library-X", source: .library, assetID: "X")
+        store.add(fresh)
+        changes = []
+        store.remove(ids: ids)
+        XCTAssertEqual(Set(store.moments.map(\.id)), [kept.id, fresh.id], "같은 assetID 로 새로 담긴 기록은 남아야 한다")
+        XCTAssertEqual(changes, [.delete(old.id)], "지운 기록은 remove(assetIDs:) 처럼 delete 로 알린다")
+        store.remove(ids: [])
+        store.remove(ids: [UUID()])
+        XCTAssertEqual(changes.count, 1, "지운 게 없으면 알리지 않는다")
+    }
+
+    // MARK: 사본 파일이 남은 기록 — 사진 앱에서 지운 것으로 본다(2026-09-28)
+
+    func testLostAssetWithLocalFileIsRemovedLikeAnyOther() {
+        let ids = Set((0..<10).map { "id\($0)" })
+        let found = ids.subtracting(["id8", "id9"])
+        let plan = AssetReconciler.plan(ids: ids, found: found, relocated: [:], fullAccess: true)
+        XCTAssertEqual(plan.remove, ["id8", "id9"], "사본이 남아도 사진 앱에서 지우면 몽돌에서도 지운다")
+    }
+
+    func testLeftoverFilesSkipsPlaceholdersAndFilesStillInUse() {
+        let a = Moment(capturedAt: Date(), colorHex: "#111111", fileName: "library-a.jpg", source: .library, assetID: "A")
+        let b = Moment(capturedAt: Date(), colorHex: "#222222", fileName: "asset-b", source: .library, assetID: "B")
+        let c = Moment(capturedAt: Date(), colorHex: "#333333", fileName: "shot-c.jpg", source: .app, assetID: "C")
+        let sharer = Moment(capturedAt: Date(), colorHex: "#444444", fileName: "shot-c.jpg", source: .app)
+        XCTAssertEqual(AssetReconciler.leftoverFiles(removed: [a, b, c], remaining: [sharer]), ["library-a.jpg"],
+                       "자리 이름은 파일이 없고, 남은 기록이 쓰는 파일은 지우면 안 된다")
+    }
+
+    func testHoldsLocalFileSkipsPlaceholderNames() {
+        let exists: (String) -> Bool = { _ in true }
+        XCTAssertTrue(AssetReconciler.holdsLocalFile(fileName: "shot-1.jpg", exists: exists))
+        XCTAssertTrue(AssetReconciler.holdsLocalFile(fileName: "library-2.jpg", exists: exists))
+        XCTAssertFalse(AssetReconciler.holdsLocalFile(fileName: "asset-abc", exists: exists), "자리 이름은 파일이 없다")
+        XCTAssertFalse(AssetReconciler.holdsLocalFile(fileName: "remote-xyz", exists: exists))
+        XCTAssertFalse(AssetReconciler.holdsLocalFile(fileName: "shot-1.jpg", exists: { _ in false }))
+    }
+
+    func testRemovalSkipsMomentReadoptedWhileQuerying() {
+        let old = Moment(capturedAt: Date(), colorHex: "#111111", fileName: "shot-x.jpg", source: .app, assetID: "X")
+        let other = Moment(capturedAt: Date(), colorHex: "#222222", fileName: "asset-z", source: .app, assetID: "Z")
+        let readopted = old.withDeviceFields(fileName: Moment.assetFileName(for: "NEW"), assetID: "NEW", originalName: nil)
+        let ids = AssetReconciler.removalIDs(snapshot: [old, other], remove: ["X", "Z"], current: [readopted, other])
+        XCTAssertEqual(ids, [other.id], "조회 대기 중 파일로 다시 입양된 기록은 새 사진을 가리킨다 — 지우면 안 된다")
+    }
 }

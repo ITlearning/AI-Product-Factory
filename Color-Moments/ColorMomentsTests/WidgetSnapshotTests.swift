@@ -63,6 +63,23 @@ final class WidgetSnapshotTests: XCTestCase {
         XCTAssertEqual(s.arrivals.last?.arrivesAt, date("2026-09-22T20:00:00"), "일찍 받은 날은 그 시각에 닫힌다")
     }
 
+    func testGiftedOnboardingDayWithOnlyLateLibraryMomentsIsLatest() {
+        // 사진첩으로 담은 기록은 addedAt 이 봉인 뒤라 hasSealedMoments 가 false — 받은 하루면 그래도 위젯에 나와야 한다.
+        let batch = UUID()
+        for (i, hex) in ["#AA0000", "#00AA00"].enumerated() {
+            store.add(Moment(capturedAt: date("2026-09-20T1\(i):00:00"), colorHex: hex, fileName: UUID().uuidString,
+                             source: .library, assetID: UUID().uuidString, addedAt: date("2026-09-24T10:00:00"),
+                             batchID: batch))
+        }
+        XCTAssertFalse(store.hasSealedMoments(on: "2026-09-20"))
+        gifts.markGifted("2026-09-20")
+
+        let s = WidgetSnapshot.make(store: store, gifts: gifts)
+        XCTAssertEqual(s.latest?.dayKey, "2026-09-20")
+        XCTAssertEqual(s.latest?.colors.map(\.hex), ["#AA0000", "#00AA00"], "pebbleMoments 폴백(첫 묶음)으로 그려진다")
+        XCTAssertTrue(s.arrivals.isEmpty)
+    }
+
     func testNothingGiftedAndNothingPendingIsEmpty() {
         let s = WidgetSnapshot.make(store: store, gifts: gifts)
         XCTAssertNil(s.latest)

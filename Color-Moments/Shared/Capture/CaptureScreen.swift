@@ -27,9 +27,9 @@ public struct CaptureScreen: View {
 
     public var body: some View {
         GeometryReader { geo in
-            let w = geo.size.width - Self.sideInset * 2
+            let w = max(0, geo.size.width - Self.sideInset * 2)
             let hintRoom: CGFloat = showsDismissHint ? 44 : 0
-            let room = geo.size.height - (Self.windowTop - geo.safeAreaInsets.top)
+            let room = max(0, geo.size.height - (Self.windowTop - geo.safeAreaInsets.top))
                 - Self.controlsHeight - hintRoom - 12
             let h = max(0, min(w * Self.windowRatio, room))
 
@@ -80,7 +80,7 @@ public struct CaptureScreen: View {
             }
 
             Text(engine.confirmation ?? " ")
-                .font(.system(size: 13, weight: .medium))
+                .font(Face.line)
                 .foregroundStyle(Tone.primary)
                 .padding(.horizontal, 14).padding(.vertical, 7)
                 .background(.black.opacity(0.45), in: Capsule())
@@ -107,7 +107,7 @@ public struct CaptureScreen: View {
 
             if engine.permissionDenied {
                 VStack(spacing: 8) {
-                    Text("카메라 권한이 필요해요").font(.headline)
+                    Text("카메라 권한이 필요해요").font(Face.lineCeremony)
                     Text("설정에서 카메라를 켜주세요").font(Face.guide).foregroundStyle(Tone.secondary)
                 }
                 .foregroundStyle(Tone.primary)
@@ -180,7 +180,7 @@ public struct CaptureScreen: View {
         HStack(spacing: 7) {
             Spacer()
             Text("쓸면 돌아가기")
-                .font(.system(size: 11))
+                .font(Face.caption)
                 .foregroundStyle(Tone.tertiary)
                 .fixedSize()
                 .rotationEffect(.degrees(90))

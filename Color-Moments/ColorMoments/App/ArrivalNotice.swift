@@ -86,6 +86,14 @@ enum ArrivalNotice {
         if syncing { syncAgain = true }
     }
 
+    static func permission() async -> ArrivalAsk.Permission {
+        switch await UNUserNotificationCenter.current().notificationSettings().authorizationStatus {
+        case .authorized, .provisional, .ephemeral: .allowed
+        case .denied: .denied
+        default: .notDetermined
+        }
+    }
+
     /// DEBUG 전체 초기화용 — arrival-* 를 예약·전달 모두 지운다.
     @MainActor
     static func removeAll() async {
@@ -99,11 +107,6 @@ enum ArrivalNotice {
         let delivered = await center.deliveredNotifications().map(\.request.identifier)
             .filter { $0.hasPrefix(idPrefix) && !ids.contains($0) }
         if !delivered.isEmpty { center.removeDeliveredNotifications(withIdentifiers: delivered) }
-    }
-
-    /// 첫 증정 뒤 권한을 물을지 — 다음 증정이 이어서 뜰 참이면 커버와 alert 가 겹치므로 그 증정이 끝난 뒤로 미룬다.
-    static func shouldAsk(didAsk: Bool, nextGift: String?) -> Bool {
-        !didAsk && nextGift == nil
     }
 
     /// 순수 판정 — sync 가 계획할 dayKey 들. 오늘 dayKey 에 더해, 4~8시 사이엔 어제 dayKey 의 08시도

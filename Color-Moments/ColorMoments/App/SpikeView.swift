@@ -1,6 +1,10 @@
 import SwiftUI
 
 struct SpikeView: View {
+    @Environment(\.dismiss) private var dismiss
+    #if DEBUG
+    @State private var showingEmptyHome = false
+    #endif
     @Bindable var inbox: CaptureInbox
     @Bindable var store: DayStore
     private let gifts: GiftLog
@@ -9,6 +13,12 @@ struct SpikeView: View {
     @State private var confirmingWipe = false
 
     @State private var previewing = false
+    #if DEBUG
+    @State private var diagnostics: AssetDiagnostics.Snapshot?
+    @State private var diagnosing = false
+    @State private var confirmingRestore = false
+    @State private var restoreResult: String?
+    #endif
 
     init(inbox: CaptureInbox, store: DayStore, gifts: GiftLog, closures: DayClosures) {
         self.inbox = inbox
@@ -132,6 +142,26 @@ struct SpikeView: View {
                     }
                 }
 
+                #if DEBUG
+                assetDiagnosticsSection
+
+                Section {
+                    Button {
+                        UserDefaults.standard.set(true, forKey: "debugReplayOnboarding")
+                        dismiss()
+                    } label: {
+                        Label("온보딩 다시 보기", systemImage: "arrow.counterclockwise")
+                    }
+                    Button {
+                        showingEmptyHome = true
+                    } label: {
+                        Label("빈 홈 미리 보기", systemImage: "square.dashed")
+                    }
+                } footer: {
+                    Text("기록은 그대로 두고 첫 화면부터 다시 봅니다. 권한 창은 이미 답했으면 다시 뜨지 않아요. 빈 홈은 실제 기록과 떨어진 빈 저장소로 그립니다.")
+                }
+                #endif
+
                 Section {
                     Button(role: .destructive) { confirmingWipe = true } label: {
                         Label("전부 지우기", systemImage: "trash")
@@ -178,11 +208,18 @@ struct SpikeView: View {
                     }
                 }
             }
+            #if DEBUG
+            .task { await refreshDiagnostics() }
+            #endif
             .navigationTitle("Gate · 잠금화면 촬영")
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $previewing) {
                 BadgeCeremony(moments: store.today, isPresented: $previewing)
             }
+            #if DEBUG
+            // Form 안 Section 에 붙이면 행이 다시 그려질 때 커버가 바로 닫힌다 — 바깥에 둔다.
+            .fullScreenCover(isPresented: $showingEmptyHome) { EmptyHomePreview() }
+            #endif
             .confirmationDialog("전부 지울까요?", isPresented: $confirmingWipe, titleVisibility: .visible) {
                 Button("지우기", role: .destructive) {
                     store.removeAll()
@@ -209,4 +246,127 @@ struct SpikeView: View {
             Text(text).font(.subheadline)
         }
     }
+
+    #if DEBUG
+    @ViewBuilder
+    private var assetDiagnosticsSection: some View {
+        Section {
+            if let d = diagnostics {
+                let c = d.counts
+                row("권한", AssetDiagnostics.statusText(d.status))
+                row("loadIssue", d.loadIssue.map { "\($0)" } ?? "없음")
+                row("isSaveBlocked", d.isSaveBlocked ? "예" : "아니오")
+                row("전체 기록", "\(d.total)")
+                row("① 파일만·파일 있음", "\(c.fileOnly)")
+                row("② 파일만·파일 없음", "\(c.fileOnlyMissing)")
+                row("③ 에셋 없음·파일 있음 (library-/그 밖)", "\(c.lostWithLibraryFile) / \(c.lostWithOtherFile)")
+                row("④ 에셋 없음·파일 없음", "\(c.lostNoFile)")
+                row("⑤ 에셋 있음·cloudID 없음", "\(c.foundNoCloud)")
+                row("⑥ cloudID 없음 전체", "\(c.noCloud)")
+                row("이번 실행 입양 시도/성공", "\(d.stats.adoptTried)/\(d.stats.adoptSucceeded)")
+                row("이번 실행 수동 복구 시도/성공", "\(d.stats.readoptTried)/\(d.stats.readoptSucceeded)")
+                Text("마지막 저장 실패: \(d.stats.lastFailure?.summary ?? "없음")")
+                    .font(.caption2.monospaced()).textSelection(.enabled)
+                if let fallback = d.stats.lastFallback {
+                    Text("대안으로 성공: \(fallback.summary)")
+                        .font(.caption2.monospaced()).textSelection(.enabled)
+                }
+                ForEach(c.examples, id: \.self) { line in
+                    Text(line).font(.caption2.monospaced()).foregroundStyle(.secondary).textSelection(.enabled)
+                }
+            } else {
+                Text("세는 중…").foregroundStyle(.secondary)
+            }
+            Button {
+                Task {
+                    diagnosing = true
+                    await AssetAdopter.adoptAll(store: store)
+                    await refreshDiagnostics()
+                    diagnosing = false
+                }
+            } label: {
+                Label(diagnosing ? "옮기는 중…" : "지금 다시 옮기기", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(diagnosing)
+            let lostWithFile = diagnostics.map { $0.counts.lostWithLibraryFile + $0.counts.lostWithOtherFile } ?? 0
+            Button {
+                confirmingRestore = true
+            } label: {
+                Label("복구(사본을 사진 앱에 다시 저장)", systemImage: "arrow.uturn.backward")
+            }
+            .disabled(diagnosing || lostWithFile == 0)
+            .confirmationDialog("사본을 사진 앱에 다시 저장할까요?", isPresented: $confirmingRestore,
+                                titleVisibility: .visible) {
+                Button("최대 \(AssetAdopter.restoreLimit)개 다시 저장") {
+                    Task {
+                        diagnosing = true
+                        let n = await AssetAdopter.restoreLost(store: store)
+                        restoreResult = "\(n)개 다시 저장함"
+                        await refreshDiagnostics()
+                        diagnosing = false
+                    }
+                }
+                Button("취소", role: .cancel) {}
+            } message: {
+                Text("사진 앱에서 사라진 기록 \(lostWithFile)개 중 최대 \(AssetAdopter.restoreLimit)개를 이 기기에 남은 사본으로 사진 앱에 다시 저장합니다. 사진 앱에서 일부러 지운 사진이면 다시 생겨요.")
+            }
+            if let restoreResult {
+                Text("복구: \(restoreResult)").font(.caption2).foregroundStyle(.secondary)
+            }
+            Button("다시 세기") { Task { await refreshDiagnostics() } }
+        } header: {
+            Text("사진 앱 옮기기 진단")
+        }
+    }
+
+    private func row(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title).font(.caption)
+            Spacer()
+            Text(value).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+        }
+    }
+
+    private func refreshDiagnostics() async {
+        diagnostics = await AssetDiagnostics.snapshot(store: store)
+    }
+    #endif
 }
+
+#if DEBUG
+/// 실제 기록·설정과 떨어진 빈 저장소로 홈을 그린다 — 첫날 홈이 어떻게 보이는지 확인용.
+private struct EmptyHomePreview: View {
+    @Environment(\.dismiss) private var dismiss
+    private static let suite = "debug-empty-home"
+    @State private var closures = DayClosures(defaults: UserDefaults(suiteName: suite)!)
+    @State private var gifts = GiftLog(defaults: UserDefaults(suiteName: suite)!)
+    @State private var store: DayStore?
+    @State private var focusDay: String?
+    @State private var scrubbing = false
+    @State private var daySheetPresented = false
+    @State private var keepsakePresented = false
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            if let store {
+                HomeView(store: store, gifts: gifts, showsSwipeHint: true,
+                         focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
+                         daySheetPresented: $daySheetPresented,
+                         keepsakePresented: $keepsakePresented)
+                    .defaultAppStorage(UserDefaults(suiteName: Self.suite)!)
+            }
+            Button("닫기") { dismiss() }
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(.thinMaterial, in: Capsule())
+                .padding(.trailing, 20).padding(.top, 60)
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            UserDefaults(suiteName: Self.suite)!.removePersistentDomain(forName: Self.suite)
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("debug-empty-home.json")
+            try? FileManager.default.removeItem(at: url)
+            store = DayStore(fileURL: url, closures: closures)
+        }
+    }
+}
+#endif

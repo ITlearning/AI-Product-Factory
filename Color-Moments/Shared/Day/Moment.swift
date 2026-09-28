@@ -73,6 +73,9 @@ public extension Moment {
         return cal
     }()
 
+    /// 하루 경계를 가르는 시간대 — 캐시가 이 값이 바뀌면 다시 세워야 한다.
+    static var zoneIdentifier: String { calendar.timeZone.identifier }
+
     static func dayKey(for date: Date) -> String {
         let shifted = calendar.date(byAdding: .hour, value: -dayBoundaryHour, to: date) ?? date
         let c = calendar.dateComponents([.year, .month, .day], from: shifted)

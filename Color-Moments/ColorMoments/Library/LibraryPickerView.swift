@@ -5,18 +5,38 @@ import UIKit
 
 struct LibraryPickerView: View {
     let store: DayStore
-    let onDone: (Int) -> Void
+    let onDone: (Set<String>) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
     @State private var status: PHAuthorizationStatus?
-    @State private var fetchResult = PHFetchResult<PHAsset>()
-    @State private var sections: [LibrarySection] = []
+    // 결과와 섹션은 늘 한 벌로 바꾼다 — 섹션 인덱스는 그 결과에만 맞는다.
+    @State private var library: Library?
+    @State private var progress: LoadProgress?
+    @State private var loading: Task<Void, Never>?
     @State private var selected: Set<String> = []
     @State private var isImporting = false
     @State private var imageManager = PHCachingImageManager()
 
     private static let gridSpacing: CGFloat = 2
+
+    private struct Library {
+        let result: PHFetchResult<PHAsset>
+        let sections: [LibrarySection]
+    }
+
+    private struct LoadProgress: Equatable {
+        let done: Int
+        let total: Int
+    }
+
+    private struct LoadUpdate: @unchecked Sendable {
+        let result: PHFetchResult<PHAsset>
+        let sections: [LibrarySection]
+        let done: Int
+        let total: Int
+        let ids: Set<String>?
+    }
 
     var body: some View {
         ZStack {
@@ -28,6 +48,7 @@ struct LibraryPickerView: View {
             }
         }
         .task { await load() }
+        .onDisappear { loading?.cancel() }
         .interactiveDismissDisabled(isImporting)
     }
 
@@ -35,7 +56,11 @@ struct LibraryPickerView: View {
     private var content: some View {
         if status == .authorized || status == .limited {
             if status == .limited { limitedBanner }
-            grid
+            if let library {
+                if library.result.count == 0 { emptyState } else { grid(library) }
+            } else {
+                loadingState
+            }
         } else if status == .restricted {
             restrictedState
         } else if status != nil {
@@ -49,7 +74,7 @@ struct LibraryPickerView: View {
         HStack {
             Button { dismiss() } label: {
                 Text("닫기")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Face.action)
                     .foregroundStyle(Tone.secondary)
                     .padding(.horizontal, 14).padding(.vertical, 8)
                     .background(Tone.hairline, in: Capsule())
@@ -59,7 +84,7 @@ struct LibraryPickerView: View {
             .opacity(isImporting ? 0.4 : 1)
 
             Spacer()
-            Text("사진첩").font(.system(size: 15, weight: .semibold)).foregroundStyle(Tone.primary)
+            Text("사진첩").font(Face.lineCeremony).foregroundStyle(Tone.primary)
             Spacer()
 
             Group {
@@ -68,7 +93,7 @@ struct LibraryPickerView: View {
                 } else {
                     Button { Task { await importSelected() } } label: {
                         Text("담기 \(selected.count)")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(Face.action)
                             .foregroundStyle(Tone.pure)
                             .padding(.horizontal, 14).padding(.vertical, 8)
                             .background(Tone.primary, in: Capsule())
@@ -106,18 +131,53 @@ struct LibraryPickerView: View {
         .frame(maxWidth: .infinity)
     }
 
+    private var loadingState: some View {
+        VStack(spacing: 12) {
+            Spacer()
+            ProgressView().tint(Tone.secondary)
+            Text("사진을 불러오는 중")
+                .font(Face.guide)
+                .foregroundStyle(Tone.secondary)
+            if let progress { progressLine(progress) }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func progressLine(_ p: LoadProgress) -> some View {
+        Text("사진 \(p.total.formatted())장 중 \(p.done.formatted())장")
+            .font(Face.caption).monospacedDigit()
+            .foregroundStyle(Tone.tertiary)
+    }
+
+    private var emptyState: some View {
+        VStack {
+            Spacer()
+            Text(status == .limited ? "아직 보이게 한 사진이 없어요" : "사진첩이 비어 있어요")
+                .font(Face.guide)
+                .foregroundStyle(Tone.secondary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     private var deniedState: some View {
         VStack(spacing: 14) {
             Spacer()
-            Text("설정에서 사진 접근을 켜 주세요")
-                .font(Face.guide)
-                .foregroundStyle(Tone.secondary)
+            VStack(spacing: 6) {
+                Text("사진 접근이 꺼져 있어요")
+                    .font(Face.guide)
+                    .foregroundStyle(Tone.secondary)
+                Text("켜고 싶어지면 설정에서 언제든 바꿀 수 있어요")
+                    .font(Face.caption)
+                    .foregroundStyle(Tone.tertiary)
+            }
             Button {
                 guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                 UIApplication.shared.open(url)
             } label: {
                 Text("설정 열기")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(Face.action)
                     .foregroundStyle(Tone.pure)
                     .padding(.horizontal, 16).padding(.vertical, 9)
                     .background(Tone.primary, in: Capsule())
@@ -128,18 +188,18 @@ struct LibraryPickerView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var grid: some View {
+    private func grid(_ library: Library) -> some View {
         GeometryReader { geo in
-            let side = (geo.size.width - Self.gridSpacing * 2) / 3
+            let side = max(0, (geo.size.width - Self.gridSpacing * 2) / 3)
             let columns = Array(repeating: GridItem(.fixed(side), spacing: Self.gridSpacing), count: 3)
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                    ForEach(sections, id: \.dayKey) { section in
+                    ForEach(library.sections, id: \.dayKey) { section in
                         Section {
                             LazyVGrid(columns: columns, spacing: Self.gridSpacing) {
                                 ForEach(section.indices, id: \.self) { i in
-                                    let asset = fetchResult.object(at: i)
+                                    let asset = library.result.object(at: i)
                                     ThumbnailCell(
                                         asset: asset,
                                         side: side,
@@ -158,6 +218,15 @@ struct LibraryPickerView: View {
                                 .background(Tone.pure)
                         }
                     }
+                    // 오래된 쪽은 아직 읽는 중 — 먼저 모인 최근 하루부터 보인다.
+                    if let progress {
+                        HStack(spacing: 8) {
+                            ProgressView().tint(Tone.tertiary).controlSize(.small)
+                            progressLine(progress)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 24)
+                    }
                 }
             }
         }
@@ -175,27 +244,59 @@ struct LibraryPickerView: View {
     }
 
     private func fetchAssets() {
-        let result = PHAsset.fetchAssets(with: LibraryImporter.fetchOptions())
-        fetchResult = result
-        Task {
-            let (computed, ids) = await Self.computeSections(result)
-            sections = computed
-            selected = selected.intersection(ids) // 제한 접근 재선택 뒤 사라진 사진은 selected 에서도 지운다
+        loading?.cancel()
+        loading = Task { @MainActor in
+            for await update in Self.loadLibrary() {
+                guard !Task.isCancelled else { return }
+                library = Library(result: update.result, sections: update.sections)
+                progress = update.done < update.total ? LoadProgress(done: update.done, total: update.total) : nil
+                // 제한 접근 재선택 뒤 사라진 사진은 selected 에서도 지운다
+                if let ids = update.ids { selected = selected.intersection(ids) }
+            }
         }
     }
 
-    private static func computeSections(_ result: PHFetchResult<PHAsset>) async -> ([LibrarySection], Set<String>) {
-        await Task.detached(priority: .userInitiated) {
-            var dates: [Date?] = []
-            var ids: Set<String> = []
-            dates.reserveCapacity(result.count)
-            ids.reserveCapacity(result.count)
-            result.enumerateObjects { asset, _, _ in
-                dates.append(asset.creationDate)
-                ids.insert(asset.localIdentifier)
+    private static let piece = 300
+    private static let partialInterval: CFAbsoluteTime = 0.25
+
+    /// 가져오기·날짜 읽기는 메인 밖에서 조금씩 — 최근 일주일이 모이면 먼저, 그 뒤엔 0.25초마다 보낸다.
+    private static func loadLibrary() -> AsyncStream<LoadUpdate> {
+        let piece = Self.piece, partialInterval = Self.partialInterval
+        return AsyncStream { continuation in
+            let task = Task.detached(priority: .userInitiated) {
+                let result = PHAsset.fetchAssets(with: LibraryImporter.fetchOptions())
+                let total = result.count
+                var builder = LibrarySectionBuilder()
+                var ids = Set<String>()
+                ids.reserveCapacity(total)
+                let weekAgo = Date().addingTimeInterval(-7 * 86_400)
+                var sentWeek = false
+                var lastSent = CFAbsoluteTimeGetCurrent()
+                var start = 0
+                while start < total {
+                    guard !Task.isCancelled else { continuation.finish(); return }
+                    let end = min(start + piece, total)
+                    var reachedOld = false
+                    result.enumerateObjects(at: IndexSet(integersIn: start..<end), options: []) { asset, _, _ in
+                        let date = asset.creationDate
+                        builder.append(date)
+                        ids.insert(asset.localIdentifier)
+                        if let date, date < weekAgo { reachedOld = true }
+                    }
+                    start = end
+                    let now = CFAbsoluteTimeGetCurrent()
+                    guard start < total, (reachedOld && !sentWeek) || now - lastSent > partialInterval else { continue }
+                    sentWeek = sentWeek || reachedOld
+                    lastSent = now
+                    continuation.yield(LoadUpdate(result: result, sections: builder.sections(complete: false),
+                                                  done: start, total: total, ids: nil))
+                }
+                continuation.yield(LoadUpdate(result: result, sections: builder.sections(complete: true),
+                                              done: total, total: total, ids: ids))
+                continuation.finish()
             }
-            return (LibrarySections.make(dates: dates), ids)
-        }.value
+            continuation.onTermination = { _ in task.cancel() }
+        }
     }
 
     private func presentLimitedPicker() {
@@ -210,13 +311,17 @@ struct LibraryPickerView: View {
 
     private func importSelected() async {
         isImporting = true
-        var toImport: [PHAsset] = []
-        fetchResult.enumerateObjects { asset, _, _ in
-            if selected.contains(asset.localIdentifier) { toImport.append(asset) }
-        }
-        let n = await LibraryImporter().importAssets(toImport, into: store)
+        // 사진첩 전체를 메인에서 훑지 않고 고른 것만 가져온다 — 순서는 예전처럼 최신순.
+        let ids = Array(selected)
+        let toImport: [PHAsset] = await Task.detached(priority: .userInitiated) {
+            var picked: [PHAsset] = []
+            PHAsset.fetchAssets(withLocalIdentifiers: ids, options: LibraryImporter.fetchOptions())
+                .enumerateObjects { asset, _, _ in picked.append(asset) }
+            return picked.sorted { ($0.creationDate ?? .distantPast) > ($1.creationDate ?? .distantPast) }
+        }.value
+        let importedDayKeys = await LibraryImporter().importAssets(toImport, into: store)
         isImporting = false
-        onDone(n)
+        onDone(importedDayKeys)
         dismiss()
     }
 }
@@ -287,10 +392,60 @@ private struct ThumbnailCell: View {
         options.resizeMode = .fast
         options.isNetworkAccessAllowed = true
         let targetSize = CGSize(width: side * displayScale, height: side * displayScale)
-        let result: UIImage? = await withCheckedContinuation { continuation in
-            manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill,
-                                  options: options) { img, _ in continuation.resume(returning: img) }
+        let request = ThumbnailRequest(manager: manager)
+        let result: UIImage? = await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                request.start(continuation) {
+                    manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill,
+                                         options: options) { img, _ in request.finish(img) }
+                }
+            }
+        } onCancel: {
+            // 화면 밖으로 스크롤된 칸은 디코딩을 멈춘다 — 보이는 칸만 부른다.
+            request.cancel()
         }
+        guard !Task.isCancelled else { return }
         if let result { image = result }
+    }
+}
+
+/// 썸네일 요청 한 건 — 콜백이 두 번 와도, 취소가 먼저 와도 continuation 은 한 번만 푼다.
+private final class ThumbnailRequest: @unchecked Sendable {
+    private let lock = NSLock()
+    private let manager: PHImageManager
+    private var continuation: CheckedContinuation<UIImage?, Never>?
+    private var id: PHImageRequestID?
+    private var cancelled = false
+
+    init(manager: PHImageManager) { self.manager = manager }
+
+    func start(_ c: CheckedContinuation<UIImage?, Never>, request: () -> PHImageRequestID) {
+        lock.lock()
+        guard !cancelled else { lock.unlock(); c.resume(returning: nil); return }
+        continuation = c
+        lock.unlock()
+        let requestID = request()
+        lock.lock()
+        id = requestID
+        let lateCancel = cancelled
+        lock.unlock()
+        if lateCancel { manager.cancelImageRequest(requestID) }
+    }
+
+    func finish(_ image: UIImage?) {
+        lock.lock()
+        let c = continuation
+        continuation = nil
+        lock.unlock()
+        c?.resume(returning: image)
+    }
+
+    func cancel() {
+        lock.lock()
+        cancelled = true
+        let requestID = id
+        lock.unlock()
+        if let requestID { manager.cancelImageRequest(requestID) }
+        finish(nil)
     }
 }

@@ -61,6 +61,19 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(store.moments(on: "2026-09-22").map(\.fileName), ["early.jpg", "late.jpg"])
     }
 
+    func testSameCapturedAtOrdersByIDAndMatchesRebuild() {
+        let at = date(2026, 9, 22, 12, 0)
+        let a = Moment(id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+                       capturedAt: at, colorHex: "#112233", fileName: "a.jpg", source: .app)
+        let b = Moment(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+                       capturedAt: at, colorHex: "#112233", fileName: "b.jpg", source: .app)
+        store.add(a)
+        store.add(b)
+        XCTAssertEqual(store.moments(on: "2026-09-22").map(\.fileName), ["b.jpg", "a.jpg"],
+                       "capturedAt 이 같으면 id 문자열 순으로 갈라야 한다")
+        XCTAssertTrue(store.indexMatchesRebuild(), "패치로 이어 붙인 순서와 통째로 재구축한 순서가 같아야 한다")
+    }
+
     func testDuplicateFileNameIsIgnored() {
         store.add(moment(date(2026, 9, 22, 12, 0), name: "same.jpg"))
         store.add(moment(date(2026, 9, 22, 13, 0), name: "same.jpg"))
@@ -89,6 +102,55 @@ final class DayStoreTests: XCTestCase {
         store.removeAll()
         XCTAssertTrue(store.moments.isEmpty)
         XCTAssertTrue(DayStore(fileURL: tempFile, closures: closures).moments.isEmpty, "파일에서도 지워져야 한다")
+    }
+
+    /// 원본 파일을 지우기 전에 빈 목록이 디스크에 닿아야 한다 — 거꾸로면 kill 뒤 파일 없는 기록만 남는다.
+    func testRemoveAllLandsOnDiskBeforeReturning() throws {
+        store.add(moment(date(2026, 9, 22, 12, 0), name: "x.jpg"))
+        store.flush()
+        store.removeAll()
+        let raw = try JSONSerialization.jsonObject(with: Data(contentsOf: tempFile)) as? [Any]
+        XCTAssertEqual(raw?.count, 0)
+    }
+
+    /// 여행 중 시간대가 바뀌면 같은 순간의 하루가 달라진다 — 캐시된 하루 목록이 옛 시간대에 머물면 안 된다.
+    func testDayIndexFollowsTimeZoneChange() {
+        // 시스템 시간대 바꾸기 흉내 — NSTimeZone.default 는 autoupdatingCurrent 달력에 안 먹는다.
+        let original = ProcessInfo.processInfo.environment["TZ"]
+        func setZone(_ id: String?) {
+            if let id { setenv("TZ", id, 1) } else { unsetenv("TZ") }
+            tzset()
+            NSTimeZone.resetSystemTimeZone()
+        }
+        defer { setZone(original) }
+        setZone("Asia/Seoul")
+        // 2026-09-22 20:00Z — 서울 23일 05시, LA 22일 13시.
+        let at = Date(timeIntervalSince1970: 1_790_107_200)
+        store.add(moment(at, name: "tz.jpg"))
+        XCTAssertEqual(store.dayKeys, ["2026-09-23"])
+        setZone("America/Los_Angeles")
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertEqual(store.moments(on: "2026-09-22").count, 1)
+    }
+
+    /// 캐시된 조회는 제자리 변경(배열 원소 수정)도 곧바로 반영해야 한다 — 안 그러면 단어·입양이 화면에 늦게 뜬다.
+    func testCachedQueriesReflectInPlaceChanges() {
+        let m = moment(date(2026, 9, 22, 12, 0), name: "inplace.jpg")
+        store.add(m)
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertNil(store.moments(on: "2026-09-22").first?.labels)
+
+        store.setLabels(m.id, ["sky"])
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.labels, ["sky"])
+
+        store.assignWord(m.id, PhotoWord(wordID: "yunseul", word: "윤슬", meaning: "잔물결"))
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.word?.wordID, "yunseul")
+
+        XCTAssertTrue(store.adopt(m.id, assetID: "L/1"))
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.assetID, "L/1")
+        XCTAssertEqual(store.moments(on: "2026-09-22").first?.fileName, Moment.assetFileName(for: "L/1"))
+        XCTAssertEqual(store.dayKeys, ["2026-09-22"])
+        XCTAssertEqual(store.pebbleMoments(on: "2026-09-22").first?.assetID, "L/1")
     }
 
     func testAssignWordPersistsAndNeverOverwrites() {
@@ -250,6 +312,31 @@ final class DayStoreTests: XCTestCase {
                        "이미 입양된 Moment 의 두 번째 입양은 false 를 돌려줘야 한다 — 호출부가 파일을 지우면 안 된다는 신호")
         XCTAssertEqual(store.moments.first { $0.id == m.id }?.assetID, "ASSET-1",
                        "이미 입양된 Moment 는 두 번째 입양을 무시해야 한다")
+    }
+
+    // MARK: 복구 입양 — 에셋이 사라져 파일로 다시 저장한 기록
+
+    func testReadoptSwapsToNewAssetOnlyFromTheOldOne() {
+        let m = Moment(capturedAt: date(2026, 9, 22, 12, 0), colorHex: "#AABBCC", fileName: "library-1.jpg",
+                       source: .library, assetID: "OLD", originalName: "IMG_1.HEIC", cloudID: "CLOUD-OLD")
+        store.add(m)
+        var got: [StoreChange] = []
+        store.onLocalChange = { got += $0 }
+
+        XCTAssertFalse(store.readopt(m.id, from: "OTHER", to: "NEW"), "그사이 assetID 가 바뀌었으면 건드리지 않는다")
+        XCTAssertFalse(store.readopt(UUID(), from: "OLD", to: "NEW"))
+        XCTAssertFalse(store.readopt(m.id, from: "OLD", to: "OLD"))
+        XCTAssertEqual(store.moments.first?.assetID, "OLD")
+
+        XCTAssertTrue(store.readopt(m.id, from: "OLD", to: "NEW"))
+        let r = try! XCTUnwrap(store.moments.first { $0.id == m.id })
+        XCTAssertEqual(r.assetID, "NEW")
+        XCTAssertEqual(r.fileName, Moment.assetFileName(for: "NEW"), "파일은 지워질 것이라 자리 이름으로 바꾼다")
+        XCTAssertEqual(r.originalName, "IMG_1.HEIC", "중복 판정에 쓰는 원래 이름은 남긴다")
+        XCTAssertNil(r.cloudID, "옛 cloudID 는 사라진 사진 것 — 비워 두고 새 사진의 것을 다시 붙인다")
+        XCTAssertEqual(r.colorHex, "#AABBCC")
+        XCTAssertEqual(got, [.upsert(m.id)], "비운 cloudID 를 올려야 병합이 서버의 옛 cloudID 를 되살리지 않는다")
+        XCTAssertFalse(store.readopt(m.id, from: "OLD", to: "NEW2"), "두 번째 호출은 옛 값이 아니라 무시한다")
     }
 
     func testAddReturnsTrueWhenInsertedFalseWhenDuplicate() {

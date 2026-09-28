@@ -5,17 +5,39 @@ public struct LibrarySection: Equatable, Sendable {
     public let indices: [Int]
 }
 
+/// 사진을 최신순으로 조금씩 읽으며 섹션을 쌓는다 — 다 읽기 전에도 이미 다 모인 하루부터 보여 줄 수 있게.
+public struct LibrarySectionBuilder: Sendable {
+    private var order: [String] = []
+    private var groups: [String: [Int]] = [:]
+    private var lastKey: String?
+    public private(set) var count = 0
+    private let now: Date
+
+    public init(now: Date = Date()) { self.now = now }
+
+    public mutating func append(_ date: Date?) {
+        let key = Moment.dayKey(for: date ?? now)
+        if groups[key] == nil { order.append(key) }
+        groups[key, default: []].append(count)
+        count += 1
+        lastKey = key
+    }
+
+    /// complete 가 아니면 마지막으로 읽던 하루는 아직 덜 모였을 수 있어 뺀다.
+    public func sections(complete: Bool) -> [LibrarySection] {
+        order.sorted(by: >).compactMap { key in
+            guard complete || key != lastKey else { return nil }
+            return LibrarySection(dayKey: key, indices: groups[key] ?? [])
+        }
+    }
+}
+
 public enum LibrarySections {
 
     public static func make(dates: [Date?], now: Date = Date()) -> [LibrarySection] {
-        var order: [String] = []
-        var groups: [String: [Int]] = [:]
-        for (i, date) in dates.enumerated() {
-            let key = Moment.dayKey(for: date ?? now)
-            if groups[key] == nil { order.append(key) }
-            groups[key, default: []].append(i)
-        }
-        return order.sorted(by: >).map { LibrarySection(dayKey: $0, indices: groups[$0] ?? []) }
+        var builder = LibrarySectionBuilder(now: now)
+        dates.forEach { builder.append($0) }
+        return builder.sections(complete: true)
     }
 
     public static func title(_ dayKey: String) -> String {

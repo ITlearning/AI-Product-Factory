@@ -6,11 +6,14 @@ public extension View {
     /// blocksPresentation — 하루 상세·사진첩 선택 등 다른 fullScreenCover/sheet 가 떠 있는 동안 true.
     /// 여는 순간 true, 그 시트·커버의 onDismiss 에서만 false 로 바꿔야 한다.
     /// 이 동안은 present() 를 미룬다 — 동시에 두 개를 띄우면 나중 것의 표시가 씹혀 pending 이 안 풀린다.
+    // onboardingGiftDay — 첫 담기로 고른 하루(있으면 hasSealedMoments 없이 한 번 증정). 지우는 건 호출부 몫.
     // onCeremonyFinished — 증정 커버가 완전히 닫힌 뒤(onDismiss) 그 날짜로 한 번 불린다.
     func dayGift(store: DayStore, gifts: GiftLog, dismissedTick: Int, blocksPresentation: Bool,
+                 onboardingGiftDay: String? = nil,
                  onCeremonyFinished: ((String) -> Void)? = nil) -> some View {
         modifier(DayGiftPresenter(store: store, gifts: gifts, dismissedTick: dismissedTick,
-                                  blocksPresentation: blocksPresentation, onCeremonyFinished: onCeremonyFinished))
+                                  blocksPresentation: blocksPresentation, onboardingGiftDay: onboardingGiftDay,
+                                  onCeremonyFinished: onCeremonyFinished))
     }
 }
 
@@ -19,6 +22,7 @@ struct DayGiftPresenter: ViewModifier {
     let gifts: GiftLog
     let dismissedTick: Int
     let blocksPresentation: Bool
+    let onboardingGiftDay: String?
     let onCeremonyFinished: ((String) -> Void)?
 
     @Environment(\.scenePhase) private var scenePhase
@@ -39,6 +43,7 @@ struct DayGiftPresenter: ViewModifier {
             // 호출부는 두 값을 시트·커버의 onDismiss(닫힘 애니메이션이 끝난 뒤)에서만 바꾼다 — 닫히는 도중에
             // 조상의 fullScreenCover 를 띄우면 표시가 씹혀 pending 이 영영 안 풀린다.
             .onChange(of: dismissedTick) { _, _ in present() }
+            .onChange(of: store.isLoaded) { _, loaded in if loaded { present() } }
             .onChange(of: blocksPresentation) { _, blocked in
                 if !blocked { present() }
             }
@@ -60,10 +65,11 @@ struct DayGiftPresenter: ViewModifier {
     }
 
     private func present() {
-        guard pending == nil, !ceremonyUp, !blocksPresentation else { return }
-        guard let key = GiftSchedule.pending(dayKeys: store.dayKeys,
-                                             today: Moment.dayKey(for: Date()),
+        guard store.isLoaded, pending == nil, !ceremonyUp, !blocksPresentation else { return }
+        guard let key = GiftSchedule.pendingWithOnboarding(onboardingGiftDay: onboardingGiftDay,
                                              isGifted: gifts.isGifted,
+                                             dayKeys: store.dayKeys,
+                                             today: Moment.dayKey(for: Date()),
                                              hasSealedMoments: store.hasSealedMoments,
                                              isFinished: store.isFinished) else { return }
         ceremonyUp = true

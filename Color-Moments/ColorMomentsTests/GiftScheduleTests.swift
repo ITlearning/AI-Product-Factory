@@ -206,6 +206,42 @@ final class GiftScheduleTests: XCTestCase {
         XCTAssertEqual(got, ["2026-09-21"], "동기화가 켜지기 전 증정도 올라가야 한다")
     }
 
+    func testOnboardingDayBypassesSealedMomentsCheck() {
+        let result = GiftSchedule.pendingWithOnboarding(onboardingGiftDay: "2026-09-20",
+                                                         isGifted: { _ in false },
+                                                         dayKeys: ["2026-09-20"], today: "2026-09-22",
+                                                         hasSealedMoments: { _ in false })
+        XCTAssertEqual(result, "2026-09-20", "온보딩 하루는 hasSealedMoments 조건을 건너뛴다")
+    }
+
+    func testOnboardingDayAlreadyGiftedFallsThroughToNormalSchedule() {
+        let result = GiftSchedule.pendingWithOnboarding(onboardingGiftDay: "2026-09-20",
+                                                         isGifted: { $0 == "2026-09-20" },
+                                                         dayKeys: ["2026-09-21", "2026-09-20"], today: "2026-09-22")
+        XCTAssertEqual(result, "2026-09-21", "이미 받은 온보딩 하루는 평소 GiftSchedule 판정으로 넘어간다")
+    }
+
+    func testOnboardingDayMissingFromDayKeysIsNotPresented() {
+        let result = GiftSchedule.pendingWithOnboarding(onboardingGiftDay: "2026-09-20",
+                                                         isGifted: { _ in false },
+                                                         dayKeys: ["2026-09-18"], today: "2026-09-22",
+                                                         hasSealedMoments: { _ in false })
+        XCTAssertNil(result, "사진이 지워져 하루가 사라지면 온보딩 증정도 없다")
+    }
+
+    func testRetainedOnboardingDayClearsWhenDayDisappears() {
+        XCTAssertNil(OnboardingGift.retained("2026-09-20", dayKeys: ["2026-09-18"]))
+        XCTAssertEqual(OnboardingGift.retained("2026-09-20", dayKeys: ["2026-09-20"]), "2026-09-20")
+        XCTAssertNil(OnboardingGift.retained(nil, dayKeys: ["2026-09-20"]))
+    }
+
+    func testNoOnboardingDayUsesNormalSchedule() {
+        let result = GiftSchedule.pendingWithOnboarding(onboardingGiftDay: nil,
+                                                         isGifted: { _ in false },
+                                                         dayKeys: ["2026-09-21"], today: "2026-09-22")
+        XCTAssertEqual(result, "2026-09-21")
+    }
+
     func testGiftLogNotifiesLocalOnlyAndPersists() {
         let d = UserDefaults(suiteName: UUID().uuidString)!
         let log = GiftLog(defaults: d)

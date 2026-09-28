@@ -55,10 +55,11 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
 
     public static let empty = WidgetSnapshot(latest: nil, arrivals: [])
 
-    // 증정 판정(GiftSchedule)과 같은 기준(isGifted · hasSealedMoments)이어야 위젯의 「도착」과 실제 증정이 어긋나지 않는다.
+    // 도착(arrivals)은 증정 판정(GiftSchedule)과 같은 기준(isGifted · hasSealedMoments)이어야 실제 증정과 어긋나지 않는다.
+    // 받은 하루는 hasSealedMoments 로 거르지 않는다 — 온보딩으로 받은 돌은 addedAt 이 봉인 뒤라 걸러지면 위젯에서 사라진다.
     public static func make(store: DayStore, gifts: GiftLog) -> WidgetSnapshot {
         let candidates = store.dayKeys.filter(store.hasSealedMoments)
-        let latest = candidates.first(where: gifts.isGifted).map { key -> Latest in
+        let latest = store.dayKeys.first(where: gifts.isGifted).map { key -> Latest in
             let pebble = store.pebbleMoments(on: key)
             return Latest(dayKey: key,
                           name: PebbleNaming.name(for: pebble)?.name,

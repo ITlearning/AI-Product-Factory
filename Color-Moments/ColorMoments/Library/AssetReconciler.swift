@@ -30,6 +30,7 @@ enum AssetReconciler {
     /// 순수 함수 — `relocated` 는 못 찾은 assetID 중 cloudID 로 다시 찾은 것(옛 → 새).
     /// 다시 찾은 것은 지우지 않고 바꿔 끼우고, 남은 것만 `missing()` 규칙(빈 조회·상한)으로 판정한다.
     /// `otherAssetIDs`: 이 판정 밖에 있는 다른 기록들이 이미 쓰고 있는 assetID — 충돌 판정에 쓴다.
+    /// 이 기기에 사본 파일이 남았어도 사진 앱에서 지운 것으로 본다 — 지운 뒤 사본도 지운다(`leftoverFiles`).
     static func plan(ids: Set<String>, found: Set<String>, relocated: [String: String],
                       otherAssetIDs: Set<String> = [], fullAccess: Bool) -> Plan {
         guard fullAccess else { return Plan() }
@@ -54,8 +55,33 @@ enum AssetReconciler {
         let deferred = Set(changed.keys).subtracting(reassign.keys)
 
         let located = found.union(reassign.keys).union(confirmedLocated)
+        // 상한은 보류 전 후보 수로 잰다 — 보류분을 먼저 빼면 같은 회차에서 더 많이 지워진다.
         let remove = missing(ids: ids, found: located, fullAccess: fullAccess).subtracting(deferred)
         return Plan(reassign: reassign, remove: remove)
+    }
+
+    /// 이 기기에 실제 파일이 있는 이름인지 — 자리 이름(asset-·remote-)은 파일이 없다.
+    static func holdsLocalFile(fileName: String, exists: (String) -> Bool) -> Bool {
+        !fileName.hasPrefix("asset-") && !fileName.hasPrefix("remote-") && exists(fileName)
+    }
+
+    /// 순수 함수 — 지운 기록의 사본 파일 이름 중 남은 기록이 아무도 안 쓰는 것. 자리 이름은 파일이 없어 뺀다.
+    static func leftoverFiles(removed: [Moment], remaining: [Moment]) -> Set<String> {
+        let inUse = Set(remaining.map(\.fileName))
+        return Set(removed.map(\.fileName).filter {
+            holdsLocalFile(fileName: $0, exists: { _ in true }) && !inUse.contains($0)
+        })
+    }
+
+    /// 실제 디스크 확인 — 메인 밖에서.
+    static func localFileNames(_ fileNames: [String]) async -> Set<String> {
+        guard !fileNames.isEmpty else { return [] }
+        return await Task.detached(priority: .utility) {
+            let fm = FileManager.default
+            return Set(fileNames.filter {
+                holdsLocalFile(fileName: $0, exists: { fm.fileExists(atPath: ShotImage.url($0).path) })
+            })
+        }.value
     }
 
     /// 24시간 창 안의 누적 삭제 상태. 나눠서 조금씩 지우는 걸 막는다 — 지운 기록은 iCloud 로 모든 기기에 번진다.
@@ -106,14 +132,14 @@ enum AssetReconciler {
     @MainActor
     private static func run(store: DayStore, defaults: UserDefaults) async {
         let fullAccess = PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized
-        let ids = Set(store.moments.compactMap(\.assetID))
+        // 조회를 기다리는 사이 새로 담긴 기록은 found 에 없다 — 판정은 조회 전 스냅샷으로만 한다.
+        let snapshot = store.moments
+        let ids = Set(snapshot.compactMap(\.assetID))
         guard fullAccess, !ids.isEmpty else { return }
 
-        var found = Set<String>()
-        PHAsset.fetchAssets(withLocalIdentifiers: Array(ids), options: nil)
-            .enumerateObjects { asset, _, _ in found.insert(asset.localIdentifier) }
+        let found = await existing(Array(ids))
 
-        let lost = store.moments.filter { m in m.assetID.map { !found.contains($0) } ?? false }
+        let lost = snapshot.filter { m in m.assetID.map { !found.contains($0) } ?? false }
         var relocated: [String: String] = [:]
         let clouds = lost.compactMap(\.cloudID)
         if !clouds.isEmpty {
@@ -136,7 +162,40 @@ enum AssetReconciler {
         let (allowed, budget) = budgetAllows(removing: plan.remove.count, now: Date(), state: state, tracked: ids.count)
         saveBudget(budget, defaults: defaults)
         guard allowed else { return }
-        store.remove(assetIDs: plan.remove)
+        let doomed = removalIDs(snapshot: snapshot, remove: plan.remove, current: store.moments)
+        let removed = snapshot.filter { doomed.contains($0.id) }
+        store.remove(ids: doomed)
+        // 삭제가 디스크에 닿기 전에 사본을 지우면 kill 뒤 되살아난 기록이 빈 파일을 가리킨다.
+        guard await store.flushAfterLoad() else { return }
+        let files = leftoverFiles(removed: removed, remaining: store.moments)
+        guard !files.isEmpty else { return }
+        await Task.detached(priority: .utility) {
+            for name in files { try? FileManager.default.removeItem(at: ShotImage.url(name)) }
+        }.value
+    }
+
+    /// 판정한 스냅샷 안의 기록만 — assetID 로 지우면 조회 대기 중 같은 사진으로 새로 담긴 기록까지 지워진다.
+    static func removalIDs(snapshot: [Moment], remove: Set<String>) -> Set<Moment.ID> {
+        Set(snapshot.filter { $0.assetID.map(remove.contains) ?? false }.map(\.id))
+    }
+
+    /// 조회를 기다리는 사이 수동 복구로 assetID 가 바뀐 기록은 뺀다 — 이제 새 사진을 가리킨다.
+    static func removalIDs(snapshot: [Moment], remove: Set<String>, current: [Moment]) -> Set<Moment.ID> {
+        let now = Dictionary(current.map { ($0.id, $0.assetID) }, uniquingKeysWith: { a, _ in a })
+        return removalIDs(snapshot: snapshot, remove: remove).filter { id in
+            now[id].flatMap { $0 }.map(remove.contains) ?? false
+        }
+    }
+
+    /// 사진 앱에 아직 있는 로컬 ID — 수천 개 조회는 메인 밖에서.
+    static func existing(_ ids: [String]) async -> Set<String> {
+        guard !ids.isEmpty else { return [] }
+        return await Task.detached(priority: .utility) {
+            var found = Set<String>()
+            PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+                .enumerateObjects { asset, _, _ in found.insert(asset.localIdentifier) }
+            return found
+        }.value
     }
 
     private static func loadBudget(defaults: UserDefaults) -> Budget? {
@@ -155,27 +214,39 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
 
     private let store: DayStore
     private var fetchResult: PHFetchResult<PHAsset>?
+    private var fetchGeneration = 0
 
     init(store: DayStore) {
         self.store = store
         super.init()
         PHPhotoLibrary.shared().register(self)
-        Task { @MainActor [weak self] in self?.refreshFetchResult() }
+        Task { @MainActor [weak self] in await self?.refreshFetchResult() }
     }
 
     deinit {
         PHPhotoLibrary.shared().unregisterChangeObserver(self)
     }
 
+    // 사진 앱이 바뀔 때마다(iCloud 사진이 내려오는 동안 잦다) 수천 개를 다시 조회한다 — 메인 밖에서.
     @MainActor
-    private func refreshFetchResult() {
+    private func refreshFetchResult() async {
+        fetchGeneration += 1
+        let generation = fetchGeneration
         let ids = Array(Set(store.moments.compactMap(\.assetID)))
-        fetchResult = ids.isEmpty ? nil : PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+        guard !ids.isEmpty else { fetchResult = nil; return }
+        let result = await Task.detached(priority: .utility) {
+            PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+        }.value
+        // 조회가 겹치면 늦게 끝난 옛 조회가 새 추적 목록을 덮는다 — 마지막으로 시작한 것만 남긴다.
+        guard generation == fetchGeneration else { return }
+        fetchResult = result
     }
 
     func photoLibraryDidChange(_ changeInstance: PHChange) {
         Task { @MainActor [weak self] in
             guard let self else { return }
+            // 어떤 자산이 바뀐 건지는 모른다 — iCloud 사진이 막 내려왔을 수도 있으니 뜬 화면에 다시 물어보라고만 알린다.
+            ShotImage.generation.bump()
             // 제한 접근에서는 선택 해제도 removedObjects 로 온다 — 지운 게 아니므로 전체 접근일 때만 반영.
             // 직접 지우지 않고 reconcile() 을 부른다 — cloudID 재조회·상한 판정을 한 곳에서만 한다.
             if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized,
@@ -185,7 +256,7 @@ final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
                 await AssetReconciler.reconcile(store: self.store)
             }
             // 추적 목록을 지금 저장소 기준으로 다시 세운다 — 새로 입양된 assetID 도 다음 변경부터 잡힌다.
-            self.refreshFetchResult()
+            await self.refreshFetchResult()
             // iCloud 사진이 늦게 내려와도 여기서 cloudID 를 다시 찾는다.
             Task { await CloudIDMapper.refresh(store: self.store) }
         }

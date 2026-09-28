@@ -11,9 +11,9 @@ public enum PhotoLabeler {
             .map(\.identifier)
     }
 
-    public static func labels(for m: Moment) -> [String]? {
+    public static func labels(for m: Moment) async -> [String]? {
         // thumbnail 은 EXIF 방향을 이미 적용한다 — 그래서 .up
-        guard let image = ShotImage.thumbnail(m, maxPixel: 600)?.cgImage else { return nil }
+        guard let image = await ShotImage.thumbnail(m, maxPixel: 600)?.cgImage, !Task.isCancelled else { return nil }
         return labels(for: image)
     }
 }

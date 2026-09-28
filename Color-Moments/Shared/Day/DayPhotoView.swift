@@ -1,12 +1,20 @@
 import SwiftUI
 import UIKit
 
+private struct DayPhotoLoadKey: Equatable {
+    let fileName: String
+    let generation: Int
+}
+
 struct DayPhotoView: View {
     let momentID: Moment.ID
     let store: DayStore
+    // 받은 하루일 때만 호출부가 넘긴다 — ImageRenderer/ShareLink 는 앱 타깃 전용.
+    var makeShareSheet: (() -> AnyView)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var image: UIImage?
+    @State private var sharing = false
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
@@ -25,10 +33,18 @@ struct DayPhotoView: View {
                 }
                 .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
-                .task(id: moment.fileName) { await load(moment) }
+                .task(id: DayPhotoLoadKey(fileName: moment.fileName,
+                                          generation: ShotImage.generation.value(for: moment.assetID))) {
+                    await load(moment)
+                }
                 .task(id: moment.id) { await assignWordIfNeeded(moment) }
             }
-            closeButton.padding(.leading, 18).padding(.top, 8)
+            HStack {
+                closeButton
+                Spacer()
+                shareButton
+            }
+            .padding(.horizontal, 18).padding(.top, 8)
         }
         .statusBarHidden()
         .accessibilityAction(.escape) { dismiss() }
@@ -37,7 +53,7 @@ struct DayPhotoView: View {
     private var closeButton: some View {
         Button { dismiss() } label: {
             Text("닫기")
-                .font(.system(size: 13))
+                .font(Face.actionSecondary)
                 .foregroundStyle(Tone.primary)
                 .padding(.horizontal, 16)
                 .frame(minHeight: Shape2.minTouch)
@@ -50,12 +66,28 @@ struct DayPhotoView: View {
         Group {
             if let image {
                 Image(uiImage: image).resizable().scaledToFit()
+                    .transition(.opacity)
             } else {
                 Color(hex: m.colorHex).aspectRatio(3 / 4, contentMode: .fit)
+                    .overlay { ProgressView().tint(Tone.secondary) }
             }
         }
+        .animation(.easeOut(duration: 0.35), value: image == nil)
         .clipShape(RoundedRectangle(cornerRadius: Shape2.photoWindow, style: .continuous))
         .padding(.horizontal, 14)
+    }
+
+    @ViewBuilder
+    private var shareButton: some View {
+        if let makeShareSheet {
+            Button { sharing = true } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .foregroundStyle(Tone.secondary)
+                    .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $sharing) { makeShareSheet() }
+        }
     }
 
     @ViewBuilder
@@ -77,15 +109,29 @@ struct DayPhotoView: View {
         .animation(.easeOut(duration: 0.25), value: m.word)
     }
 
+    /// 원본은 iCloud 에서 받느라 오래 걸릴 수 있다 — 목록 썸네일을 먼저 보이고 원본이 오면 바꾼다.
     private func load(_ m: Moment) async {
-        image = await Task.detached(priority: .userInitiated) { ShotImage.full(m) }.value
+        async let original = ShotImage.fullWithRetry(m)
+        if image == nil {
+            if let cached = ShotImage.peek(m, maxPixel: Self.previewPixels) {
+                image = cached
+            } else if let preview = await ShotImage.warm(m, maxPixel: Self.previewPixels),
+                      !Task.isCancelled, image == nil {
+                image = preview
+            }
+        }
+        guard let full = await original, !Task.isCancelled else { return }
+        image = full
     }
+
+    /// DayMomentsView 사진 카드와 같은 크기 — 거기서 데운 캐시를 그대로 쓴다.
+    private static let previewPixels: CGFloat = 600
 
     private func assignWordIfNeeded(_ m: Moment) async {
         guard m.word == nil else { return }
         var labels = m.labels
         if labels == nil {
-            labels = await Task.detached(priority: .userInitiated) { PhotoLabeler.labels(for: m) }.value
+            labels = await PhotoLabeler.labels(for: m)
             guard let labels else { return } // Vision failed — retry next open, don't stamp a bad guess
             store.setLabels(m.id, labels)
         }

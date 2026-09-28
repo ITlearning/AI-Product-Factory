@@ -7,9 +7,16 @@ public struct DayMomentsView: View {
     private let closures: DayClosures
     // 「지금 조약돌로 받기」로 실제로 닫혔을 때만 호출부(HomeShell)가 아침 도착 소식 예약을 다시 맞춘다.
     private let onClosed: () -> Void
+    // 받은 하루인지 — App 타깃의 gifts.isGifted 를 그대로 받는다(Shared 는 GiftLog 를 몰라도 된다).
+    private let isGifted: (String) -> Bool
+    // 카드 공유 시트 — ImageRenderer/ShareLink 는 앱 타깃 전용이라 내용은 호출부(App)가 만들어 넘긴다.
+    // 두 번째 인자는 보던 사진 — 카드가 그 사진으로 먼저 열린다.
+    private let makeShareSheet: ((String, Moment.ID?) -> AnyView)?
     @Environment(\.dismiss) private var dismiss
     @State private var viewing: Moment?
     @State private var confirmingFinish = false
+    @State private var sharing = false
+    @State private var lastViewed: Moment.ID?
     @Namespace private var zoom
 
     private static let photo = CGSize(width: 190, height: 127)
@@ -20,11 +27,16 @@ public struct DayMomentsView: View {
     private static let maxShift = 3
     private static let tick: CGFloat = 13
 
-    public init(dayKey: String, store: DayStore, closures: DayClosures, onClosed: @escaping () -> Void = {}) {
+    public init(dayKey: String, store: DayStore, closures: DayClosures,
+                isGifted: @escaping (String) -> Bool = { _ in false },
+                onClosed: @escaping () -> Void = {},
+                makeShareSheet: ((String, Moment.ID?) -> AnyView)? = nil) {
         self.dayKey = dayKey
         self.store = store
         self.closures = closures
+        self.isGifted = isGifted
         self.onClosed = onClosed
+        self.makeShareSheet = makeShareSheet
     }
 
     private var moments: [Moment] { store.moments(on: dayKey) }
@@ -47,7 +59,7 @@ public struct DayMomentsView: View {
             GeometryReader { geo in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        closeButton
+                        topBar
                         Spacer().frame(height: 24)
                         header
                         Spacer().frame(height: 30)
@@ -65,22 +77,50 @@ public struct DayMomentsView: View {
             }
         }
         .presentationDragIndicator(.hidden)
+        .onChange(of: viewing?.id) { _, id in if let id { lastViewed = id } }
         .fullScreenCover(item: $viewing) { m in
-            DayPhotoView(momentID: m.id, store: store)
+            DayPhotoView(momentID: m.id, store: store, makeShareSheet: photoShareSheet(m.id))
                 .navigationTransition(.zoom(sourceID: m.id, in: zoom))
+        }
+    }
+
+    private var topBar: some View {
+        HStack {
+            closeButton
+            Spacer()
+            shareButton
         }
     }
 
     private var closeButton: some View {
         Button { dismiss() } label: {
             Text("닫기")
-                .font(.system(size: 13))
+                .font(Face.actionSecondary)
                 .foregroundStyle(Tone.primary)
                 .padding(.horizontal, 16)
                 .frame(minHeight: Shape2.minTouch)
                 .background(.white.opacity(0.12), in: Capsule())
         }
         .buttonStyle(.plain)
+    }
+
+    // 받은 하루에만 — 아직 안 받은(색 없는) 하루는 건넬 카드가 없다.
+    @ViewBuilder
+    private var shareButton: some View {
+        if let makeShareSheet, Keepsake.canMakeCard(dayKey: dayKey, isGifted: isGifted) {
+            Button { sharing = true } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .foregroundStyle(Tone.secondary)
+                    .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $sharing) { makeShareSheet(dayKey, lastViewed) }
+        }
+    }
+
+    private func photoShareSheet(_ id: Moment.ID) -> (() -> AnyView)? {
+        guard let makeShareSheet, Keepsake.canMakeCard(dayKey: dayKey, isGifted: isGifted) else { return nil }
+        return { makeShareSheet(dayKey, id) }
     }
 
     @ViewBuilder
@@ -144,7 +184,7 @@ public struct DayMomentsView: View {
             ForEach(Array(placements.enumerated()), id: \.element.moment.id) { i, p in
                 if p.showsTime {
                     Text(DayGradient.timeText(p.moment.capturedAt))
-                        .font(.system(size: 10, design: .rounded)).monospacedDigit()
+                        .font(Face.time).monospacedDigit()
                         .foregroundStyle(Tone.tertiary)
                         .frame(width: Self.labelWidth, alignment: .trailing)
                         .frame(height: Self.tick)
