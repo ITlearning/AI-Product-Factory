@@ -95,7 +95,7 @@ public struct DayMomentsView: View {
     private var closeButton: some View {
         Button { dismiss() } label: {
             Text("닫기")
-                .font(Face.line)
+                .font(Face.actionSecondary)
                 .foregroundStyle(Tone.primary)
                 .padding(.horizontal, 16)
                 .frame(minHeight: Shape2.minTouch)
