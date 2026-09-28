@@ -380,6 +380,20 @@ public final class DayStore {
         return true
     }
 
+    /// 에셋이 사라져 남은 파일을 사진 앱에 새로 저장한 기록 — assetID 가 아직 `oldAssetID` 일 때만 바꾼다.
+    /// 옛 cloudID 는 사라진 사진 것이라 비운다(새 cloudID 는 호출부가 매핑으로 붙인다). true 일 때만 파일을 지워도 된다.
+    @discardableResult
+    public func readopt(_ id: Moment.ID, from oldAssetID: String, to newAssetID: String) -> Bool {
+        guard oldAssetID != newAssetID,
+              let i = all.firstIndex(where: { $0.id == id }), all[i].assetID == oldAssetID else { return false }
+        var m = reassetted(all[i], assetID: newAssetID)
+        m.cloudID = nil
+        all[i] = m
+        ShotImage.generation.bump(assetID: newAssetID)
+        save()
+        return true
+    }
+
     /// 받은 기록(assetID 없음)에 이 기기 사진을 다시 찾아 붙인다. adopt 와 달리 알리지 않는다 — assetID 는 이 기기 전용.
     public func resolveAsset(_ id: Moment.ID, assetID: String) {
         resolveAssets([(id, assetID)])

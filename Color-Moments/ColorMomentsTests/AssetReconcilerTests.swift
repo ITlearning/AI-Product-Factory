@@ -246,4 +246,12 @@ final class AssetReconcilerTests: XCTestCase {
         let kept = AssetReconciler.keptByFile(lost: [a, b, c], exists: { $0 != "library-c.jpg" })
         XCTAssertEqual(kept, ["A"])
     }
+
+    func testRemovalSkipsMomentReadoptedWhileQuerying() {
+        let old = Moment(capturedAt: Date(), colorHex: "#111111", fileName: "shot-x.jpg", source: .app, assetID: "X")
+        let other = Moment(capturedAt: Date(), colorHex: "#222222", fileName: "asset-z", source: .app, assetID: "Z")
+        let readopted = old.withDeviceFields(fileName: Moment.assetFileName(for: "NEW"), assetID: "NEW", originalName: nil)
+        let ids = AssetReconciler.removalIDs(snapshot: [old, other], remove: ["X", "Z"], current: [readopted, other])
+        XCTAssertEqual(ids, [other.id], "조회 대기 중 파일로 다시 입양된 기록은 새 사진을 가리킨다 — 지우면 안 된다")
+    }
 }

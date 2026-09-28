@@ -136,24 +136,45 @@ enum AssetSaver {
 /// 파일로 남은 Moment 를 사진 앱으로 옮기는 흐름 — 찍은 직후·잠금화면 가져온 직후·앱 시작(옛 사진)에서 같은 함수를 쓴다.
 enum AssetAdopter {
 
+    /// 사진 앱·디스크에 닿는 부분 — 테스트는 가짜로 바꾼다.
+    struct Env {
+        var access: () -> PHAuthorizationStatus
+        var save: (URL, Date, CLLocation?) async -> String?
+        var existing: ([String]) async -> Set<String>
+        var localIDs: ([String]) async -> [String: String]
+        var localFiles: ([String]) async -> Set<String>
+        var removeFile: (URL) -> Void
+        var assignMissing: @MainActor (DayStore) async -> Void
+
+        static let live = Env(
+            access: { PHPhotoLibrary.authorizationStatus(for: .readWrite) },
+            save: { await AssetSaver.save(fileURL: $0, creationDate: $1, location: $2) },
+            existing: { await AssetReconciler.existing($0) },
+            localIDs: { await CloudIDMapper.localIDs(forCloudIDs: $0) },
+            localFiles: { await AssetReconciler.localFileNames($0) },
+            removeFile: { try? FileManager.default.removeItem(at: $0) },
+            assignMissing: { await CloudIDMapper.assignMissing(store: $0) }
+        )
+    }
+
     // 같은 Moment 를 캡처 직후 흐름과 adoptAll 이 동시에 부를 수 있어, 저장이 두 번 나가지 않게 막는다.
     @MainActor private static var adopting: Set<Moment.ID> = []
     @MainActor private static var isAdoptingAll = false
 
     @MainActor
-    static func adopt(_ m: Moment, store: DayStore) async {
-        guard await adoptWithoutMapping(m, store: store) else { return }
-        await CloudIDMapper.assignMissing(store: store)
+    static func adopt(_ m: Moment, store: DayStore, env: Env = .live) async {
+        guard await adoptWithoutMapping(m, store: store, env: env) else { return }
+        await env.assignMissing(store)
     }
 
     /// adopt 의 본체 — cloudID 매핑은 호출부가 결정한다(adoptAll 은 루프 끝에 한 번만 하고 싶어서).
     @MainActor
-    private static func adoptWithoutMapping(_ m: Moment, store: DayStore) async -> Bool {
+    private static func adoptWithoutMapping(_ m: Moment, store: DayStore, env: Env) async -> Bool {
         guard !adopting.contains(m.id) else { return false }
         // 전달받은 스냅샷은 낡았을 수 있다(다른 경로가 먼저 입양했거나 그사이 지워졌을 수 있음) —
         // 지금 저장소에서 다시 읽어 확인한다.
         guard let current = store.moments.first(where: { $0.id == m.id }), current.assetID == nil else { return false }
-        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        let status = env.access()
         guard status == .authorized || status == .limited else { return false }
 
         adopting.insert(m.id)
@@ -161,7 +182,7 @@ enum AssetAdopter {
 
         let fileURL = ShotImage.url(current.fileName)
         let location = current.place.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
-        guard let assetID = await AssetSaver.save(fileURL: fileURL, creationDate: current.capturedAt, location: location) else {
+        guard let assetID = await env.save(fileURL, current.capturedAt, location) else {
             return false
         }
 
@@ -176,34 +197,84 @@ enum AssetAdopter {
         await store.flushAfterLoad()
         // 저장이 막혀 있으면 입양이 디스크에 없다 — 파일을 남겨야 다음 실행에 다시 입양된다.
         guard !store.isSaveBlocked else { return true }
-        try? FileManager.default.removeItem(at: fileURL)
+        env.removeFile(fileURL)
+        return true
+    }
+
+    /// 순수 함수 — 에셋이 사라졌는데 이 기기에 파일이 남은 기록(파일로 다시 입양할 대상).
+    /// 전체 접근일 때만(제한 접근에서 못 찾은 건 고르지 않은 것뿐이라 다시 저장하면 중복된다),
+    /// 조회가 통째로 비면 아무것도 안 고른다. cloudID 로 다시 찾아지는 기록은 정리가 바꿔 끼우므로 뺀다.
+    static func readoptCandidates(snapshot: [Moment], found: Set<String>, relocatable: Set<String>,
+                                  onDisk: Set<String>, fullAccess: Bool) -> [Moment] {
+        guard fullAccess else { return [] }
+        let ids = Set(snapshot.compactMap(\.assetID))
+        guard !(found.isEmpty && !ids.isEmpty) else { return [] }
+        return snapshot.filter { m in
+            guard let id = m.assetID, !found.contains(id), !relocatable.contains(id) else { return false }
+            return AssetReconciler.holdsLocalFile(fileName: m.fileName, exists: onDisk.contains)
+        }
+    }
+
+    @MainActor
+    private static func readoptWithoutMapping(_ m: Moment, store: DayStore, env: Env) async -> Bool {
+        guard !adopting.contains(m.id), let old = m.assetID else { return false }
+        guard let current = store.moments.first(where: { $0.id == m.id }), current.assetID == old,
+              current.fileName == m.fileName else { return false }
+        guard env.access() == .authorized else { return false }
+
+        adopting.insert(m.id)
+        defer { adopting.remove(m.id) }
+
+        let fileURL = ShotImage.url(current.fileName)
+        let location = current.place.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
+        guard let newID = await env.save(fileURL, current.capturedAt, location) else { return false }
+
+        guard store.readopt(current.id, from: old, to: newID) else {
+            print("AssetAdopter: \(current.id) 는 다시 저장하는 사이 바뀌어 파일을 지우지 않음")
+            return false
+        }
+        await store.flushAfterLoad()
+        guard !store.isSaveBlocked else { return true }
+        env.removeFile(fileURL)
         return true
     }
 
     @MainActor
-    static func adoptAll(store: DayStore) async {
+    static func adoptAll(store: DayStore, env: Env = .live) async {
         guard !isAdoptingAll else { return }
-        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        let status = env.access()
         guard status == .authorized || status == .limited else { return }
 
         isAdoptingAll = true
         defer { isAdoptingAll = false }
 
+        let snapshot = store.moments
+        let ids = Array(Set(snapshot.compactMap(\.assetID)))
+        let found = await env.existing(ids)
+
         // 사진첩에서 담은 옛 사본은 이미 assetID 가 있어 에셋으로 그려진다 — 남은 파일만 고아라 지운다.
         // 단, 그 assetID 가 실제로 사진 앱에서 찾아질 때만 지운다. 못 찾으면(기기 복원 등으로 assetID 가
         // 어긋난 경우) 파일을 남긴다 — ShotImage 가 에셋을 못 찾으면 파일로 폴백해 계속 그려진다.
         // 사본이 아예 없는 fileBacked 파일(assetID == nil)은 여기서 지우지 않는다 — 반드시 adopt 를 거쳐 저장한 뒤에만 지운다.
-        let libraryBacked = store.moments.filter { $0.assetID != nil && $0.fileName.hasPrefix("library-") }
-        if !libraryBacked.isEmpty {
-            let ids = libraryBacked.compactMap(\.assetID)
-            let found = await AssetReconciler.existing(ids)
-            for m in libraryBacked where m.assetID.map(found.contains) == true {
-                try? FileManager.default.removeItem(at: ShotImage.url(m.fileName))
-            }
+        for m in snapshot where m.fileName.hasPrefix("library-") && m.assetID.map(found.contains) == true {
+            env.removeFile(ShotImage.url(m.fileName))
         }
+
+        let lost = snapshot.filter { m in m.assetID.map { !found.contains($0) } ?? false }
+        let fullAccess = status == .authorized
+        let onDisk = fullAccess && !lost.isEmpty ? await env.localFiles(lost.map(\.fileName)) : []
+        let lostWithFile = lost.filter { AssetReconciler.holdsLocalFile(fileName: $0.fileName, exists: onDisk.contains) }
+        let clouds = lostWithFile.compactMap(\.cloudID)
+        let locals = clouds.isEmpty ? [:] : await env.localIDs(clouds)
+        let relocatable = Set(lostWithFile.filter { $0.cloudID.flatMap { locals[$0] } != nil }.compactMap(\.assetID))
+        for m in readoptCandidates(snapshot: snapshot, found: found, relocatable: relocatable,
+                                   onDisk: onDisk, fullAccess: fullAccess) {
+            _ = await readoptWithoutMapping(m, store: store, env: env)
+        }
+
         for m in store.fileBacked {
-            _ = await adoptWithoutMapping(m, store: store)
+            _ = await adoptWithoutMapping(m, store: store, env: env)
         }
-        await CloudIDMapper.assignMissing(store: store)
+        await env.assignMissing(store)
     }
 }

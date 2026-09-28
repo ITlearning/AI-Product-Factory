@@ -162,12 +162,20 @@ enum AssetReconciler {
         let (allowed, budget) = budgetAllows(removing: plan.remove.count, now: Date(), state: state, tracked: ids.count)
         saveBudget(budget, defaults: defaults)
         guard allowed else { return }
-        store.remove(ids: removalIDs(snapshot: snapshot, remove: plan.remove))
+        store.remove(ids: removalIDs(snapshot: snapshot, remove: plan.remove, current: store.moments))
     }
 
     /// 판정한 스냅샷 안의 기록만 — assetID 로 지우면 조회 대기 중 같은 사진으로 새로 담긴 기록까지 지워진다.
     static func removalIDs(snapshot: [Moment], remove: Set<String>) -> Set<Moment.ID> {
         Set(snapshot.filter { $0.assetID.map(remove.contains) ?? false }.map(\.id))
+    }
+
+    /// 조회를 기다리는 사이 파일로 다시 입양돼 assetID 가 바뀐 기록은 뺀다 — 파일도 이미 지워져 보류에 안 걸린다.
+    static func removalIDs(snapshot: [Moment], remove: Set<String>, current: [Moment]) -> Set<Moment.ID> {
+        let now = Dictionary(current.map { ($0.id, $0.assetID) }, uniquingKeysWith: { a, _ in a })
+        return removalIDs(snapshot: snapshot, remove: remove).filter { id in
+            now[id].flatMap { $0 }.map(remove.contains) ?? false
+        }
     }
 
     /// 사진 앱에 아직 있는 로컬 ID — 수천 개 조회는 메인 밖에서.

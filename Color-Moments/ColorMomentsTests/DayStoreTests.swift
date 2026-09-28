@@ -314,6 +314,31 @@ final class DayStoreTests: XCTestCase {
                        "이미 입양된 Moment 는 두 번째 입양을 무시해야 한다")
     }
 
+    // MARK: 복구 입양 — 에셋이 사라져 파일로 다시 저장한 기록
+
+    func testReadoptSwapsToNewAssetOnlyFromTheOldOne() {
+        let m = Moment(capturedAt: date(2026, 9, 22, 12, 0), colorHex: "#AABBCC", fileName: "library-1.jpg",
+                       source: .library, assetID: "OLD", originalName: "IMG_1.HEIC", cloudID: "CLOUD-OLD")
+        store.add(m)
+        var got: [StoreChange] = []
+        store.onLocalChange = { got += $0 }
+
+        XCTAssertFalse(store.readopt(m.id, from: "OTHER", to: "NEW"), "그사이 assetID 가 바뀌었으면 건드리지 않는다")
+        XCTAssertFalse(store.readopt(UUID(), from: "OLD", to: "NEW"))
+        XCTAssertFalse(store.readopt(m.id, from: "OLD", to: "OLD"))
+        XCTAssertEqual(store.moments.first?.assetID, "OLD")
+
+        XCTAssertTrue(store.readopt(m.id, from: "OLD", to: "NEW"))
+        let r = try! XCTUnwrap(store.moments.first { $0.id == m.id })
+        XCTAssertEqual(r.assetID, "NEW")
+        XCTAssertEqual(r.fileName, Moment.assetFileName(for: "NEW"), "파일은 지워질 것이라 자리 이름으로 바꾼다")
+        XCTAssertEqual(r.originalName, "IMG_1.HEIC", "중복 판정에 쓰는 원래 이름은 남긴다")
+        XCTAssertNil(r.cloudID, "옛 cloudID 는 사라진 사진 것 — 비워 두고 새 사진의 것을 다시 붙인다")
+        XCTAssertEqual(r.colorHex, "#AABBCC")
+        XCTAssertTrue(got.isEmpty, "assetID 는 기기 전용 — 새 cloudID 가 붙을 때 올린다")
+        XCTAssertFalse(store.readopt(m.id, from: "OLD", to: "NEW2"), "두 번째 호출은 옛 값이 아니라 무시한다")
+    }
+
     func testAddReturnsTrueWhenInsertedFalseWhenDuplicate() {
         let first = moment(date(2026, 9, 22, 12, 0), name: "dup.jpg")
         XCTAssertTrue(store.add(first), "처음 넣을 때는 true")
