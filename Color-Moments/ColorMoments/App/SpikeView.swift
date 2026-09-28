@@ -160,7 +160,6 @@ struct SpikeView: View {
                 } footer: {
                     Text("기록은 그대로 두고 첫 화면부터 다시 봅니다. 권한 창은 이미 답했으면 다시 뜨지 않아요. 빈 홈은 실제 기록과 떨어진 빈 저장소로 그립니다.")
                 }
-                .fullScreenCover(isPresented: $showingEmptyHome) { EmptyHomePreview() }
                 #endif
 
                 Section {
@@ -217,6 +216,10 @@ struct SpikeView: View {
             .fullScreenCover(isPresented: $previewing) {
                 BadgeCeremony(moments: store.today, isPresented: $previewing)
             }
+            #if DEBUG
+            // Form 안 Section 에 붙이면 행이 다시 그려질 때 커버가 바로 닫힌다 — 바깥에 둔다.
+            .fullScreenCover(isPresented: $showingEmptyHome) { EmptyHomePreview() }
+            #endif
             .confirmationDialog("전부 지울까요?", isPresented: $confirmingWipe, titleVisibility: .visible) {
                 Button("지우기", role: .destructive) {
                     store.removeAll()
