@@ -187,11 +187,11 @@ struct FirstPebbleStep: View {
                     LazyVGrid(columns: columns, spacing: 3) {
                         ForEach(model.suggestions) { s in
                             cell(s)
+                                .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         }
                     }
                 }
                 .scrollIndicators(.hidden)
-                .onScrollPhaseChange { _, phase in if phase.isScrolling { model.freeze() } }
             }
         }
         .padding(.top, 12)

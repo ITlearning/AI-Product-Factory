@@ -123,29 +123,10 @@ enum SuggestionScore {
         return Double(overall ?? 0) + min(Double(hits) * labelBonus, maxLabelBonus)
     }
 
-    struct Candidate: Equatable {
-        let id: String
-        let score: Double
-        let capturedAt: Date
-    }
-
-    /// 격자에 보일 순서. 고르거나 스크롤하기 전(frozen false)엔 상위 limit 을 그대로,
-    /// 그 뒤엔 보이던 칸은 제자리에 두고 새로 상위에 든 것만 maxShown 까지 뒤에 붙인다.
-    static func layout(shown: [String], frozen: Bool, ranked: [Candidate], limit: Int, maxShown: Int) -> [String] {
-        let top = ranked.prefix(limit).map(\.id)
-        guard frozen else { return top }
-        var result = shown
-        var seen = Set(shown)
-        for id in top where result.count < maxShown && seen.insert(id).inserted { result.append(id) }
-        return result
-    }
-
-    /// 점수 높은 순, 같으면 최근 순, 그래도 같으면 id — 들어온 순서와 무관하게 늘 같은 줄.
-    static func ranked(_ candidates: [Candidate], limit: Int) -> [Candidate] {
-        Array(candidates.sorted {
-            if $0.score != $1.score { return $0.score > $1.score }
-            if $0.capturedAt != $1.capturedAt { return $0.capturedAt > $1.capturedAt }
-            return $0.id < $1.id
-        }.prefix(limit))
+    /// 격자는 도착한 순서대로 뒤에만 자란다 — 이미 보인 칸은 움직이지 않는다.
+    /// 점수가 없는 것(실용 사진)·이미 있는 것·상한을 넘는 것은 붙이지 않는다.
+    static func layout(shown: [String], arriving id: String, score: Double?, maxShown: Int) -> [String] {
+        guard score != nil, shown.count < maxShown, !shown.contains(id) else { return shown }
+        return shown + [id]
     }
 }

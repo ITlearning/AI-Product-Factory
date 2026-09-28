@@ -10,14 +10,10 @@ enum PhotoSuggester {
         let image: UIImage
         let score: Double
         var id: String { asset.localIdentifier }
-        var candidate: SuggestionScore.Candidate {
-            .init(id: id, score: score, capturedAt: asset.creationDate ?? .distantPast)
-        }
     }
 
     static let lookbackDays = 14
     static let maxScan = 200
-    static let limit = 12
     static let maxShown = 24
     static let thumbPixel: CGFloat = 360
 

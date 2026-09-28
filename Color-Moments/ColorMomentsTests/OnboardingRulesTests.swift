@@ -152,33 +152,17 @@ final class OnboardingRulesTests: XCTestCase {
                        SuggestionScore.labelBonus, accuracy: 1e-6)
     }
 
-    func testLayoutFollowsRankingUntilFrozen() {
-        let d = Date(timeIntervalSince1970: 1_000)
-        let ranked = [("c", 0.9), ("a", 0.5), ("b", 0.4)].map { SuggestionScore.Candidate(id: $0.0, score: $0.1, capturedAt: d) }
-        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b"], frozen: false, ranked: ranked, limit: 2, maxShown: 4),
-                       ["c", "a"], "고르기 전엔 점수 순")
+    func testLayoutAppendsInArrivalOrderWithoutMovingShownCells() {
+        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b"], arriving: "c", score: 0.9, maxShown: 4),
+                       ["a", "b", "c"], "점수가 높아도 앞에 끼어들지 않고 뒤에 붙는다")
+        XCTAssertEqual(SuggestionScore.layout(shown: [], arriving: "a", score: -0.8, maxShown: 4), ["a"])
     }
 
-    func testFrozenLayoutKeepsCellsAndAppendsNew() {
-        let d = Date(timeIntervalSince1970: 1_000)
-        let ranked = [("c", 0.9), ("d", 0.8), ("a", 0.5), ("b", 0.4)]
-            .map { SuggestionScore.Candidate(id: $0.0, score: $0.1, capturedAt: d) }
-        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b"], frozen: true, ranked: ranked, limit: 2, maxShown: 4),
-                       ["a", "b", "c", "d"], "보이던 칸은 제자리, 새 상위는 뒤에")
-        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b"], frozen: true, ranked: ranked, limit: 2, maxShown: 3),
-                       ["a", "b", "c"], "뒤에 붙이는 것도 상한까지만")
-    }
-
-    func testRankingIsStable() {
-        let d0 = Date(timeIntervalSince1970: 1_000), d1 = Date(timeIntervalSince1970: 2_000)
-        let a = SuggestionScore.Candidate(id: "a", score: 0.5, capturedAt: d0)
-        let b = SuggestionScore.Candidate(id: "b", score: 0.5, capturedAt: d1)
-        let c = SuggestionScore.Candidate(id: "c", score: 0.9, capturedAt: d0)
-        let d = SuggestionScore.Candidate(id: "d", score: 0.5, capturedAt: d1)
-        let expected = ["c", "b", "d", "a"]
-        XCTAssertEqual(SuggestionScore.ranked([a, b, c, d], limit: 10).map(\.id), expected)
-        XCTAssertEqual(SuggestionScore.ranked([d, c, b, a], limit: 10).map(\.id), expected,
-                       "들어온 순서가 달라도 같은 줄")
-        XCTAssertEqual(SuggestionScore.ranked([a, b, c, d], limit: 2).map(\.id), ["c", "b"])
+    func testLayoutSkipsUtilityDuplicatesAndOverflow() {
+        XCTAssertEqual(SuggestionScore.layout(shown: ["a"], arriving: "u", score: nil, maxShown: 4), ["a"],
+                       "실용 사진(점수 없음)은 붙이지 않는다")
+        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b"], arriving: "a", score: 0.5, maxShown: 4), ["a", "b"])
+        XCTAssertEqual(SuggestionScore.layout(shown: ["a", "b", "c"], arriving: "d", score: 0.5, maxShown: 3),
+                       ["a", "b", "c"], "상한을 넘으면 붙이지 않는다")
     }
 }

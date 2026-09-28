@@ -21,8 +21,6 @@ final class FirstPebbleModel {
 
     @ObservationIgnored private var pool: [String: PhotoSuggester.Suggestion] = [:]
     @ObservationIgnored private var scan: Task<Void, Never>?
-    // 고르거나 스크롤한 뒤로는 칸이 움직이지 않는다 — 새 추천은 뒤에만 붙는다.
-    @ObservationIgnored private var frozen = false
 
     static var access: OnboardingFlow.PhotoAccess {
         switch PHPhotoLibrary.authorizationStatus(for: .readWrite) {
@@ -52,25 +50,18 @@ final class FirstPebbleModel {
         scanning = true
         scan = Task { @MainActor in
             for await s in PhotoSuggester.suggestions(from: assets) {
+                let ids = SuggestionScore.layout(shown: suggestions.map(\.id), arriving: s.id, score: s.score,
+                                                 maxShown: PhotoSuggester.maxShown)
+                guard ids.count != suggestions.count else { continue }
                 pool[s.id] = s
-                let ranked = SuggestionScore.ranked(pool.values.map(\.candidate), limit: pool.count)
-                let ids = SuggestionScore.layout(shown: suggestions.map(\.id), frozen: frozen, ranked: ranked,
-                                                 limit: PhotoSuggester.limit, maxShown: PhotoSuggester.maxShown)
-                let keep = Set(ids).union(ranked.prefix(PhotoSuggester.limit).map(\.id))
-                // 밀려난 사진의 썸네일은 버린다 — 200장을 다 들고 있으면 메모리가 커진다(보이는 칸·골라 둔 건 남긴다).
-                pool = pool.filter { keep.contains($0.key) || selected.contains($0.key) }
-                let next = ids.compactMap { pool[$0] }
-                guard next.map(\.id) != suggestions.map(\.id) else { continue }
-                withAnimation(.easeOut(duration: 0.25)) { suggestions = next }
+                withAnimation(.easeOut(duration: 0.35)) { suggestions.append(s) }
+                if suggestions.count >= PhotoSuggester.maxShown { break }
             }
             scanning = false
         }
     }
 
-    func freeze() { frozen = true }
-
     func toggle(_ id: String) {
-        frozen = true
         if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
     }
 
