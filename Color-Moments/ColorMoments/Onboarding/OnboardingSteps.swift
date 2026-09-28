@@ -55,7 +55,7 @@ struct PrimaryAction: View {
                 Text(title).opacity(working ? 0 : 1)
                 if working { ProgressView().tint(ink.buttonText) }
             }
-            .font(Face.lineCeremony)
+            .font(Face.actionCeremony)
             .foregroundStyle(ink.buttonText)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background(ink.buttonFill.opacity(enabled ? 1 : 0.4), in: Capsule())
@@ -73,7 +73,7 @@ struct SecondaryAction: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(Face.line)
+                .font(Face.actionSecondary)
                 .foregroundStyle(ink.secondary)
                 .frame(maxWidth: .infinity, minHeight: Shape2.minTouch)
         }

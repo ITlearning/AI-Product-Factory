@@ -19,8 +19,10 @@
 		07A482F08FD8ECF591D195E7 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6059A219A2BEA73B11E1619 /* OnboardingView.swift */; };
 		0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EDA0910CC8E79B482D32B2 /* CloudSync.swift */; };
 		089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
+		0CCEC60B5730FC6E280D0707 /* button-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2C7A8222A62B20B01D87BCE2 /* button-chars.txt */; };
 		0D19B56D25DAFD794BE542E9 /* SyncPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915E2C36A82446AD4B2298C3 /* SyncPerformanceTests.swift */; };
 		0DC2560592D0D3FBA5606911 /* GowunDodum-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 22E8B4A3D3D73280C35C4EB3 /* GowunDodum-OFL.txt */; };
+		0DDB9BAD832D6C03DA0C2E81 /* button-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2C7A8222A62B20B01D87BCE2 /* button-chars.txt */; };
 		0EE85CE222D9DC39B58B27EE /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		1022D45CC633B39F10A120C8 /* StartScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F500D6F58893138CD8A3FB /* StartScene.swift */; };
 		109FF5C751CBDCD455979AD7 /* MemoriesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77CBA56139EDB549235ABCB2 /* MemoriesTests.swift */; };
@@ -60,6 +62,7 @@
 		2CA6C72D06C591D64413160C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C0C341B4E32F784A77CC08D /* WidgetKit.framework */; };
 		2CCA67A120B811D482986FE1 /* gowun-ksx1001.txt in Resources */ = {isa = PBXBuildFile; fileRef = AC174529DCE0CC7AD709E79B /* gowun-ksx1001.txt */; };
 		2D2DCAAA1704F58B8D38A822 /* FontSubsetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FA4218B93874BE76730863 /* FontSubsetTests.swift */; };
+		2E3EBCA753314E0BE6C2C866 /* IBMPlexSansKR-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */; };
 		2E6829C3D027ABE7FD401891 /* CoalescingWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227C8DF6F16D015FA44EBC49 /* CoalescingWriter.swift */; };
 		2EB93D8ABBF2916AEEE1F2F1 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953A1415A221B2ED1198C5E8 /* HomeView.swift */; };
 		2F32BACBD22DF83C086079D6 /* WidgetSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF0FEAA69BCAAE696688328 /* WidgetSnapshotTests.swift */; };
@@ -112,6 +115,7 @@
 		643D744E18A16AC3DF5BB2D0 /* WordPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4EE32C11490405892AA591 /* WordPicker.swift */; };
 		665406100A5053DE84F452EF /* CoalescingWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227C8DF6F16D015FA44EBC49 /* CoalescingWriter.swift */; };
 		689F997E07A401BE5FFA343A /* subset-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 311898EF3262DE92643FB442 /* subset-chars.txt */; };
+		6A0302EC3828A968F6281D5E /* button-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2C7A8222A62B20B01D87BCE2 /* button-chars.txt */; };
 		6A09C475C9FE48C8875DC770 /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		6A0F51CB079F9D7531B64347 /* BadgeCeremony.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */; };
 		6A4D2B0604051564D2D1FFA3 /* CoalescingWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227C8DF6F16D015FA44EBC49 /* CoalescingWriter.swift */; };
@@ -126,6 +130,7 @@
 		737D5DA0FB709046FFC34AC1 /* DayClosures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349DC3F413BF9EC93E6C0C60 /* DayClosures.swift */; };
 		748224A3F99B2F1DB6C87D1F /* BulkReceivePerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B08C254EE7734793A5D983D /* BulkReceivePerformanceTests.swift */; };
 		74FC07660001DF03C01D90C8 /* HandfulCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DDE9973C653338A1C72CD /* HandfulCard.swift */; };
+		7517B2B90478A7F2893B1D58 /* IBMPlexSansKR-SemiBold-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0486266FE8C9C58AE43DBBF9 /* IBMPlexSansKR-SemiBold-Subset.ttf */; };
 		7530F92A893A52BB75953371 /* DayPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */; };
 		76AADA98FD5F2F767CDE36DA /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		783DF2F82233D24186514686 /* HandfulView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98A134A4F6BE326D43F6C9AB /* HandfulView.swift */; };
@@ -198,6 +203,7 @@
 		B8632BE5E9E77D6DC909F70B /* WordPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4EE32C11490405892AA591 /* WordPicker.swift */; };
 		B97C1A8CD64C431D667BB646 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
 		BB2A2EFB0C185E4CF5E6A42C /* ArrivalNoticeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */; };
+		BBA3C897A5072F8F6501382D /* IBMPlexSansKR-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */; };
 		BC08FAC35928BE504FD2119B /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
 		BE6A32DF3751591BADBDD413 /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
 		BF5F91888309FFEC78C6003E /* ISODateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 662CDEB15BA3A248BA43C279 /* ISODateTests.swift */; };
@@ -252,6 +258,7 @@
 		F2C689ACD107EA2CD0F669E4 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		F317A29590E9991823D148EB /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */; };
 		F3230F73D5F251F3B2EE84D2 /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E46082B433DCE04145412FFA /* HomeWidget.swift */; };
+		F41866500EB389CDADD28999 /* IBMPlexSansKR-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */; };
 		F47D588A2739762FA431A426 /* OnboardingGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */; };
 		F4F24DB7F05FD86971A0E962 /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */; };
@@ -317,6 +324,7 @@
 /* Begin PBXFileReference section */
 		001315A7B5573B9974966AF7 /* DayGradientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGradientTests.swift; sourceTree = "<group>"; };
 		0455554135392A7015D4068F /* ShotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotStore.swift; sourceTree = "<group>"; };
+		0486266FE8C9C58AE43DBBF9 /* IBMPlexSansKR-SemiBold-Subset.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexSansKR-SemiBold-Subset.ttf"; sourceTree = "<group>"; };
 		05C70E667A14B10F8000505A /* DayClosuresTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayClosuresTests.swift; sourceTree = "<group>"; };
 		08DC1AC8E491F5D81CA2D80E /* AssetReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetReconcilerTests.swift; sourceTree = "<group>"; };
 		08FA4218B93874BE76730863 /* FontSubsetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontSubsetTests.swift; sourceTree = "<group>"; };
@@ -343,6 +351,7 @@
 		2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordPickerTests.swift; sourceTree = "<group>"; };
 		2B6B7DB6B065C94A4568E524 /* GowunDodum-Hangul.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GowunDodum-Hangul.ttf"; sourceTree = "<group>"; };
 		2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorCaptureIntent.swift; sourceTree = "<group>"; };
+		2C7A8222A62B20B01D87BCE2 /* button-chars.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "button-chars.txt"; sourceTree = "<group>"; };
 		2CECA91205032542A8E6CBAD /* GiftSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftSchedule.swift; sourceTree = "<group>"; };
 		311898EF3262DE92643FB442 /* subset-chars.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "subset-chars.txt"; sourceTree = "<group>"; };
 		343D1F9744F120B40EEDE985 /* PebbleName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleName.swift; sourceTree = "<group>"; };
@@ -360,6 +369,7 @@
 		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
 		4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreRecoveryTests.swift; sourceTree = "<group>"; };
 		503FB3A2F6076A7563C32074 /* ColorMomentsControl.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ColorMomentsControl.entitlements; sourceTree = "<group>"; };
+		521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "IBMPlexSansKR-OFL.txt"; sourceTree = "<group>"; };
 		5258FDE46C2C5A5B132F12CE /* SceneParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneParts.swift; sourceTree = "<group>"; };
 		526B0FDC22A5B2557DA62A18 /* FramePause.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FramePause.swift; sourceTree = "<group>"; };
 		547A7E4D2CDA31CFFB9F1A84 /* ChunkedApplyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkedApplyTests.swift; sourceTree = "<group>"; };
@@ -723,11 +733,14 @@
 		AC7AA6BC5EE27D8ADDE47C88 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
+				2C7A8222A62B20B01D87BCE2 /* button-chars.txt */,
 				AC174529DCE0CC7AD709E79B /* gowun-ksx1001.txt */,
 				FC37FA4015A2627C80032174 /* gowun-mini-chars.txt */,
 				2B6B7DB6B065C94A4568E524 /* GowunDodum-Hangul.ttf */,
 				85E74F70575B7C32C600F8C6 /* GowunDodum-Mini.ttf */,
 				22E8B4A3D3D73280C35C4EB3 /* GowunDodum-OFL.txt */,
+				521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */,
+				0486266FE8C9C58AE43DBBF9 /* IBMPlexSansKR-SemiBold-Subset.ttf */,
 				F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */,
 				431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */,
 				36163F479DA433C2CB8744EE /* README.md */,
@@ -966,9 +979,11 @@
 			files = (
 				5E8B41DFB76CBB35B253910C /* GowunDodum-Mini.ttf in Resources */,
 				6E63B1180625307D2D9020E7 /* GowunDodum-OFL.txt in Resources */,
+				F41866500EB389CDADD28999 /* IBMPlexSansKR-OFL.txt in Resources */,
 				E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */,
 				A041753AF25EE0A48189568C /* NanumMyeongjo-Subset.ttf in Resources */,
 				949E6A04EB1AAF5A89ABF42D /* README.md in Resources */,
+				6A0302EC3828A968F6281D5E /* button-chars.txt in Resources */,
 				8A710B6C590510525CFFD18D /* gowun-ksx1001.txt in Resources */,
 				D151122EFFD53DFECF743789 /* gowun-mini-chars.txt in Resources */,
 				CF0F9BAAA1D2412A2B0E61E3 /* subset-chars.txt in Resources */,
@@ -983,9 +998,12 @@
 				7A5576FFA328861B7F1FE6AE /* Assets.xcassets in Resources */,
 				E81987561A5FA9DCBC88B736 /* GowunDodum-Hangul.ttf in Resources */,
 				DED65CAA379D66577F6413A0 /* GowunDodum-OFL.txt in Resources */,
+				BBA3C897A5072F8F6501382D /* IBMPlexSansKR-OFL.txt in Resources */,
+				7517B2B90478A7F2893B1D58 /* IBMPlexSansKR-SemiBold-Subset.ttf in Resources */,
 				C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */,
 				304C4D029F8CB37B61C85F48 /* NanumMyeongjo-Subset.ttf in Resources */,
 				F2C689ACD107EA2CD0F669E4 /* README.md in Resources */,
+				0CCEC60B5730FC6E280D0707 /* button-chars.txt in Resources */,
 				6CA39F2C860F5EE4C3DBBC9F /* gowun-ksx1001.txt in Resources */,
 				840FABD274915AE2D4C6F5A6 /* gowun-mini-chars.txt in Resources */,
 				689F997E07A401BE5FFA343A /* subset-chars.txt in Resources */,
@@ -1007,9 +1025,11 @@
 			files = (
 				71A677F53A451F3CED3E116C /* GowunDodum-Mini.ttf in Resources */,
 				0DC2560592D0D3FBA5606911 /* GowunDodum-OFL.txt in Resources */,
+				2E3EBCA753314E0BE6C2C866 /* IBMPlexSansKR-OFL.txt in Resources */,
 				270CAD891873FBDB57862C11 /* NanumMyeongjo-OFL.txt in Resources */,
 				A8B410E526DB99857E8666B2 /* NanumMyeongjo-Subset.ttf in Resources */,
 				02B89DF8BE3E0E3688F10090 /* README.md in Resources */,
+				0DDB9BAD832D6C03DA0C2E81 /* button-chars.txt in Resources */,
 				2CCA67A120B811D482986FE1 /* gowun-ksx1001.txt in Resources */,
 				999603B577728CC6CC8BDA0C /* gowun-mini-chars.txt in Resources */,
 				021C81F3EA6698F332E9DD69 /* subset-chars.txt in Resources */,

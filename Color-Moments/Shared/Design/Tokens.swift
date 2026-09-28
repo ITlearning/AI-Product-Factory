@@ -46,11 +46,16 @@ public enum Face {
     public static let sansName = "GowunDodum-Regular"
     static let sansFiles = ["GowunDodum-Hangul", "GowunDodum-Mini"]
 
+    /// 버튼 전용 세미볼드 — 고운돋움은 Regular 하나뿐이라 버튼 문구만 담은 서브셋을 따로 쓴다.
+    public static let actionBoldName = "IBMPlexSansKR-SemiBold"
+    static let actionBoldFile = "IBMPlexSansKR-SemiBold-Subset"
+
     @discardableResult
-    public static func ensureRegistered() -> Bool { serifRegistered && sansRegistered }
+    public static func ensureRegistered() -> Bool { serifRegistered && sansRegistered && actionBoldRegistered }
 
     private static let serifRegistered = register([serifFile])
     private static let sansRegistered = register(sansFiles)
+    private static let actionBoldRegistered = register([actionBoldFile])
 
     private static func register(_ files: [String]) -> Bool {
         let bundle = Bundle(for: SharedBundleMarker.self)
@@ -76,6 +81,11 @@ public enum Face {
         return .custom(sansName, size: size)
     }
 
+    private static func actionBold(_ size: CGFloat) -> Font {
+        ensureRegistered()
+        return .custom(actionBoldName, size: size)
+    }
+
     public static let wordmark = serif(30)
     public static let nameCeremony = serif(32)
     public static let nameDay = serif(27)
@@ -91,7 +101,11 @@ public enum Face {
     public static let today = sans(15)
     public static let caption = sans(13)
     public static let time = sans(12)
-    public static let action = sans(17)
+    public static let action = actionBold(17)
+    /// 온보딩 주 버튼 — 헤더와 같이 쓰던 lineCeremony(17.5) 대신, 버튼만 굵게.
+    public static let actionCeremony = actionBold(17)
+    /// 온보딩 보조 버튼 — line(15) 자리를 대신한다.
+    public static let actionSecondary = actionBold(15)
     public static let noticeApp = sans(15)
     public static let guide = sans(14)
     public static let hex = Font.system(size: 16, design: .monospaced)

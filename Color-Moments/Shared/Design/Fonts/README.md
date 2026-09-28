@@ -1,7 +1,7 @@
-# 번들 글꼴 — 나눔명조 서브셋 · 고운돋움
+# 번들 글꼴 — 나눔명조 서브셋 · 고운돋움 · 버튼 세미볼드
 
 `DESIGN.md` §2.2 — 명조는 **조약돌 이름 19개 + 워드마크 「몽돌」 + 사진 한 단어(`Shared/Word/words.json`)에만** 쓴다.
-날짜·안내·버튼·캡션은 고운돋움이다(아래).
+날짜·안내·캡션은 고운돋움, **버튼만 IBM Plex Sans KR SemiBold**다(아래).
 
 | | |
 |---|---|
@@ -75,4 +75,41 @@ python3 -m fontTools.subset /tmp/gd.ttf --text-file=Shared/Design/Fonts/gowun-mi
   --unicodes="U+0020-007E,U+00B7,U+2013,U+2014,U+2026" --layout-features='kern,tnum,pnum' \
   --no-hinting --desubroutinize --name-IDs='0,1,2,3,4,5,6,13,14' --drop-tables+=DSIG,vhea,vmtx \
   --output-file=Shared/Design/Fonts/GowunDodum-Mini.ttf
+```
+
+## 버튼 세미볼드 (IBM Plex Sans KR SemiBold)
+
+고운돋움은 굵기가 Regular 하나뿐이라 버튼(`Face.action`·온보딩 `PrimaryAction`/`SecondaryAction`)만 다른 글꼴을 쓴다.
+IBM Plex Sans KR SemiBold(Google Fonts, SIL OFL)를 골랐다 — 고운돋움과 결이 맞으면서 「너무 쎈 볼드」는 아니다(2026-09-28 Tabber).
+후보로 Gothic A1 SemiBold도 받아 봤으나 더 딱딱해 채택하지 않았다.
+
+| | 파일 | 담긴 것 | 크기 | 들어가는 타깃 |
+|---|---|---|---|---|
+| 원본 | IBM Plex Sans KR SemiBold (Google Fonts) | | 2,787KB(2.7MB) | |
+| 라이선스 | SIL OFL 1.1 — [`IBMPlexSansKR-OFL.txt`](IBMPlexSansKR-OFL.txt) | | | ColorMoments |
+| 앱 | `IBMPlexSansKR-SemiBold-Subset.ttf` | 버튼 문구 글자만(`button-chars.txt`, 숫자·라틴·기본 구두점 포함) | 16KB | ColorMoments |
+
+**버튼 문구는 소스에 고정돼 있다** — 새 버튼을 추가하거나 문구를 바꾸면 `button-chars.txt`를 다시 뽑고 서브셋을 다시 굽는다.
+빠뜨리면 그 버튼만 SF로 떨어진다. `FontSubsetTests.testActionBoldCoversOnboardingButtonText`(온보딩 `PrimaryAction`/`SecondaryAction`/`CloudStep(actionTitle:)`를 소스에서 정적으로 추출)와
+`testActionBoldCoversFixedActionLabels`(문자열 보간이 있는 「닫기」「설정 열기」「담기 N」)이 빠진 글자를 잡는다.
+위젯·캡처 확장엔 버튼이 없어 `project.yml` excludes로 앱 타깃에만 넣는다.
+
+```bash
+python3 - <<'PY'   # 버튼 스타일(Face.action·PrimaryAction·SecondaryAction·CloudStep actionTitle)에 쓰는 문자열을 grep 해 채운다
+strings = [
+    "닫기", "담기 ", "설정 열기", "다음", "사진 보기", "이 사진으로 받기",
+    "직접 고르기", "알려 주세요", "괜찮아요", "이어서 보기", "지금 한 장 남겨보기", "시작하기",
+]
+chars = set()
+for s in strings: chars |= set(s)
+chars |= set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+chars |= set(" .,!?~·-()")
+open("Shared/Design/Fonts/button-chars.txt", "w").write("".join(sorted(chars)))
+PY
+
+curl -L -o /tmp/ibmplex.ttf https://github.com/google/fonts/raw/main/ofl/ibmplexsanskr/IBMPlexSansKR-SemiBold.ttf
+python3 -m fontTools.subset /tmp/ibmplex.ttf --text-file=Shared/Design/Fonts/button-chars.txt \
+  --layout-features='kern,tnum,pnum,ccmp,locl,mark,mkmk' --no-hinting --desubroutinize \
+  --name-IDs='0,1,2,3,4,5,6,13,14' --drop-tables+=DSIG \
+  --output-file=Shared/Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf
 ```

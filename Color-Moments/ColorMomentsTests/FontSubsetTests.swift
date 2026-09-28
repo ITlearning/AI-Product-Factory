@@ -126,4 +126,72 @@ final class FontSubsetTests: XCTestCase {
         XCTAssertTrue(missing.isEmpty,
             "확장용 판에 없는 글자 \(missing.joined()) — Shared/Design/Fonts/README.md 대로 다시 구울 것")
     }
+
+    // MARK: 버튼 세미볼드 (IBM Plex Sans KR SemiBold)
+
+    private func actionBoldFont(_ size: CGFloat = 17) throws -> CTFont {
+        Face.ensureRegistered()
+        return try XCTUnwrap(UIFont(name: Face.actionBoldName, size: size),
+                              "\(Face.actionBoldName) 가 등록되지 않았다") as CTFont
+    }
+
+    func testBundledActionBoldIsRegisteredFromAppBundle() throws {
+        XCTAssertTrue(Face.ensureRegistered())
+        XCTAssertNotNil(Bundle.main.url(forResource: "IBMPlexSansKR-SemiBold-Subset", withExtension: "ttf"),
+                        "앱 번들에 버튼 세미볼드 서브셋이 없다")
+        XCTAssertNotNil(Bundle.main.url(forResource: "IBMPlexSansKR-OFL", withExtension: "txt"),
+                        "OFL 라이선스가 번들에 없다")
+        _ = try actionBoldFont()
+    }
+
+    func testActionBoldSubsetStaysSmall() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "IBMPlexSansKR-SemiBold-Subset", withExtension: "ttf"))
+        let bytes = try Data(contentsOf: url).count
+        XCTAssertLessThan(bytes, 60_000, "버튼 세미볼드가 \(bytes / 1024)KB — 버튼 문구만 담은 서브셋치고 크다")
+    }
+
+    /// PrimaryAction/SecondaryAction/CloudStep(actionTitle:) 로 소스에 박힌 버튼 문구를 실제로 추출해,
+    /// 서브셋에 그 글자가 다 있는지 확인한다 — 새 버튼 문구가 추가되고 서브셋을 안 다시 구우면 그 글자만 SF 로 떨어진다.
+    func testActionBoldCoversOnboardingButtonText() throws {
+        let font = try actionBoldFont()
+        let root = Self.fontsDir.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let onboardingSteps = try String(contentsOf: root.appendingPathComponent("ColorMoments/Onboarding/OnboardingSteps.swift"), encoding: .utf8)
+        let onboardingView = try String(contentsOf: root.appendingPathComponent("ColorMoments/Onboarding/OnboardingView.swift"), encoding: .utf8)
+
+        func quotedValues(after keyword: String, in text: String) -> [String] {
+            let pattern = NSRegularExpression.escapedPattern(for: keyword) + #"\(?\s*"([^"]*)""#
+            let regex = try! NSRegularExpression(pattern: pattern)
+            let ns = text as NSString
+            return regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).map {
+                ns.substring(with: $0.range(at: 1))
+            }
+        }
+
+        var titles = quotedValues(after: "PrimaryAction(title:", in: onboardingSteps)
+        titles += quotedValues(after: "SecondaryAction(title:", in: onboardingSteps)
+        titles += quotedValues(after: "actionTitle:", in: onboardingView)
+
+        XCTAssertGreaterThanOrEqual(titles.count, 10, "온보딩 버튼 문구를 못 읽어 이 검사가 헛돈다")
+
+        var needed = Set<Unicode.Scalar>()
+        for t in titles { needed.formUnion(t.unicodeScalars) }
+        // 「담기 N」처럼 코드에서 숫자를 이어붙이는 버튼(Face.action 직접 사용)은 문자열 보간이라 정적 추출이 안 된다 —
+        // 숫자만 따로 보장한다.
+        needed.formUnion("0123456789".unicodeScalars)
+
+        let missing = needed.filter { !glyphExists($0, in: font) }.map(String.init).sorted()
+        XCTAssertTrue(missing.isEmpty,
+            "버튼 세미볼드 서브셋에 없는 글자 \(missing.joined()) — Shared/Design/Fonts/README.md 대로 다시 구울 것")
+    }
+
+    func testActionBoldCoversFixedActionLabels() throws {
+        let font = try actionBoldFont()
+        // Face.action 을 직접 쓰는 「닫기」「설정 열기」「담기 N」(BadgeCeremony·LibraryPickerView) — 문자열 보간이라 위 테스트가 못 잡는다.
+        let labels = ["닫기", "설정 열기", "담기 "]
+        var needed = Set<Unicode.Scalar>()
+        for l in labels { needed.formUnion(l.unicodeScalars) }
+        let missing = needed.filter { !glyphExists($0, in: font) }.map(String.init).sorted()
+        XCTAssertTrue(missing.isEmpty,
+            "버튼 세미볼드 서브셋에 없는 글자 \(missing.joined()) — Shared/Design/Fonts/README.md 대로 다시 구울 것")
+    }
 }
