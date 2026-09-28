@@ -119,3 +119,58 @@ final class DayIndexPatchTests: XCTestCase {
         XCTAssertTrue(fired)
     }
 }
+
+/// HomeSummary 가 예전 HomeView 계산(days 필터·월 머리글·등장 id)과 같은 값을 내는지.
+final class HomeSummaryTests: XCTestCase {
+
+    func testMatchesOldHomeViewComputation() {
+        let today = "2026-09-28"
+        let days = ["2026-09-27", "2026-09-20", "2026-08-31", "2026-08-02", "2026-07-15", "2025-09-29", "2025-09-26", "2025-08-01"]
+        let isGifted: (String) -> Bool = { $0 <= "2026-08-31" }
+        let s = HomeSummary.make(days: days, isGifted: isGifted, today: today)
+
+        let giftedDays = days.filter(isGifted)
+        let handful = Set(Memories.months(giftedDays: giftedDays, today: today))
+        XCTAssertEqual(s.giftedDays, giftedDays)
+        XCTAssertEqual(s.handfulMonths, handful)
+        XCTAssertEqual(s.months, HomeNavigation.months(of: days))
+        XCTAssertEqual(s.lastYearDayKey, Memories.lastYear(today: today, giftedDays: giftedDays))
+        var ids: [String] = []
+        var previous: Substring?
+        for key in days {
+            let month = key.prefix(7)
+            if month != previous, handful.contains(String(month)) { ids.append("month-\(month)") }
+            previous = month
+            ids.append(key)
+        }
+        XCTAssertEqual(s.appearanceIDs, ids)
+        for (index, key) in days.enumerated() {
+            let month = String(key.prefix(7))
+            let isMonthStart = index == 0 || String(days[index - 1].prefix(7)) != month
+            XCTAssertEqual(s.rows[index].hasHeader, isMonthStart && handful.contains(month), key)
+            XCTAssertEqual(s.rows[index].index, index)
+            XCTAssertEqual(s.firstDayOfMonth[month], days.first { $0.hasPrefix(month) })
+        }
+        XCTAssertEqual(s.lastYearDayKey, "2025-09-29")
+    }
+
+    @MainActor
+    func testStoreCachesUntilSomethingChanges() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("home-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let closures = DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        let store = DayStore(fileURL: url, closures: closures)
+        store.onLocalChange = { _ in }
+        let gifts = GiftLog(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        let old = Date().addingTimeInterval(-10 * 86_400)
+        store.add(Moment(capturedAt: old, colorHex: "#111111", fileName: "a", source: .library))
+        let first = store.home(gifts: gifts)
+        XCTAssertEqual(first.days, [Moment.dayKey(for: old)])
+        XCTAssertTrue(first.giftedDays.isEmpty)
+        gifts.markGifted(Moment.dayKey(for: old))
+        XCTAssertEqual(store.home(gifts: gifts).giftedDays, [Moment.dayKey(for: old)], "받은 날이 바뀌면 다시 만든다")
+        store.add(Moment(capturedAt: old.addingTimeInterval(-86_400), colorHex: "#222222", fileName: "b", source: .library))
+        XCTAssertEqual(store.home(gifts: gifts).days.count, 2)
+        XCTAssertEqual(store.home(gifts: gifts).days, store.finishedDayKeys)
+    }
+}

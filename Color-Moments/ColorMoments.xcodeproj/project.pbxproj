@@ -14,6 +14,7 @@
 		036A5A204DA00E6E1F8E4DB3 /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
 		049B7CECEE196C6D70AC4FA8 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		05C63D0977D0E69B2F01D2CE /* PebbleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39920A44AE81D3E3BD8864A /* PebbleCard.swift */; };
+		06D8FD478E96DCAFD178315A /* HomeSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */; };
 		0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EDA0910CC8E79B482D32B2 /* CloudSync.swift */; };
 		089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
 		0D19B56D25DAFD794BE542E9 /* SyncPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915E2C36A82446AD4B2298C3 /* SyncPerformanceTests.swift */; };
@@ -128,6 +129,7 @@
 		90B7A542F814159743E818D2 /* words.json in Resources */ = {isa = PBXBuildFile; fileRef = A0A48C2B255FB6B7DFA973C5 /* words.json */; };
 		9175EB1B2C0330E56094383F /* FramePause.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526B0FDC22A5B2557DA62A18 /* FramePause.swift */; };
 		923895A999E487D30889239A /* LibrarySections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */; };
+		9302BCB14227DF2CDACF95D9 /* HomeSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */; };
 		9350B45953F4B84683162C30 /* BadgeCeremony.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */; };
 		936F5FD2B12A592FC1339B20 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B689D73DBFBD16C7B857686 /* Tokens.swift */; };
 		949E6A04EB1AAF5A89ABF42D /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
@@ -179,6 +181,7 @@
 		C6B84EDC7E5B3C86DD325A3C /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		C6F53A70ADED30A0C697C6C7 /* DayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */; };
 		C880AD6491173648CF11DAE3 /* ChunkedApplyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 547A7E4D2CDA31CFFB9F1A84 /* ChunkedApplyTests.swift */; };
+		CD0628B4536DF0B722EF1498 /* HomeSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */; };
 		CDD6D930AE9E6FC142AB4E09 /* ShotViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */; };
 		CDEB3F21E0F0C3F13BF5F2AF /* Keepsake.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3649A8DB3B4FF16005111AC /* Keepsake.swift */; };
 		CF0F9BAAA1D2412A2B0E61E3 /* subset-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 311898EF3262DE92643FB442 /* subset-chars.txt */; };
@@ -375,6 +378,7 @@
 		D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrivalNoticeTests.swift; sourceTree = "<group>"; };
 		D39920A44AE81D3E3BD8864A /* PebbleCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleCard.swift; sourceTree = "<group>"; };
 		D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractor.swift; sourceTree = "<group>"; };
+		D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummary.swift; sourceTree = "<group>"; };
 		D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentMerge.swift; sourceTree = "<group>"; };
 		D7284FE09B31C6D29E4790FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D9C7A51085814AAD190D567A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -608,6 +612,7 @@
 				3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */,
 				F1ED0B6B00F288E843C5C783 /* DayBlock.swift */,
 				1782AA90AE018A879A1B0885 /* HomeNavigation.swift */,
+				D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */,
 				70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */,
 				BDCE9183C112FFB37E007824 /* PebbleView.swift */,
 				F941673D190732D3ADB0055C /* ShotThumbnail.swift */,
@@ -919,6 +924,7 @@
 				514505456085E71117B1CB61 /* HandfulView.swift in Sources */,
 				CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */,
 				D0232AF91965F3F9595ABB68 /* HomeNavigation.swift in Sources */,
+				9302BCB14227DF2CDACF95D9 /* HomeSummary.swift in Sources */,
 				B75D6C90A80171E5FF633B14 /* HorizontalPan.swift in Sources */,
 				FC46BEA6E0E7103FDFAD4E28 /* ISODate.swift in Sources */,
 				48A9614795ADEF5BA9422B61 /* Keepsake.swift in Sources */,
@@ -1026,6 +1032,7 @@
 				37BEA1D1B07AEF6FF452A7E3 /* Haptics.swift in Sources */,
 				8B1F7FBF239684E48BA39B1A /* HomeNavigation.swift in Sources */,
 				AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */,
+				CD0628B4536DF0B722EF1498 /* HomeSummary.swift in Sources */,
 				2EB93D8ABBF2916AEEE1F2F1 /* HomeView.swift in Sources */,
 				F3230F73D5F251F3B2EE84D2 /* HomeWidget.swift in Sources */,
 				AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */,
@@ -1087,6 +1094,7 @@
 				298F907BF2D550B65240A63E /* HandfulView.swift in Sources */,
 				4A6EE87BD3B7C2217011154B /* Haptics.swift in Sources */,
 				BE6A32DF3751591BADBDD413 /* HomeNavigation.swift in Sources */,
+				06D8FD478E96DCAFD178315A /* HomeSummary.swift in Sources */,
 				C6592BFBDEAAB5F814989180 /* HorizontalPan.swift in Sources */,
 				E3E857371CF94F3C31D07E12 /* ISODate.swift in Sources */,
 				B5DB8DA5DC01E0D3A2EF9121 /* Keepsake.swift in Sources */,

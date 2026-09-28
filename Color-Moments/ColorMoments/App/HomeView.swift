@@ -54,10 +54,10 @@ struct HomeView: View {
     private struct SharingDay: Identifiable { let id: String }
     private struct OpenedMonth: Identifiable { let id: String }
 
-    private var days: [String] { store.finishedDayKeys }
-
     // 받지 않은 하루는 작년 이맘때·한 달 한 줌 어디에도 들어가지 않는다 — floor 판정은 GiftLog 하나뿐.
-    private var giftedDays: [String] { days.filter(gifts.isGifted) }
+    private var home: HomeSummary { store.home(gifts: gifts) }
+
+    private var days: [String] { home.days }
 
     private var todayKey: String { Moment.dayKey(for: Date()) }
 
@@ -69,28 +69,19 @@ struct HomeView: View {
 
     private var compactCutoff: String { HomeNavigation.compactCutoff(today: Date()) }
 
-    private var months: [String] { HomeNavigation.months(of: days) }
+    private var months: [String] { home.months }
 
     private var pillActive: Bool { scrolling || lingering }
 
-    private var lastYearDayKey: String? { Memories.lastYear(today: todayKey, giftedDays: giftedDays) }
+    private var lastYearDayKey: String? { home.lastYearDayKey }
 
-    private var handfulMonths: Set<String> { Set(Memories.months(giftedDays: giftedDays, today: todayKey)) }
+    private var handfulMonths: Set<String> { home.handfulMonths }
 
     private static let progressID = "progress"
 
     // 화면 위→아래 순서의 줄 id — 등장 연출이 새로 생긴 줄을 가려내는 기준.
     private var appearanceIDs: [String] {
-        var ids: [String] = todayInProgress ? [Self.progressID] : []
-        let handful = handfulMonths
-        var previousMonth: Substring?
-        for key in days {
-            let month = key.prefix(7)
-            if month != previousMonth, handful.contains(String(month)) { ids.append("month-\(month)") }
-            previousMonth = month
-            ids.append(key)
-        }
-        return ids
+        todayInProgress ? [Self.progressID] + home.appearanceIDs : home.appearanceIDs
     }
 
     private func noteArrivals(_ ids: [String]) {
@@ -108,7 +99,7 @@ struct HomeView: View {
     private func arrivalPhase(_ id: String) -> Arrivals.Phase { arrivals.phase(id) }
 
     private func giftedPebbleGroups(forMonth month: String) -> [[Moment]] {
-        days.filter { $0.hasPrefix(month) && gifts.isGifted($0) }.map { store.pebbleMoments(on: $0) }
+        home.giftedDays.filter { $0.hasPrefix(month) }.map { store.pebbleMoments(on: $0) }
     }
 
     var body: some View {
@@ -170,7 +161,7 @@ struct HomeView: View {
     // 그 달 첫 하루(목록 순서)에 한 줌 머리글이 붙어 있으면 머리글로 스크롤한다 — 하루로 가면 머리글이 위로 가려진다.
     private func scrollID(for key: String) -> String {
         let month = String(key.prefix(7))
-        guard handfulMonths.contains(month), days.first(where: { $0.hasPrefix(month) }) == key else { return key }
+        guard handfulMonths.contains(month), home.firstDayOfMonth[month] == key else { return key }
         return "month-\(month)"
     }
 
@@ -221,10 +212,10 @@ struct HomeView: View {
                                 }
                             } else {
                                 LazyVStack(alignment: .leading, spacing: 0) {
-                                    ForEach(Array(days.enumerated()), id: \.element) { index, key in
-                                        let month = String(key.prefix(7))
-                                        let isMonthStart = index == 0 || String(days[index - 1].prefix(7)) != month
-                                        let hasHeader = isMonthStart && handfulMonths.contains(month)
+                                    // 행 클로저는 LazyVStack 이 늦게 돌린다 — 목록을 인덱스로 다시 읽으면 줄어든 배열에서 트랩난다. 행 모델만 쓴다.
+                                    ForEach(home.rows) { row in
+                                        let key = row.key, index = row.index, month = row.month
+                                        let hasHeader = row.hasHeader
                                         if hasHeader {
                                             // 위 여백 > 아래 여백 — 머리글이 앞 달 마지막 블록의 캡션처럼 붙지 않게.
                                             monthHandfulHeader(month)
@@ -302,7 +293,7 @@ struct HomeView: View {
         let month = months[index]
         guard month != scrubMonth else { return }
         scrubMonth = month
-        if let key = days.first(where: { $0.hasPrefix(month) }) {
+        if let key = home.firstDayOfMonth[month] {
             Haptics.tickPassed()
             withAnimation(.easeOut(duration: 0.2)) {
                 proxy.scrollTo(scrollID(for: key), anchor: .top)

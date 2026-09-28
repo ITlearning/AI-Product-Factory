@@ -127,43 +127,30 @@ final class BulkReceivePerformanceTests: XCTestCase {
 @MainActor
 enum HomeBodyModel {
 
-    static func days(store: DayStore) -> [String] { store.finishedDayKeys }
+    static func days(store: DayStore) -> [String] { store.home(gifts: GiftLog(defaults: UserDefaults(suiteName: UUID().uuidString)!)).days }
 
     static func evaluate(store: DayStore, gifts: GiftLog, visibleRows: Int) {
         let today = Moment.dayKey(for: Date())
-        let days = { store.finishedDayKeys }
-        let giftedDays = { days().filter(gifts.isGifted) }
-        let handful = { Set(Memories.months(giftedDays: giftedDays(), today: today)) }
+        let home = { store.home(gifts: gifts) }
         // HomeShell.onChange(of: store.dayKeys)
         _ = store.dayKeys
         // backdrop
-        if let key = days().first { _ = store.pebbleMoments(on: key) }
+        if let key = home().days.first { _ = store.pebbleMoments(on: key) }
         // todayInProgress / todayClosedWithMoments
         _ = !store.today.isEmpty && !store.isFinished(today)
         _ = !store.today.isEmpty && store.isFinished(today)
         _ = store.today.count
         // lastYearLine
-        if let k = Memories.lastYear(today: today, giftedDays: giftedDays()) { _ = store.pebbleMoments(on: k) }
-        _ = days().isEmpty
-        let list = Array(days().enumerated())
-        for (index, key) in list.prefix(visibleRows) {
-            let month = String(key.prefix(7))
-            let isMonthStart = index == 0 || String(days()[index - 1].prefix(7)) != month
-            _ = isMonthStart && handful().contains(month)
-            _ = Keepsake.canMakeCard(dayKey: key, isGifted: gifts.isGifted)
-            _ = store.pebbleMoments(on: key)
-            _ = store.moments(on: key)
+        if let k = home().lastYearDayKey { _ = store.pebbleMoments(on: k) }
+        _ = home().days.isEmpty
+        for row in home().rows.prefix(visibleRows) {
+            _ = row.hasHeader
+            _ = Keepsake.canMakeCard(dayKey: row.key, isGifted: gifts.isGifted)
+            _ = store.pebbleMoments(on: row.key)
+            _ = store.moments(on: row.key)
         }
         // appearanceIDs (onChange(of:) 가 body 마다 한 번)
-        var ids: [String] = []
-        let h = handful()
-        var previous: Substring?
-        for key in days() {
-            let month = key.prefix(7)
-            if month != previous, h.contains(String(month)) { ids.append("month-\(month)") }
-            previous = month
-            ids.append(key)
-        }
+        _ = home().appearanceIDs
         _ = store.moments.isEmpty
     }
 }

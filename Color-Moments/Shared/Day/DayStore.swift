@@ -235,9 +235,32 @@ public final class DayStore {
 
     public var dayKeys: [String] { index.keys }
 
-    public var finishedDayKeys: [String] {
+    public var finishedDayKeys: [String] { finished().days }
+
+    private struct FinishedKey: Equatable {
+        let revision: Int, zone: String, today: String, todayClosed: Date?
+    }
+    @ObservationIgnored private var finishedCache: (key: FinishedKey, days: [String])?
+    @ObservationIgnored private var homeCache: (key: FinishedKey, giftFloor: String?, summary: HomeSummary)?
+
+    private func finished() -> (key: FinishedKey, days: [String]) {
+        let idx = index
         let today = Moment.dayKey(for: Date())
-        return dayKeys.filter { isFinished($0, today: today) }
+        let key = FinishedKey(revision: idx.revision, zone: idx.zone, today: today, todayClosed: closures.closedAt(today))
+        if let finishedCache, finishedCache.key == key { return finishedCache }
+        let built = (key, idx.keys.filter { isFinished($0, today: today) })
+        finishedCache = built
+        return built
+    }
+
+    /// 홈 목록 파생값 — 기록·오늘·마무리·받은 날이 그대로면 저번 것을 돌려준다.
+    public func home(gifts: GiftLog) -> HomeSummary {
+        let (key, days) = finished()
+        let floor = gifts.lastGiftedDayKey
+        if let homeCache, homeCache.key == key, homeCache.giftFloor == floor { return homeCache.summary }
+        let summary = HomeSummary.make(days: days, isGifted: gifts.isGifted, today: key.today)
+        homeCache = (key, floor, summary)
+        return summary
     }
 
     /// 오늘 이전은 항상, 오늘은 「마무리하기」로 닫혀야 true.
