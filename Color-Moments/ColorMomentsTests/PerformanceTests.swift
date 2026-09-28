@@ -116,6 +116,25 @@ final class PerformanceTests: XCTestCase {
                        "백그라운드 저장도 마지막 상태까지 남아야 한다")
     }
 
+    /// 사진첩 담기가 실제로 쓰는 경로 — 12장씩 모아 한 번에 넣는다(홈 다시 그리기도 조각 수만큼만).
+    func testTwoHundredAddsInBatches() {
+        let store = freshStore()
+        store.applyRemote(upserts: synthetic(), deletes: [])
+        let now = Date()
+        let adds = (0..<200).map { i in
+            Moment(capturedAt: now.addingTimeInterval(-Double(i) * 60), colorHex: "#334455",
+                   fileName: "new\(i)", source: .library, assetID: "N\(i)", addedAt: now, batchID: UUID())
+        }
+        let chunk = LibraryImporter.addChunk
+        let ms = time("c.addContentsOf200by12") {
+            for start in stride(from: 0, to: adds.count, by: chunk) {
+                store.add(contentsOf: Array(adds[start..<min(start + chunk, adds.count)]))
+            }
+        }
+        XCTAssertEqual(store.moments.count, Self.momentCount + 200)
+        XCTAssertLessThan(ms, 100)
+    }
+
     /// HomeView body 한 번이 부르는 것들 — 목록 행은 LazyVStack 이라 화면 안 ~8행만 그리지만, 행마다 days 를 다시 읽는다.
     func testHomeBodyComputations() {
         let store = freshStore()
