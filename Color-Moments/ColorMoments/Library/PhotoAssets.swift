@@ -97,7 +97,9 @@ enum AssetAdopter {
             return false
         }
         // 파일이 유일한 사본이던 기록 — 입양이 디스크에 닿기 전에 지우면 kill 뒤 기록이 빈 파일을 가리킨다.
-        store.flush()
+        await store.flushAfterLoad()
+        // 저장이 막혀 있으면 입양이 디스크에 없다 — 파일을 남겨야 다음 실행에 다시 입양된다.
+        guard !store.isSaveBlocked else { return true }
         try? FileManager.default.removeItem(at: fileURL)
         return true
     }

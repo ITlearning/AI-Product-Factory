@@ -216,6 +216,7 @@ struct HomeShell: View {
                 if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined {
                     _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
                 }
+                await store.waitUntilLoaded()
                 await AssetAdopter.adopt(m, store: store)
                 await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts)
             }

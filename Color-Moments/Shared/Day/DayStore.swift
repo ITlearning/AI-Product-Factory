@@ -501,6 +501,13 @@ public final class DayStore {
     /// 밀린 저장을 지금 끝낸다 — 앱이 background 로 갈 때 부른다.
     public func flush() { writer.flush() }
 
+    /// 로드 전이면 로드(미뤄 둔 저장)까지 기다린 뒤 flush — 파일 삭제·세션 무효화처럼 되돌릴 수 없는 일 직전에.
+    @MainActor
+    public func flushAfterLoad() async {
+        await waitUntilLoaded()
+        flush()
+    }
+
     /// 지금까지의 저장이 디스크에 닿은 뒤 work 를 돌린다(메인을 막지 않는다).
     public func afterSaved(_ work: @escaping @Sendable () -> Void) { writer.then(work) }
 

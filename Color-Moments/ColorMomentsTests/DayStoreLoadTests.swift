@@ -60,6 +60,19 @@ final class DayStoreLoadTests: XCTestCase {
         XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.count, 51)
     }
 
+    /// 로드 전 촬영 뒤 파일을 지우기 직전의 flush — 로드를 기다렸다가 실제로 디스크에 써야 한다.
+    func testFlushAfterLoadWritesEarlyRecordToDisk() async {
+        _ = seed(50)
+        let store = DayStore(fileURL: tempFile, closures: closures, loadsInBackground: true)
+        let early = Moment(capturedAt: Date(), colorHex: "#FFFFFF", fileName: "early.jpg", source: .app)
+        store.add(early)
+        store.adopt(early.id, assetID: "A-early")
+        await store.flushAfterLoad()
+        let onDisk = DayStore(fileURL: tempFile, closures: closures).moments
+        XCTAssertEqual(onDisk.count, 51)
+        XCTAssertEqual(onDisk.first { $0.id == early.id }?.assetID, "A-early")
+    }
+
     func testMissingFileLoadsEmpty() async {
         let store = DayStore(fileURL: tempFile, closures: closures, loadsInBackground: true)
         await store.waitUntilLoaded()
