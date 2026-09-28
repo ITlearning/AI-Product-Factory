@@ -105,11 +105,15 @@ final class BulkReceivePerformanceTests: XCTestCase {
     func testBulkReceiveThreeThousandWithHome() async {
         let r = await receive(3_000)
         report("receive3000", r)
+        XCTAssertLessThanOrEqual(r.homePasses, 30, "조각(75개)마다 홈을 다시 그리면 안 된다")
+        XCTAssertLessThan(r.total, 364, "수정 전 800ms")
     }
 
     func testBulkReceiveFiveThousandWithHome() async {
         let r = await receive(5_000)
         report("receive5000", r)
+        XCTAssertLessThanOrEqual(r.homePasses, 50, "조각(125개)마다 홈을 다시 그리면 안 된다")
+        XCTAssertLessThan(r.total, 692, "수정 전 2,202ms")
     }
 
     /// 수신이 다 끝난 뒤 홈 한 번 — 스크롤·다른 갱신 때마다 드는 몫.
@@ -119,7 +123,9 @@ final class BulkReceivePerformanceTests: XCTestCase {
         homeBody(store, gifts)
         let t = CFAbsoluteTimeGetCurrent()
         for _ in 0..<10 { homeBody(store, gifts) }
-        print("measured perf.i.homeBodyWarm5000: \(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - t) * 100)) ms")
+        let ms = (CFAbsoluteTimeGetCurrent() - t) * 100
+        print("measured perf.i.homeBodyWarm5000: \(String(format: "%.2f", ms)) ms")
+        XCTAssertLessThan(ms, 1, "수정 전 7.95ms — 행마다 finishedDayKeys 를 다시 걸렀다")
     }
 }
 
