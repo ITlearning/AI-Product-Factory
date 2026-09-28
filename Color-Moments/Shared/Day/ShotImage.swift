@@ -30,7 +30,15 @@ public enum ShotImage {
         return full(m.fileName)
     }
 
+    /// 썸네일은 스크롤로 한꺼번에 몰린다 — 사진 앱 요청·파일 디코딩을 이만큼만 동시에 돌린다.
+    static let thumbnailGate = AsyncGate(limit: 6)
+
     public static func thumbnail(_ m: Moment, maxPixel: CGFloat = 400) async -> UIImage? {
+        await thumbnailGate.run { await ungatedThumbnail(m, maxPixel: maxPixel) } ?? nil
+    }
+
+    private static func ungatedThumbnail(_ m: Moment, maxPixel: CGFloat) async -> UIImage? {
+        guard !Task.isCancelled else { return nil }
         if let assetID = m.assetID, let source = assetSource,
            let img = await source.image(assetID: assetID, maxPixel: maxPixel) {
             return img
