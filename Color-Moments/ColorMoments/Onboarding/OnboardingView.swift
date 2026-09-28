@@ -131,7 +131,15 @@ struct OnboardingView: View {
     }
 
     private func next() {
-        if step == .intro, continuing == nil { continuing = remoteDays > 0 }
+        if step == .intro, continuing == nil {
+            #if DEBUG
+            // 디버그 「온보딩 다시 보기」는 기록이 있어도 첫 조약돌 단계를 보여 준다.
+            let replay = UserDefaults.standard.bool(forKey: "debugReplayOnboarding")
+            #else
+            let replay = false
+            #endif
+            continuing = !replay && remoteDays > 0
+        }
         guard index < steps.count - 1 else { return }
         forward = true
         withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { index += 1 }

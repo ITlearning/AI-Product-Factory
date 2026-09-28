@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SpikeView: View {
+    @Environment(\.dismiss) private var dismiss
     @Bindable var inbox: CaptureInbox
     @Bindable var store: DayStore
     private let gifts: GiftLog
@@ -140,6 +141,17 @@ struct SpikeView: View {
 
                 #if DEBUG
                 assetDiagnosticsSection
+
+                Section {
+                    Button {
+                        UserDefaults.standard.set(true, forKey: "debugReplayOnboarding")
+                        dismiss()
+                    } label: {
+                        Label("온보딩 다시 보기", systemImage: "arrow.counterclockwise")
+                    }
+                } footer: {
+                    Text("기록은 그대로 두고 첫 화면부터 다시 봅니다. 권한 창은 이미 답했으면 다시 뜨지 않아요.")
+                }
                 #endif
 
                 Section {

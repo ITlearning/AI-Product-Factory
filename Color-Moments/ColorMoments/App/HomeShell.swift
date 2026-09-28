@@ -47,6 +47,9 @@ struct HomeShell: View {
     @State private var onboardingLatched = false
     #if DEBUG
     @State private var showingGate = false
+    #if DEBUG
+    @AppStorage("debugReplayOnboarding") private var debugReplayOnboarding = false
+    #endif
     #endif
 
     private static let commitDistance: CGFloat = 0.42
@@ -131,6 +134,11 @@ struct HomeShell: View {
         .onChange(of: store.isLoaded, initial: true) { _, _ in
             if liveOnboarding == .full { onboardingLatched = true }
         }
+        #if DEBUG
+        .onChange(of: showingGate) { _, up in
+            if !up && debugReplayOnboarding && store.isLoaded { onboardingLatched = true }
+        }
+        #endif
     }
 
     private var liveOnboarding: OnboardingGate.Presentation {
@@ -160,6 +168,9 @@ struct HomeShell: View {
 
     private func finishOnboarding(openCamera: Bool) {
         didFinishOnboarding = true
+        #if DEBUG
+        debugReplayOnboarding = false
+        #endif
         if openCamera {
             makeCamera()
             progress = 1
