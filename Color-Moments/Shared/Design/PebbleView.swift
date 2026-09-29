@@ -24,7 +24,57 @@ enum Grain {
     }()
 }
 
+/// 조약돌 모양 — round 셰이더 조약돌(기본), classic 예전 둥근 사각형. App Group 에 둬서 위젯도 같은 값을 본다.
+public enum PebbleStyle: String, CaseIterable, Sendable {
+    case round, classic
+
+    public static let key = "pebbleStyle"
+    public static let store = UserDefaults(suiteName: WidgetSnapshot.appGroup) ?? .standard
+    public static var current: PebbleStyle {
+        store.string(forKey: key).flatMap(PebbleStyle.init(rawValue:)) ?? .round
+    }
+}
+
+/// 바깥 프레임(폭 = 높이×0.70, 높이 = 높이×1.16)은 두 모양이 같다 — 모양을 바꿔도 부르는 쪽 배치가 안 바뀐다.
 public struct PebbleView: View {
+    private let moments: [Moment]
+    private let height: CGFloat
+    private let sheen: Double
+    private let glow: SoftPebbleView.Glow
+    private let classicTilt: Double
+    @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// classicTilt — 예전 모양에서만 돌린다. 둥근 돌은 날마다 기울기가 따로 있고, 뷰를 돌리면 빛과 바닥까지 돈다.
+    public init(moments: [Moment], height: CGFloat, sheen: Double = 0, onPhoto: Bool = false,
+                glow: SoftPebbleView.Glow = .hero, classicTilt: Double = 0) {
+        self.moments = moments
+        self.height = height
+        self.sheen = sheen
+        self.glow = onPhoto ? .photo : glow
+        self.classicTilt = classicTilt
+    }
+
+    public var body: some View {
+        Group {
+            switch style {
+            case .round:
+                SoftPebbleView(moments: moments, height: height * Shape2.softDiameter, glow: glow, sheen: sheen)
+            case .classic:
+                LegacyPebbleView(moments: moments, height: height, sheen: sheen, onPhoto: glow == .photo)
+                    .rotationEffect(.degrees(classicTilt))
+            }
+        }
+        // 흐려지며 작아진 돌이 사라지고 새 돌이 흐림에서 또렷해지며 커진다. 동작 줄이기면 겹쳐 바뀌기만.
+        .transition(reduceMotion ? AnyTransition.opacity : AnyTransition(.blurReplace))
+        // 다른 화면에서 바꿔도 여기서 부드럽게 넘어가게 — 값 변경이 withAnimation 트랜잭션 밖에서 도착한다.
+        .animation(reduceMotion ? .easeInOut(duration: 0.25) : .spring(response: 0.5, dampingFraction: 0.82), value: style)
+        .frame(width: height * Shape2.pebbleRatio, height: height * 1.16)
+    }
+}
+
+/// 그라데이션 겹으로 그린 예전 조약돌 — 위젯은 셰이더가 도는지 실기기 확인 전까지 이걸 쓴다.
+public struct LegacyPebbleView: View {
     private let moments: [Moment]
 
     private let height: CGFloat

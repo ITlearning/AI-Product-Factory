@@ -45,7 +45,9 @@ enum CardExporter {
 
     @MainActor
     private static func bake<V: View>(_ card: V) -> UIImage? {
-        let renderer = ImageRenderer(content: card.frame(width: pointSize.width, height: pointSize.height))
+        // 셰이더의 가장자리·입자 크기가 displayScale 을 본다 — 굽는 배율과 맞춘다.
+        let renderer = ImageRenderer(content: card.frame(width: pointSize.width, height: pointSize.height)
+            .environment(\.displayScale, 3))
         renderer.scale = 3
         return renderer.uiImage
     }

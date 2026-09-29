@@ -9,14 +9,18 @@ private struct LoadKey: Equatable {
 public struct ShotThumbnail: View {
     private let moment: Moment
     private let maxPixel: CGFloat
+    private let hidesColor: Bool
 
     @State private var loaded: UIImage?
     @State private var loadedName: String?
     @State private var showsSpinner = false
 
-    public init(moment: Moment, maxPixel: CGFloat) {
+    /// hidesColor — 아직 닫히지 않은 하루(진행 중인 오늘)면 로딩 자리를 그 사진 색으로 칠하지 않는다.
+    /// 색은 하루가 닫혀야 처음 열린다 — 로딩 중 잠깐이라도 비치면 약속이 깨진다.
+    public init(moment: Moment, maxPixel: CGFloat, hidesColor: Bool = false) {
         self.moment = moment
         self.maxPixel = maxPixel
+        self.hidesColor = hidesColor
     }
 
     private var image: UIImage? {
@@ -26,7 +30,7 @@ public struct ShotThumbnail: View {
 
     public var body: some View {
         ZStack {
-            Color(hex: moment.colorHex)
+            if hidesColor { Tone.veil } else { Color(hex: moment.colorHex) }
             if let image {
                 Image(uiImage: image).resizable().scaledToFill()
                     .transition(.opacity)

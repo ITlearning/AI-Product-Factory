@@ -16,6 +16,9 @@ public enum Tone {
 
     public static let hairline = Color.white.opacity(0.24)
 
+    /// 색을 아직 보여 주면 안 되는 자리(닫히기 전 하루의 사진 로딩 자리·점).
+    public static let veil = Color(white: 0.16)
+
     public static let amber = Color(red: 1, green: 0xD6 / 255, blue: 0x40 / 255)
 
     /// 온보딩 배경 — 받은 조약돌이 없을 때의 따뜻한 중간 톤(어둡게 눌러 쓴다).
@@ -120,6 +123,8 @@ public enum Shape2 {
     public static let pill: CGFloat = 100
 
     public static let pebbleRatio: CGFloat = 0.70
+    /// 셰이더 조약돌 지름 = PebbleView 높이 × 이 값 — 예전 둥근 사각형과 눈에 보이는 덩어리가 비슷하게.
+    public static let softDiameter: CGFloat = 0.70
 
     public static let minTouch: CGFloat = 44
 }

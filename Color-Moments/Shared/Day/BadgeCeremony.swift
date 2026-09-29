@@ -40,6 +40,11 @@ public struct BadgeCeremony: View {
                     .rotationEffect(.degrees(drift ? 7 : -7))
                     .offset(x: drift ? 22 : -22, y: drift ? -26 : 26)
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                    // 번짐은 화면보다 크게 그려진다 — 자르지 않으면 커버가 내려가며 닫힐 때 윗변 밖으로 삐져나온 부분이
+                    // 따라 내려와 아래에 잠깐 남는다. 여기(안전 영역까지 넓어진 geo 크기)에서 잘라야 한다 —
+                    // ignoresSafeArea 바깥에서 자르면 안전 영역 안쪽 틀로 잘려 위아래가 검게 빈다.
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
             }
             .ignoresSafeArea()
             .opacity(lit ? 0.42 : 0)

@@ -32,6 +32,9 @@ struct HomeView: View {
     // 카메라·사진첩·시트가 홈을 가리는 동안 true — 새 줄 등장 연출을 걷힐 때까지 미룬다.
     var holdsArrivals: Bool = false
 
+    /// 밖(온보딩 끝)에서 이 하루를 열어 달라고 할 때 — 열고 나면 nil 로 되돌린다.
+    var openDay: Binding<String?> = .constant(nil)
+
     // 기록이 한 번이라도 생기면 true — 그 뒤엔 사진첩 제안 문구를 다시 보이지 않는다.
     @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
 
@@ -39,6 +42,7 @@ struct HomeView: View {
     @State private var sharingDayKey: SharingDay?
     @State private var openedMonth: OpenedMonth?
     @State private var topDayKey: String?
+    @State private var blend = HomeBackdropBlend()
     @State private var scrolling = false
 
     // 스크롤이 멈춘 뒤에도 1.2초는 알약 띠를 살려 둔다 — 손을 떼자마자 사라지면 못 잡는다.
@@ -146,6 +150,12 @@ struct HomeView: View {
         .onChange(of: store.moments.isEmpty) { _, isEmpty in
             if !isEmpty { didOfferLibraryOnboarding = true }
         }
+        .onChange(of: openDay.wrappedValue) { _, key in
+            guard let key else { return }
+            openDay.wrappedValue = nil
+            focusDay = key
+            open(key)
+        }
     }
 
     private func open(_ key: String) {
@@ -165,21 +175,17 @@ struct HomeView: View {
         return "month-\(month)"
     }
 
-    @ViewBuilder
     private var backdrop: some View {
-        if let key = topDayKey ?? days.first {
-            DayGradientView(moments: store.pebbleMoments(on: key), axis: .vertical)
-                .blur(radius: 60)
-                .opacity(0.16)
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 0.45), value: key)
-                .allowsHitTesting(false)
-        }
+        HomeBackdrop(blend: blend, store: store, fallback: days.first)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .onChange(of: days, initial: true) { _, keys in blend.setOrder(keys) }
     }
 
     private var content: some View {
         GeometryReader { geo in
             let blockWidth = max(0, geo.size.width - 56)  // 첫 배치에서 geo 가 0 이면 음수 프레임이 된다
+            let _ = blend.setReference(geo.size.height * 0.4)
             ScrollViewReader { proxy in
                 ZStack(alignment: .trailing) {
                     ScrollView {
@@ -236,6 +242,11 @@ struct HomeView: View {
                                                 if visible { topDayKey = key }
                                             }
                                             .id(key)
+                                            // 배경 섞기용 — 매 프레임 오지만 HomeView 는 이 값을 읽지 않는다(배경 뷰만 다시 그린다).
+                                            .onGeometryChange(for: CGFloat.self) {
+                                                $0.frame(in: .scrollView(axis: .vertical)).minY
+                                            } action: { blend.report(key, top: $0) }
+                                            .onDisappear { blend.forget(key) }
                                             .padding(.top, hasHeader ? 16 : (index == 0 ? 0 : (key < compactCutoff ? 20 : 64)))
                                     }
                                 }
@@ -480,5 +491,92 @@ struct EmptyDayBlock: View {
             Text("오늘 담은 것은 자정에 조약돌이 돼요")
                 .font(Face.guide).foregroundStyle(Tone.tertiary)
         }
+    }
+}
+
+/// 홈 배경 — 기준선(화면 높이 40%)에 걸린 하루와 다음 하루의 색을, 다음 하루가 기준선에 다가온 만큼 섞는다.
+/// 행 위치는 관찰하지 않는 값에만 쌓고, 섞을 두 하루와 비율만 관찰 대상이라 배경 뷰만 다시 그려진다.
+@Observable
+final class HomeBackdropBlend {
+    private(set) var from: String?
+    private(set) var to: String?
+    private(set) var t: Double = 0
+
+    @ObservationIgnored private var tops: [String: CGFloat] = [:]
+    @ObservationIgnored private var index: [String: Int] = [:]
+    @ObservationIgnored private var order: [String] = []
+    @ObservationIgnored private var reference: CGFloat = 300
+
+    func setOrder(_ keys: [String]) {
+        order = keys
+        index = Dictionary(keys.enumerated().map { ($1, $0) }, uniquingKeysWith: { a, _ in a })
+        tops = tops.filter { index[$0.key] != nil }
+        recompute()
+    }
+
+    func setReference(_ y: CGFloat) {
+        guard y > 0, abs(y - reference) > 0.5 else { return }
+        reference = y
+    }
+
+    func report(_ key: String, top: CGFloat) {
+        tops[key] = top
+        recompute()
+    }
+
+    func forget(_ key: String) {
+        tops[key] = nil
+    }
+
+    private func recompute() {
+        // 기준선 위(또는 걸친)에서 가장 아래에 있는 하루 — 없으면(맨 위) 첫 하루를 그대로.
+        var current: (key: String, top: CGFloat, i: Int)?
+        for (key, top) in tops where top <= reference {
+            guard let i = index[key] else { continue }
+            if current == nil || i > current!.i { current = (key, top, i) }
+        }
+        guard let cur = current else {
+            apply(from: order.first, to: nil, t: 0)
+            return
+        }
+        let nextIndex = cur.i + 1
+        guard nextIndex < order.count, let nextTop = tops[order[nextIndex]], nextTop > cur.top else {
+            apply(from: cur.key, to: nil, t: 0)
+            return
+        }
+        let raw = Double((reference - cur.top) / (nextTop - cur.top))
+        let eased = min(1, max(0, raw))
+        apply(from: cur.key, to: order[nextIndex], t: eased * eased * (3 - 2 * eased))
+    }
+
+    private func apply(from: String?, to: String?, t: Double) {
+        if from != self.from { self.from = from }
+        if to != self.to { self.to = to }
+        // 눈에 안 띌 만큼만 바뀌면 다시 그리지 않는다 — 스크롤 중 매 프레임 들어온다.
+        if abs(t - self.t) > 0.004 || (t == 0 && self.t != 0) || (t == 1 && self.t != 1) { self.t = t }
+    }
+}
+
+/// 배경 두 겹 — 같은 자리에서 불투명도만 바뀐다. 경계에서 from/to 가 넘어가도 그 순간 보이는 색은 같다.
+private struct HomeBackdrop: View {
+    let blend: HomeBackdropBlend
+    let store: DayStore
+    let fallback: String?
+
+    var body: some View {
+        ZStack {
+            if let from = blend.from ?? fallback {
+                layer(from).opacity(1 - (blend.to == nil ? 0 : blend.t))
+            }
+            if let to = blend.to, blend.t > 0 {
+                layer(to).opacity(blend.t)
+            }
+        }
+    }
+
+    private func layer(_ key: String) -> some View {
+        DayGradientView(moments: store.pebbleMoments(on: key), axis: .vertical)
+            .blur(radius: 60)
+            .opacity(0.16)
     }
 }

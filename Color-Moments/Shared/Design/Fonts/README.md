@@ -99,6 +99,7 @@ python3 - <<'PY'   # 버튼 스타일(Face.action·PrimaryAction·SecondaryActio
 strings = [
     "닫기", "담기 ", "설정 열기", "다음", "사진 보기", "이 사진으로 받기",
     "직접 고르기", "알려 주세요", "괜찮아요", "이어서 보기", "지금 한 장 남겨보기", "시작하기",
+    "내 조약돌 보러 가기",
 ]
 chars = set()
 for s in strings: chars |= set(s)

@@ -18,6 +18,11 @@ struct DayPhotoView: View {
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
+    /// 닫히기 전 하루(진행 중인 오늘)의 사진이면 색을 쓰지 않는다 — 로딩 자리·시각 옆 점 모두.
+    private func hidesColor(_ m: Moment) -> Bool {
+        m.dayKey == Moment.dayKey(for: Date()) && !store.isFinished(m.dayKey)
+    }
+
     var body: some View {
         ZStack(alignment: .topLeading) {
             Tone.pure.ignoresSafeArea()
@@ -68,7 +73,7 @@ struct DayPhotoView: View {
                 Image(uiImage: image).resizable().scaledToFit()
                     .transition(.opacity)
             } else {
-                Color(hex: m.colorHex).aspectRatio(3 / 4, contentMode: .fit)
+                (hidesColor(m) ? Tone.veil : Color(hex: m.colorHex)).aspectRatio(3 / 4, contentMode: .fit)
                     .overlay { ProgressView().tint(Tone.secondary) }
             }
         }
@@ -100,7 +105,9 @@ struct DayPhotoView: View {
                 Spacer().frame(height: 12)
             }
             HStack(spacing: 6) {
-                Circle().fill(Color(hex: m.colorHex)).frame(width: 9, height: 9)
+                if !hidesColor(m) {
+                    Circle().fill(Color(hex: m.colorHex)).frame(width: 9, height: 9)
+                }
                 Text(DayGradient.timeText(m.capturedAt))
                     .font(Face.wordMeta).monospacedDigit()
                     .foregroundStyle(Tone.tertiary)

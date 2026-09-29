@@ -44,6 +44,7 @@ struct ColorMomentsApp: App {
             HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures,
                       prepare: { [catchUp] in await catchUp.run() })
                 .task {
+                    Task(priority: .userInitiated) { await SoftPebbleView.precompile() }
                     await store.waitUntilLoaded()
                     // 모든 저장소 쓰기보다 먼저 켠다 — 구독 전 변경은 저장소가 쌓아 두지만 그건 이중 안전장치일 뿐이다.
                     // 유닛 테스트는 앱을 호스트로 띄운다 — 권한 없는 CKContainer 는 크래시하므로 테스트 중엔 켜지 않는다.

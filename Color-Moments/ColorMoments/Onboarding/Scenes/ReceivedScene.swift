@@ -107,7 +107,8 @@ private struct PhotoCard: View {
     var side: CGFloat = 74
 
     var body: some View {
-        ShotThumbnail(moment: moment, maxPixel: side * 3)
+        // 담은 사진에는 아직 받지 않은 날(오늘·다른 날)도 섞인다 — 로딩 자리에 색을 비추지 않는다.
+        ShotThumbnail(moment: moment, maxPixel: side * 3, hidesColor: true)
             .frame(width: side, height: side)
             .clipShape(RoundedRectangle(cornerRadius: Shape2.cardBack, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Shape2.cardBack, style: .continuous)

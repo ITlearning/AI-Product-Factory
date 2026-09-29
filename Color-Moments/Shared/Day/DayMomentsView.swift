@@ -191,8 +191,9 @@ public struct DayMomentsView: View {
                         .offset(x: -6, y: p.y - Self.tick / 2)
                 }
 
+                // 진행 중인 오늘은 눈금만 — 점을 사진 색으로 칠하면 닫히기 전에 그날 색이 다 보인다.
                 Circle()
-                    .fill(Color(hex: p.moment.colorHex))
+                    .fill(isOpenToday ? Tone.veil : Color(hex: p.moment.colorHex))
                     .overlay(Circle().strokeBorder(Tone.base.opacity(0.6), lineWidth: 2))
                     .frame(width: Self.tick, height: Self.tick)
                     .offset(x: bandCenter - Self.tick / 2, y: p.y - Self.tick / 2)
@@ -211,14 +212,16 @@ public struct DayMomentsView: View {
 
     private func photoCard(_ m: Moment) -> some View {
         ZStack(alignment: .bottomTrailing) {
-            ShotThumbnail(moment: m, maxPixel: 600)
+            ShotThumbnail(moment: m, maxPixel: 600, hidesColor: isOpenToday)
                 .frame(width: Self.photo.width, height: Self.photo.height)
                 .clipped()
-            Circle()
-                .fill(Color(hex: m.colorHex))
-                .overlay(Circle().strokeBorder(.white.opacity(0.9), lineWidth: 1.5))
-                .frame(width: 13, height: 13)
-                .padding(8)
+            if !isOpenToday {
+                Circle()
+                    .fill(Color(hex: m.colorHex))
+                    .overlay(Circle().strokeBorder(.white.opacity(0.9), lineWidth: 1.5))
+                    .frame(width: 13, height: 13)
+                    .padding(8)
+            }
         }
         .frame(width: Self.photo.width, height: Self.photo.height)
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))

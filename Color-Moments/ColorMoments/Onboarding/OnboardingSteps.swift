@@ -4,6 +4,14 @@ import UserNotifications
 
 // MARK: 공용
 
+enum OnboardingLayout {
+    /// 페이지 좌우 여백 — 사진 격자는 스크롤 뷰를 이 밖으로 꺼낸다.
+    static let margin: CGFloat = 28
+    /// 사진 고르기 격자의 좌우 여백·칸 사이 — 한 칸이 (폭 − 여백×2 − 사이×2) / 3 로 크게 잡히게 페이지 여백보다 좁다.
+    static let gridMargin: CGFloat = 12
+    static let gridSpacing: CGFloat = 4
+}
+
 struct OnboardingPage<Content: View, Actions: View>: View {
     @ViewBuilder let content: Content
     @ViewBuilder let actions: Actions
@@ -15,7 +23,7 @@ struct OnboardingPage<Content: View, Actions: View>: View {
             VStack(spacing: 6) { actions }
                 .padding(.bottom, 24)
         }
-        .padding(.horizontal, 28)
+        .padding(.horizontal, OnboardingLayout.margin)
     }
 }
 
@@ -38,6 +46,41 @@ struct OnboardingText: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .lineSpacing(4)
+    }
+}
+
+/// 조약돌 모양 고르기 — 첫 화면(모두가 지나가는 유일한 화면)에 둔다. 누르면 위 장면의 조약돌이 그 자리에서 바뀐다.
+struct PebbleStyleChoice: View {
+    @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
+    @Environment(\.onboardingInk) private var ink
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                chip(.round, "둥근 돌")
+                chip(.classic, "반듯한 돌")
+            }
+            Text("설정에서 언제든 바꿀 수 있어요").font(Face.caption).foregroundStyle(ink.secondary)
+        }
+    }
+
+    private func chip(_ s: PebbleStyle, _ title: String) -> some View {
+        let on = style == s
+        return Button {
+            guard style != s else { return }
+            Haptics.tickPassed()
+            style = s
+        } label: {
+            Text(title)
+                .font(Face.guide)
+                .foregroundStyle(on ? ink.primary : ink.secondary)
+                .frame(maxWidth: .infinity, minHeight: Shape2.minTouch)
+                .background(Capsule().fill(on ? ink.hairline : .clear))
+                .overlay(Capsule().strokeBorder(ink.hairline, lineWidth: 1))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 
@@ -103,7 +146,10 @@ struct IntroStep: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             } words: {
-                OnboardingText(title: "찍을 때는 색을 숨겨 두고, 하루가 닫히면 그날의 색으로 빚은 조약돌이 도착해요.")
+                VStack(alignment: .leading, spacing: 20) {
+                    OnboardingText(title: "찍을 때는 색을 숨겨 두고, 하루가 닫히면 그날의 색으로 빚은 조약돌이 도착해요.")
+                    PebbleStyleChoice()
+                }
             }
         } actions: {
             PrimaryAction(title: "다음", action: next)
@@ -123,8 +169,9 @@ struct FirstPebbleStep: View {
     let next: () -> Void
 
     @State private var asking = false
+    @Environment(\.onboardingInk) private var ink
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 3), count: 3)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: OnboardingLayout.gridSpacing), count: 3)
 
     var body: some View {
         OnboardingPage {
@@ -184,7 +231,7 @@ struct FirstPebbleStep: View {
                 Spacer()
             } else {
                 ScrollView {
-                    LazyVGrid(columns: columns, spacing: 3) {
+                    LazyVGrid(columns: columns, spacing: OnboardingLayout.gridSpacing) {
                         ForEach(model.suggestions) { s in
                             cell(s)
                                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -194,6 +241,7 @@ struct FirstPebbleStep: View {
                 // 여백은 스크롤 안쪽(콘텐츠)에만 — 스크롤 뷰 자체에 padding 을 주면 그 선에서 사진이 잘려 보인다.
                 .contentMargins(.top, 20, for: .scrollContent)
                 .contentMargins(.bottom, 36, for: .scrollContent)
+                .contentMargins(.horizontal, OnboardingLayout.gridMargin, for: .scrollContent)
                 .scrollIndicators(.hidden)
                 // 스크롤 가장자리에서 사진이 칼같이 잘리지 않고 배경으로 스며들게.
                 .mask {
@@ -205,6 +253,19 @@ struct FirstPebbleStep: View {
                             .frame(height: 48)
                     }
                 }
+                // 스크롤 뷰는 페이지 좌우 여백 밖으로 — 화면 양옆에 붙이고 사진 자리는 contentMargins 가 맞춘다.
+                .padding(.horizontal, -OnboardingLayout.margin)
+                .overlay {
+                    if model.phase == .importing {
+                        ZStack {
+                            Tone.base.opacity(0.72)
+                                .padding(.horizontal, -OnboardingLayout.margin)
+                            ImportProgressNote(progress: model.importProgress, ink: ink.primary, subInk: ink.secondary)
+                        }
+                        .transition(.opacity)
+                    }
+                }
+                .animation(.easeInOut(duration: 0.25), value: model.phase == .importing)
             }
         }
         .padding(.top, 12)
@@ -381,6 +442,7 @@ struct HowToStep: View {
                     OnboardingText(title: "홈에서 왼쪽 가장자리를 오른쪽으로 쓸면 카메라가 열려요")
                     OnboardingText(title: "잠금화면에서도 찍을 수 있어요",
                                    detail: "잠금화면 카메라 컨트롤에서 몽돌을 고르면 돼요.")
+                    OnboardingText(title: "오른쪽 가장자리를 왼쪽으로 쓸면 받은 조약돌을 모아 볼 수 있어요")
                 }
             }
         } actions: {
@@ -393,22 +455,36 @@ struct HowToStep: View {
 
 struct StartStep: View {
     let pebble: [Moment]
+    /// 이번 온보딩에서 증정까지 받은 하루 — 있으면 방금 받은 조약돌로 먼저 보낸다. 사진을 담은 사람에게 촬영부터 권하지 않는다.
+    let receivedDay: String?
     let ready: Bool
     let onCamera: () -> Void
     let onStart: () -> Void
+    let onOpenDay: (String) -> Void
 
     var body: some View {
         OnboardingPage {
             SceneLayout {
                 StartScene(pebble: pebble)
             } words: {
-                OnboardingText(title: "준비됐어요", detail: "오늘 담은 것은 자정에 조약돌이 돼요.")
+                if receivedDay != nil {
+                    OnboardingText(title: "준비됐어요", detail: "방금 받은 조약돌이 홈에서 기다려요.")
+                } else {
+                    OnboardingText(title: "준비됐어요", detail: "오늘 담은 것은 자정에 조약돌이 돼요.")
+                }
             }
         } actions: {
-            PrimaryAction(title: "지금 한 장 남겨보기", working: !ready, action: onCamera)
-            SecondaryAction(title: "시작하기", action: onStart)
-                .disabled(!ready)
-                .opacity(ready ? 1 : 0.5)
+            if let day = receivedDay {
+                PrimaryAction(title: "내 조약돌 보러 가기", working: !ready) { onOpenDay(day) }
+                SecondaryAction(title: "지금 한 장 남겨보기", action: onCamera)
+                    .disabled(!ready)
+                    .opacity(ready ? 1 : 0.5)
+            } else {
+                PrimaryAction(title: "지금 한 장 남겨보기", working: !ready, action: onCamera)
+                SecondaryAction(title: "시작하기", action: onStart)
+                    .disabled(!ready)
+                    .opacity(ready ? 1 : 0.5)
+            }
         }
     }
 }

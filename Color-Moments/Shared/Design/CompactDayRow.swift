@@ -14,7 +14,7 @@ public struct CompactDayRow: View {
 
     public var body: some View {
         HStack(spacing: 14) {
-            PebbleView(moments: pebbleMoments, height: Self.height)
+            PebbleView(moments: pebbleMoments, height: Self.height, glow: .grid)
             VStack(alignment: .leading, spacing: 3) {
                 if let named = PebbleNaming.name(for: pebbleMoments) {
                     Text(named.name).font(Face.nameCompact).foregroundStyle(Tone.primary)

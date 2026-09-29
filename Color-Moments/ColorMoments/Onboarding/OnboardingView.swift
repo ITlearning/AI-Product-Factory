@@ -1,12 +1,17 @@
 import SwiftUI
 
+/// 온보딩을 마치고 어디로 가나 — 홈, 카메라가 열린 홈, 방금 받은 하루.
+enum OnboardingExit: Equatable {
+    case home, camera, day(String)
+}
+
 /// 새 사용자 첫 실행 — 한 화면에 한 가지, 옆으로 넘긴다. 무거운 준비는 넘기는 동안 뒤에서 돈다.
 struct OnboardingView: View {
     let store: DayStore
     let gifts: GiftLog
     let closures: DayClosures
     let prepare: () async -> Void
-    let onFinish: (_ openCamera: Bool) -> Void
+    let onFinish: (OnboardingExit) -> Void
 
     @AppStorage("onboardingGiftDay") private var onboardingGiftDay: String?
     @AppStorage("didAskArrivalNotice") private var didAskArrivalNotice = false
@@ -18,6 +23,8 @@ struct OnboardingView: View {
     @State private var continuing: Bool?
     @State private var skipsFirstPebble = false
     @State private var importedDayKeys: Set<String> = []
+    /// 이번 온보딩에서 증정까지 받은 하루 — 마지막 장이 「내 조약돌 보러 가기」로 바뀐다.
+    @State private var receivedDay: String?
     @State private var firstPebble = FirstPebbleModel()
     @State private var ceremonyDay: CeremonyDay?
     @State private var pickingLibrary = false
@@ -118,7 +125,9 @@ struct OnboardingView: View {
     }
 
     private var startPebble: [Moment] {
-        StartScene.latestGiftedDay(dayKeys: store.dayKeys, isGifted: gifts.isGifted)
+        // 방금 받은 하루가 있으면 그 조약돌 — 다시 보기처럼 기록이 이미 있으면 「가장 최근」이 다른 날일 수 있다.
+        if let day = receivedDay, gifts.isGifted(day) { return store.pebbleMoments(on: day) }
+        return StartScene.latestGiftedDay(dayKeys: store.dayKeys, isGifted: gifts.isGifted)
             .map { store.pebbleMoments(on: $0) } ?? []
     }
 
@@ -216,7 +225,7 @@ struct OnboardingView: View {
                             begin: beginFirstPebble,
                             receive: receiveSelected,
                             pickManually: {
-                                pickerStartedEmpty = store.moments.isEmpty
+                                pickerStartedEmpty = replaying || store.moments.isEmpty
                                 pickerStartedAt = Date()
                                 pickingLibrary = true
                             },
@@ -230,15 +239,26 @@ struct OnboardingView: View {
         case .howTo:
             HowToStep(next: next)
         case .start:
-            StartStep(pebble: startPebble, ready: ready,
-                      onCamera: { onFinish(true) },
-                      onStart: { onFinish(false) })
+            StartStep(pebble: startPebble, receivedDay: receivedDay.flatMap { gifts.isGifted($0) ? $0 : nil },
+                      ready: ready,
+                      onCamera: { onFinish(.camera) },
+                      onStart: { onFinish(.home) },
+                      onOpenDay: { onFinish(.day($0)) })
                 .task {
                     // 준비가 오래 걸려도 여기서 붙잡아 두지 않는다 — 남은 일은 홈에서도 뒤에서 이어진다.
                     try? await Task.sleep(for: .seconds(4))
                     waitedLongEnough = true
                 }
         }
+    }
+
+    /// 디버그 「온보딩 다시 보기」 — 기록이 있어도 새 사용자처럼 증정까지 보여 준다.
+    private var replaying: Bool {
+        #if DEBUG
+        UserDefaults.standard.bool(forKey: "debugReplayOnboarding")
+        #else
+        false
+        #endif
     }
 
     private func beginFirstPebble(_ ask: Bool) async {
@@ -250,7 +270,7 @@ struct OnboardingView: View {
 
     private func receiveSelected() async {
         let since = Date()
-        let (outcome, keys) = await firstPebble.importSelected(store: store)
+        let (outcome, keys) = await firstPebble.importSelected(store: store, treatsAsNew: replaying)
         importedDayKeys.formUnion(keys)
         if !keys.isEmpty { lastImport = RecentImport(dayKeys: keys, since: since) }
         guard outcome != .nothing else { return }
@@ -266,6 +286,7 @@ struct OnboardingView: View {
     private func handle(_ outcome: OnboardingFlow.ImportOutcome) {
         firstPebble.received(outcome)
         guard case .gift(let day) = outcome else { return }
+        receivedDay = day
         // 온보딩 도중 앱이 닫혀도 홈의 증정이 이 하루를 이어받는다.
         onboardingGiftDay = day
         ceremonyDay = CeremonyDay(id: day)
@@ -277,6 +298,7 @@ struct OnboardingView: View {
             Task { await ArrivalNotice.clear(dayKey: day) }
         }
         HomeWidget.refresh(store: store, gifts: gifts)
-        next()
+        // 바로 넘기지 않는다 — 뒤에 「첫 조약돌을 받았어요」 화면이 기다리고 있다(사진이 조약돌로 모이는 장면은
+        // 증정이 덮고 있는 동안 멈춰 있다가 이제 돈다). 「다음」을 눌러야 다음 장으로.
     }
 }

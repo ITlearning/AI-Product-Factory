@@ -160,7 +160,7 @@ public struct DayBlock: View {
             let shape = RoundedRectangle(cornerRadius: radius * k, style: .continuous)
             ZStack(alignment: .bottom) {
 
-                ShotThumbnail(moment: m, maxPixel: Self.cardPixels)
+                ShotThumbnail(moment: m, maxPixel: Self.cardPixels, hidesColor: !sealed)
                 if front {
 
                     LinearGradient(colors: [.clear, .black.opacity(0.55)],

@@ -9,7 +9,11 @@ struct HomeShell: View {
     // 입양·정리·cloudID·위젯 한 차례 — 온보딩이 넘기는 동안 뒤에서 돌리고 끝나기를 기다린다.
     var prepare: () async -> Void = {}
 
+    /// 0 홈, 1 카메라(왼쪽에서 들어옴), -1 모은 조약돌(오른쪽에서 들어옴).
     @State private var progress: CGFloat = 0
+    @State private var dragSide: SwipeSide?
+    /// 모은 조약돌은 처음 열 때 만든다 — 한 번도 안 연 사람에게 비용을 쓰지 않는다.
+    @State private var collectionLoaded = false
     @State private var dragging = false
     @State private var focusDay: String?
     @State private var scrubbing = false
@@ -30,6 +34,10 @@ struct HomeShell: View {
     private static let axisDecision: CGFloat = 20
 
     private static let axisBias: CGFloat = 2.2
+    /// 왼쪽으로 끌어 모은 조약돌을 여는 건 오른쪽 가장자리 이 폭 안에서 시작할 때만 — 안쪽은 사진 더미 넘기기(왼쪽 튕기기)가 쓴다.
+    private static let edgeZone: CGFloat = 40
+
+    private enum SwipeSide { case camera, collection }
     @State private var camera: CaptureEngine?
     @State private var pickingLibrary = false
     // pickingLibrary 는 닫힘 애니메이션 시작에 false 가 된다 — 증정 가드는 커버 onDismiss 에서만 푼다.
@@ -46,10 +54,13 @@ struct HomeShell: View {
     // 온보딩 도중 사진을 담으면 기록이 생겨 판정이 바뀐다 — 한 번 띄웠으면 끝낼 때까지 붙잡는다.
     @State private var onboardingLatched = false
     @State private var noticePermission: ArrivalAsk.Permission?
+    @State private var showingSettings = false
+    @State private var openDayRequest: String?
     #if DEBUG
     @State private var showingGate = false
     #if DEBUG
     @AppStorage("debugReplayOnboarding") private var debugReplayOnboarding = false
+    @AppStorage(FrameMeterBadge.homeKey) private var showsFrameMeter = false
     #endif
     #endif
 
@@ -73,12 +84,19 @@ struct HomeShell: View {
                          keepsakePresented: $keepsakePresented,
                          onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } },
                          onRequestLibraryPicker: openLibraryPicker,
-                         holdsArrivals: progress > 0 || libraryCoverUp || daySheetPresented || keepsakePresented)
+                         holdsArrivals: progress != 0 || libraryCoverUp || daySheetPresented || keepsakePresented
+                             || showingSettings,
+                         openDay: $openDayRequest)
                     .offset(x: progress * w)
-                    .disabled(progress > 0.01)
+                    .disabled(abs(progress) > 0.01)
 
                 cameraSide
                     .offset(x: -w + progress * w)
+
+                if collectionLoaded {
+                    PebbleCollectionView(store: store, gifts: gifts, closures: closures, onClose: { progress = 0 })
+                        .offset(x: w + progress * w)
+                }
             }
             .contentShape(Rectangle())
             .simultaneousGesture(swipe(width: w))
@@ -96,7 +114,7 @@ struct HomeShell: View {
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
                  blocksPresentation: daySheetPresented || keepsakePresented || pickingLibrary || libraryCoverUp
-                     || progress > 0 || onboarding != .none,
+                     || showingSettings || progress != 0 || onboarding != .none,
                  onboardingGiftDay: onboardingGiftDay,
                  onCeremonyFinished: handleCeremonyFinished)
         .onChange(of: pickingLibrary) { _, up in if up { libraryCoverUp = true } }
@@ -122,17 +140,33 @@ struct HomeShell: View {
                 Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
             }
         }
-        #if DEBUG
         .overlay(alignment: .topTrailing) {
-
             if progress == 0 && onboarding == .none {
-                Button { showingGate = true } label: {
-                    Image(systemName: "wrench.adjustable").foregroundStyle(Tone.hairline)
+                HStack(spacing: 4) {
+                    #if DEBUG
+                    Button { showingGate = true } label: {
+                        Image(systemName: "wrench.adjustable").foregroundStyle(Tone.hairline)
+                            .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                    }
+                    #endif
+                    Button { showingSettings = true } label: {
+                        Image(systemName: "gearshape").foregroundStyle(Tone.tertiary)
+                            .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                    }
+                    .accessibilityLabel("설정")
                 }
-                .padding(.trailing, 20).padding(.top, 14)
+                .padding(.trailing, 8).padding(.top, 2)
             }
         }
+        .sheet(isPresented: $showingSettings) {
+            SettingsSheet(preview: store.finishedDayKeys.max().map { store.pebbleMoments(on: $0) }
+                .flatMap { $0.isEmpty ? nil : $0 } ?? SettingsSheet.sample)
+        }
+        #if DEBUG
         .sheet(isPresented: $showingGate) { SpikeView(inbox: inbox, store: store, gifts: gifts, closures: closures) }
+        .overlay(alignment: .bottom) {
+            if showsFrameMeter { FrameMeterBadge().allowsHitTesting(true).padding(.bottom, 4) }
+        }
         #endif
         .overlay { onboardingLayer.animation(reduceMotion ? nil : Self.onboardingFade, value: onboarding) }
         .onChange(of: store.isLoaded, initial: true) { _, _ in
@@ -188,17 +222,24 @@ struct HomeShell: View {
         }
     }
 
-    private func finishOnboarding(openCamera: Bool) {
+    private func finishOnboarding(_ exit: OnboardingExit) {
         didFinishOnboarding = true
         #if DEBUG
         debugReplayOnboarding = false
         #endif
-        if openCamera {
+        if exit == .camera {
             makeCamera()
             progress = 1
         }
         // 밝은 마지막 화면에서 어두운 홈으로 — 길게 겹쳐 튀지 않게 한다.
         withAnimation(reduceMotion ? nil : Self.onboardingFade) { onboardingLatched = false }
+        if case .day(let key) = exit {
+            // 온보딩이 다 걷힌 뒤에 연다 — 걷히는 중에 시트가 올라오면 두 화면이 겹쳐 보인다.
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(reduceMotion ? 0.1 : 0.8))
+                openDayRequest = key
+            }
+        }
     }
 
     @ViewBuilder
@@ -227,20 +268,41 @@ struct HomeShell: View {
                 }
                 guard axis == .horizontal else { return }
                 if !dragging {
-
-                    guard !(progress == 0 && dx < 0) else { axis = .vertical; return }
+                    let side: SwipeSide
+                    if progress > 0.5 {
+                        side = .camera
+                    } else if progress < -0.5 {
+                        side = .collection
+                    } else if dx > 0 {
+                        side = .camera
+                    } else {
+                        guard v.startLocation.x >= width - Self.edgeZone else { axis = .vertical; return }
+                        side = .collection
+                    }
+                    dragSide = side
                     dragStart = progress
                     dragging = true
-                    if camera == nil { makeCamera() }
+                    if side == .camera, camera == nil { makeCamera() }
+                    if side == .collection { collectionLoaded = true }
                 }
-                progress = rubberBanded(dragStart + dx / width)
+                let raw = dragStart + dx / width
+                progress = dragSide == .collection ? rubberBandedCollection(raw) : rubberBanded(raw)
             }
             .onEnded { v in
-                defer { axis = nil }
+                defer { axis = nil; dragSide = nil }
                 guard dragging else { return }
                 dragging = false
 
                 let vx = v.predictedEndTranslation.width - v.translation.width
+                if dragSide == .collection {
+                    let wasHome = dragStart > -0.5
+                    let far = wasHome ? progress < -Self.commitDistance : progress > -1 + Self.commitDistance
+                    let fast = abs(vx) > Self.commitVelocity && ((vx < 0) == wasHome)
+                    let open = wasHome ? (far || fast) : !(far || fast)
+                    progress = open ? -1 : 0
+                    if open != (dragStart < -0.5) { Haptics.snapped() }
+                    return
+                }
                 let wasHome = dragStart < 0.5
                 let far = wasHome ? progress > Self.commitDistance
                                   : progress < 1 - Self.commitDistance
@@ -252,6 +314,12 @@ struct HomeShell: View {
                 if open != (dragStart > 0.5) { Haptics.snapped() }
                 if open { didSwipe = true }
             }
+    }
+
+    private func rubberBandedCollection(_ x: CGFloat) -> CGFloat {
+        if x > 0 { return x * 0.28 }
+        if x < -1 { return -1 + (x + 1) * 0.28 }
+        return x
     }
 
     private func rubberBanded(_ x: CGFloat) -> CGFloat {

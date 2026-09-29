@@ -34,6 +34,11 @@ struct SpikeView: View {
     var body: some View {
         NavigationStack {
             List {
+                #if DEBUG
+                Section {
+                    NavigationLink("조약돌 비교 (셰이더)") { PebbleLabView(store: store, gifts: gifts, closures: closures) }
+                }
+                #endif
                 Section("앱 촬영 (A 경로)") {
                     CaptureScreen(engine: camera)
                         .frame(height: 260)

@@ -24,9 +24,18 @@ final class LibraryImporter {
     /// 이만큼 모이면 한 번에 넣는다 — 한 장씩 넣으면 장마다 홈·사진첩 격자가 다시 그려진다.
     static let addChunk = 12
 
+    /// 가져오는 중 — 몇 장 중 몇 장.
+    struct Progress: Equatable, Sendable {
+        var done: Int
+        var total: Int
+    }
+
     /// 이번에 실제로 넣은 기록의 하루(dayKey)들 — iCloud 로 그 사이 들어온 원격 기록은 섞이지 않는다.
-    func importAssets(_ assets: [PHAsset], into store: DayStore) async -> Set<String> {
+    func importAssets(_ assets: [PHAsset], into store: DayStore,
+                      onProgress: ((Progress) -> Void)? = nil) async -> Set<String> {
         let batch = UUID()
+        var progress = Progress(done: 0, total: assets.count)
+        onProgress?(progress)
         var dayKeys: Set<String> = []
         var buffer: [Moment] = []
         func flush() async {
@@ -37,6 +46,10 @@ final class LibraryImporter {
             await FramePause.next()
         }
         for asset in assets {
+            defer {
+                progress.done += 1
+                onProgress?(progress)
+            }
             let id = asset.localIdentifier
             guard !store.containsAsset(id), !buffer.contains(where: { $0.assetID == id }) else { continue }
             guard let data = await Self.imageData(for: asset) else { continue }
