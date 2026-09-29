@@ -28,6 +28,8 @@ struct HomeShell: View {
     @State private var dragStart: CGFloat = 0
 
     @State private var axis: Axis?
+    // iOS 18 은 스크롤이 가로챈 드래그를 onEnded 없이 취소한다 — 끝나든 취소되든 false 로 돌아오는 이 값으로 판정을 푼다.
+    @GestureState private var swipeHeld = false
 
     private enum Axis { case horizontal, vertical }
 
@@ -102,6 +104,10 @@ struct HomeShell: View {
             .simultaneousGesture(swipe(width: w))
             .onChange(of: progress) { _, p in
                 if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start() }
+            }
+            .onChange(of: swipeHeld) { _, held in
+                // onEnded 가 먼저 돌게 한 박자 미룬다.
+                if !held { Task { @MainActor in settleCancelledSwipe() } }
             }
             .animation(dragging ? nil : .spring(response: 0.42, dampingFraction: 0.86),
                        value: progress)
@@ -256,8 +262,19 @@ struct HomeShell: View {
         pickingLibrary = true
     }
 
+    /// 취소된 드래그가 남긴 판정을 푼다 — 가로로 끌던 중이면 가까운 쪽으로 붙인다.
+    private func settleCancelledSwipe() {
+        guard !swipeHeld else { return }
+        axis = nil
+        dragSide = nil
+        guard dragging else { return }
+        dragging = false
+        progress = progress > 0.5 ? 1 : (progress < -0.5 ? -1 : 0)
+    }
+
     private func swipe(width: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 18)
+            .updating($swipeHeld) { _, held, _ in held = true }
             .onChanged { v in
                 guard !scrubbing else { return }
                 let dx = v.translation.width, dy = v.translation.height

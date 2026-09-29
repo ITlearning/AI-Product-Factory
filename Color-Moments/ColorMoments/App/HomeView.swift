@@ -48,6 +48,8 @@ struct HomeView: View {
     // 스크롤이 멈춘 뒤에도 1.2초는 알약 띠를 살려 둔다 — 손을 떼자마자 사라지면 못 잡는다.
     @State private var lingering = false
     @State private var lingerTask: Task<Void, Never>?
+    // 취소된 스크럽은 onEnded 가 없다 — scrubbing 이 남으면 HomeShell 의 좌우 스와이프가 계속 무시된다.
+    @GestureState private var scrubHeld = false
 
     @State private var arrivals = Arrivals()
 
@@ -283,10 +285,12 @@ struct HomeView: View {
                         .contentShape(Rectangle())
                         .highPriorityGesture(
                             DragGesture(minimumDistance: 0)
+                                .updating($scrubHeld) { _, held, _ in held = true }
                                 .onChanged { v in scrub(to: v.location.y, height: geo.size.height, proxy: proxy) }
                                 .onEnded { _ in endScrub() }
                         )
                         .allowsHitTesting(pillActive)
+                        .onChange(of: scrubHeld) { _, held in if !held && scrubbing { endScrub() } }
                 }
             }
         }
