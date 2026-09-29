@@ -1,5 +1,6 @@
 import AVFoundation
 import Observation
+import os
 import SwiftUI
 import UIKit
 
@@ -72,6 +73,37 @@ public final class CaptureEngine: NSObject {
         self.destination = destination
         self.onRecorded = onRecorded
         super.init()
+        observeSession()
+    }
+
+    deinit { sessionObservers.forEach { NotificationCenter.default.removeObserver($0) } }
+
+    // Diagnostics for the intermittent black viewfinder (2026-09-29): Console > subsystem com.itlearning.colormoments.
+    private static let log = Logger(subsystem: "com.itlearning.colormoments", category: "camera")
+    @ObservationIgnored private var sessionObservers: [NSObjectProtocol] = []
+
+    private func observeSession() {
+        let nc = NotificationCenter.default
+        let log = Self.log
+        sessionObservers = [
+            nc.addObserver(forName: AVCaptureSession.wasInterruptedNotification, object: session, queue: nil) { n in
+                let reason = (n.userInfo?[AVCaptureSessionInterruptionReasonKey] as? NSNumber)?.intValue ?? -1
+                log.error("session interrupted reason=\(reason, privacy: .public)")
+            },
+            nc.addObserver(forName: AVCaptureSession.interruptionEndedNotification, object: session, queue: nil) { _ in
+                log.info("session interruption ended")
+            },
+            nc.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: nil) { n in
+                let error = n.userInfo?[AVCaptureSessionErrorKey] as? NSError
+                log.error("session runtime error code=\(error?.code ?? 0, privacy: .public) \(error?.localizedDescription ?? "", privacy: .public)")
+            },
+            nc.addObserver(forName: AVCaptureSession.didStartRunningNotification, object: session, queue: nil) { _ in
+                log.info("session did start running")
+            },
+            nc.addObserver(forName: AVCaptureSession.didStopRunningNotification, object: session, queue: nil) { _ in
+                log.info("session did stop running")
+            },
+        ]
     }
 
     private var wantsRunning = false
@@ -82,9 +114,11 @@ public final class CaptureEngine: NSObject {
 
     public func start() {
         setWants(true)
+        Self.log.info("start requested")
         AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
             guard let self else { return }
             guard granted else {
+                Self.log.error("camera access denied")
                 DispatchQueue.main.async { self.permissionDenied = true }
                 return
             }
@@ -186,6 +220,7 @@ public final class CaptureEngine: NSObject {
 
     public func stop() {
         setWants(false)
+        Self.log.info("stop requested")
         queue.async { [weak self] in
             guard let self else { return }
 
@@ -219,6 +254,7 @@ public final class CaptureEngine: NSObject {
             }
             if session.canAddOutput(output) { session.addOutput(output) }
             session.commitConfiguration()
+            Self.log.info("configured device=\(picked?.deviceType.rawValue ?? "none", privacy: .public) inputs=\(self.session.inputs.count, privacy: .public)")
 
             let layer = AVCaptureVideoPreviewLayer(session: session)
             layer.videoGravity = .resizeAspectFill
@@ -232,12 +268,14 @@ public final class CaptureEngine: NSObject {
         }
 
         session.startRunning()
+        Self.log.info("startRunning returned isRunning=\(self.session.isRunning, privacy: .public) interrupted=\(self.session.isInterrupted, privacy: .public)")
         DispatchQueue.main.async { self.isRunning = true }
     }
 
     public func capture() {
         queue.async { [weak self] in
-            guard let self, self.session.isRunning else { return }
+            guard let self else { return }
+            guard self.session.isRunning else { Self.log.error("shutter dropped: session not running"); return }
             self.output.capturePhoto(with: AVCapturePhotoSettings(), delegate: self)
         }
         DispatchQueue.main.async {
