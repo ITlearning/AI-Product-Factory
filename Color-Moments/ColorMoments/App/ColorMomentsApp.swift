@@ -78,6 +78,8 @@ struct ColorMomentsApp: App {
                 Task {
                     await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()
+                    // 잠금화면 수신 스트림은 소식을 안 보낼 때가 있다 — 앞으로 올 때마다 세션 목록을 직접 다시 본다.
+                    await inbox.sweep()
                     await catchUp.run()
                 }
             case .background:
