@@ -36,6 +36,29 @@ enum CardExporter {
         return bake(PebbleCard(dayKey: dayKey, pebbleMoments: pebbleMoments, face: face, photo: photo))
     }
 
+    /// 조약돌만 뺀 같은 카드 — 빈 카드 판정의 기준. 배경 한 점과만 비교하면 어두운 조약돌(그믐·먹빛 등)을
+    /// 둥근 돌로 그렸을 때 배경과 가까워 빈 카드로 오판했다(분산 7.7, 기준 50).
+    @MainActor
+    static func renderBackground(dayKey: String, pebbleMoments: [Moment], face: Moment? = nil, photo: UIImage? = nil) -> UIImage? {
+        guard !pebbleMoments.isEmpty else { return nil }
+        return bake(PebbleCard(dayKey: dayKey, pebbleMoments: pebbleMoments, face: face, photo: photo, drawsPebble: false))
+    }
+
+    /// 조약돌 자리가 조약돌 없는 카드와 얼마나 다른지(0...255 채널 평균). 렌더러가 조약돌을 못 그렸으면 0 에 가깝다.
+    static func pebbleDifference(_ image: UIImage, from background: UIImage, region: CGRect) -> Double? {
+        guard let a = image.cgImage, let b = background.cgImage, a.width == b.width, a.height == b.height else { return nil }
+        let rect = CGRect(x: Int(region.minX * Double(a.width)), y: Int(region.minY * Double(a.height)),
+                          width: Int(region.width * Double(a.width)), height: Int(region.height * Double(a.height)))
+        guard rect.width > 0, rect.height > 0, let pa = pixels(a, rect), let pb = pixels(b, rect) else { return nil }
+        var n = 0.0, diff = 0.0
+        for i in stride(from: 0, to: min(pa.data.count, pb.data.count), by: 8) {
+            diff += (abs(Double(pa.data[i]) - Double(pb.data[i])) + abs(Double(pa.data[i + 1]) - Double(pb.data[i + 1]))
+                     + abs(Double(pa.data[i + 2]) - Double(pb.data[i + 2]))) / 3
+            n += 1
+        }
+        return n > 0 ? diff / n : nil
+    }
+
     @MainActor
     static func renderHandfulRaw(month: String, today: String = Moment.dayKey(for: Date()),
                                  pebbleGroups: [[Moment]]) -> UIImage? {
@@ -60,10 +83,12 @@ enum CardExporter {
     }
 
     /// 빈 판정·PNG 인코딩·미리보기 축소는 메인 밖에서. 비었거나 인코딩이 실패하면 nil.
-    static func prepare(_ image: UIImage?, region: CGRect = pebbleRegion) async -> Prepared? {
+    static func prepare(_ image: UIImage?, region: CGRect = pebbleRegion, background: UIImage? = nil) async -> Prepared? {
         guard let image else { return nil }
         return await Task.detached(priority: .userInitiated) { () -> Prepared? in
-            guard !isBlank(image, region: region), let data = image.pngData() else { return nil }
+            let blank = background.flatMap { pebbleDifference(image, from: $0, region: region) }.map { $0 < 2 }
+                ?? isBlank(image, region: region)
+            guard !blank, let data = image.pngData() else { return nil }
             let side = CGSize(width: pointSize.width / 2, height: pointSize.height / 2)
             let format = UIGraphicsImageRendererFormat()
             format.scale = 2

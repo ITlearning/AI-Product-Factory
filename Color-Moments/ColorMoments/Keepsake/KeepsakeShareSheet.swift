@@ -83,7 +83,9 @@ struct KeepsakeShareSheet: View {
         guard !Task.isCancelled, selection == id, let loaded = photos[id] else { return }
         // 넘기는 도중(다른 장이 골라짐)엔 굽지 않는다 — ImageRenderer 는 메인에서 돈다.
         let raw = CardExporter.renderRaw(dayKey: dayKey, pebbleMoments: pebbleMoments, face: m, photo: loaded)
-        let card = RenderedCard(card: await CardExporter.prepare(raw, region: CardExporter.blankRegion(photo: loaded)))
+        let background = CardExporter.renderBackground(dayKey: dayKey, pebbleMoments: pebbleMoments, face: m, photo: loaded)
+        let card = RenderedCard(card: await CardExporter.prepare(raw, region: CardExporter.blankRegion(photo: loaded),
+                                                                 background: background))
         guard !Task.isCancelled, selection == id else { return }
         rendered = (id, card)
     }
