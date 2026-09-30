@@ -69,6 +69,36 @@ final class CaptureInboxTests: XCTestCase {
         XCTAssertEqual(session.adopted, [shotName])
     }
 
+    // 2026-10-01: 잠금화면 확장이 사진 옆에 위치 쪽지를 두면 들여올 때 붙인다 — 쪽지는 사진으로 들여오지 않는다.
+    func testLockedPlaceNoteIsAttachedNotImported() async throws {
+        UserDefaults.standard.set(true, forKey: PlaceFinder.enabledKey)
+        defer { UserDefaults.standard.removeObject(forKey: PlaceFinder.enabledKey) }
+        let note = LockedPlaceNote(latitude: 37.48, longitude: 126.95, accuracy: 65, fixedAt: Date(), authorization: 4)
+        try JSONEncoder().encode(note).write(to: LockedPlaceNote.url(for: sessionDir.appendingPathComponent(shotName)))
+        let inbox = makeInbox()
+        inbox.dayStore = store
+
+        await inbox.sweep()
+
+        XCTAssertEqual(store.moments.count, 1, "쪽지는 사진이 아니다")
+        XCTAssertEqual(store.moments.first?.place?.latitude, 37.48)
+        XCTAssertEqual(store.moments.first?.place?.longitude, 126.95)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: shots.appendingPathComponent("shot-1790646372.place.json").path))
+        XCTAssertEqual(UserDefaults.standard.string(forKey: CaptureInbox.lockedPlaceProbeKey), "좌표 받음 ±65m")
+    }
+
+    func testNoteWithoutCoordinatesSaysWhy() async throws {
+        let note = LockedPlaceNote(authorization: 0, error: "kCLErrorDomain 1")
+        try JSONEncoder().encode(note).write(to: LockedPlaceNote.url(for: sessionDir.appendingPathComponent(shotName)))
+        let inbox = makeInbox()
+        inbox.dayStore = store
+
+        await inbox.sweep()
+
+        XCTAssertNil(store.moments.first?.place)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: CaptureInbox.lockedPlaceProbeKey), "좌표 없음 — 권한 미정 · kCLErrorDomain 1")
+    }
+
     // 앱 시작(.task)과 active 전환이 같은 세션을 동시에 쓸어 간다 — 무효화·입양은 한 번뿐이어야 한다.
     func testOverlappingSweepsIngestOnce() async {
         let inbox = makeInbox()

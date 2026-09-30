@@ -88,6 +88,7 @@
 		3CDC3B977191BC7C08488E35 /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		3CE1625788607AF614E6B418 /* ViewFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C8D64FF056CFF1EAA9F88F /* ViewFinder.swift */; };
 		3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001315A7B5573B9974966AF7 /* DayGradientTests.swift */; };
+		404D4FA8C25DF1F932AF9FCA /* LockedPlaceNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */; };
 		40B9D26FE9CD8258E04D8053 /* OnboardingGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */; };
 		4458330F643CB5348A9E73A2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 767BBA28AD8B8BA6D227319C /* PrivacyInfo.xcprivacy */; };
 		454734019BAA379CCA8F40D3 /* PageTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F51459035A7DD9B296D1A83E /* PageTabBar.swift */; };
@@ -139,6 +140,7 @@
 		6F73AD74AAA1F0FCDFC49A50 /* HowToScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C12F80D57140B2EAC08F9BD /* HowToScene.swift */; };
 		7010D21E2960DAB1D241EA53 /* WordPickerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */; };
 		71A677F53A451F3CED3E116C /* GowunDodum-Mini.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 85E74F70575B7C32C600F8C6 /* GowunDodum-Mini.ttf */; };
+		726125550BEAC49849BA505C /* LockedPlaceNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */; };
 		72CB8811A9F1756D47042377 /* SheenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69825FD346FEC03526525AE5 /* SheenTests.swift */; };
 		7376A941B553C659D52DAE4A /* ShotViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */; };
 		737D5DA0FB709046FFC34AC1 /* DayClosures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349DC3F413BF9EC93E6C0C60 /* DayClosures.swift */; };
@@ -271,6 +273,7 @@
 		E0A11DC00DADAE32564950AC /* LibrarySectionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */; };
 		E3E857371CF94F3C31D07E12 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
 		E3EF71CF767FDFA4AA7CF55D /* HandfulCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DDE9973C653338A1C72CD /* HandfulCard.swift */; };
+		E696D23B528E77EDF8E78877 /* LockedPlaceNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */; };
 		E6B7D3BF033CC827B367D4F7 /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		E7F3453CCDED443C24380E0B /* words.json in Resources */ = {isa = PBXBuildFile; fileRef = A0A48C2B255FB6B7DFA973C5 /* words.json */; };
@@ -303,6 +306,7 @@
 		FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */; };
 		FCEE317A7C230C41A6485A20 /* SyncRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A09F696F5607382E065E46 /* SyncRecords.swift */; };
 		FD5B3C99974A94C925D4C1F0 /* BadgeCeremony.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927C9BDEEEB97486BF4A4904 /* BadgeCeremony.swift */; };
+		FF489E1E1BA0E851CDFCEBFD /* LockedLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F725497FE120D86CFF0BC4 /* LockedLocation.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -370,6 +374,7 @@
 		1203C46F87D7D24186A7F3E6 /* LibraryLoadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryLoadTests.swift; sourceTree = "<group>"; };
 		1281321FBB1F3353036C3B6B /* ArrivalsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrivalsTests.swift; sourceTree = "<group>"; };
 		14DF86BF8B735F363B7A3449 /* AssetReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetReconciler.swift; sourceTree = "<group>"; };
+		14F725497FE120D86CFF0BC4 /* LockedLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedLocation.swift; sourceTree = "<group>"; };
 		160019A37882F81114DE5A27 /* HomeNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigationTests.swift; sourceTree = "<group>"; };
 		1782AA90AE018A879A1B0885 /* HomeNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigation.swift; sourceTree = "<group>"; };
 		19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySections.swift; sourceTree = "<group>"; };
@@ -403,6 +408,7 @@
 		41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMomentsApp.swift; sourceTree = "<group>"; };
 		431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Subset.ttf"; sourceTree = "<group>"; };
 		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
+		464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedPlaceNote.swift; sourceTree = "<group>"; };
 		4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreRecoveryTests.swift; sourceTree = "<group>"; };
 		503FB3A2F6076A7563C32074 /* ColorMomentsControl.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ColorMomentsControl.entitlements; sourceTree = "<group>"; };
 		5175844256F2AE80471F6EE6 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
@@ -564,6 +570,7 @@
 				DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */,
 				EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */,
 				6F7537CCE985C86CC09C1787 /* Haptics.swift */,
+				464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */,
 				F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */,
 			);
 			path = Capture;
@@ -751,6 +758,7 @@
 			children = (
 				C9CE619222B12DDC48E8D41D /* CaptureExtension.swift */,
 				09731441F10EF7907FAC934A /* Info.plist */,
+				14F725497FE120D86CFF0BC4 /* LockedLocation.swift */,
 				2F5E3AAFD8006B4A6F71CA04 /* PrivacyInfo.xcprivacy */,
 				78C8D64FF056CFF1EAA9F88F /* ViewFinder.swift */,
 			);
@@ -1156,6 +1164,7 @@
 				FC46BEA6E0E7103FDFAD4E28 /* ISODate.swift in Sources */,
 				48A9614795ADEF5BA9422B61 /* Keepsake.swift in Sources */,
 				F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */,
+				E696D23B528E77EDF8E78877 /* LockedPlaceNote.swift in Sources */,
 				1193A257CEEFA474C1C26A51 /* Memories.swift in Sources */,
 				1CC5449DA7CB344D2AC45E80 /* Moment.swift in Sources */,
 				1EA8EE22FEEAA7E8B7FA0118 /* MomentMerge.swift in Sources */,
@@ -1297,6 +1306,7 @@
 				172DFE11B4A2ABB242240925 /* LibraryImporter.swift in Sources */,
 				D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */,
 				923895A999E487D30889239A /* LibrarySections.swift in Sources */,
+				404D4FA8C25DF1F932AF9FCA /* LockedPlaceNote.swift in Sources */,
 				45E6E375DC196EFEE4545CEE /* Memories.swift in Sources */,
 				50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */,
 				2B4617290F37676DF89566DF /* MomentMerge.swift in Sources */,
@@ -1376,6 +1386,8 @@
 				E3E857371CF94F3C31D07E12 /* ISODate.swift in Sources */,
 				B5DB8DA5DC01E0D3A2EF9121 /* Keepsake.swift in Sources */,
 				9DA9DB9E6BBA273B5C90A00F /* LibrarySections.swift in Sources */,
+				FF489E1E1BA0E851CDFCEBFD /* LockedLocation.swift in Sources */,
+				726125550BEAC49849BA505C /* LockedPlaceNote.swift in Sources */,
 				632171711E08FE8079B6FF40 /* Memories.swift in Sources */,
 				60F00B961E27FD6874408F2F /* Moment.swift in Sources */,
 				304E851724E25006163D4850 /* MomentMerge.swift in Sources */,
@@ -1475,6 +1487,7 @@
 				INFOPLIST_FILE = ColorMomentsCapture/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "몽돌";
 				INFOPLIST_KEY_NSCameraUsageDescription = "순간의 색을 남기기 위해 카메라를 사용합니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1700,6 +1713,7 @@
 				INFOPLIST_FILE = ColorMomentsCapture/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "몽돌";
 				INFOPLIST_KEY_NSCameraUsageDescription = "순간의 색을 남기기 위해 카메라를 사용합니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -25,5 +25,7 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>순간의 색을 남기기 위해 카메라를 사용합니다.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.</string>
 </dict>
 </plist>

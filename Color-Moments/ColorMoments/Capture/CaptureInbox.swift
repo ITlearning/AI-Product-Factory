@@ -106,7 +106,8 @@ final class CaptureInbox {
         }
 
         var toAdopt: [Moment] = []
-        for f in files {
+        // 위치 쪽지(LockedPlaceNote)는 사진이 아니다 — 사진을 들여올 때 옆에서 읽기만 한다.
+        for f in files where f.pathExtension.lowercased() != "json" {
             let dest = shotsDirectory.appendingPathComponent(f.lastPathComponent)
             do {
                 if fm.fileExists(atPath: dest.path) { try fm.removeItem(at: dest) }
@@ -114,7 +115,9 @@ final class CaptureInbox {
                 let size = (try? fm.attributesOfItem(atPath: dest.path)[.size] as? Int) ?? 0
                 imported.append(Imported(url: dest, importedAt: Date(), byteCount: size ?? 0))
                 note("들여옴 \(f.lastPathComponent) \(((size ?? 0) / 1024))KB")
-                if let moment = await record(dest) {
+                let placeNote = (try? Data(contentsOf: LockedPlaceNote.url(for: f)))
+                    .flatMap { try? JSONDecoder().decode(LockedPlaceNote.self, from: $0) }
+                if let moment = await record(dest, placeNote: placeNote) {
                     toAdopt.append(moment)
                 }
             } catch {
@@ -145,7 +148,7 @@ final class CaptureInbox {
 
     /// 색 추출 결과로 store.add 를 부른다. 실제로 넣었을 때만(중복이 아닐 때만) Moment 를 돌려준다 —
     /// 호출부는 이 값이 있을 때만 입양(adopt)을 시도해야 재전달로 인한 이중 저장을 막는다.
-    private func record(_ url: URL) async -> Moment? {
+    private func record(_ url: URL, placeNote: LockedPlaceNote?) async -> Moment? {
         guard let store = dayStore else { return nil }
         let name = url.lastPathComponent
 
@@ -162,11 +165,18 @@ final class CaptureInbox {
 
         let stamp = name.split(separator: "-").last.flatMap { Double($0.replacingOccurrences(of: ".jpg", with: "")) }
         let capturedAt = stamp.map { Date(timeIntervalSince1970: $0) } ?? Date()
-        let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked, originalName: name)
+        let recordsPlace = UserDefaults.standard.object(forKey: PlaceFinder.enabledKey) as? Bool ?? true
+        let place = recordsPlace ? placeNote?.place : nil
+        UserDefaults.standard.set(placeNote?.summary ?? "쪽지 없음(위치 시험 전 확장)", forKey: Self.lockedPlaceProbeKey)
+        let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked,
+                            place: place, originalName: name)
         let added = store.add(moment)
         note("기록 \(hex) · \(Moment.dayKey(for: capturedAt))")
         return added ? moment : nil
     }
+
+    /// 디버그 화면용 — 마지막으로 들여온 잠금화면 사진의 위치 판정.
+    static let lockedPlaceProbeKey = "lockedPlaceProbe"
 
     private func note(_ s: String) {
         let t = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)

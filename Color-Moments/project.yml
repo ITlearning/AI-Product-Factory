@@ -73,11 +73,13 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_CFBundleDisplayName: 몽돌
         INFOPLIST_KEY_NSCameraUsageDescription: 순간의 색을 남기기 위해 카메라를 사용합니다.
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: 찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.
     info:
       path: ColorMomentsCapture/Info.plist
       properties:
         CFBundleDisplayName: 몽돌
         NSCameraUsageDescription: 순간의 색을 남기기 위해 카메라를 사용합니다.
+        NSLocationWhenInUseUsageDescription: 찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.
         EXAppExtensionAttributes:
           EXExtensionPointIdentifier: com.apple.securecapture
 

@@ -40,6 +40,8 @@ struct SpikeView: View {
                     NavigationLink("조약돌 비교 (셰이더)") { PebbleLabView(store: store, gifts: gifts, closures: closures) }
                     NavigationLink("단어 다시 뽑아 보기 (저장 안 함)") { WordRelabelReport(store: store) }
                     Toggle("단어 고르기에 Apple Intelligence", isOn: $wordModelEnabled)
+                    LabeledContent("잠금화면 위치",
+                                   value: UserDefaults.standard.string(forKey: CaptureInbox.lockedPlaceProbeKey) ?? "아직 잠금화면 사진 없음")
                 }
                 #endif
                 Section("앱 촬영 (A 경로)") {
