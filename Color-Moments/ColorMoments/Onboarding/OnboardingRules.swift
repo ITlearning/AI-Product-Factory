@@ -53,6 +53,7 @@ enum OnboardingStep: Hashable {
     case arrival
     case cloud
     case howTo
+    case collection
     case start
 }
 
@@ -67,7 +68,7 @@ enum OnboardingFlow {
         }
         if asksArrival { steps.append(.arrival) }
         if !continuing { steps.append(.cloud) }
-        steps += [.howTo, .start]
+        steps += [.howTo, .collection, .start]
         return steps
     }
 

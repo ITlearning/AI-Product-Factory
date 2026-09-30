@@ -238,6 +238,8 @@ struct OnboardingView: View {
             ArrivalStep(store: store, closures: closures, gifts: gifts, answered: next)
         case .howTo:
             HowToStep(next: next)
+        case .collection:
+            CollectionStep(next: next)
         case .start:
             StartStep(pebble: startPebble, receivedDay: receivedDay.flatMap { gifts.isGifted($0) ? $0 : nil },
                       ready: ready,

@@ -442,7 +442,6 @@ struct HowToStep: View {
                     OnboardingText(title: "홈에서 왼쪽 가장자리를 오른쪽으로 쓸면 카메라가 열려요")
                     OnboardingText(title: "잠금화면에서도 찍을 수 있어요",
                                    detail: "잠금화면 카메라 컨트롤에서 몽돌을 고르면 돼요.")
-                    OnboardingText(title: "오른쪽 가장자리를 왼쪽으로 쓸면 받은 조약돌을 모아 볼 수 있어요")
                 }
             }
         } actions: {
@@ -451,7 +450,25 @@ struct HowToStep: View {
     }
 }
 
-// MARK: 6. 시작하기
+// MARK: 6. 모은 조약돌
+
+struct CollectionStep: View {
+    let next: () -> Void
+
+    var body: some View {
+        OnboardingPage {
+            SceneLayout {
+                CollectionScene()
+            } words: {
+                OnboardingText(title: "오른쪽 가장자리를 왼쪽으로 쓸면 받은 조약돌을 모아 볼 수 있어요")
+            }
+        } actions: {
+            PrimaryAction(title: "다음", action: next)
+        }
+    }
+}
+
+// MARK: 7. 시작하기
 
 struct StartStep: View {
     let pebble: [Moment]
