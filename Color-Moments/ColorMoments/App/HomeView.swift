@@ -44,9 +44,10 @@ struct HomeView: View {
     @State private var opened: OpenedDay?
     /// 오늘 찍었는데 아직 몽돌에 없는 사진 — 기본 카메라로 찍은 것.
     @State private var todayPending: [String] = []
-    /// 「골라 담기」를 열 때 보여 준 사진들("dayKey|id,id") — 처음 보는 사진이 생길 때만 다시 띄운다(재촉하지 않는다).
-    /// 수로 기억하면 고른 뒤 새로 찍은 수가 전과 같을 때 안 떴다.
+    /// 줄 끝 ✕ 로 접은 사진들("dayKey|id,id") — 처음 보는 사진이 생기면 다시 띄운다. 고르기를 열고 닫는 것만으론 안 접는다.
     @AppStorage("todayPhotosSeenIDs") private var todayPhotosSeen = ""
+    /// 숫자 굴림(numericText) — 줄이 처음 나타날 땐 0 에서 올라간다.
+    @State private var shownPhotoCount = 0
     @Environment(\.scenePhase) private var scenePhase
     @State private var sharingDayKey: SharingDay?
     @State private var openedMonth: OpenedMonth?
@@ -129,7 +130,6 @@ struct HomeView: View {
             guard store.isLoaded, scenePhase == .active else { return }
             await refreshTodayPhotos()
         }
-        .animation(.easeOut(duration: 0.25), value: todayPhotosUnseen)
         .sheet(item: $opened, onDismiss: {
             // opened 가 nil 이 되는 건 닫힘 애니메이션 시작 — 끝난 뒤(onDismiss)에만 가드를 푼다.
             daySheetPresented = false
@@ -401,26 +401,62 @@ struct HomeView: View {
         return todayPending.contains { !seen.contains($0) } ? todayPending.count : 0
     }
 
+    private var showsTodayPhotos: Bool { todayPhotosUnseen > 0 && !todayClosedWithMoments }
+
     @ViewBuilder
     private var todayPhotosLine: some View {
-        if todayPhotosUnseen > 0 && !todayClosedWithMoments {
-            (Text("오늘 찍은 사진 \(todayPhotosUnseen)장").foregroundStyle(Tone.secondary)
-                + Text("  ·  골라 담기").foregroundStyle(Tone.primary))
-                .font(Face.line)
-                .frame(minHeight: Shape2.minTouch, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    todayPhotosSeen = "\(todayKey)|" + todayPending.joined(separator: ",")
-                    onRequestTodayPicker()
+        if showsTodayPhotos {
+            HStack(spacing: 8) {
+                HStack(spacing: 0) {
+                    Text("오늘 찍은 사진 ")
+                    Text("\(shownPhotoCount)")
+                        .monospacedDigit()
+                        .contentTransition(.numericText(value: Double(shownPhotoCount)))
+                    Text("장")
                 }
-                .transition(.opacity)
+                .font(Face.lineCeremony)
+                .foregroundStyle(Tone.primary)
+                Spacer(minLength: 4)
+                Button(action: onRequestTodayPicker) {
+                    Text("골라 담기")
+                        .font(Face.caption)
+                        .foregroundStyle(Tone.primary)
+                        .padding(.horizontal, 14)
+                        .frame(height: 34)
+                        .background(.white.opacity(0.14), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                Button {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.88)) {
+                        todayPhotosSeen = "\(todayKey)|" + todayPending.joined(separator: ",")
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Tone.tertiary)
+                        .frame(width: 34, height: Shape2.minTouch)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("오늘 찍은 사진 안내 닫기")
+            }
+            .padding(.top, 12)
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
+    /// 앱에 들어오면 줄이 목록을 살짝 밀며 내려앉고, 숫자는 0 에서 굴러 올라간다 — 눈에 띄게, 재촉은 없이.
     private func refreshTodayPhotos() async {
         let known = Set(store.moments.compactMap(\.assetID))
-        todayPending = await TodayPhotos.pending(dayKey: todayKey, excluding: known,
-                                                 capturedAt: store.today.map(\.capturedAt)).map(\.localIdentifier)
+        let ids = await TodayPhotos.pending(dayKey: todayKey, excluding: known,
+                                            capturedAt: store.today.map(\.capturedAt)).map(\.localIdentifier)
+        let wasShowing = showsTodayPhotos
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.86)) { todayPending = ids }
+        guard showsTodayPhotos else { return }
+        if !wasShowing {
+            shownPhotoCount = 0
+            try? await Task.sleep(nanoseconds: 350_000_000)
+        }
+        withAnimation(.snappy(duration: 0.5)) { shownPhotoCount = ids.count }
     }
 
     private var libraryOnboardingLine: some View {

@@ -49,8 +49,8 @@ struct HomeShell: View {
     private enum SwipeSide { case camera }
     @State private var camera: CaptureEngine?
     @State private var pickingLibrary = false
-    /// 사진첩 시트 범위 — 「오늘 찍은 사진 · 골라 담기」로 열면 오늘만.
-    @State private var libraryRange: Range<Date>?
+    /// 「오늘 찍은 사진 · 골라 담기」 — 몇 장뿐이라 풀스크린이 아니라 절반 높이 시트로.
+    @State private var pickingToday = false
     // pickingLibrary 는 닫힘 애니메이션 시작에 false 가 된다 — 증정 가드는 커버 onDismiss 에서만 푼다.
     @State private var libraryCoverUp = false
     // 사진첩 시트를 열기 직전 기록이 하나도 없었는지 — 온보딩 증정 하루를 고를지 판단한다.
@@ -97,7 +97,7 @@ struct HomeShell: View {
                          onRequestLibraryPicker: openLibraryPicker,
                          onRequestTodayPicker: openTodayPicker,
                          onScrollMinimize: foldTabBar,
-                         holdsArrivals: progress != 0 || libraryCoverUp || daySheetPresented || keepsakePresented
+                         holdsArrivals: progress != 0 || libraryCoverUp || pickingToday || daySheetPresented || keepsakePresented
                              || showingSettings,
                          openDay: $openDayRequest)
                     .offset(x: progress * w)
@@ -139,32 +139,22 @@ struct HomeShell: View {
         // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
-                 blocksPresentation: daySheetPresented || keepsakePresented || pickingLibrary || libraryCoverUp
+                 blocksPresentation: daySheetPresented || keepsakePresented || pickingLibrary || libraryCoverUp || pickingToday
                      || showingSettings || progress != 0 || onboarding != .none,
                  onboardingGiftDay: onboardingGiftDay,
                  onCeremonyFinished: handleCeremonyFinished)
         .onChange(of: pickingLibrary) { _, up in if up { libraryCoverUp = true } }
         .fullScreenCover(isPresented: $pickingLibrary, onDismiss: {
             libraryCoverUp = false
-            guard pendingLibraryFocus else { return }
-            pendingLibraryFocus = false
-            focusDay = store.moments
-                .filter { $0.addedAt != nil }
-                .max { $0.addedAt! < $1.addedAt! }?
-                .dayKey
+            focusLastImported()
         }) {
-            LibraryPickerView(store: store, range: libraryRange) { importedDayKeys in
-                guard !importedDayKeys.isEmpty else { return }
-                camera?.confirm("담겼어요")
-                progress = 0
-                pendingLibraryFocus = true
-                if recordsWereEmptyBeforeLibraryImport {
-                    onboardingGiftDay = OnboardingGift.firstImportDay(existingRecordsWereEmpty: true,
-                                                                      importedDayKeys: Array(importedDayKeys),
-                                                                      today: Moment.dayKey(for: Date()))
-                }
-                Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
-            }
+            LibraryPickerView(store: store, onDone: libraryImported)
+        }
+        .sheet(isPresented: $pickingToday, onDismiss: focusLastImported) {
+            LibraryPickerView(store: store, range: TodayPhotos.range(dayKey: Moment.dayKey(for: Date())),
+                              onDone: libraryImported)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .overlay(alignment: .bottom) {
             if onboarding == .none {
@@ -288,14 +278,33 @@ struct HomeShell: View {
     }
 
     private func openTodayPicker() {
-        libraryRange = TodayPhotos.range(dayKey: Moment.dayKey(for: Date()))
         recordsWereEmptyBeforeLibraryImport = store.moments.isEmpty
-        libraryCoverUp = true
-        pickingLibrary = true
+        pickingToday = true
+    }
+
+    private func libraryImported(_ importedDayKeys: Set<String>) {
+        guard !importedDayKeys.isEmpty else { return }
+        camera?.confirm("담겼어요")
+        progress = 0
+        pendingLibraryFocus = true
+        if recordsWereEmptyBeforeLibraryImport {
+            onboardingGiftDay = OnboardingGift.firstImportDay(existingRecordsWereEmpty: true,
+                                                              importedDayKeys: Array(importedDayKeys),
+                                                              today: Moment.dayKey(for: Date()))
+        }
+        Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
+    }
+
+    private func focusLastImported() {
+        guard pendingLibraryFocus else { return }
+        pendingLibraryFocus = false
+        focusDay = store.moments
+            .filter { $0.addedAt != nil }
+            .max { $0.addedAt! < $1.addedAt! }?
+            .dayKey
     }
 
     private func openLibraryPicker() {
-        libraryRange = nil
         recordsWereEmptyBeforeLibraryImport = store.moments.isEmpty
         libraryCoverUp = true
         pickingLibrary = true
