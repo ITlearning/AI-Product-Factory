@@ -363,6 +363,14 @@ public final class DayStore {
         notify([.upsert(id)])
     }
 
+    /// 「이 단어는 아니에요」 — 사진마다 한 번(WordRejections 가 지킨다). 그 밖엔 단어를 바꾸지 않는다.
+    public func replaceWord(_ id: Moment.ID, _ word: PhotoWord) {
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].word != nil, all[i].word != word else { return }
+        all[i].word = word
+        save()
+        notify([.upsert(id)])
+    }
+
     /// 단어가 아직 없을 때만 라벨을 새로 본 것으로 바꾼다 — 단어가 붙은 뒤엔 라벨도 고정이다.
     public func refreshLabels(_ id: Moment.ID, _ labels: [String]) {
         guard let i = all.firstIndex(where: { $0.id == id }), all[i].word == nil, all[i].labels != labels else { return }

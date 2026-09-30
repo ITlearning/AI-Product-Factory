@@ -61,7 +61,9 @@ public enum PhotoEnrichment {
         case "mostlyCloudy", "cloudy": ("흐림", "cloud", "cloud", .cloudy)
         case "drizzle": ("이슬비", "cloud.drizzle", "cloud.drizzle", .drizzle)
         case "rain", "heavyRain", "sunShowers", "freezingRain", "freezingDrizzle": ("비", "cloud.rain", "cloud.rain", .rain)
-        case "snow", "flurries", "heavySnow", "sleet", "sunFlurries", "wintryMix", "blowingSnow", "blizzard":
+        // 진눈깨비·섞여 내리는 눈은 보이기엔 눈, 단어로는 비 쪽 — 「진눈깨비」는 비일 때만 후보다.
+        case "sleet", "wintryMix": ("눈", "cloud.snow", "cloud.snow", .rain)
+        case "snow", "flurries", "heavySnow", "sunFlurries", "blowingSnow", "blizzard":
             ("눈", "cloud.snow", "cloud.snow", .snow)
         case "foggy", "haze", "smoky": ("안개", "cloud.fog", "cloud.fog", .fog)
         case "windy", "breezy": ("바람", "wind", "wind", .wind)
@@ -88,6 +90,7 @@ struct DayPhotoView: View {
     /// 처음 그릴 때 이미 있던 동네·날씨는 그대로 두고, 그 뒤에 도착한 것만 한 글자씩 띄운다.
     @State private var revealArrivals = false
     @State private var pacer = RevealPacer()
+    @State private var rejections = WordRejections.shared
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
     /// task 가 잡아 둔 값은 옛것이다 — 도중에 붙은 동네·날씨는 여기서 다시 읽는다.
@@ -167,7 +170,7 @@ struct DayPhotoView: View {
     private func words(_ m: Moment) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             if let w = m.word {
-                Text(w.word).font(Face.word).foregroundStyle(Tone.primary)
+                wordText(m, w)
                 Spacer().frame(height: 4)
                 Text(w.meaning).font(Face.wordMeaning).foregroundStyle(Tone.tertiary)
                 Spacer().frame(height: 12)
@@ -301,14 +304,55 @@ struct DayPhotoView: View {
     }
 
     private func assignWord(_ m: Moment, labels: [String]) async {
-        guard !Task.isCancelled, current?.word == nil else { return }
+        guard !Task.isCancelled, current?.word == nil,
+              let pick = await pickWord(for: m, labels: labels), !Task.isCancelled else { return }
+        store.assignWord(m.id, PhotoWord(pick.word))
+    }
+
+    /// 규칙 후보(+그 순간의 말) 안에서 고른다 — Apple Intelligence 가 되는 기기는 모델이, 아니면 규칙 1순위.
+    private func pickWord(for m: Moment, labels: [String], banned: Set<String> = []) async -> (word: WordEntry, pool: [WordEntry])? {
         let seen = Set(labels)
         let words = await BundledWordSource().words()
-        let real = current?.place?.weather.flatMap { PhotoEnrichment.wordWeather($0.condition) }
-        let ctx = PhotoContext(date: m.capturedAt, weather: real ?? Weather.inferred(from: seen))
-        guard let pw = WordPicker.photoWord(for: ctx, labels: seen, in: words,
-                                            excluding: store.recentWordIDs(excluding: m.id), seed: m.id.uuidString) else { return }
-        store.assignWord(m.id, pw)
+        let weather = current?.place?.weather
+        let ctx = PhotoContext(date: m.capturedAt,
+                               weather: weather.flatMap { PhotoEnrichment.wordWeather($0.condition) } ?? Weather.inferred(from: seen))
+        let recent = store.recentWordIDs(excluding: m.id).union(rejections.avoided)
+        let seed = m.id.uuidString
+        let rule = WordPicker.candidates(for: ctx, labels: seen, in: words, excluding: recent, seed: seed, banned: banned)
+        let pool = WordPicker.choices(for: ctx, labels: seen, in: words, excluding: recent, seed: seed, banned: banned)
+        guard let first = rule.first ?? pool.first else { return nil }
+        let input = WordChoice(candidates: pool.map { .init(id: $0.id, word: $0.word, meaning: $0.meaning) },
+                               labels: labels, date: m.capturedAt,
+                               weather: weather.flatMap { w in PhotoEnrichment.label(w.condition).map { "\($0) \(Int(w.celsius.rounded()))°" } },
+                               place: current?.place?.name)
+        let chosen = await WordAssist.choose(input).flatMap { id in pool.first { $0.id == id } }
+        return (chosen ?? first, pool)
+    }
+
+    @ViewBuilder
+    private func wordText(_ m: Moment, _ w: PhotoWord) -> some View {
+        let text = Text(w.word).font(Face.word).foregroundStyle(Tone.primary)
+        if rejections.hasRejected(m.id) {
+            text
+        } else {
+            text.contextMenu {
+                Button("이 단어는 아니에요", systemImage: "arrow.uturn.backward") { Task { await reject(m) } }
+            }
+        }
+    }
+
+    /// 사진마다 한 번 — 다음 후보로 바꾸고, 그때의 라벨·후보를 이 기기에만 남긴다.
+    private func reject(_ m: Moment) async {
+        guard let old = current?.word, !rejections.hasRejected(m.id) else { return }
+        let labels = current?.labels ?? []
+        guard let pick = await pickWord(for: m, labels: labels, banned: [old.wordID]) else { return }
+        let info = Bundle.main.infoDictionary
+        rejections.record(.init(momentID: m.id, wordID: old.wordID, replacedBy: pick.word.id, labels: labels,
+                                candidates: pick.pool.map(\.id), partOfDay: PhotoEnrichment.partOfDay(m.capturedAt),
+                                weather: current?.place?.weather?.condition,
+                                appVersion: "\(info?["CFBundleShortVersionString"] ?? "?")(\(info?["CFBundleVersion"] ?? "?"))",
+                                at: Date()))
+        withAnimation(.easeOut(duration: 0.3)) { store.replaceWord(m.id, PhotoWord(pick.word)) }
     }
 }
 

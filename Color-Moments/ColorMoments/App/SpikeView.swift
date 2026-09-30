@@ -14,6 +14,7 @@ struct SpikeView: View {
 
     @State private var previewing = false
     #if DEBUG
+    @AppStorage(WordAssistant.enabledKey) private var wordModelEnabled = false
     @State private var diagnostics: AssetDiagnostics.Snapshot?
     @State private var diagnosing = false
     @State private var confirmingRestore = false
@@ -38,6 +39,7 @@ struct SpikeView: View {
                 Section {
                     NavigationLink("조약돌 비교 (셰이더)") { PebbleLabView(store: store, gifts: gifts, closures: closures) }
                     NavigationLink("단어 다시 뽑아 보기 (저장 안 함)") { WordRelabelReport(store: store) }
+                    Toggle("단어 고르기에 Apple Intelligence", isOn: $wordModelEnabled)
                 }
                 #endif
                 Section("앱 촬영 (A 경로)") {

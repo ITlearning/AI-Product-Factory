@@ -23,8 +23,11 @@ public enum WordPicker {
         return true
     }
 
+    /// banned — 「이 단어는 아니에요」로 버린 단어. recent 와 달리 끝까지 안 쓴다.
     public static func candidates(for ctx: PhotoContext, labels: Set<String>, in words: [WordEntry],
-                                  excluding recent: Set<String>, seed: String, limit: Int = 8) -> [WordEntry] {
+                                  excluding recent: Set<String>, seed: String, limit: Int = 8,
+                                  banned: Set<String> = []) -> [WordEntry] {
+        let words = words.filter { !banned.contains($0.id) }
         var pool = words.filter { !$0.subjects.isEmpty && !labels.isDisjoint(with: $0.subjects) }
         if let weather = ctx.weather {
             // 날씨를 알면 그 날씨와 맞는 말만 — 다른 날씨 말은 끝까지 안 쓴다.
@@ -72,9 +75,17 @@ public enum WordPicker {
     }
 
     public static func photoWord(for ctx: PhotoContext, labels: Set<String>, in words: [WordEntry],
-                                 excluding recent: Set<String>, seed: String) -> PhotoWord? {
-        candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed).first
-            .map { PhotoWord(wordID: $0.id, word: $0.word, meaning: $0.meaning) }
+                                 excluding recent: Set<String>, seed: String, banned: Set<String> = []) -> PhotoWord? {
+        candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned).first.map(PhotoWord.init)
+    }
+
+    /// 모델(Apple Intelligence)에 넘길 후보 — 규칙 후보에 그 순간의 말(틀릴 수 없는 단어)을 더한다.
+    /// 규칙 후보가 하나뿐이어도(바다 사진에 land 만 잡혀 「아지랑이」) 모델이 고를 여지를 준다.
+    public static func choices(for ctx: PhotoContext, labels: Set<String>, in words: [WordEntry],
+                               excluding recent: Set<String>, seed: String, banned: Set<String> = []) -> [WordEntry] {
+        let rule = candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
+        let safe = moment(for: ctx, in: words.filter { !banned.contains($0.id) }, excluding: recent, seed: seed, limit: 4)
+        return rule + safe.filter { s in !rule.contains { $0.id == s.id } }
     }
 
     // Hasher 금지 — 프로세스마다 시드가 달라 같은 사진의 후보가 바뀐다.
@@ -83,4 +94,8 @@ public enum WordPicker {
         for b in s.utf8 { h ^= UInt64(b); h = h &* 0x0000_0100_0000_01b3 }
         return h
     }
+}
+
+extension PhotoWord {
+    public init(_ entry: WordEntry) { self.init(wordID: entry.id, word: entry.word, meaning: entry.meaning) }
 }

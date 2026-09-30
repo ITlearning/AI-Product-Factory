@@ -44,8 +44,7 @@
     "afternoon"
    ],
    "weathers": [
-    "rain",
-    "clear"
+    "rain"
    ],
    "seasons": [],
    "subjects": [
@@ -261,7 +260,6 @@
    "meaning": "비가 섞여 내리는 눈",
    "times": [],
    "weathers": [
-    "snow",
     "rain"
    ],
    "seasons": [

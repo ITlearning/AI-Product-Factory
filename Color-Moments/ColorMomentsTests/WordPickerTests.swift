@@ -40,6 +40,23 @@ final class WordPickerTests: XCTestCase {
                        "때의 말도 시간대는 풀지 않는다")
     }
 
+    func testBannedWordNeverComesBack() {
+        let words = [w("sea", subjects: ["ocean"]), w("shore", subjects: ["ocean"]),
+                     w("duskword", times: [.dusk], subjects: []).asMoment]
+        XCTAssertEqual(pick(dusk, ["ocean"], words, recent: ["shore"]).first, "sea")
+        XCTAssertEqual(WordPicker.candidates(for: dusk, labels: ["ocean"], in: words, excluding: [], seed: "s", banned: ["sea"]).map(\.id),
+                       ["shore"], "버린 단어는 최근 단어처럼 풀리지 않는다")
+        XCTAssertEqual(WordPicker.candidates(for: dusk, labels: ["ocean"], in: words, excluding: [], seed: "s",
+                                             banned: ["sea", "shore"]).map(\.id), ["duskword"], "다 버리면 그 때의 말로")
+    }
+
+    func testModelChoicesAddSafeMomentWords() {
+        let words = [w("heat", times: [.dusk], subjects: ["land"]), w("duskword", times: [.dusk], subjects: []).asMoment,
+                     w("moonhalo", times: [.dusk], subjects: ["moon"])]
+        XCTAssertEqual(WordPicker.choices(for: dusk, labels: ["land"], in: words, excluding: [], seed: "s").map(\.id),
+                       ["heat", "duskword"], "규칙 후보가 하나여도 모델이 고를 여지 — 대상 없는 달무리는 안 들어간다")
+    }
+
     func testMomentFallbackNeverUsesSubjectWords() {
         XCTAssertEqual(pick(dusk, ["laptop"], [w("moonhalo", times: [.dusk], subjects: ["moon"])]), [],
                        "대상을 말하는 단어는 대상이 찍혔을 때만")

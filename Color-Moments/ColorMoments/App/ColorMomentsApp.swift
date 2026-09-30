@@ -19,6 +19,7 @@ struct ColorMomentsApp: App {
         ShotImage.assetSource = PhotoAssetSource()
         PhotoEnrichment.weather = WeatherLookup.weather(for:)
         PhotoEnrichment.attribution = WeatherLookup.attribution
+        WordAssistant.install()
         BackgroundHold.install()
         // store 가 같은 closures 인스턴스를 봐야 「마무리하기」가 그 자리에서 반영된다.
         let closures = DayClosures()

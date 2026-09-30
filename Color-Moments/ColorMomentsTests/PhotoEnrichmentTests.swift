@@ -48,6 +48,8 @@ final class PhotoEnrichmentTests: XCTestCase {
         XCTAssertEqual(PhotoEnrichment.wordWeather("thunderstorms"), .rain)
         XCTAssertEqual(PhotoEnrichment.wordWeather("haze"), .fog)
         XCTAssertEqual(PhotoEnrichment.wordWeather("breezy"), .wind)
+        XCTAssertEqual(PhotoEnrichment.wordWeather("sleet"), .rain, "진눈깨비는 비일 때만 후보 — 눈 오는 날은 함박눈")
+        XCTAssertEqual(PhotoEnrichment.wordWeather("snow"), .snow)
         XCTAssertNil(PhotoEnrichment.wordWeather("hail"))
         for c in known { XCTAssertNotNil(PhotoEnrichment.wordWeather(c), c) }
     }
