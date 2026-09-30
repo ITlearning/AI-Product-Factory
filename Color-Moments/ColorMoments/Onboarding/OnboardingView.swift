@@ -1,4 +1,5 @@
 import AVFoundation
+import Photos
 import SwiftUI
 
 /// 온보딩을 마치고 어디로 가나 — 홈, 카메라가 열린 홈, 방금 받은 하루.
@@ -219,6 +220,18 @@ struct OnboardingView: View {
         if syncs { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
     }
 
+    /// iCloud 로 이어 온 사람은 첫 조약돌(사진 권한을 묻는 유일한 곳)을 건너뛴다 — 여기서 안 물으면 기록만 오고
+    /// 사진은 로딩만 돈다(2026-10-01 재설치 실기기). 받으면 iCloud 기록을 이 기기 사진과 그 자리에서 잇는다.
+    private func continueWithPhotos() {
+        Task {
+            if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined {
+                _ = await LibraryImporter.requestAccess()
+                await CloudIDMapper.refresh(store: store)
+            }
+            next()
+        }
+    }
+
     private func track(_ work: @escaping () async -> Void) {
         working += 1
         Task { @MainActor in
@@ -245,7 +258,7 @@ struct OnboardingView: View {
                             },
                             next: next)
         case .continuing:
-            CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "이어서 보기", next: next)
+            CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "이어서 보기", next: continueWithPhotos)
         case .cloud:
             CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "다음", next: next)
         case .place:
@@ -253,7 +266,7 @@ struct OnboardingView: View {
         case .arrival:
             ArrivalStep(store: store, closures: closures, gifts: gifts, answered: next)
         case .reminder:
-            ReminderStep(store: store, next: next)
+            ReminderStep(store: store, followsArrival: steps.contains(.arrival), next: next)
         case .howTo:
             HowToStep(next: next)
         case .cameraButton:
