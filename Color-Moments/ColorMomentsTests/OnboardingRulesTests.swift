@@ -53,7 +53,7 @@ final class OnboardingRulesTests: XCTestCase {
 
     func testFullFlow() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true),
-                       [.intro, .firstPebble, .arrival, .cloud, .howTo, .collection, .start])
+                       [.intro, .firstPebble, .arrival, .reminder, .cloud, .howTo, .collection, .start])
     }
 
     func testDeniedOrEmptyLibrarySkipsFirstPebble() {
@@ -63,12 +63,12 @@ final class OnboardingRulesTests: XCTestCase {
         XCTAssertFalse(OnboardingFlow.skipsFirstPebble(access: .notDetermined, recentCount: nil),
                        "아직 묻지 않았으면 그 단계에서 묻는다")
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: true, asksArrival: true),
-                       [.intro, .arrival, .cloud, .howTo, .collection, .start])
+                       [.intro, .arrival, .reminder, .cloud, .howTo, .collection, .start])
     }
 
     func testCloudRecordsReplaceFirstPebbleWithContinuing() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: true, skipsFirstPebble: false, asksArrival: true),
-                       [.intro, .continuing, .arrival, .howTo, .collection, .start])
+                       [.intro, .continuing, .arrival, .reminder, .howTo, .collection, .start])
     }
 
     func testArrivalStepOnlyWhenNotAsked() {

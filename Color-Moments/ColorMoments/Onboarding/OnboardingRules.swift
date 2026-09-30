@@ -51,6 +51,8 @@ enum OnboardingStep: Hashable {
     /// iCloud 로 이미 기록이 들어온 사람 — 첫 조약돌 받기 대신 iCloud 상태를 먼저 보여 주고 이어서 본다.
     case continuing
     case arrival
+    /// 사진이 없는 날 알림 빈도 — 알림 권한과 상관없이 늘 보인다(도착 소식 장은 권한을 이미 정했으면 빠져서 거기 넣으면 안 보였다).
+    case reminder
     case cloud
     case howTo
     /// 옆면 카메라 컨트롤이 있는 기기만 — 그 버튼으로 몽돌을 여는 설정을 알린다.
@@ -70,6 +72,7 @@ enum OnboardingFlow {
             steps.append(.firstPebble)
         }
         if asksArrival { steps.append(.arrival) }
+        steps.append(.reminder)
         if !continuing { steps.append(.cloud) }
         steps.append(.howTo)
         if hasCameraButton { steps.append(.cameraButton) }

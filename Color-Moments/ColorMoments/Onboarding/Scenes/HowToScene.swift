@@ -196,3 +196,56 @@ enum ButtonMotion {
         return State(press: press * (1 - release), finger: appear * (1 - lift), camera: on * (1 - off))
     }
 }
+
+/// 사진이 없는 날 알림 — 아침 하늘에 알림이 톡 내려오고 찰칵, 하늘이 노을로 물들면 또 톡, 찰칵.
+struct ReminderScene: View {
+
+    private static let width: CGFloat = 108
+    private static let cycle = 6.4
+    private static let morning = (top: Color(hex: "#9CC6E8"), bottom: Color(hex: "#F6DDBF"))
+    private static let dusk = (top: Color(hex: "#5B4C8A"), bottom: Color(hex: "#F08A5D"))
+
+    var body: some View {
+        SceneClock { t, moving in
+            let p = moving ? t.truncatingRemainder(dividingBy: Self.cycle) : 4.4
+            let evening = SceneEase.inOut(SceneEase.segment(p, from: 2.9, to: 3.5))
+                * (1 - SceneEase.inOut(SceneEase.segment(p, from: 6.0, to: 6.4)))
+            let local = p < 3.2 ? p : p - 3.2
+            let banner = moving
+                ? SceneEase.outBack(SceneEase.segment(local, from: 0.3, to: 0.7)) * (1 - SceneEase.segment(local, from: 1.7, to: 2.0))
+                : 1
+            let flash = moving ? max(0, 1 - abs(local - 2.25) / 0.12) : 0
+            PhoneSilhouette(width: Self.width) {
+                GeometryReader { geo in
+                    let h = geo.size.height
+                    ZStack(alignment: .top) {
+                        LinearGradient(colors: [Self.morning.top.mix(with: Self.dusk.top, by: evening),
+                                                Self.morning.bottom.mix(with: Self.dusk.bottom, by: evening)],
+                                       startPoint: .top, endPoint: .bottom)
+                        Circle()
+                            .fill(Color(hex: "#FFF3D6").mix(with: Color(hex: "#FFB36B"), by: evening))
+                            .frame(width: 22, height: 22)
+                            .blur(radius: 1)
+                            .offset(x: -18 + 30 * evening, y: h * (0.42 + 0.26 * evening))
+                        HStack(spacing: 5) {
+                            Circle().fill(Tone.pure.opacity(0.7)).frame(width: 9, height: 9)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Capsule().fill(Tone.pure.opacity(0.55)).frame(width: 34, height: 3)
+                                Capsule().fill(Tone.pure.opacity(0.35)).frame(width: 24, height: 3)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 6)
+                        .frame(height: 20)
+                        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(.white.opacity(0.85)))
+                        .padding(.horizontal, 6)
+                        .offset(y: -26 + 36 * banner)
+                        .opacity(min(1, banner * 1.5))
+                        Color.white.opacity(0.85 * flash)
+                    }
+                }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}

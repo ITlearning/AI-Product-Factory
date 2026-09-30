@@ -240,6 +240,8 @@ struct OnboardingView: View {
             CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "다음", next: next)
         case .arrival:
             ArrivalStep(store: store, closures: closures, gifts: gifts, answered: next)
+        case .reminder:
+            ReminderStep(store: store, next: next)
         case .howTo:
             HowToStep(next: next)
         case .cameraButton:

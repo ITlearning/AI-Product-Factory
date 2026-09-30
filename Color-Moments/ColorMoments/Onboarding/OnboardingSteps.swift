@@ -55,10 +55,7 @@ struct ReminderChoice: View {
     @Environment(\.onboardingInk) private var ink
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("사진이 없는 날엔 아침과 노을 무렵에 가볍게 알려 드릴게요.")
-                .font(Face.caption).foregroundStyle(ink.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ForEach(MomentReminder.Frequency.allCases, id: \.self) { f in
                     let on = frequency == f
@@ -77,6 +74,41 @@ struct ReminderChoice: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+        }
+    }
+}
+
+/// 사진이 없는 날 알림 — 고르고 「다음」을 누를 때, 알림을 받기로 했는데 아직 권한을 안 물었으면 그때 묻는다.
+struct ReminderStep: View {
+    let store: DayStore
+    let next: () -> Void
+
+    @AppStorage(MomentReminder.key) private var frequency: MomentReminder.Frequency = .sometimes
+    @State private var asking = false
+
+    var body: some View {
+        OnboardingPage {
+            SceneLayout {
+                ReminderScene()
+            } words: {
+                VStack(alignment: .leading, spacing: 18) {
+                    OnboardingText(title: "사진이 없는 날엔 아침과 노을 무렵에 가볍게 알려 드릴게요",
+                                   detail: "한 장이라도 담은 날은 오지 않아요. 설정에서 언제든 바꿀 수 있어요.")
+                    ReminderChoice()
+                }
+            }
+        } actions: {
+            PrimaryAction(title: "다음", working: asking) {
+                asking = true
+                Task {
+                    if frequency != .off, await ArrivalNotice.permission() == .notDetermined {
+                        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+                    }
+                    await MomentReminder.sync(store: store)
+                    asking = false
+                    next()
                 }
             }
         }
@@ -361,11 +393,8 @@ struct ArrivalStep: View {
             SceneLayout {
                 ArrivalScene()
             } words: {
-                VStack(alignment: .leading, spacing: 20) {
-                    OnboardingText(title: "사진을 담은 다음 날 아침, 조약돌이 도착하면 한 번 알려 드려요.",
-                                   detail: didAskArrivalNotice ? "알림은 설정에서 언제든 바꿀 수 있어요." : nil)
-                    ReminderChoice()
-                }
+                OnboardingText(title: "사진을 담은 다음 날 아침, 조약돌이 도착하면 한 번 알려 드려요.",
+                               detail: didAskArrivalNotice ? "알림은 설정에서 언제든 바꿀 수 있어요." : nil)
             }
         } actions: {
             if didAskArrivalNotice {
