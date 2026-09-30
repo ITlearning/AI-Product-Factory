@@ -84,6 +84,7 @@ struct DayPhotoView: View {
     @State private var mapOpen = false
     /// 처음 그릴 때 이미 있던 동네·날씨는 그대로 두고, 그 뒤에 도착한 것만 한 글자씩 띄운다.
     @State private var revealArrivals = false
+    @State private var pacer = RevealPacer()
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
@@ -189,7 +190,7 @@ struct DayPhotoView: View {
     /// 색 점·시각 / 동네 / 날씨 — 좌표가 있으면 한 줄 전체가 지도를 펼치는 버튼이다.
     @ViewBuilder
     private func meta(_ m: Moment) -> some View {
-        let line = HStack(spacing: 12) {
+        let line = HStack(spacing: 0) {
             HStack(spacing: 6) {
                 if !hidesColor(m) {
                     Circle().fill(Color(hex: m.colorHex)).frame(width: 9, height: 9)
@@ -198,24 +199,22 @@ struct DayPhotoView: View {
             }
             .fixedSize()
             if let place = m.place?.name {
-                HStack(spacing: 4) {
+                RevealPiece(place, reveal: revealArrivals, iconSpacing: 4, pacer: pacer) {
                     Image(systemName: "mappin").imageScale(.small)
-                    RevealText(place, reveal: revealArrivals).lineLimit(1)
                 }
-                .transition(.glyph)
+                .lineLimit(1)
             }
             if let w = m.place?.weather, let label = PhotoEnrichment.label(w.condition) {
-                HStack(spacing: 5) {
+                RevealPiece("\(label) \(Int(w.celsius.rounded()))°", reveal: revealArrivals, iconSpacing: 5, pacer: pacer) {
                     WeatherGlyph(condition: w.condition, night: PhotoEnrichment.isNight(m.capturedAt))
-                    RevealText("\(label) \(Int(w.celsius.rounded()))°", reveal: revealArrivals)
                 }
                 .fixedSize()
-                .transition(.glyph)
             }
             if m.place != nil {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12, weight: .semibold))
                     .rotationEffect(.degrees(mapOpen ? -180 : 0))
+                    .padding(.leading, RevealPiece<EmptyView>.gap)
             }
         }
         .font(Face.line)
@@ -312,48 +311,107 @@ private struct PlaceMap: View {
     }
 }
 
-/// 늦게 도착한 글을 한 글자씩 — 글자마다 흐릿하게 아래에서 올라온다(numericText 결).
-/// numericText 는 이미 있는 Text 의 내용이 바뀔 때만 돌아서, 새로 나타나는 글엔 직접 만든다.
+/// 늦게 도착한 동네·날씨 한 조각. 앞 조각이 다 뜬 다음 차례로(RevealPacer), 들어갈 자리(앞 간격·아이콘·글자)를
+/// 한 번의 곡선으로 벌려 V가 조각마다 한 번만 미끄러지고, 그 안에서 글자가 하나씩 흐릿하게 올라온다(numericText 결).
+/// numericText 는 이미 있는 Text 의 내용이 바뀔 때만 돌아서 새로 나타나는 글엔 직접 만든다.
 /// 다 뜨면 한 Text 로 돌아가 말줄임·자간이 원래대로 먹는다.
-private struct RevealText: View {
+private struct RevealPiece<Icon: View>: View {
+    static var gap: CGFloat { 12 }
+
     let text: String
+    let iconSpacing: CGFloat
+    let pacer: RevealPacer
+    let icon: Icon
+
+    @State private var natural: CGFloat = 0
+    @State private var open: Bool
+    @State private var iconShown: Bool
     @State private var shown: Int
     @State private var settled: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(_ text: String, reveal: Bool) {
+    init(_ text: String, reveal: Bool, iconSpacing: CGFloat, pacer: RevealPacer, @ViewBuilder icon: () -> Icon) {
         self.text = text
+        self.iconSpacing = iconSpacing
+        self.pacer = pacer
+        self.icon = icon()
+        _open = State(initialValue: !reveal)
+        _iconShown = State(initialValue: !reveal)
         _shown = State(initialValue: reveal ? 0 : text.count)
         _settled = State(initialValue: !reveal)
     }
 
     var body: some View {
-        Group {
-            if settled {
+        if settled {
+            HStack(spacing: iconSpacing) {
+                icon
                 Text(text)
-            } else {
+            }
+            .padding(.leading, Self.gap)
+        } else {
+            HStack(spacing: iconSpacing) {
+                icon.modifier(GlyphRise(hidden: !iconShown))
                 HStack(spacing: 0) {
-                    ForEach(Array(text.prefix(shown).enumerated()), id: \.offset) { _, c in
-                        Text(String(c)).transition(.glyph)
+                    ForEach(Array(text.enumerated()), id: \.offset) { i, c in
+                        Text(String(c)).modifier(GlyphRise(hidden: i >= shown))
                     }
                 }
             }
+            .padding(.leading, Self.gap)
+            .fixedSize()
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { natural = $0 }
+            .frame(width: open ? natural : 0, alignment: .leading)
+            .task { await play() }
         }
-        .task(id: text) {
-            guard !settled else { return }
-            if !reduceMotion {
-                while shown < text.count {
-                    try? await Task.sleep(for: .milliseconds(45))
-                    guard !Task.isCancelled else { return }
-                    withAnimation(.easeOut(duration: 0.3)) { shown += 1 }
-                }
-                try? await Task.sleep(for: .milliseconds(320))
-                guard !Task.isCancelled else { return }
-            }
-            var still = Transaction()
-            still.disablesAnimations = true
-            withTransaction(still) { settled = true }
+    }
+
+    private func play() async {
+        guard !settled else { return }
+        if open { settle(); return }
+        let n = max(text.count, 1)
+        let span = min(0.9, 0.4 + 0.07 * Double(n))
+        try? await Task.sleep(for: pacer.slot(span))
+        guard !Task.isCancelled else { return }
+        if reduceMotion { settle(); return }
+
+        let start = ContinuousClock.now
+        func at(_ fraction: Double) async { try? await Task.sleep(until: start + .seconds(span * fraction), clock: .continuous) }
+        withAnimation(.easeOut(duration: span)) { open = true }
+        await at(0.12)
+        withAnimation(.easeOut(duration: 0.3)) { iconShown = true }
+        for i in 0..<text.count {
+            // 자리가 먼저 벌어지고 글자가 뒤따른다 — 안 보이는 글자가 V 위에 겹치지 않게.
+            await at(0.25 + 0.7 * Double(i + 1) / Double(n))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.3)) { shown = i + 1 }
         }
+        await at(1 + 0.3 / span)
+        guard !Task.isCancelled else { return }
+        settle()
+    }
+
+    private func settle() {
+        var still = Transaction()
+        still.disablesAnimations = true
+        withTransaction(still) {
+            open = true
+            iconShown = true
+            shown = text.count
+            settled = true
+        }
+    }
+}
+
+/// 동네·날씨가 붙어서 도착해도 한 조각씩 — 앞 조각이 다 벌어진 다음에 다음 조각이 벌어진다.
+@MainActor
+private final class RevealPacer {
+    private var free = ContinuousClock.now
+
+    func slot(_ seconds: Double) -> Duration {
+        let now = ContinuousClock.now
+        let start = max(now, free)
+        free = start + .seconds(seconds)
+        return start - now
     }
 }
 
@@ -366,10 +424,6 @@ private struct GlyphRise: ViewModifier {
             .blur(radius: hidden ? 3 : 0)
             .offset(y: hidden ? 6 : 0)
     }
-}
-
-private extension AnyTransition {
-    static var glyph: AnyTransition { .modifier(active: GlyphRise(hidden: true), identity: GlyphRise(hidden: false)) }
 }
 
 /// 비·이슬비·눈·뇌우는 구름 아래로 천천히 떨어지고, 나머지는 기본 심볼 그대로.
