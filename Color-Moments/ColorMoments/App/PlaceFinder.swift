@@ -19,6 +19,13 @@ final class PlaceFinder: NSObject, CLLocationManagerDelegate {
     }
 
     var isEnabled: Bool { UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true }
+    /// 디버그 화면용 — 잠금화면 확장의 권한과 나란히 본다.
+    var authorizationText: String {
+        let names = ["미정", "제한", "거부", "항상", "사용 중"]
+        let raw = Int(manager.authorizationStatus.rawValue)
+        return names.indices.contains(raw) ? names[raw] : "\(raw)"
+    }
+
     private var authorized: Bool {
         manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
     }

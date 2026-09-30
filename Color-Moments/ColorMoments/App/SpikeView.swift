@@ -42,6 +42,7 @@ struct SpikeView: View {
                     Toggle("단어 고르기에 Apple Intelligence", isOn: $wordModelEnabled)
                     LabeledContent("잠금화면 위치",
                                    value: UserDefaults.standard.string(forKey: CaptureInbox.lockedPlaceProbeKey) ?? "아직 잠금화면 사진 없음")
+                    LabeledContent("앱 위치 권한", value: PlaceFinder.shared.authorizationText)
                 }
                 #endif
                 Section("앱 촬영 (A 경로)") {
