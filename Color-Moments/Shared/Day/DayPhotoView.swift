@@ -1,4 +1,5 @@
 import CoreLocation
+import MapKit
 import SwiftUI
 import UIKit
 
@@ -14,17 +15,31 @@ public enum PhotoEnrichment {
     public nonisolated(unsafe) static var attribution: (() async -> Attribution?)?
 
     /// WeatherCondition.rawValue → 짧은 우리말. 모르는 값이면 보이지 않는다.
-    public static func label(_ condition: String) -> String? {
+    public static func label(_ condition: String) -> String? { look(condition)?.label }
+
+    /// 저장된 condition 으로 고른다 — WeatherKit symbolName 을 따로 남기지 않는다.
+    public static func symbol(_ condition: String, night: Bool) -> String? {
+        look(condition).map { night ? $0.night : $0.day }
+    }
+
+    public static func isNight(_ date: Date, calendar: Calendar = .current) -> Bool {
+        let hour = calendar.component(.hour, from: date)
+        return hour < 6 || hour >= 19
+    }
+
+    private static func look(_ condition: String) -> (label: String, day: String, night: String)? {
         switch condition {
-        case "clear", "mostlyClear", "hot": "맑음"
-        case "partlyCloudy": "구름 조금"
-        case "mostlyCloudy", "cloudy": "흐림"
-        case "drizzle": "이슬비"
-        case "rain", "heavyRain", "sunShowers", "freezingRain", "freezingDrizzle": "비"
-        case "snow", "flurries", "heavySnow", "sleet", "sunFlurries", "wintryMix", "blowingSnow", "blizzard": "눈"
-        case "foggy", "haze", "smoky": "안개"
-        case "windy", "breezy": "바람"
-        case "thunderstorms", "isolatedThunderstorms", "scatteredThunderstorms", "strongStorms": "뇌우"
+        case "clear", "mostlyClear", "hot": ("맑음", "sun.max", "moon.stars")
+        case "partlyCloudy": ("구름 조금", "cloud.sun", "cloud.moon")
+        case "mostlyCloudy", "cloudy": ("흐림", "cloud", "cloud")
+        case "drizzle": ("이슬비", "cloud.drizzle", "cloud.drizzle")
+        case "rain", "heavyRain", "sunShowers", "freezingRain", "freezingDrizzle": ("비", "cloud.rain", "cloud.rain")
+        case "snow", "flurries", "heavySnow", "sleet", "sunFlurries", "wintryMix", "blowingSnow", "blizzard":
+            ("눈", "cloud.snow", "cloud.snow")
+        case "foggy", "haze", "smoky": ("안개", "cloud.fog", "cloud.fog")
+        case "windy", "breezy": ("바람", "wind", "wind")
+        case "thunderstorms", "isolatedThunderstorms", "scatteredThunderstorms", "strongStorms":
+            ("뇌우", "cloud.bolt", "cloud.bolt")
         default: nil
         }
     }
@@ -45,6 +60,7 @@ struct DayPhotoView: View {
     @State private var image: UIImage?
     @State private var sharing = false
     @State private var attribution: PhotoEnrichment.Attribution?
+    @State private var mapOpen = false
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
@@ -139,28 +155,7 @@ struct DayPhotoView: View {
                 Text(w.meaning).font(Face.wordMeaning).foregroundStyle(Tone.tertiary)
                 Spacer().frame(height: 12)
             }
-            HStack(spacing: 6) {
-                if !hidesColor(m) {
-                    Circle().fill(Color(hex: m.colorHex)).frame(width: 9, height: 9)
-                }
-                Text(DayGradient.timeText(m.capturedAt))
-                    .font(Face.wordMeta).monospacedDigit()
-                    .foregroundStyle(Tone.tertiary)
-                if let place = m.place?.name {
-                    Text("·  \(place)")
-                        .font(Face.wordMeta)
-                        .foregroundStyle(Tone.tertiary)
-                        .lineLimit(1)
-                        .transition(.opacity)
-                }
-                if let w = m.place?.weather, let label = PhotoEnrichment.label(w.condition) {
-                    Text("·  \(label) \(Int(w.celsius.rounded()))°")
-                        .font(Face.wordMeta).monospacedDigit()
-                        .foregroundStyle(Tone.tertiary)
-                        .lineLimit(1)
-                        .transition(.opacity)
-                }
-            }
+            meta(m)
             if m.place?.weather != nil, let a = attribution {
                 Link(destination: a.legalURL) {
                     AsyncImage(url: a.markURL) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
@@ -170,10 +165,70 @@ struct DayPhotoView: View {
                 .padding(.top, 6)
                 .accessibilityLabel("Apple 날씨 데이터 출처")
             }
+            if mapOpen, let p = m.place {
+                PlaceMap(coordinate: CLLocationCoordinate2D(latitude: p.latitude, longitude: p.longitude),
+                         color: hidesColor(m) ? nil : Color(hex: m.colorHex))
+                    .frame(height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: Shape2.cardFront, style: .continuous))
+                    .padding(.top, 10)
+                    .transition(.opacity)
+            }
         }
         .animation(.easeOut(duration: 0.25), value: m.word)
         .animation(.easeOut(duration: 0.25), value: m.place?.name)
         .animation(.easeOut(duration: 0.25), value: m.place?.weather)
+    }
+
+    /// 색 점·시각 / 동네 / 날씨 — 좌표가 있으면 한 줄 전체가 지도를 펼치는 버튼이다.
+    @ViewBuilder
+    private func meta(_ m: Moment) -> some View {
+        let line = HStack(spacing: 12) {
+            HStack(spacing: 6) {
+                if !hidesColor(m) {
+                    Circle().fill(Color(hex: m.colorHex)).frame(width: 9, height: 9)
+                }
+                Text(DayGradient.timeText(m.capturedAt)).monospacedDigit()
+            }
+            .fixedSize()
+            if let place = m.place?.name {
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin").imageScale(.small)
+                    Text(place).lineLimit(1)
+                }
+                .transition(.opacity)
+            }
+            if let w = m.place?.weather, let label = PhotoEnrichment.label(w.condition) {
+                HStack(spacing: 5) {
+                    if let symbol = PhotoEnrichment.symbol(w.condition, night: PhotoEnrichment.isNight(m.capturedAt)) {
+                        Image(systemName: symbol).imageScale(.small)
+                    }
+                    Text("\(label) \(Int(w.celsius.rounded()))°").monospacedDigit()
+                }
+                .fixedSize()
+                .transition(.opacity)
+            }
+            if m.place != nil {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .rotationEffect(.degrees(mapOpen ? 180 : 0))
+            }
+        }
+        .font(Face.line)
+        .foregroundStyle(Tone.secondary)
+
+        if m.place != nil {
+            // 글줄은 21pt 라 위아래로 터치 영역만 넓힌다 — 자리는 그대로.
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) { mapOpen.toggle() }
+            } label: {
+                line.padding(.vertical, 12).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, -12)
+            .accessibilityHint(mapOpen ? "지도를 접어요" : "찍은 곳을 지도로 펼쳐요")
+        } else {
+            line
+        }
     }
 
     /// 좌표가 있는 사진 — 처음 볼 때 그 시각의 실제 날씨를 한 번 찾아 남긴다(iCloud 로도 간다).
@@ -227,5 +282,26 @@ struct DayPhotoView: View {
         guard let pw = WordPicker.photoWord(for: ctx, labels: seen, in: words,
                                             excluding: store.recentWordIDs(excluding: m.id), seed: m.id.uuidString) else { return }
         store.assignWord(m.id, pw)
+    }
+}
+
+/// 펼칠 때만 만든다. 지도 로고·법적 고지는 Map 이 붙인다(스냅샷이면 따로 붙여야 한다).
+private struct PlaceMap: View {
+    let coordinate: CLLocationCoordinate2D
+    let color: Color?
+
+    var body: some View {
+        Map(initialPosition: .region(MKCoordinateRegion(center: coordinate, latitudinalMeters: 800, longitudinalMeters: 800)),
+            interactionModes: []) {
+            Annotation("", coordinate: coordinate, anchor: .center) {
+                Circle()
+                    .fill(color ?? Tone.secondary)
+                    .frame(width: 11, height: 11)
+                    .overlay(Circle().stroke(.white.opacity(0.88), lineWidth: 1.6))
+                    .background(Circle().fill(.white.opacity(0.14)).frame(width: 34, height: 34))
+            }
+        }
+        .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
+        .environment(\.colorScheme, .dark)
     }
 }
