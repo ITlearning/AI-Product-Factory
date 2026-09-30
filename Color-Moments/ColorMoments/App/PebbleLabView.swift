@@ -176,10 +176,11 @@ final class FrameMeter: NSObject, ObservableObject {
         let gap = l.timestamp - last
         let expected = max(l.targetTimestamp - l.timestamp, 1.0 / 120)
         if gap > expected * 1.5 { hitches += 1 }
-        worstMs = max(worstMs, gap * 1000)
+        // @Published 는 같은 값을 넣어도 발행한다 — 매 프레임 대입하면 배지가 매 프레임 다시 그려진다.
+        if gap * 1000 > worstMs { worstMs = gap * 1000 }
         frames += 1
         if l.timestamp - windowStart >= 1 {
-            fps = frames
+            if fps != frames { fps = frames }
             frames = 0
             windowStart = l.timestamp
         }
