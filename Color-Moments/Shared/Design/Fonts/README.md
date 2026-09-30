@@ -98,7 +98,7 @@ IBM Plex Sans KR SemiBold(Google Fonts, SIL OFL)를 골랐다 — 고운돋움�
 python3 - <<'PY'   # 버튼 스타일(Face.action·PrimaryAction·SecondaryAction·CloudStep actionTitle)에 쓰는 문자열을 grep 해 채운다
 strings = [
     "닫기", "담기 ", "설정 열기", "다음", "사진 보기", "이 사진으로 받기",
-    "직접 고르기", "알려 주세요", "괜찮아요", "이어서 보기", "지금 한 장 남겨보기", "시작하기",
+    "직접 고르기", "알려 주세요", "적어 주세요", "괜찮아요", "이어서 보기", "지금 한 장 남겨보기", "시작하기",
     "내 조약돌 보러 가기",
 ]
 chars = set()

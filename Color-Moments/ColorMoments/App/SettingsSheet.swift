@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// 홈 오른쪽 위 설정 — 조약돌 모양(고르면 그 자리에서 바뀐다)과 사진 앱 ♥ 담기.
 struct SettingsSheet: View {
@@ -9,6 +10,9 @@ struct SettingsSheet: View {
     @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
     @AppStorage(FavoriteAdopter.enabledKey) private var adoptsFavorites = true
     @AppStorage(PlaceFinder.enabledKey) private var recordsPlace = true
+    /// 스위치는 설정값만이 아니라 실제 권한까지 — 켜진 채로 보이면 이미 허용한 줄 안다(2026-10-01 Tabber).
+    @State private var placeAccess = PlaceFinder.shared.access
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage(MomentReminder.key) private var reminder: MomentReminder.Frequency = .sometimes
     var store: DayStore? = nil
 
@@ -49,18 +53,20 @@ struct SettingsSheet: View {
             }
             .tint(Tone.primary.opacity(0.6))
             .padding(.top, 10)
-            Toggle(isOn: $recordsPlace) {
+            Toggle(isOn: Binding(get: { recordsPlace && placeAccess == .granted }, set: setRecordsPlace)) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("찍은 곳 남기기").font(Face.line).foregroundStyle(Tone.primary)
-                    Text("몽돌로 찍은 사진 옆에 동네 이름과 그때 날씨가 적혀요.")
+                    Text(recordsPlace && placeAccess == .denied
+                         ? "iOS 설정에서 몽돌의 위치를 허용해야 적혀요."
+                         : "몽돌로 찍은 사진 옆에 동네 이름과 그때 날씨가 적혀요.")
                         .font(Face.caption).foregroundStyle(Tone.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .tint(Tone.primary.opacity(0.6))
             .padding(.top, 14)
-            .onChange(of: recordsPlace) { _, on in
-                if on { Task { _ = await PlaceFinder.shared.requestIfNeeded() } }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { placeAccess = PlaceFinder.shared.access }
             }
 
             Text("사진이 없는 날 알림").font(Face.caption).foregroundStyle(Tone.tertiary)
@@ -139,4 +145,20 @@ struct SettingsSheet: View {
                    colorHex: $0.element, fileName: "settings-\($0.offset).jpg", source: .app)
         }
     }()
+
+    private func setRecordsPlace(_ on: Bool) {
+        guard on else { recordsPlace = false; return }
+        recordsPlace = true
+        switch placeAccess {
+        case .granted:
+            break
+        case .notAsked:
+            Task {
+                _ = await PlaceFinder.shared.requestIfNeeded()
+                placeAccess = PlaceFinder.shared.access
+            }
+        case .denied:
+            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+        }
+    }
 }

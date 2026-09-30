@@ -423,6 +423,40 @@ struct ArrivalStep: View {
     }
 }
 
+/// 찍은 곳·날씨 — 허용하면 사진 보기에 무엇이 붙는지 장면으로 먼저 보여 주고 묻는다.
+/// 「괜찮아요」면 설정의 「찍은 곳 남기기」도 꺼 둔다(켜진 채로 보이면 이미 허용한 줄 안다).
+struct PlaceStep: View {
+    let answered: () -> Void
+
+    @AppStorage(PlaceFinder.enabledKey) private var recordsPlace = true
+    @State private var asking = false
+
+    var body: some View {
+        OnboardingPage {
+            SceneLayout {
+                PlaceScene()
+            } words: {
+                OnboardingText(title: "사진 옆에 찍은 곳과 그때 날씨를 적어 둘게요.",
+                               detail: "위치는 동네 이름과 날씨를 찾는 데만 써요.")
+            }
+        } actions: {
+            PrimaryAction(title: "적어 주세요", working: asking) {
+                asking = true
+                Task {
+                    recordsPlace = true
+                    _ = await PlaceFinder.shared.requestIfNeeded()
+                    asking = false
+                    answered()
+                }
+            }
+            SecondaryAction(title: "괜찮아요") {
+                recordsPlace = false
+                answered()
+            }
+        }
+    }
+}
+
 /// 기존 사용자에게 한 번만 — 새 온보딩 전체 대신 아침 소식 한 장.
 struct ArrivalAskOverlay: View {
     let store: DayStore

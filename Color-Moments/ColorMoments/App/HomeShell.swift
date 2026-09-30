@@ -440,8 +440,9 @@ struct HomeShell: View {
                 if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined {
                     _ = await LibraryImporter.requestAccess()
                 }
-                // 위치는 사진 권한 다음 차례로 — 허용하면 방금 찍은 이 사진에도 붙인다(사진 앱 저장에도 들어간다).
-                if m.place == nil, await PlaceFinder.shared.requestIfNeeded(), let place = await PlaceFinder.shared.current() {
+                // 위치는 온보딩에서 묻는다 — 찍은 직후에 허용 창이 뜨면 「엥 뭐지」 싶다(2026-10-01 Tabber).
+                // 허용돼 있으면 방금 찍은 이 사진에도 붙인다(사진 앱 저장에도 들어간다).
+                if m.place == nil, PlaceFinder.shared.access == .granted, let place = await PlaceFinder.shared.current() {
                     store.setPlace(m.id, place)
                     m.place = place
                 }

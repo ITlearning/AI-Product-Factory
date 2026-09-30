@@ -54,6 +54,9 @@ final class OnboardingRulesTests: XCTestCase {
     func testFullFlow() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true),
                        [.intro, .firstPebble, .arrival, .reminder, .cloud, .howTo, .collection, .start])
+        XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true, asksPlace: true),
+                       [.intro, .firstPebble, .place, .arrival, .reminder, .cloud, .howTo, .collection, .start],
+                       "찍은 곳은 첫 조약돌을 본 바로 뒤 — 사진 옆에 무엇이 붙는지 이어서 보여 준다")
     }
 
     func testDeniedOrEmptyLibrarySkipsFirstPebble() {

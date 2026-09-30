@@ -21,6 +21,14 @@ struct OnboardingView: View {
     @State private var forward = true
     // 도중에 답하면 단계가 빠져 번호가 밀린다 — 처음 본 값으로 고정한다.
     @State private var asksArrival = !UserDefaults.standard.bool(forKey: "didAskArrivalNotice")
+    /// 위치 권한을 아직 안 정한 기기만 「찍은 곳」 장을 본다 — 렌치로 다시 볼 땐 늘(모양을 봐야 한다).
+    @State private var asksPlace: Bool = {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "debugReplayOnboarding") { return true }
+        #endif
+        return PlaceFinder.shared.access == .notAsked
+    }()
+    @State private var placeAnswered = false
     @State private var continuing: Bool?
     @State private var skipsFirstPebble = false
     @State private var importedDayKeys: Set<String> = []
@@ -40,7 +48,7 @@ struct OnboardingView: View {
 
     private var steps: [OnboardingStep] {
         OnboardingFlow.steps(continuing: continuing ?? false, skipsFirstPebble: skipsFirstPebble,
-                             asksArrival: asksArrival, hasCameraButton: Self.hasCameraButton)
+                             asksArrival: asksArrival, hasCameraButton: Self.hasCameraButton, asksPlace: asksPlace)
     }
 
     private var step: OnboardingStep { steps[min(index, steps.count - 1)] }
@@ -173,6 +181,7 @@ struct OnboardingView: View {
     private var canSwipeForward: Bool {
         switch step {
         case .arrival: didAskArrivalNotice
+        case .place: placeAnswered
         case .start: false
         case .firstPebble: !busy
         default: true
@@ -239,6 +248,8 @@ struct OnboardingView: View {
             CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "이어서 보기", next: next)
         case .cloud:
             CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "다음", next: next)
+        case .place:
+            PlaceStep(answered: { placeAnswered = true; next() })
         case .arrival:
             ArrivalStep(store: store, closures: closures, gifts: gifts, answered: next)
         case .reminder:

@@ -1,7 +1,8 @@
 import CoreLocation
 
 /// 몽돌로 찍은 사진에 찍은 곳을 남긴다. 카메라를 열 때 미리 받아 두어 찍는 순간 붙인다.
-/// 권한은 첫 사진을 찍은 뒤(사진 권한 다음 차례) 한 번 묻는다 — 온보딩에 한 장 더 늘리지 않는다(2026-10-01 Tabber).
+/// 권한은 온보딩 「찍은 곳」 장에서 묻는다 — 찍은 직후에 허용 창이 뜨면 「엥 뭐지」 싶다(2026-10-01 Tabber).
+/// 잠금화면 촬영 확장도 이 권한을 같이 쓴다(실기기 ±14m).
 @MainActor
 final class PlaceFinder: NSObject, CLLocationManagerDelegate {
     static let shared = PlaceFinder()
@@ -19,6 +20,16 @@ final class PlaceFinder: NSObject, CLLocationManagerDelegate {
     }
 
     var isEnabled: Bool { UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true }
+    enum Access { case granted, notAsked, denied }
+
+    var access: Access {
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways: .granted
+        case .notDetermined: .notAsked
+        default: .denied
+        }
+    }
+
     /// 디버그 화면용 — 잠금화면 확장의 권한과 나란히 본다.
     var authorizationText: String {
         let names = ["미정", "제한", "거부", "항상", "사용 중"]
