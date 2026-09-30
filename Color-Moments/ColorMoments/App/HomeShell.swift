@@ -84,7 +84,7 @@ struct HomeShell: View {
             ZStack {
                 Tone.pure.ignoresSafeArea()
 
-                HomeView(store: store, gifts: gifts, showsSwipeHint: !didSwipe && !didFinishOnboarding && progress == 0,
+                HomeView(store: store, gifts: gifts, showsSwipeHint: !didSwipe && progress == 0,
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          onDaySheetDismissed: { daySheetDismissedTick += 1 },
                          daySheetPresented: $daySheetPresented,
