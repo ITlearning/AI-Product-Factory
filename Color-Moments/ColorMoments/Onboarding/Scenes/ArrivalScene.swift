@@ -10,8 +10,8 @@ struct ArrivalScene: View {
             let state = NoticeMotion.state(at: t.truncatingRemainder(dividingBy: Self.cycle), moving: moving)
             ZStack {
                 Sky(mix: moving ? (1 - cos(t * 2 * .pi / 24)) / 2 : 0.6)
+                // 카드 양옆은 아래 글·버튼 줄과 같은 선에(Tabber).
                 NoticeCard()
-                    .padding(.horizontal, 8)
                     .rotationEffect(.degrees(state.angle), anchor: .top)
                     .offset(y: state.y)
                     .opacity(state.opacity)
@@ -56,10 +56,13 @@ private struct Sky: View {
     var body: some View {
         let top = Self.blend(Tone.skyDawn[0], Tone.skyMorning[0], mix)
         let bottom = Self.blend(Tone.skyDawn[1], Tone.skyMorning[1], mix)
-        LinearGradient(colors: [top, bottom], startPoint: .top, endPoint: .bottom)
-            .mask(RadialGradient(colors: [.black, .black.opacity(0)], center: .center,
-                                 startRadius: 40, endRadius: 210))
-            .opacity(0.9)
+        // 빛은 장면 폭 안에서 다 사그라든다 — 반지름이 폭의 절반보다 크면 양옆에 세로 경계가 보였다.
+        GeometryReader { geo in
+            LinearGradient(colors: [top, bottom], startPoint: .top, endPoint: .bottom)
+                .mask(RadialGradient(colors: [.black, .black.opacity(0)], center: .center,
+                                     startRadius: 40, endRadius: min(geo.size.width, geo.size.height) / 2))
+        }
+        .opacity(0.9)
     }
 }
 

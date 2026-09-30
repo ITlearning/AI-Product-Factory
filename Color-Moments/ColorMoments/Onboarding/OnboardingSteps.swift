@@ -83,6 +83,8 @@ struct ReminderChoice: View {
 /// 사진이 없는 날 알림 — 고르고 「다음」을 누를 때, 알림을 받기로 했는데 아직 권한을 안 물었으면 그때 묻는다.
 struct ReminderStep: View {
     let store: DayStore
+    /// 바로 앞이 조약돌 도착 알림 장이면 「그리고」로 이어 읽힌다 — 알림 권한을 이미 정한 기기에선 그 장이 빠진다.
+    var followsArrival = false
     let next: () -> Void
 
     @AppStorage(MomentReminder.key) private var frequency: MomentReminder.Frequency = .sometimes
@@ -94,7 +96,8 @@ struct ReminderStep: View {
                 ReminderScene()
             } words: {
                 VStack(alignment: .leading, spacing: 18) {
-                    OnboardingText(title: "사진이 없는 날엔 아침과 노을 무렵에 가볍게 알려 드릴게요",
+                    OnboardingText(title: (followsArrival ? "그리고 사진이 없는 날엔" : "사진이 없는 날엔")
+                                   + " 아침과 노을 무렵에 가볍게 알려 드릴게요.",
                                    detail: "한 장이라도 담은 날은 오지 않아요. 설정에서 언제든 바꿀 수 있어요.")
                     ReminderChoice()
                 }
