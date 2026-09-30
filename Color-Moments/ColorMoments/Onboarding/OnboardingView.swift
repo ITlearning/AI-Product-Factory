@@ -184,7 +184,8 @@ struct OnboardingView: View {
         case .arrival: didAskArrivalNotice
         case .place: placeAnswered
         case .start: false
-        case .firstPebble: !busy
+        // 「사진 보기」 전엔 쓸어 넘기지 않는다 — 넘기면 사진 권한을 한 번도 안 묻고 끝난다(이어 온 사람은 iCloud 장에서 묻는다).
+        case .firstPebble: !busy && firstPebble.phase != .ask
         default: true
         }
     }
