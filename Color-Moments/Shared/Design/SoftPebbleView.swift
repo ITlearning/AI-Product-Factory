@@ -74,15 +74,22 @@ extension SoftPebbleShape {
 struct SoftPebbleOutline: Shape {
     var shape: SoftPebbleShape = .placeholder
 
-    func path(in rect: CGRect) -> Path {
-        let r = rect.height / 2
-        let pts = shape.outline().map { CGPoint(x: rect.midX + $0.x * r, y: rect.midY + $0.y * r) }
+    private static let placeholderUnit = unitPath(.placeholder)
+
+    private static func unitPath(_ shape: SoftPebbleShape) -> Path {
+        let pts = shape.outline()
         var p = Path()
         guard let first = pts.first else { return p }
         p.move(to: first)
         pts.dropFirst().forEach { p.addLine(to: $0) }
         p.closeSubpath()
         return p
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let r = rect.height / 2
+        let unit = shape == .placeholder ? Self.placeholderUnit : Self.unitPath(shape)
+        return unit.applying(CGAffineTransform(a: r, b: 0, c: 0, d: r, tx: rect.midX, ty: rect.midY))
     }
 }
 

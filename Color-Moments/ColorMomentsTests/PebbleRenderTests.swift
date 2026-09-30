@@ -24,6 +24,36 @@ final class PebbleRenderTests: XCTestCase {
         XCTAssertEqual(a.size, CGSize(width: Grain.tileSide, height: Grain.tileSide))
     }
 
+    /// 점선 조약돌은 단위 윤곽을 한 번 구워 키운다 — rect 마다 윤곽을 다시 구하던 때와 같은 점이어야 한다.
+    func testSoftPebbleOutlineMatchesPerRectOutline() {
+        func points(_ p: Path) -> [CGPoint] {
+            var out: [CGPoint] = []
+            p.forEach { e in
+                switch e {
+                case .move(let to), .line(let to): out.append(to)
+                default: break
+                }
+            }
+            return out
+        }
+        let other = SoftPebbleShape(tilt: -0.3, egg: 0.15, wa: 0.1, wb: 0.8, wc: 0.2)
+        let cases: [(SoftPebbleShape, CGRect)] = [
+            (.placeholder, CGRect(x: 0, y: 0, width: 60, height: 70)),
+            (.placeholder, CGRect(x: 12, y: -4, width: 97.5, height: 113)),
+            (.placeholder, .zero),
+            (other, CGRect(x: 5, y: 5, width: 40, height: 50)),
+        ]
+        for (shape, rect) in cases {
+            let r = rect.height / 2
+            let expected = shape.outline().map { CGPoint(x: rect.midX + $0.x * r, y: rect.midY + $0.y * r) }
+            let got = points(SoftPebbleOutline(shape: shape).path(in: rect))
+            XCTAssertEqual(got.count, expected.count)
+            // Path 는 점을 Float 로 담는다 — 단위 윤곽을 키우면 1e-6pt 쯤 어긋난다(그림엔 안 보인다).
+            let worst = zip(got, expected).map { max(abs($0.x - $1.x), abs($0.y - $1.y)) }.max() ?? 0
+            XCTAssertLessThan(worst, 1e-4, "\(rect)")
+        }
+    }
+
     func testDumpPebblesWhenAsked() throws {
         guard let dir = ProcessInfo.processInfo.environment["PEBBLE_DUMP"] else {
             throw XCTSkip("PEBBLE_DUMP 미지정")
