@@ -27,6 +27,17 @@ public enum PhotoEnrichment {
         return hour < 6 || hour >= 19
     }
 
+    /// 하루가 새벽 4시에 닫히므로 00:00~03:59 는 전날 밤의 끝 — 「밤」.
+    public static func partOfDay(_ date: Date, calendar: Calendar = .current) -> String {
+        switch calendar.component(.hour, from: date) {
+        case 4..<7: "새벽"
+        case 7..<11: "아침"
+        case 11..<17: "낮"
+        case 17..<20: "저녁"
+        default: "밤"
+        }
+    }
+
     private static func look(_ condition: String) -> (label: String, day: String, night: String)? {
         switch condition {
         case "clear", "mostlyClear", "hot": ("맑음", "sun.max", "moon.stars")
@@ -53,14 +64,13 @@ private struct DayPhotoLoadKey: Equatable {
 struct DayPhotoView: View {
     let momentID: Moment.ID
     let store: DayStore
-    // 받은 하루일 때만 호출부가 넘긴다 — ImageRenderer/ShareLink 는 앱 타깃 전용.
-    var makeShareSheet: (() -> AnyView)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var image: UIImage?
-    @State private var sharing = false
     @State private var attribution: PhotoEnrichment.Attribution?
     @State private var mapOpen = false
+    /// 처음 그릴 때 이미 있던 동네·날씨는 그대로 두고, 그 뒤에 도착한 것만 한 글자씩 띄운다.
+    @State private var revealArrivals = false
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
@@ -89,18 +99,15 @@ struct DayPhotoView: View {
                     await load(moment)
                 }
                 .task(id: moment.id) {
+                    revealArrivals = true
                     await assignWordIfNeeded(moment)
                     await namePlaceIfNeeded(moment)
                     await findWeatherIfNeeded(moment)
                     if attribution == nil, moment.place?.weather != nil { attribution = await PhotoEnrichment.attribution?() }
                 }
             }
-            HStack {
-                closeButton
-                Spacer()
-                shareButton
-            }
-            .padding(.horizontal, 18).padding(.top, 8)
+            closeButton
+                .padding(.horizontal, 18).padding(.top, 8)
         }
         .statusBarHidden()
         .accessibilityAction(.escape) { dismiss() }
@@ -131,19 +138,6 @@ struct DayPhotoView: View {
         .animation(.easeOut(duration: 0.35), value: image == nil)
         .clipShape(RoundedRectangle(cornerRadius: Shape2.photoWindow, style: .continuous))
         .padding(.horizontal, 14)
-    }
-
-    @ViewBuilder
-    private var shareButton: some View {
-        if let makeShareSheet {
-            Button { sharing = true } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .foregroundStyle(Tone.secondary)
-                    .frame(width: Shape2.minTouch, height: Shape2.minTouch)
-            }
-            .buttonStyle(.plain)
-            .sheet(isPresented: $sharing) { makeShareSheet() }
-        }
     }
 
     @ViewBuilder
@@ -187,33 +181,34 @@ struct DayPhotoView: View {
                 if !hidesColor(m) {
                     Circle().fill(Color(hex: m.colorHex)).frame(width: 9, height: 9)
                 }
-                Text(DayGradient.timeText(m.capturedAt)).monospacedDigit()
+                Text("\(PhotoEnrichment.partOfDay(m.capturedAt))(\(DayGradient.timeText(m.capturedAt)))")
             }
             .fixedSize()
             if let place = m.place?.name {
                 HStack(spacing: 4) {
                     Image(systemName: "mappin").imageScale(.small)
-                    Text(place).lineLimit(1)
+                    RevealText(place, reveal: revealArrivals).lineLimit(1)
                 }
-                .transition(.opacity)
+                .transition(.glyph)
             }
             if let w = m.place?.weather, let label = PhotoEnrichment.label(w.condition) {
                 HStack(spacing: 5) {
                     if let symbol = PhotoEnrichment.symbol(w.condition, night: PhotoEnrichment.isNight(m.capturedAt)) {
                         Image(systemName: symbol).imageScale(.small)
                     }
-                    Text("\(label) \(Int(w.celsius.rounded()))°").monospacedDigit()
+                    RevealText("\(label) \(Int(w.celsius.rounded()))°", reveal: revealArrivals)
                 }
                 .fixedSize()
-                .transition(.opacity)
+                .transition(.glyph)
             }
             if m.place != nil {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12, weight: .semibold))
-                    .rotationEffect(.degrees(mapOpen ? 180 : 0))
+                    .rotationEffect(.degrees(mapOpen ? -180 : 0))
             }
         }
         .font(Face.line)
+        .monospacedDigit()
         .foregroundStyle(Tone.secondary)
 
         if m.place != nil {
@@ -304,4 +299,64 @@ private struct PlaceMap: View {
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
         .environment(\.colorScheme, .dark)
     }
+}
+
+/// 늦게 도착한 글을 한 글자씩 — 글자마다 흐릿하게 아래에서 올라온다(numericText 결).
+/// numericText 는 이미 있는 Text 의 내용이 바뀔 때만 돌아서, 새로 나타나는 글엔 직접 만든다.
+/// 다 뜨면 한 Text 로 돌아가 말줄임·자간이 원래대로 먹는다.
+private struct RevealText: View {
+    let text: String
+    @State private var shown: Int
+    @State private var settled: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(_ text: String, reveal: Bool) {
+        self.text = text
+        _shown = State(initialValue: reveal ? 0 : text.count)
+        _settled = State(initialValue: !reveal)
+    }
+
+    var body: some View {
+        Group {
+            if settled {
+                Text(text)
+            } else {
+                HStack(spacing: 0) {
+                    ForEach(Array(text.prefix(shown).enumerated()), id: \.offset) { _, c in
+                        Text(String(c)).transition(.glyph)
+                    }
+                }
+            }
+        }
+        .task(id: text) {
+            guard !settled else { return }
+            if !reduceMotion {
+                while shown < text.count {
+                    try? await Task.sleep(for: .milliseconds(45))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeOut(duration: 0.3)) { shown += 1 }
+                }
+                try? await Task.sleep(for: .milliseconds(320))
+                guard !Task.isCancelled else { return }
+            }
+            var still = Transaction()
+            still.disablesAnimations = true
+            withTransaction(still) { settled = true }
+        }
+    }
+}
+
+private struct GlyphRise: ViewModifier {
+    let hidden: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(hidden ? 0 : 1)
+            .blur(radius: hidden ? 3 : 0)
+            .offset(y: hidden ? 6 : 0)
+    }
+}
+
+private extension AnyTransition {
+    static var glyph: AnyTransition { .modifier(active: GlyphRise(hidden: true), identity: GlyphRise(hidden: false)) }
 }

@@ -40,4 +40,23 @@ final class PhotoEnrichmentTests: XCTestCase {
         XCTAssertFalse(PhotoEnrichment.isNight(at(18, 59), calendar: cal))
         XCTAssertTrue(PhotoEnrichment.isNight(at(19, 0), calendar: cal))
     }
+
+    func testPartOfDayFollowsTheFourAMDayBoundary() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        func part(_ h: Int, _ m: Int) -> String {
+            PhotoEnrichment.partOfDay(cal.date(from: DateComponents(year: 2026, month: 10, day: 1, hour: h, minute: m))!,
+                                      calendar: cal)
+        }
+        XCTAssertEqual(part(0, 34), "밤")
+        XCTAssertEqual(part(3, 59), "밤")
+        XCTAssertEqual(part(4, 0), "새벽")
+        XCTAssertEqual(part(6, 59), "새벽")
+        XCTAssertEqual(part(7, 0), "아침")
+        XCTAssertEqual(part(10, 59), "아침")
+        XCTAssertEqual(part(11, 0), "낮")
+        XCTAssertEqual(part(16, 59), "낮")
+        XCTAssertEqual(part(17, 0), "저녁")
+        XCTAssertEqual(part(19, 59), "저녁")
+        XCTAssertEqual(part(20, 0), "밤")
+    }
 }

@@ -79,7 +79,7 @@ public struct DayMomentsView: View {
         .presentationDragIndicator(.hidden)
         .onChange(of: viewing?.id) { _, id in if let id { lastViewed = id } }
         .fullScreenCover(item: $viewing) { m in
-            DayPhotoView(momentID: m.id, store: store, makeShareSheet: photoShareSheet(m.id))
+            DayPhotoView(momentID: m.id, store: store)
                 .navigationTransition(.zoom(sourceID: m.id, in: zoom))
         }
     }
@@ -116,11 +116,6 @@ public struct DayMomentsView: View {
             .buttonStyle(.plain)
             .sheet(isPresented: $sharing) { makeShareSheet(dayKey, lastViewed) }
         }
-    }
-
-    private func photoShareSheet(_ id: Moment.ID) -> (() -> AnyView)? {
-        guard let makeShareSheet, Keepsake.canMakeCard(dayKey: dayKey, isGifted: isGifted) else { return nil }
-        return { makeShareSheet(dayKey, id) }
     }
 
     @ViewBuilder
