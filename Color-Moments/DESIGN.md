@@ -64,6 +64,7 @@ SPEC §3.1의 「모은 하루 가로 스크롤」은 폐기.
 - **가장자리에선 이 몸짓이 먼저다**(2026-09-30 Tabber — 「잘 안 먹힌다」): 앞 카드 오른쪽 끝·스크롤 직후의 날짜 스크럽이
   같은 자리를 쓴다. 가장자리에서 시작한 터치는 가로로 먼저 움직이면 모은 조약돌, 세로면 스크롤·날짜 스크럽.
   닫을 땐 어디서든 오른쪽으로 — 넘기는 동안엔 조약돌을 눌러도 열리지 않는다. (`CollectionSwipe`, UIKit 팬)
+- 왼쪽 가장자리 세로 가운데 「쓸면 돌아가기」 — 카메라 오른쪽 힌트의 거울(막대가 바깥, 글자는 -90°로 아래에서 위로). 힌트가 보이는 동안 달 제목은 12pt 안쪽으로(스크롤 중 맞닿음).
 - 받은 조약돌만, 최신순, 달별 묶음, 3열. 이름·날짜. 누르면 그 하루 상세.
 - **SPEC §1-2 「격자로 깔지 않는다」와의 관계**: 금지의 이유는 「빈 날이 구멍으로 보여 스트릭이 된다」이다.
   그래서 날짜 칸·빈칸·「N일 중 M일」 같은 개수를 두지 않고, 받은 조약돌만 빈틈없이 채운다.
@@ -400,7 +401,7 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 | 13 | 아침 도착 소식 | ✅ `ColorMoments/App/ArrivalNotice.swift` |
 | 14 | 홈 화면 위젯 | ✅ `ColorMomentsControl/PebbleWidget.swift`, `Shared/Widget/WidgetSnapshot.swift` |
 | 15 | 첫날 지난 일주일 담기 — 빈 첫 화면 제안 + 첫 담기 증정 한 번 | ✅ `App/HomeView.swift`(libraryOnboardingLine) · `Shared/Day/GiftSchedule.swift`(pendingWithOnboarding) · `Shared/Day/DayGift.swift` |
-| 16 | 조약돌 카드 + 건네기 | ✅ `Shared/Keepsake/PebbleCard.swift`, `Keepsake.swift` · `ColorMoments/Keepsake/CardExporter.swift`, `KeepsakeShareSheet.swift` · 진입은 하루 상세 공유 아이콘·홈 contextMenu(받은 하루만) |
+| 16 | 조약돌 카드 + 건네기(이름 아래 한 줄 — 2026-09-30 Tabber) | ✅ `Shared/Keepsake/PebbleCard.swift`, `Keepsake.swift` · `ColorMoments/Keepsake/CardExporter.swift`, `KeepsakeShareSheet.swift` · 진입은 하루 상세 공유 아이콘·홈 contextMenu(받은 하루만) |
 | 17 | 작년 이맘때 · 한 달 한 줌 | ✅ `Shared/Keepsake/Memories.swift`(lastYear·months·handfulLayout) · `App/HomeView.swift`(작년 이맘때 줄·달 머리글) · `Shared/Keepsake/HandfulView.swift`, `HandfulCard.swift` · `ColorMoments/Keepsake/HandfulShareSheet.swift` |
 | 18 | 첫 실행 온보딩(§1.5) — 여섯 장, 추천 사진으로 첫 조약돌, 아침 소식·iCloud 안내 | ✅ `ColorMoments/Onboarding/`(OnboardingView·OnboardingSteps·FirstPebbleModel·PhotoSuggester, 판정은 OnboardingRules) · `App/HomeShell.swift`(보여 줄지·증정 가드) — 딤드 오버레이·증정 뒤 권한 alert 제거 |
 

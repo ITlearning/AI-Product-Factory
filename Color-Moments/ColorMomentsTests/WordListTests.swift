@@ -34,6 +34,8 @@ final class WordListTests: XCTestCase {
             }
         }
         XCTAssertGreaterThan(pebble.count, 15, "색 구간을 훑었는데 이름이 거의 안 나왔다")
+        // 이름은 날짜·제철에 따라 돌아서 색만 훑으면 일부만 나온다.
+        pebble.formUnion(PebbleNaming.allNames.map(\.name))
         let clash = try list().words.map(\.word).filter(pebble.contains)
         XCTAssertTrue(clash.isEmpty, "조약돌 이름과 겹친다: \(clash)")
     }
