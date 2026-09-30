@@ -49,8 +49,9 @@ struct HomeShell: View {
     private enum SwipeSide { case camera }
     @State private var camera: CaptureEngine?
     @State private var pickingLibrary = false
-    /// 「오늘 찍은 사진 · 골라 담기」 — 몇 장뿐이라 풀스크린이 아니라 절반 높이 시트로.
-    @State private var pickingToday = false
+    /// 「카메라 앱으로 찍은 사진」 — 몇 장뿐이라 풀스크린이 아니라 절반 높이 시트로. 그 사진들만 보인다.
+    @State private var pickingToday: TodayPick?
+    private struct TodayPick: Identifiable { let id = UUID(); let assetIDs: [String] }
     // pickingLibrary 는 닫힘 애니메이션 시작에 false 가 된다 — 증정 가드는 커버 onDismiss 에서만 푼다.
     @State private var libraryCoverUp = false
     // 사진첩 시트를 열기 직전 기록이 하나도 없었는지 — 온보딩 증정 하루를 고를지 판단한다.
@@ -97,7 +98,7 @@ struct HomeShell: View {
                          onRequestLibraryPicker: openLibraryPicker,
                          onRequestTodayPicker: openTodayPicker,
                          onScrollMinimize: foldTabBar,
-                         holdsArrivals: progress != 0 || libraryCoverUp || pickingToday || daySheetPresented || keepsakePresented
+                         holdsArrivals: progress != 0 || libraryCoverUp || pickingToday != nil || daySheetPresented || keepsakePresented
                              || showingSettings,
                          openDay: $openDayRequest)
                     .offset(x: progress * w)
@@ -139,7 +140,7 @@ struct HomeShell: View {
         // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
-                 blocksPresentation: daySheetPresented || keepsakePresented || pickingLibrary || libraryCoverUp || pickingToday
+                 blocksPresentation: daySheetPresented || keepsakePresented || pickingLibrary || libraryCoverUp || pickingToday != nil
                      || showingSettings || progress != 0 || onboarding != .none,
                  onboardingGiftDay: onboardingGiftDay,
                  onCeremonyFinished: handleCeremonyFinished)
@@ -150,9 +151,8 @@ struct HomeShell: View {
         }) {
             LibraryPickerView(store: store, onDone: libraryImported)
         }
-        .sheet(isPresented: $pickingToday, onDismiss: focusLastImported) {
-            LibraryPickerView(store: store, range: TodayPhotos.range(dayKey: Moment.dayKey(for: Date())),
-                              onDone: libraryImported)
+        .sheet(item: $pickingToday, onDismiss: focusLastImported) { pick in
+            LibraryPickerView(store: store, only: pick.assetIDs, onDone: libraryImported)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
@@ -277,9 +277,9 @@ struct HomeShell: View {
         }
     }
 
-    private func openTodayPicker() {
+    private func openTodayPicker(_ assetIDs: [String]) {
         recordsWereEmptyBeforeLibraryImport = store.moments.isEmpty
-        pickingToday = true
+        pickingToday = TodayPick(assetIDs: assetIDs)
     }
 
     private func libraryImported(_ importedDayKeys: Set<String>) {

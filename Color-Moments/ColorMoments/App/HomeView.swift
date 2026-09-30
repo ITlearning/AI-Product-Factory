@@ -27,8 +27,8 @@ struct HomeView: View {
 
     // 빈 첫 화면의 "지난 며칠 담기" 제안을 누르면 HomeShell 이 기존 사진첩 담기 화면을 띄운다.
     var onRequestLibraryPicker: () -> Void = {}
-    /// 「오늘 찍은 사진 · 골라 담기」 — 오늘 사진만 모아 고르는 화면을 연다.
-    var onRequestTodayPicker: () -> Void = {}
+    /// 「카메라 앱으로 찍은 사진」 카드 — 그 사진들(카메라로 직접 찍은 것만)만 모아 고르는 시트를 연다.
+    var onRequestTodayPicker: ([String]) -> Void = { _ in }
     /// 아래로 스크롤하면 true — 탭바를 작게 접는다.
     var onScrollMinimize: (Bool) -> Void = { _ in }
 
@@ -208,6 +208,7 @@ struct HomeView: View {
                             Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
                                 .id("top")
                             Spacer().frame(height: 22)
+                            cameraAppCard
                             if todayInProgress {
                                 // 블록을 그릴 때의 dayKey 를 캡처한다 — 탭 시점에 todayKey 를 다시 읽으면
                                 // 04시를 넘긴 뒤 눌렀을 때 방금 열린 새 날짜가 열려 버린다.
@@ -220,7 +221,6 @@ struct HomeView: View {
                                 // 로드 전엔 자리만 잡는다 — 「비어 있어요」가 번쩍 떴다 바뀌지 않게.
                                 todayLine.opacity(store.isLoaded ? 1 : 0)
                             }
-                            todayPhotosLine
                             lastYearLine
                             Spacer().frame(height: 38)
 
@@ -403,29 +403,36 @@ struct HomeView: View {
 
     private var showsTodayPhotos: Bool { todayPhotosUnseen > 0 && !todayClosedWithMoments }
 
+    /// 몽돌 오늘 블록과 떨어뜨려 맨 위에 — 「오늘 찍은 사진」이 몽돌로 찍은 건지 카메라 앱인지 헷갈렸다(2026-10-01 Tabber).
     @ViewBuilder
-    private var todayPhotosLine: some View {
+    private var cameraAppCard: some View {
         if showsTodayPhotos {
-            HStack(spacing: 8) {
-                HStack(spacing: 0) {
-                    Text("오늘 찍은 사진 ")
-                    Text("\(shownPhotoCount)")
-                        .monospacedDigit()
-                        .contentTransition(.numericText(value: Double(shownPhotoCount)))
-                    Text("장")
+            HStack(spacing: 12) {
+                ZStack {
+                    ForEach(Array(todayPending.prefix(3).enumerated().reversed()), id: \.element) { i, id in
+                        AssetThumb(assetID: id)
+                            .frame(width: 34, height: 34)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .strokeBorder(Tone.base, lineWidth: 1.5))
+                            .rotationEffect(.degrees(Double(i) * 7 - 7))
+                            .offset(x: CGFloat(i) * 9)
+                    }
                 }
-                .font(Face.lineCeremony)
-                .foregroundStyle(Tone.primary)
+                .frame(width: 52, alignment: .leading)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 0) {
+                        Text("카메라 앱으로 찍은 사진 ")
+                        Text("\(shownPhotoCount)")
+                            .monospacedDigit()
+                            .contentTransition(.numericText(value: Double(shownPhotoCount)))
+                        Text("장")
+                    }
+                    .font(Face.line)
+                    .foregroundStyle(Tone.primary)
+                    Text("눌러서 몽돌에 담기").font(Face.caption).foregroundStyle(Tone.tertiary)
+                }
                 Spacer(minLength: 4)
-                Button(action: onRequestTodayPicker) {
-                    Text("골라 담기")
-                        .font(Face.caption)
-                        .foregroundStyle(Tone.primary)
-                        .padding(.horizontal, 14)
-                        .frame(height: 34)
-                        .background(.white.opacity(0.14), in: Capsule())
-                }
-                .buttonStyle(.plain)
                 Button {
                     withAnimation(.spring(response: 0.45, dampingFraction: 0.88)) {
                         todayPhotosSeen = "\(todayKey)|" + todayPending.joined(separator: ",")
@@ -434,12 +441,16 @@ struct HomeView: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Tone.tertiary)
-                        .frame(width: 34, height: Shape2.minTouch)
+                        .frame(width: 32, height: Shape2.minTouch)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("오늘 찍은 사진 안내 닫기")
+                .accessibilityLabel("카메라 앱 사진 안내 닫기")
             }
-            .padding(.top, 12)
+            .padding(.leading, 12).padding(.trailing, 4).padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.07)))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .onTapGesture { onRequestTodayPicker(todayPending) }
+            .padding(.bottom, 20)
             .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
@@ -448,7 +459,7 @@ struct HomeView: View {
     private func refreshTodayPhotos() async {
         let known = Set(store.moments.compactMap(\.assetID))
         let ids = await TodayPhotos.pending(dayKey: todayKey, excluding: known,
-                                            capturedAt: store.today.map(\.capturedAt)).map(\.localIdentifier)
+                                            capturedAt: store.today.map(\.capturedAt), cameraOnly: true).map(\.localIdentifier)
         let wasShowing = showsTodayPhotos
         withAnimation(.spring(response: 0.55, dampingFraction: 0.86)) { todayPending = ids }
         guard showsTodayPhotos else { return }
@@ -646,5 +657,19 @@ private struct HomeBackdrop: View {
         DayGradientView(moments: store.pebbleMoments(on: key), axis: .vertical)
             .blur(radius: 60)
             .opacity(0.16)
+    }
+}
+
+/// 사진 앱 사진 한 장의 작은 썸네일 — assetID 로 바로 부른다.
+private struct AssetThumb: View {
+    let assetID: String
+    @State private var image: UIImage?
+
+    var body: some View {
+        ZStack {
+            Tone.hairline
+            if let image { Image(uiImage: image).resizable().scaledToFill() }
+        }
+        .task(id: assetID) { image = await ShotImage.assetSource?.image(assetID: assetID, maxPixel: 120) }
     }
 }

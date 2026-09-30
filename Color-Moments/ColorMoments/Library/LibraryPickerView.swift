@@ -5,8 +5,10 @@ import UIKit
 
 struct LibraryPickerView: View {
     let store: DayStore
-    /// 있으면 그 사이에 찍힌 사진만 — 홈의 「오늘 찍은 사진 · 골라 담기」.
+    /// 있으면 그 사이에 찍힌 사진만.
     var range: Range<Date>? = nil
+    /// 있으면 이 사진들만 — 홈의 「카메라 앱으로 찍은 사진」(카메라로 직접 찍은 것만 골라 둔 목록).
+    var only: [String]? = nil
     let onDone: (Set<String>) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -257,7 +259,7 @@ struct LibraryPickerView: View {
     private func fetchAssets() {
         loading?.cancel()
         loading = Task { @MainActor in
-            for await update in Self.loadLibrary(range: range) {
+            for await update in Self.loadLibrary(range: range, only: only) {
                 guard !Task.isCancelled else { return }
                 library = Library(result: update.result, sections: update.sections)
                 progress = update.done < update.total ? LoadProgress(done: update.done, total: update.total) : nil
@@ -271,11 +273,13 @@ struct LibraryPickerView: View {
     private static let partialInterval: CFAbsoluteTime = 0.25
 
     /// 가져오기·날짜 읽기는 메인 밖에서 조금씩 — 최근 일주일이 모이면 먼저, 그 뒤엔 0.25초마다 보낸다.
-    private static func loadLibrary(range: Range<Date>?) -> AsyncStream<LoadUpdate> {
+    private static func loadLibrary(range: Range<Date>?, only: [String]?) -> AsyncStream<LoadUpdate> {
         let piece = Self.piece, partialInterval = Self.partialInterval
         return AsyncStream { continuation in
             let task = Task.detached(priority: .userInitiated) {
-                let result = PHAsset.fetchAssets(with: LibraryImporter.fetchOptions(range: range))
+                let options = LibraryImporter.fetchOptions(range: range)
+                let result = only.map { PHAsset.fetchAssets(withLocalIdentifiers: $0, options: options) }
+                    ?? PHAsset.fetchAssets(with: options)
                 let total = result.count
                 var builder = LibrarySectionBuilder()
                 var ids = Set<String>()

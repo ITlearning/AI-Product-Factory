@@ -1,3 +1,4 @@
+import ImageIO
 import CoreImage
 import CoreLocation
 import Foundation
@@ -123,11 +124,11 @@ enum TodayPhotos {
     /// ids — 이미 몽돌에 있는 사진. capturedAt — 몽돌로 찍어 사진 앱에 저장 중인 것(assetID 가 붙기 전)은
     /// 찍은 시각이 같다(AssetSaver 가 creationDate 를 그대로 적는다) — 그 사이에 「기본 카메라 사진」으로 세지 않게.
     static func pending(dayKey: String, excluding ids: Set<String>, capturedAt: [Date] = [],
-                        favoritesOnly: Bool = false) async -> [PHAsset] {
+                        favoritesOnly: Bool = false, cameraOnly: Bool = false) async -> [PHAsset] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited, let range = range(dayKey: dayKey) else { return [] }
         let times = capturedAt.map(\.timeIntervalSinceReferenceDate).sorted()
-        return await Task.detached(priority: .utility) {
+        let found = await Task.detached(priority: .utility) {
             var out: [PHAsset] = []
             PHAsset.fetchAssets(with: LibraryImporter.fetchOptions(range: range, favoritesOnly: favoritesOnly))
                 .enumerateObjects { a, _, _ in
@@ -138,6 +139,7 @@ enum TodayPhotos {
                 }
             return out
         }.value
+        return cameraOnly ? await CameraShot.filter(found) : found
     }
 }
 
@@ -163,5 +165,47 @@ enum FavoriteAdopter {
         guard !fresh.isEmpty, isEnabled(defaults) else { return }
         _ = await LibraryImporter().importAssets(fresh, into: store)
         defaults.set(Array((adopted + fresh.map(\.localIdentifier)).suffix(keep)), forKey: adoptedKey)
+    }
+}
+
+/// iPhone 카메라로 직접 찍은 사진인지. 사진 앱은 스크린샷만 따로 표시해서, 저장한 이미지·다른 앱 사진은
+/// 촬영 정보(TIFF 제조사 Apple · 모델 iPhone)로 가른다. Live Photo·인물 사진은 카메라에서만 나와 바로 통과. 본 결과는 기억한다.
+enum CameraShot {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var known: [String: Bool] = [:]
+
+    static func filter(_ assets: [PHAsset]) async -> [PHAsset] {
+        var out: [PHAsset] = []
+        for a in assets where await isCameraShot(a) { out.append(a) }
+        return out
+    }
+
+    static func isCameraShot(_ asset: PHAsset) async -> Bool {
+        let id = asset.localIdentifier
+        lock.lock(); let hit = known[id]; lock.unlock()
+        if let hit { return hit }
+        let result: Bool
+        if asset.mediaSubtypes.contains(.photoLive) || asset.mediaSubtypes.contains(.photoDepthEffect) {
+            result = true
+        } else {
+            result = await withCheckedContinuation { (done: CheckedContinuation<Bool, Never>) in
+                let o = PHImageRequestOptions()
+                o.isNetworkAccessAllowed = false
+                o.version = .original
+                PHImageManager.default().requestImageDataAndOrientation(for: asset, options: o) { data, _, _, _ in
+                    done.resume(returning: data.map(fromCamera) ?? false)
+                }
+            }
+        }
+        lock.lock(); known[id] = result; lock.unlock()
+        return result
+    }
+
+    static func fromCamera(_ data: Data) -> Bool {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil),
+              let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+              let tiff = props[kCGImagePropertyTIFFDictionary] as? [CFString: Any] else { return false }
+        return (tiff[kCGImagePropertyTIFFMake] as? String) == "Apple"
+            && ((tiff[kCGImagePropertyTIFFModel] as? String)?.hasPrefix("iPhone") ?? false)
     }
 }
