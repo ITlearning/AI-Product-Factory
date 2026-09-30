@@ -42,10 +42,11 @@ struct HomeView: View {
     @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
 
     @State private var opened: OpenedDay?
-    /// 오늘 찍었는데 아직 몽돌에 없는 사진 수 — 기본 카메라로 찍은 것.
-    @State private var todayPhotoCount = 0
-    /// 한 번 열어 본 수 — 그 뒤 새로 찍기 전까진 다시 띄우지 않는다(재촉하지 않는다).
-    @AppStorage("todayPhotosSeen") private var todayPhotosSeen = ""
+    /// 오늘 찍었는데 아직 몽돌에 없는 사진 — 기본 카메라로 찍은 것.
+    @State private var todayPending: [String] = []
+    /// 「골라 담기」를 열 때 보여 준 사진들("dayKey|id,id") — 처음 보는 사진이 생길 때만 다시 띄운다(재촉하지 않는다).
+    /// 수로 기억하면 고른 뒤 새로 찍은 수가 전과 같을 때 안 떴다.
+    @AppStorage("todayPhotosSeenIDs") private var todayPhotosSeen = ""
     @Environment(\.scenePhase) private var scenePhase
     @State private var sharingDayKey: SharingDay?
     @State private var openedMonth: OpenedMonth?
@@ -394,9 +395,10 @@ struct HomeView: View {
     }
 
     private var todayPhotosUnseen: Int {
-        let parts = todayPhotosSeen.split(separator: "|")
-        let seen = parts.count == 2 && parts[0] == Substring(todayKey) ? Int(parts[1]) ?? 0 : 0
-        return todayPhotoCount > seen ? todayPhotoCount : 0
+        let parts = todayPhotosSeen.split(separator: "|", maxSplits: 1)
+        let seen = parts.count == 2 && parts[0] == Substring(todayKey)
+            ? Set(parts[1].split(separator: ",").map(String.init)) : []
+        return todayPending.contains { !seen.contains($0) } ? todayPending.count : 0
     }
 
     @ViewBuilder
@@ -408,7 +410,7 @@ struct HomeView: View {
                 .frame(minHeight: Shape2.minTouch, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    todayPhotosSeen = "\(todayKey)|\(todayPhotoCount)"
+                    todayPhotosSeen = "\(todayKey)|" + todayPending.joined(separator: ",")
                     onRequestTodayPicker()
                 }
                 .transition(.opacity)
@@ -417,7 +419,8 @@ struct HomeView: View {
 
     private func refreshTodayPhotos() async {
         let known = Set(store.moments.compactMap(\.assetID))
-        todayPhotoCount = await TodayPhotos.pending(dayKey: todayKey, excluding: known).count
+        todayPending = await TodayPhotos.pending(dayKey: todayKey, excluding: known,
+                                                 capturedAt: store.today.map(\.capturedAt)).map(\.localIdentifier)
     }
 
     private var libraryOnboardingLine: some View {

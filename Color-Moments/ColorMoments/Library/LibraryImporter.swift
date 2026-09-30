@@ -120,13 +120,22 @@ enum TodayPhotos {
         return start..<end
     }
 
-    static func pending(dayKey: String, excluding ids: Set<String>, favoritesOnly: Bool = false) async -> [PHAsset] {
+    /// ids — 이미 몽돌에 있는 사진. capturedAt — 몽돌로 찍어 사진 앱에 저장 중인 것(assetID 가 붙기 전)은
+    /// 찍은 시각이 같다(AssetSaver 가 creationDate 를 그대로 적는다) — 그 사이에 「기본 카메라 사진」으로 세지 않게.
+    static func pending(dayKey: String, excluding ids: Set<String>, capturedAt: [Date] = [],
+                        favoritesOnly: Bool = false) async -> [PHAsset] {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited, let range = range(dayKey: dayKey) else { return [] }
+        let times = capturedAt.map(\.timeIntervalSinceReferenceDate).sorted()
         return await Task.detached(priority: .utility) {
             var out: [PHAsset] = []
             PHAsset.fetchAssets(with: LibraryImporter.fetchOptions(range: range, favoritesOnly: favoritesOnly))
-                .enumerateObjects { a, _, _ in if !ids.contains(a.localIdentifier) { out.append(a) } }
+                .enumerateObjects { a, _, _ in
+                    guard !ids.contains(a.localIdentifier) else { return }
+                    if let t = a.creationDate?.timeIntervalSinceReferenceDate,
+                       times.contains(where: { abs($0 - t) < 1.5 }) { return }
+                    out.append(a)
+                }
             return out
         }.value
     }
@@ -148,7 +157,9 @@ enum FavoriteAdopter {
         guard isEnabled(defaults) else { return }
         let adopted = defaults.stringArray(forKey: adoptedKey) ?? []
         let known = Set(store.moments.compactMap(\.assetID)).union(adopted)
-        let fresh = await TodayPhotos.pending(dayKey: Moment.dayKey(for: Date()), excluding: known, favoritesOnly: true)
+        let today = Moment.dayKey(for: Date())
+        let fresh = await TodayPhotos.pending(dayKey: today, excluding: known,
+                                              capturedAt: store.moments(on: today).map(\.capturedAt), favoritesOnly: true)
         guard !fresh.isEmpty, isEnabled(defaults) else { return }
         _ = await LibraryImporter().importAssets(fresh, into: store)
         defaults.set(Array((adopted + fresh.map(\.localIdentifier)).suffix(keep)), forKey: adoptedKey)

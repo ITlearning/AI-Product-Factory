@@ -17,11 +17,15 @@ public final class CoalescingWriter: @unchecked Sendable {
     }
 
     /// performExpiringActivity 는 블록이 도는 동안만 붙잡는다 — 놓을 때까지 블록을 세워 둔다.
+    /// 붙잡는 블록은 부른 쪽 QoS 를 물려받는다 — 메인에서 부르면 높은 QoS 스레드가 utility 쓰기 큐를 기다리는
+    /// 우선순위 역전(Thread Performance Checker)이 된다. 쓰기 큐와 같은 utility 에서 시작한다.
     public static func expiringActivity(_ reason: String) -> Release {
         let done = DispatchSemaphore(value: 0)
-        ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { expired in
-            if expired { done.signal(); return }
-            done.wait()
+        DispatchQueue.global(qos: .utility).async {
+            ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { expired in
+                if expired { done.signal(); return }
+                done.wait()
+            }
         }
         return { done.signal() }
     }
