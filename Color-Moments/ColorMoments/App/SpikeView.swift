@@ -216,6 +216,7 @@ struct SpikeView: View {
             #if DEBUG
             .task { await refreshDiagnostics() }
             #endif
+            .onAppear { inbox.loadExisting() }
             .navigationTitle("Gate · 잠금화면 촬영")
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $previewing) {

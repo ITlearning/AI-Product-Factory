@@ -54,7 +54,6 @@ struct ColorMomentsApp: App {
                         sync = s
                     }
                     inbox.dayStore = store
-                    inbox.loadExisting()
                     inbox.start()
 
                     // catchUp 과 무관하게 로드 직후 바로 켠다 — 뒤로 미루면 그 사이 사진 앱 변경을 놓친다.
