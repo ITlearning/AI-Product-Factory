@@ -418,7 +418,7 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 | 5 | 촬영 모서리 둥근 창(§1.9·3.5) | ✅ `Capture/CaptureScreen.swift` — 앱 안·잠금화면 공용 |
 | 6 | 색 고르기(§3.4) · 뷰어(§3.6) · 첫 실행 오버레이(§1.5) | 🟡 색 고르기 **기각** (§3.4) · 첫 실행 → 18단계 온보딩으로 대체 · **뷰어 보류** (§6-3 승인 대기 — 제목 「오늘 담은 것」이 지금 동작과 어긋난다) |
 | 7 | 증정 토큰 교체(§3.3) | ✅ `Day/BadgeCeremony.swift` — 모션 타이밍은 손대지 않음 |
-| 8 | 사진 한 단어 1단계 — 사진을 보고 고름(Vision) | ✅ `Shared/Word/`, `Day/DayPhotoView.swift` — AI 한 줄·위치·지도·날씨는 2~4단계 |
+| 8 | 사진 한 단어 1단계 — 사진을 보고 고름(Vision) | ✅ `Shared/Word/`, `Day/DayPhotoView.swift` — AI 한 줄·위치·지도·날씨는 2~4단계. **위치 ✅**(2026-10-01: 사진 보기 시각 옆 동네 이름, 좌표 있는 사진만 — 몽돌로 찍은 사진은 위치를 안 남긴다). 날씨는 실제 값(WeatherKit)이 있어야 — 사진 속 하늘 짐작은 쓰지 않는다 |
 | 9 | 사진첩에서 골라 담기 (docs/designs/mongdol-library-import.md) | ✅ `ColorMoments/Library/`, `Shared/Library/` |
 | 10 | 사진은 사진 앱에 (docs/designs/mongdol-photo-assets.md) | ✅ `ColorMoments/Library/PhotoAssets.swift`, `AssetReconciler.swift` |
 | 11 | 오늘 진행 중 · 지금 조약돌로 받기 | ✅ `Shared/Day/DayClosures.swift`, `Shared/Day/DayStore.swift`, `Shared/Day/DayMomentsView.swift`, `Shared/Design/DayBlock.swift`, `App/HomeView.swift` |

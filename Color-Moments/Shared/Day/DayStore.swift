@@ -332,6 +332,14 @@ public final class DayStore {
         notify([.upsert(id)])
     }
 
+    public func setPlaceName(_ id: Moment.ID, _ name: String) {
+        guard let i = all.firstIndex(where: { $0.id == id }), var place = all[i].place, place.name == nil else { return }
+        place.name = name
+        all[i].place = place
+        save()
+        notify([.upsert(id)])
+    }
+
     public func setLabels(_ id: Moment.ID, _ labels: [String]) {
         guard let i = all.firstIndex(where: { $0.id == id }), all[i].labels == nil else { return }
         all[i].labels = labels

@@ -1,3 +1,4 @@
+import CoreLocation
 import SwiftUI
 import UIKit
 
@@ -42,7 +43,10 @@ struct DayPhotoView: View {
                                           generation: ShotImage.generation.value(for: moment.assetID))) {
                     await load(moment)
                 }
-                .task(id: moment.id) { await assignWordIfNeeded(moment) }
+                .task(id: moment.id) {
+                    await assignWordIfNeeded(moment)
+                    await namePlaceIfNeeded(moment)
+                }
             }
             HStack {
                 closeButton
@@ -111,9 +115,28 @@ struct DayPhotoView: View {
                 Text(DayGradient.timeText(m.capturedAt))
                     .font(Face.wordMeta).monospacedDigit()
                     .foregroundStyle(Tone.tertiary)
+                if let place = m.place?.name {
+                    Text("·  \(place)")
+                        .font(Face.wordMeta)
+                        .foregroundStyle(Tone.tertiary)
+                        .lineLimit(1)
+                        .transition(.opacity)
+                }
             }
         }
         .animation(.easeOut(duration: 0.25), value: m.word)
+        .animation(.easeOut(duration: 0.25), value: m.place?.name)
+    }
+
+    /// 좌표만 있는 사진(사진첩·카메라 앱에서 담은 것) — 처음 볼 때 동네 이름을 한 번 찾아 기록에 남긴다(iCloud 로도 간다).
+    /// 몽돌로 찍은 사진은 위치를 모르므로 비어 있다.
+    private func namePlaceIfNeeded(_ m: Moment) async {
+        guard let p = m.place, p.name == nil else { return }
+        let marks = try? await CLGeocoder().reverseGeocodeLocation(
+            CLLocation(latitude: p.latitude, longitude: p.longitude), preferredLocale: Locale(identifier: "ko_KR"))
+        guard !Task.isCancelled, let mark = marks?.first,
+              let name = mark.subLocality ?? mark.locality ?? mark.name else { return }
+        store.setPlaceName(m.id, name)
     }
 
     /// 원본은 iCloud 에서 받느라 오래 걸릴 수 있다 — 목록 썸네일을 먼저 보이고 원본이 오면 바꾼다.
