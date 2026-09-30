@@ -67,7 +67,7 @@ public extension Moment {
 
     static let dayBoundaryHour = 4
 
-    private static let calendar: Calendar = {
+    static let calendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = .autoupdatingCurrent
         return cal

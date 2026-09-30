@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// 홈 오른쪽 위 설정 — 지금은 조약돌 모양 하나. 고르면 홈·하루·카드의 조약돌이 그 자리에서 바뀐다.
+/// 홈 오른쪽 위 설정 — 조약돌 모양(고르면 그 자리에서 바뀐다)과 사진 앱 ♥ 담기.
 struct SettingsSheet: View {
     /// 미리보기에 세울 하루 — 가장 최근에 받은 조약돌, 없으면 견본.
     let preview: [Moment]
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
+    @AppStorage(FavoriteAdopter.enabledKey) private var adoptsFavorites = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -32,12 +33,25 @@ struct SettingsSheet: View {
                 option(.classic, "반듯한 돌")
             }
             .padding(.top, 12)
+
+            Text("사진 앱").font(Face.caption).foregroundStyle(Tone.tertiary)
+                .padding(.top, 28)
+            Toggle(isOn: $adoptsFavorites) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("♥ 누른 사진도 담기").font(Face.line).foregroundStyle(Tone.primary)
+                    Text("오늘 찍고 사진 앱에서 하트를 누르면 몽돌에도 담겨요.")
+                        .font(Face.caption).foregroundStyle(Tone.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .tint(Tone.primary.opacity(0.6))
+            .padding(.top, 10)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Tone.base.ignoresSafeArea())
-        .presentationDetents([.height(340)])
+        .presentationDetents([.height(470)])
         .presentationBackground(Tone.base)
         .preferredColorScheme(.dark)
     }

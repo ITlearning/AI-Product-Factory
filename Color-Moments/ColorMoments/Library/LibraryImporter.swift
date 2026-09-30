@@ -6,12 +6,19 @@ import Photos
 @MainActor
 final class LibraryImporter {
 
-    nonisolated static func fetchOptions() -> PHFetchOptions {
+    /// range — 그 사이에 찍힌 것만(하루 경계 04시 기준으로 넘긴다).
+    nonisolated static func fetchOptions(range: Range<Date>? = nil, favoritesOnly: Bool = false) -> PHFetchOptions {
         let o = PHFetchOptions()
-        o.predicate = NSPredicate(
+        var parts = [NSPredicate(
             format: "mediaType == %d AND !((mediaSubtypes & %d) == %d)",
             PHAssetMediaType.image.rawValue,
-            PHAssetMediaSubtype.photoScreenshot.rawValue, PHAssetMediaSubtype.photoScreenshot.rawValue)
+            PHAssetMediaSubtype.photoScreenshot.rawValue, PHAssetMediaSubtype.photoScreenshot.rawValue)]
+        if let range {
+            parts.append(NSPredicate(format: "creationDate >= %@ AND creationDate < %@",
+                                     range.lowerBound as NSDate, range.upperBound as NSDate))
+        }
+        if favoritesOnly { parts.append(NSPredicate(format: "favorite == YES")) }
+        o.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: parts)
         o.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         o.includeAssetSourceTypes = [.typeUserLibrary]
         return o
@@ -103,4 +110,47 @@ final class LibraryImporter {
 
 extension Notification.Name {
     static let photoAccessRequested = Notification.Name("photoAccessRequested")
+}
+
+/// 오늘(04시 경계) 찍은 사진 중 아직 몽돌에 없는 것 — 기본 카메라로 찍어도 고르거나 ♥로 담을 수 있게.
+enum TodayPhotos {
+    static func range(dayKey: String) -> Range<Date>? {
+        guard let end = Moment.sealDate(for: dayKey),
+              let start = Moment.calendar.date(byAdding: .day, value: -1, to: end) else { return nil }
+        return start..<end
+    }
+
+    static func pending(dayKey: String, excluding ids: Set<String>, favoritesOnly: Bool = false) async -> [PHAsset] {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited, let range = range(dayKey: dayKey) else { return [] }
+        return await Task.detached(priority: .utility) {
+            var out: [PHAsset] = []
+            PHAsset.fetchAssets(with: LibraryImporter.fetchOptions(range: range, favoritesOnly: favoritesOnly))
+                .enumerateObjects { a, _, _ in if !ids.contains(a.localIdentifier) { out.append(a) } }
+            return out
+        }.value
+    }
+}
+
+/// 사진 앱에서 ♥를 누른 오늘 사진을 알아서 담는다(설정에서 끌 수 있다, 기본 켬).
+/// 한 번 담은 사진은 기억한다 — 몽돌에서 지웠는데 앱을 열 때마다 되살아나면 안 된다.
+@MainActor
+enum FavoriteAdopter {
+    static let enabledKey = "adoptsFavorites"
+    private static let adoptedKey = "favoriteAdoptedIDs"
+    private static let keep = 400
+
+    static func isEnabled(_ defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: enabledKey) as? Bool ?? true
+    }
+
+    static func run(store: DayStore, defaults: UserDefaults = .standard) async {
+        guard isEnabled(defaults) else { return }
+        let adopted = defaults.stringArray(forKey: adoptedKey) ?? []
+        let known = Set(store.moments.compactMap(\.assetID)).union(adopted)
+        let fresh = await TodayPhotos.pending(dayKey: Moment.dayKey(for: Date()), excluding: known, favoritesOnly: true)
+        guard !fresh.isEmpty, isEnabled(defaults) else { return }
+        _ = await LibraryImporter().importAssets(fresh, into: store)
+        defaults.set(Array((adopted + fresh.map(\.localIdentifier)).suffix(keep)), forKey: adoptedKey)
+    }
 }

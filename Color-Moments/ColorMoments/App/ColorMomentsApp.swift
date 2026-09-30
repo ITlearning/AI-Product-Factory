@@ -34,6 +34,7 @@ struct ColorMomentsApp: App {
             // reconcile 은 assetID 있는 기록만 건드려 서로 다른 기록을 다루고, remove 는 조회 전 스냅샷 기준이라 안전하다.
             .init(budget: .seconds(5)) { await AssetReconciler.reconcile(store: store) },
             .init(budget: .seconds(5)) { await CloudIDMapper.refresh(store: store) },
+            .init(budget: .seconds(5)) { await FavoriteAdopter.run(store: store) },
         ], widgetSync: {
             await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts)
         }))

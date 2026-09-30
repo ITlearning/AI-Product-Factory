@@ -27,6 +27,8 @@ struct HomeView: View {
 
     // 빈 첫 화면의 "지난 며칠 담기" 제안을 누르면 HomeShell 이 기존 사진첩 담기 화면을 띄운다.
     var onRequestLibraryPicker: () -> Void = {}
+    /// 「오늘 찍은 사진 · 골라 담기」 — 오늘 사진만 모아 고르는 화면을 연다.
+    var onRequestTodayPicker: () -> Void = {}
     /// 아래로 스크롤하면 true — 탭바를 작게 접는다.
     var onScrollMinimize: (Bool) -> Void = { _ in }
 
@@ -40,6 +42,11 @@ struct HomeView: View {
     @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
 
     @State private var opened: OpenedDay?
+    /// 오늘 찍었는데 아직 몽돌에 없는 사진 수 — 기본 카메라로 찍은 것.
+    @State private var todayPhotoCount = 0
+    /// 한 번 열어 본 수 — 그 뒤 새로 찍기 전까진 다시 띄우지 않는다(재촉하지 않는다).
+    @AppStorage("todayPhotosSeen") private var todayPhotosSeen = ""
+    @Environment(\.scenePhase) private var scenePhase
     @State private var sharingDayKey: SharingDay?
     @State private var openedMonth: OpenedMonth?
     @State private var topDayKey: String?
@@ -117,6 +124,11 @@ struct HomeView: View {
             bottomFade
             if pillActive, let label = pillLabel { monthPill(label) }
         }
+        .task(id: "\(todayKey)|\(store.moments.count)|\(store.isLoaded)|\(scenePhase == .active)") {
+            guard store.isLoaded, scenePhase == .active else { return }
+            await refreshTodayPhotos()
+        }
+        .animation(.easeOut(duration: 0.25), value: todayPhotosUnseen)
         .sheet(item: $opened, onDismiss: {
             // opened 가 nil 이 되는 건 닫힘 애니메이션 시작 — 끝난 뒤(onDismiss)에만 가드를 푼다.
             daySheetPresented = false
@@ -207,6 +219,7 @@ struct HomeView: View {
                                 // 로드 전엔 자리만 잡는다 — 「비어 있어요」가 번쩍 떴다 바뀌지 않게.
                                 todayLine.opacity(store.isLoaded ? 1 : 0)
                             }
+                            todayPhotosLine
                             lastYearLine
                             Spacer().frame(height: 38)
 
@@ -378,6 +391,33 @@ struct HomeView: View {
             }
         }
         .font(Face.today)
+    }
+
+    private var todayPhotosUnseen: Int {
+        let parts = todayPhotosSeen.split(separator: "|")
+        let seen = parts.count == 2 && parts[0] == Substring(todayKey) ? Int(parts[1]) ?? 0 : 0
+        return todayPhotoCount > seen ? todayPhotoCount : 0
+    }
+
+    @ViewBuilder
+    private var todayPhotosLine: some View {
+        if todayPhotosUnseen > 0 && !todayClosedWithMoments {
+            (Text("오늘 찍은 사진 \(todayPhotosUnseen)장").foregroundStyle(Tone.secondary)
+                + Text("  ·  골라 담기").foregroundStyle(Tone.primary))
+                .font(Face.line)
+                .frame(minHeight: Shape2.minTouch, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    todayPhotosSeen = "\(todayKey)|\(todayPhotoCount)"
+                    onRequestTodayPicker()
+                }
+                .transition(.opacity)
+        }
+    }
+
+    private func refreshTodayPhotos() async {
+        let known = Set(store.moments.compactMap(\.assetID))
+        todayPhotoCount = await TodayPhotos.pending(dayKey: todayKey, excluding: known).count
     }
 
     private var libraryOnboardingLine: some View {

@@ -49,6 +49,8 @@ struct HomeShell: View {
     private enum SwipeSide { case camera }
     @State private var camera: CaptureEngine?
     @State private var pickingLibrary = false
+    /// 사진첩 시트 범위 — 「오늘 찍은 사진 · 골라 담기」로 열면 오늘만.
+    @State private var libraryRange: Range<Date>?
     // pickingLibrary 는 닫힘 애니메이션 시작에 false 가 된다 — 증정 가드는 커버 onDismiss 에서만 푼다.
     @State private var libraryCoverUp = false
     // 사진첩 시트를 열기 직전 기록이 하나도 없었는지 — 온보딩 증정 하루를 고를지 판단한다.
@@ -93,6 +95,7 @@ struct HomeShell: View {
                          keepsakePresented: $keepsakePresented,
                          onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } },
                          onRequestLibraryPicker: openLibraryPicker,
+                         onRequestTodayPicker: openTodayPicker,
                          onScrollMinimize: foldTabBar,
                          holdsArrivals: progress != 0 || libraryCoverUp || daySheetPresented || keepsakePresented
                              || showingSettings,
@@ -150,7 +153,7 @@ struct HomeShell: View {
                 .max { $0.addedAt! < $1.addedAt! }?
                 .dayKey
         }) {
-            LibraryPickerView(store: store) { importedDayKeys in
+            LibraryPickerView(store: store, range: libraryRange) { importedDayKeys in
                 guard !importedDayKeys.isEmpty else { return }
                 camera?.confirm("담겼어요")
                 progress = 0
@@ -284,7 +287,15 @@ struct HomeShell: View {
         }
     }
 
+    private func openTodayPicker() {
+        libraryRange = TodayPhotos.range(dayKey: Moment.dayKey(for: Date()))
+        recordsWereEmptyBeforeLibraryImport = store.moments.isEmpty
+        libraryCoverUp = true
+        pickingLibrary = true
+    }
+
     private func openLibraryPicker() {
+        libraryRange = nil
         recordsWereEmptyBeforeLibraryImport = store.moments.isEmpty
         libraryCoverUp = true
         pickingLibrary = true
