@@ -91,6 +91,8 @@ struct DayPhotoView: View {
     @State private var revealArrivals = false
     @State private var pacer = RevealPacer()
     @State private var rejections = WordRejections.shared
+    /// 「아니에요」로 방금 바뀐 단어 — 이것만 무지개로 나타난다.
+    @State private var freshWordID: String?
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
     /// task 가 잡아 둔 값은 옛것이다 — 도중에 붙은 동네·날씨는 여기서 다시 읽는다.
@@ -331,7 +333,19 @@ struct DayPhotoView: View {
 
     @ViewBuilder
     private func wordText(_ m: Moment, _ w: PhotoWord) -> some View {
-        let text = Text(w.word).font(Face.word).foregroundStyle(Tone.primary)
+        // 바뀌는 동안 옛 단어와 새 단어가 겹쳐 있어야 아래 줄이 안 튄다.
+        let text = ZStack(alignment: .leading) {
+            Group {
+                if w.wordID == freshWordID {
+                    AIShimmerWord(text: w.word)
+                } else {
+                    Text(w.word).foregroundStyle(Tone.primary)
+                }
+            }
+            .font(Face.word)
+            .id(w.wordID)
+            .transition(.modifier(active: GlyphRise(hidden: true), identity: GlyphRise(hidden: false)))
+        }
         if rejections.hasRejected(m.id) {
             text
         } else {
@@ -352,7 +366,9 @@ struct DayPhotoView: View {
                                 weather: current?.place?.weather?.condition,
                                 appVersion: "\(info?["CFBundleShortVersionString"] ?? "?")(\(info?["CFBundleVersion"] ?? "?"))",
                                 at: Date()))
-        withAnimation(.easeOut(duration: 0.3)) { store.replaceWord(m.id, PhotoWord(pick.word)) }
+        freshWordID = pick.word.id
+        Haptics.tickPassed()
+        withAnimation(.easeOut(duration: 0.4)) { store.replaceWord(m.id, PhotoWord(pick.word)) }
     }
 }
 
@@ -551,6 +567,43 @@ private struct WeatherGlyph: View {
             bolt.addLine(to: CGPoint(x: 9.3, y: 11.8))
             bolt.addLine(to: CGPoint(x: 7.8, y: 14.6))
             context.stroke(bolt, with: .foreground, style: StrokeStyle(lineWidth: 1.1, lineCap: .round, lineJoin: .round))
+        }
+    }
+}
+
+/// 「아니에요」로 바뀐 단어 — Apple Intelligence 결의 파스텔 무지개가 오른쪽에서 왼쪽으로 한 번 훑고,
+/// 은은한 빛무리와 함께 흰 글자로 가라앉는다. 동작 줄이기면 그냥 흰 글자.
+private struct AIShimmerWord: View {
+    let text: String
+    @State private var swept = false
+    @State private var settled = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let pastel: [Color] = ["#FFC2E2", "#D7B8FF", "#A9C9FF", "#A8F0DC", "#FFE3A8", "#FFC2E2"].map { Color(hex: $0) }
+
+    var body: some View {
+        if reduceMotion {
+            Text(text).foregroundStyle(Tone.primary)
+        } else {
+            Text(text)
+                .foregroundStyle(Tone.primary)
+                .opacity(settled ? 1 : 0)
+                .overlay { rainbow.mask { Text(text) }.opacity(settled ? 0 : 1) }
+                .background { rainbow.mask { Text(text) }.blur(radius: 10).opacity(settled ? 0 : 0.7) }
+                .task {
+                    withAnimation(.easeInOut(duration: 1.1)) { swept = true }
+                    try? await Task.sleep(for: .milliseconds(900))
+                    withAnimation(.easeOut(duration: 0.6)) { settled = true }
+                }
+        }
+    }
+
+    /// 글자 폭의 세 배짜리 띠를 왼쪽으로 두 폭 민다 — 글자 위로 색이 오른쪽에서 왼쪽으로 지나간다.
+    private var rainbow: some View {
+        GeometryReader { geo in
+            LinearGradient(colors: Self.pastel, startPoint: .leading, endPoint: .trailing)
+                .frame(width: geo.size.width * 3)
+                .offset(x: swept ? -geo.size.width * 2 : 0)
         }
     }
 }
