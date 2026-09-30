@@ -149,8 +149,11 @@ final class CoalescingWriterTests: XCTestCase {
             ((try? JSONSerialization.jsonObject(with: Data(contentsOf: url))) as? [Any])?.count ?? 0
         }
         let gate = DispatchSemaphore(value: 0)
+        let blocking = DispatchSemaphore(value: 0)
         DispatchQueue.global().asyncAfter(deadline: .now() + 2) { gate.signal() }
-        CoalescingWriter.forFile(url).then { gate.wait() }
+        CoalescingWriter.forFile(url).then { blocking.signal(); gate.wait() }
+        // then 은 막기 전에 밀린 쓰기부터 비운다 — 큐가 막힌 걸 본 뒤에 넣어야 기록이 gate 뒤에 쓰인다.
+        XCTAssertEqual(blocking.wait(timeout: .now() + 2), .success)
         store.add(Moment(capturedAt: Date(), colorHex: "#112233", fileName: "a.jpg", source: .app))
         let answered = LockedBox(false)
         let flushing = Task { @MainActor () -> Bool in

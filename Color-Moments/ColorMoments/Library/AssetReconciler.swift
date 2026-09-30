@@ -165,9 +165,11 @@ enum AssetReconciler {
         let doomed = removalIDs(snapshot: snapshot, remove: plan.remove, current: store.moments)
         let removed = snapshot.filter { doomed.contains($0.id) }
         store.remove(ids: doomed)
+        let remainingBeforeFlush = store.moments
         // 삭제가 디스크에 닿기 전에 사본을 지우면 kill 뒤 되살아난 기록이 빈 파일을 가리킨다.
         guard await store.flushAfterLoad() else { return }
-        let files = leftoverFiles(removed: removed, remaining: store.moments)
+        // 기다리는 사이 메모리에서만 빠진 기록(원격 삭제 등)은 아직 디스크에 있다 — 그 파일도 쓰는 중으로 본다.
+        let files = leftoverFiles(removed: removed, remaining: remainingBeforeFlush + store.moments)
         guard !files.isEmpty else { return }
         await Task.detached(priority: .utility) {
             for name in files { try? FileManager.default.removeItem(at: ShotImage.url(name)) }
