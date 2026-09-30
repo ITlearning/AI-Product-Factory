@@ -23,6 +23,7 @@
 		089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
 		0ADBF08E5D7551A81295B7AF /* SoftPebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F9EAFA790F8D71D44DA12 /* SoftPebbleView.swift */; };
 		0CCEC60B5730FC6E280D0707 /* button-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2C7A8222A62B20B01D87BCE2 /* button-chars.txt */; };
+		0D06103B29180D9842F4455A /* PebbleNameLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD2B3D1ED631852A358A28E /* PebbleNameLog.swift */; };
 		0D19B56D25DAFD794BE542E9 /* SyncPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915E2C36A82446AD4B2298C3 /* SyncPerformanceTests.swift */; };
 		0DC2560592D0D3FBA5606911 /* GowunDodum-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 22E8B4A3D3D73280C35C4EB3 /* GowunDodum-OFL.txt */; };
 		0DDB9BAD832D6C03DA0C2E81 /* button-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2C7A8222A62B20B01D87BCE2 /* button-chars.txt */; };
@@ -196,6 +197,7 @@
 		A041753AF25EE0A48189568C /* NanumMyeongjo-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */; };
 		A056B4A2D1980E0BDDB58C53 /* PhotoEnrichmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6AB2D1361C3C488E0CDD56 /* PhotoEnrichmentTests.swift */; };
 		A0B8A4B8063C810E326C4D8C /* PhotoLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFAD57FEE541A2BCBE917E6 /* PhotoLabeler.swift */; };
+		A0E0199642CAE4229702C047 /* PebbleNameLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD2B3D1ED631852A358A28E /* PebbleNameLog.swift */; };
 		A2BC0036C17B7BB59748D48B /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		A2ED5B914AD6A2636B7269E4 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */; };
 		A340EE2C4B3C4B575BB7B632 /* ShotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0455554135392A7015D4068F /* ShotStore.swift */; };
@@ -207,6 +209,7 @@
 		A72BCF9D6E87301BA1102FF9 /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		A8B410E526DB99857E8666B2 /* NanumMyeongjo-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */; };
 		A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
+		A94104A0DC306E6C43C4AAB0 /* PebbleNameLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD2B3D1ED631852A358A28E /* PebbleNameLog.swift */; };
 		AB98AF0B4B7518B66824F652 /* AppIconStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5AC5BE0C23EAB44BC44E8F /* AppIconStyle.swift */; };
 		AC0C35B3AC3700E7493FB7BB /* OnboardingRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA584CF5AC77CB4D9554F70D /* OnboardingRulesTests.swift */; };
 		AE0857AF5EDACD9DBF05DC32 /* GiftSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CECA91205032542A8E6CBAD /* GiftSchedule.swift */; };
@@ -235,6 +238,7 @@
 		C4EEE994B512FF5B448A580C /* DayPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */; };
 		C5345168432CE41677778207 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
 		C551F0362332CF997FF491B8 /* BackgroundHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */; };
+		C5B0C32FC182BFC77E07016B /* PebbleNameLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD15215442AC5A26F8BFEA7 /* PebbleNameLogTests.swift */; };
 		C6042960F0442084AB0338E3 /* DayClosuresTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C70E667A14B10F8000505A /* DayClosuresTests.swift */; };
 		C60F65BA453B7C15942834E6 /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
 		C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
@@ -418,6 +422,7 @@
 		673250DAE498C7AE5BE3C6DD /* WordChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordChoice.swift; sourceTree = "<group>"; };
 		68CF7D8E8818E871DBABBDBF /* ColorMomentsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ColorMomentsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		69825FD346FEC03526525AE5 /* SheenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheenTests.swift; sourceTree = "<group>"; };
+		6AD15215442AC5A26F8BFEA7 /* PebbleNameLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNameLogTests.swift; sourceTree = "<group>"; };
 		6B08C254EE7734793A5D983D /* BulkReceivePerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BulkReceivePerformanceTests.swift; sourceTree = "<group>"; };
 		6CB97C7E8769569A500FCFF1 /* MomentMergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentMergeTests.swift; sourceTree = "<group>"; };
 		6F7537CCE985C86CC09C1787 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
@@ -457,6 +462,7 @@
 		9D0DB78E0051F69C83639BE6 /* WordRejections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordRejections.swift; sourceTree = "<group>"; };
 		9D560E148CF707BADEB351E9 /* DayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreTests.swift; sourceTree = "<group>"; };
 		9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPickerView.swift; sourceTree = "<group>"; };
+		9DD2B3D1ED631852A358A28E /* PebbleNameLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNameLog.swift; sourceTree = "<group>"; };
 		9F19654907C3A03D6D4487F6 /* KeepsakeShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepsakeShareSheet.swift; sourceTree = "<group>"; };
 		A0A48C2B255FB6B7DFA973C5 /* words.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = words.json; sourceTree = "<group>"; };
 		A5A76D592E61169869C59A93 /* AssetAdopterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetAdopterTests.swift; sourceTree = "<group>"; };
@@ -623,6 +629,7 @@
 				D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */,
 				98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */,
 				343D1F9744F120B40EEDE985 /* PebbleName.swift */,
+				9DD2B3D1ED631852A358A28E /* PebbleNameLog.swift */,
 				3D1B75104310693B48F8D9DE /* ShotImage.swift */,
 			);
 			path = Day;
@@ -664,6 +671,7 @@
 				6CB97C7E8769569A500FCFF1 /* MomentMergeTests.swift */,
 				B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */,
 				AA584CF5AC77CB4D9554F70D /* OnboardingRulesTests.swift */,
+				6AD15215442AC5A26F8BFEA7 /* PebbleNameLogTests.swift */,
 				B180428138319F72B026C570 /* PebbleNameTests.swift */,
 				BE9BFF0980144C315646D9E5 /* PebbleRenderTests.swift */,
 				E79F2C0C75680FBE51A5A26C /* PebbleSilhouetteTests.swift */,
@@ -1154,6 +1162,7 @@
 				F47D588A2739762FA431A426 /* OnboardingGift.swift in Sources */,
 				D8DACCD04F834BF5660772B8 /* PebbleCard.swift in Sources */,
 				F6DD087B65194FE79A968CDE /* PebbleName.swift in Sources */,
+				A94104A0DC306E6C43C4AAB0 /* PebbleNameLog.swift in Sources */,
 				2992E2534861C57FB2499B90 /* PebbleView.swift in Sources */,
 				F2AED0EA530722CDA81ECD0C /* PebbleWidget.swift in Sources */,
 				3CDC3B977191BC7C08488E35 /* PhotoContext.swift in Sources */,
@@ -1209,6 +1218,7 @@
 				A34E2A2A8AF2BCCDCCE21452 /* MomentMergeTests.swift in Sources */,
 				8AFDFD1FC5C8C602F84B0EBB /* OnboardingGiftTests.swift in Sources */,
 				AC0C35B3AC3700E7493FB7BB /* OnboardingRulesTests.swift in Sources */,
+				C5B0C32FC182BFC77E07016B /* PebbleNameLogTests.swift in Sources */,
 				12C3CD61E7A606425EFD41CA /* PebbleNameTests.swift in Sources */,
 				307336BE9B12FD503EBF66EC /* PebbleRenderTests.swift in Sources */,
 				294A77897542943DC92B2BE2 /* PebbleSilhouetteTests.swift in Sources */,
@@ -1299,6 +1309,7 @@
 				4BEC43E6EF8A30FCDB0B284D /* PebbleCollectionView.swift in Sources */,
 				F1D68387B4C64AE117698805 /* PebbleLabView.swift in Sources */,
 				1BA230406A06170D47C94E8E /* PebbleName.swift in Sources */,
+				0D06103B29180D9842F4455A /* PebbleNameLog.swift in Sources */,
 				F1CEB3009284EB172D1766E8 /* PebbleView.swift in Sources */,
 				1F708EB7D0F030E7D61A9217 /* PhotoAssets.swift in Sources */,
 				EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */,
@@ -1371,6 +1382,7 @@
 				AE398008B7E64F3E92398B36 /* OnboardingGift.swift in Sources */,
 				05C63D0977D0E69B2F01D2CE /* PebbleCard.swift in Sources */,
 				62FD808384BFDB6BDEC7143C /* PebbleName.swift in Sources */,
+				A0E0199642CAE4229702C047 /* PebbleNameLog.swift in Sources */,
 				A03E0083AE26CB4CCB4A9434 /* PebbleView.swift in Sources */,
 				A72BCF9D6E87301BA1102FF9 /* PhotoContext.swift in Sources */,
 				A0B8A4B8063C810E326C4D8C /* PhotoLabeler.swift in Sources */,

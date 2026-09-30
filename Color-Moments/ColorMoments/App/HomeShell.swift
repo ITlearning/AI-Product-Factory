@@ -182,8 +182,11 @@ struct HomeShell: View {
         }
         #endif
         .overlay { onboardingLayer.animation(reduceMotion ? nil : Self.onboardingFade, value: onboarding) }
-        .onChange(of: store.isLoaded, initial: true) { _, _ in
+        .onChange(of: store.isLoaded, initial: true) { _, loaded in
             if liveOnboarding == .full { onboardingLatched = true }
+            if loaded {
+                PebbleNaming.stampGifted(dayKeys: store.dayKeys, isGifted: gifts.isGifted, moments: store.pebbleMoments(on:))
+            }
         }
         .task { noticePermission = await ArrivalNotice.permission() }
         .onChange(of: settlesArrivalAsk, initial: true) { _, _ in settleArrivalAsk() }

@@ -88,6 +88,7 @@ struct OnboardingView: View {
                           isPresented: Binding(get: { ceremonyDay != nil },
                                                set: { shown in
                                                    guard !shown else { return }
+                                                   PebbleNaming.stamp(day.id, moments: store.pebbleMoments(on: day.id))
                                                    gifts.markGifted(day.id)
                                                    ceremonyDay = nil
                                                }))

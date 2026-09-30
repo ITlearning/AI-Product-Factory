@@ -11,6 +11,7 @@ enum SyncRecords {
         let dayKey: String
         let closedAt: Date?
         let gifted: Bool
+        var pebbleName: PebbleName? = nil
     }
 
     static func recordID(moment id: UUID) -> CKRecord.ID { CKRecord.ID(recordName: "m-" + id.uuidString, zoneID: zoneID) }
@@ -94,10 +95,13 @@ enum SyncRecords {
     static func fill(_ r: CKRecord, with d: DayState) {
         r["closedAt"] = d.closedAt
         r["gifted"] = d.gifted ? 1 : 0
+        r["pebbleName"] = d.pebbleName?.name
+        r["pebbleLine"] = d.pebbleName?.line
     }
 
     static func day(from r: CKRecord) -> DayState? {
         guard case .day(let key) = ref(r.recordID) else { return nil }
-        return DayState(dayKey: key, closedAt: r["closedAt"] as? Date, gifted: (r["gifted"] as? Int ?? 0) != 0)
+        let pebble = (r["pebbleName"] as? String).map { PebbleName(name: $0, line: r["pebbleLine"] as? String ?? "") }
+        return DayState(dayKey: key, closedAt: r["closedAt"] as? Date, gifted: (r["gifted"] as? Int ?? 0) != 0, pebbleName: pebble)
     }
 }

@@ -174,9 +174,27 @@ public enum PebbleNaming {
         return colors.max { a, b in saturation(a) < saturation(b) }
     }
 
+    /// 받은 날 찍어 둔 이름(PebbleNameLog)이 있으면 그것, 없으면 계산 — 사진이 하나도 없으면 nil.
     public static func name(for moments: [Moment]) -> PebbleName? {
         guard let c = representative(of: moments) else { return nil }
-        return name(for: c, dayKey: moments.map(\.dayKey).min() ?? "")
+        let dayKey = moments.map(\.dayKey).min() ?? ""
+        return stamps.name(on: dayKey) ?? name(for: c, dayKey: dayKey)
+    }
+
+    /// 테스트가 바꿔 끼운다.
+    public nonisolated(unsafe) static var stamps = PebbleNameLog.shared
+
+    /// 받는 순간 — 증정 장면에 뜬 그 이름을 찍는다.
+    public static func stamp(_ dayKey: String, moments: [Moment]) {
+        guard let c = representative(of: moments) else { return }
+        stamps.stamp(dayKey, name(for: c, dayKey: dayKey))
+    }
+
+    /// 이미 받았는데 도장이 없는 날(도장 전 버전에서 받은 날) — 지금 이름으로 굳힌다. 저장소를 다 읽은 뒤에.
+    public static func stampGifted(dayKeys: [String], isGifted: (String) -> Bool, moments: (String) -> [Moment]) {
+        for key in dayKeys where isGifted(key) && stamps.name(on: key) == nil {
+            stamp(key, moments: moments(key))
+        }
     }
 
     /// dayKey 가 없으면 그 칸의 첫 사철 이름. 있으면 제철 이름까지 넣어 날마다 차례로 돈다 —
