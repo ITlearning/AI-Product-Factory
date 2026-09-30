@@ -99,7 +99,12 @@ public final class CoalescingWriter: @unchecked Sendable {
         let make = pending
         pending = nil
         lock.unlock()
-        guard let make, let data = make() else { return }
+        guard let make else { return }
+        guard let data = make() else {
+            lastWriteFailed = true
+            print("CoalescingWriter: \(url.lastPathComponent) 인코딩 실패")
+            return
+        }
         do {
             try data.write(to: url, options: .atomic)
             lastWriteFailed = false

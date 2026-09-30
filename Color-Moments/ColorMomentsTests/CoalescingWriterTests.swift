@@ -131,6 +131,15 @@ final class CoalescingWriterTests: XCTestCase {
         XCTAssertTrue(written)
     }
 
+    func testFlushReportsFailureWhenEncodingFails() async {
+        let writer = CoalescingWriter.forFile(tempURL("unencodable"))
+        writer.write { nil }
+        let answered = await writer.flushed()
+        XCTAssertFalse(answered, "인코딩을 못 했으면 디스크에 없다 — 호출부가 사본을 지우면 안 된다")
+        writer.write { nil }
+        XCTAssertFalse(writer.flush())
+    }
+
     /// 방금 넣은 기록이 디스크에 닿은 뒤에만 true — 그 전엔 답하지 않고, 기다리는 동안 메인을 막지 않는다.
     @MainActor
     func testFlushAfterLoadAnswersAfterMomentLandsWithoutBlockingMain() async throws {
