@@ -100,7 +100,9 @@ struct HomeShell: View {
                          onScrollMinimize: foldTabBar,
                          holdsArrivals: progress != 0 || libraryCoverUp || pickingToday != nil || daySheetPresented || keepsakePresented
                              || showingSettings,
-                         openDay: $openDayRequest)
+                         openDay: $openDayRequest,
+                         onOpenSettings: onboarding == .none ? { showingSettings = true } : nil,
+                         onOpenGate: onboarding == .none ? debugGate : nil)
                     .offset(x: progress * w)
                     .disabled(abs(progress) > 0.01)
 
@@ -163,24 +165,6 @@ struct HomeShell: View {
                     .opacity(progress > 0.01 ? 0 : 1)
                     .allowsHitTesting(progress <= 0.01)
                     .animation(.easeOut(duration: 0.2), value: progress > 0.01)
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if progress == 0 && onboarding == .none {
-                HStack(spacing: 4) {
-                    #if DEBUG
-                    Button { showingGate = true } label: {
-                        Image(systemName: "wrench.adjustable").foregroundStyle(Tone.hairline)
-                            .frame(width: Shape2.minTouch, height: Shape2.minTouch)
-                    }
-                    #endif
-                    Button { showingSettings = true } label: {
-                        Image(systemName: "gearshape").foregroundStyle(Tone.tertiary)
-                            .frame(width: Shape2.minTouch, height: Shape2.minTouch)
-                    }
-                    .accessibilityLabel("설정")
-                }
-                .padding(.trailing, 8).padding(.top, 2)
             }
         }
         .sheet(isPresented: $showingSettings) {
@@ -366,6 +350,14 @@ struct HomeShell: View {
         Haptics.snapped()
         makeCamera()
         progress = 1
+    }
+
+    private var debugGate: (() -> Void)? {
+        #if DEBUG
+        { showingGate = true }
+        #else
+        nil
+        #endif
     }
 
     private func foldTabBar(_ folded: Bool) {

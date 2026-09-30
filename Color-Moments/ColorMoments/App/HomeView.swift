@@ -38,6 +38,10 @@ struct HomeView: View {
     /// 밖(온보딩 끝)에서 이 하루를 열어 달라고 할 때 — 열고 나면 nil 로 되돌린다.
     var openDay: Binding<String?> = .constant(nil)
 
+    /// 「몽돌」 줄 오른쪽 — 스크롤과 같이 움직인다. 온보딩 중엔 nil 로 숨긴다.
+    var onOpenSettings: (() -> Void)? = nil
+    var onOpenGate: (() -> Void)? = nil
+
     // 기록이 한 번이라도 생기면 true — 그 뒤엔 사진첩 제안 문구를 다시 보이지 않는다.
     @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
 
@@ -197,6 +201,26 @@ struct HomeView: View {
             .onChange(of: days, initial: true) { _, keys in blend.setOrder(keys) }
     }
 
+    private var headerButtons: some View {
+        HStack(spacing: 4) {
+            if let onOpenGate {
+                Button(action: onOpenGate) {
+                    Image(systemName: "wrench.adjustable").foregroundStyle(Tone.hairline)
+                        .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                }
+            }
+            if let onOpenSettings {
+                Button(action: onOpenSettings) {
+                    Image(systemName: "gearshape").foregroundStyle(Tone.tertiary)
+                        .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                }
+                .accessibilityLabel("설정")
+            }
+        }
+        // 아이콘 오른쪽 끝을 글 여백(28pt)에 맞춘다 — 터치 영역만 여백으로 넘친다.
+        .padding(.trailing, -12)
+    }
+
     private var content: some View {
         GeometryReader { geo in
             let blockWidth = max(0, geo.size.width - 56)  // 첫 배치에서 geo 가 0 이면 음수 프레임이 된다
@@ -206,6 +230,8 @@ struct HomeView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
                             Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .overlay(alignment: .trailing) { headerButtons }
                                 .id("top")
                             Spacer().frame(height: 22)
                             cameraAppCard
