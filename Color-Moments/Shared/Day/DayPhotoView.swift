@@ -2,6 +2,34 @@ import CoreLocation
 import SwiftUI
 import UIKit
 
+/// 사진 보기에 붙일 날씨 — WeatherKit 은 앱 타깃만 알아서 앱이 시작할 때 꽂는다(확장엔 비어 있다).
+public enum PhotoEnrichment {
+    public struct Attribution: Equatable, Sendable {
+        public let markURL: URL
+        public let legalURL: URL
+        public init(markURL: URL, legalURL: URL) { self.markURL = markURL; self.legalURL = legalURL }
+    }
+
+    public nonisolated(unsafe) static var weather: ((Moment) async -> PlaceWeather?)?
+    public nonisolated(unsafe) static var attribution: (() async -> Attribution?)?
+
+    /// WeatherCondition.rawValue → 짧은 우리말. 모르는 값이면 보이지 않는다.
+    public static func label(_ condition: String) -> String? {
+        switch condition {
+        case "clear", "mostlyClear", "hot": "맑음"
+        case "partlyCloudy": "구름 조금"
+        case "mostlyCloudy", "cloudy": "흐림"
+        case "drizzle": "이슬비"
+        case "rain", "heavyRain", "sunShowers", "freezingRain", "freezingDrizzle": "비"
+        case "snow", "flurries", "heavySnow", "sleet", "sunFlurries", "wintryMix", "blowingSnow", "blizzard": "눈"
+        case "foggy", "haze", "smoky": "안개"
+        case "windy", "breezy": "바람"
+        case "thunderstorms", "isolatedThunderstorms", "scatteredThunderstorms", "strongStorms": "뇌우"
+        default: nil
+        }
+    }
+}
+
 private struct DayPhotoLoadKey: Equatable {
     let fileName: String
     let generation: Int
@@ -16,6 +44,7 @@ struct DayPhotoView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var image: UIImage?
     @State private var sharing = false
+    @State private var attribution: PhotoEnrichment.Attribution?
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
 
@@ -46,6 +75,8 @@ struct DayPhotoView: View {
                 .task(id: moment.id) {
                     await assignWordIfNeeded(moment)
                     await namePlaceIfNeeded(moment)
+                    await findWeatherIfNeeded(moment)
+                    if attribution == nil, moment.place?.weather != nil { attribution = await PhotoEnrichment.attribution?() }
                 }
             }
             HStack {
@@ -122,10 +153,35 @@ struct DayPhotoView: View {
                         .lineLimit(1)
                         .transition(.opacity)
                 }
+                if let w = m.place?.weather, let label = PhotoEnrichment.label(w.condition) {
+                    Text("·  \(label) \(Int(w.celsius.rounded()))°")
+                        .font(Face.wordMeta).monospacedDigit()
+                        .foregroundStyle(Tone.tertiary)
+                        .lineLimit(1)
+                        .transition(.opacity)
+                }
+            }
+            if m.place?.weather != nil, let a = attribution {
+                Link(destination: a.legalURL) {
+                    AsyncImage(url: a.markURL) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
+                        .frame(height: 10)
+                        .opacity(0.6)
+                }
+                .padding(.top, 6)
+                .accessibilityLabel("Apple 날씨 데이터 출처")
             }
         }
         .animation(.easeOut(duration: 0.25), value: m.word)
         .animation(.easeOut(duration: 0.25), value: m.place?.name)
+        .animation(.easeOut(duration: 0.25), value: m.place?.weather)
+    }
+
+    /// 좌표가 있는 사진 — 처음 볼 때 그 시각의 실제 날씨를 한 번 찾아 남긴다(iCloud 로도 간다).
+    private func findWeatherIfNeeded(_ m: Moment) async {
+        guard m.place != nil, m.place?.weather == nil, let find = PhotoEnrichment.weather else { return }
+        guard let w = await find(m), !Task.isCancelled else { return }
+        store.setPlaceWeather(m.id, w)
+        if attribution == nil { attribution = await PhotoEnrichment.attribution?() }
     }
 
     /// 좌표만 있는 사진(사진첩·카메라 앱에서 담은 것) — 처음 볼 때 동네 이름을 한 번 찾아 기록에 남긴다(iCloud 로도 간다).

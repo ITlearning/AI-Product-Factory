@@ -332,6 +332,22 @@ public final class DayStore {
         notify([.upsert(id)])
     }
 
+    /// 방금 찍은 사진에 위치가 늦게 도착했을 때 — 이미 있으면 덮지 않는다.
+    public func setPlace(_ id: Moment.ID, _ place: Place) {
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].place == nil else { return }
+        all[i].place = place
+        save()
+        notify([.upsert(id)])
+    }
+
+    public func setPlaceWeather(_ id: Moment.ID, _ weather: PlaceWeather) {
+        guard let i = all.firstIndex(where: { $0.id == id }), var place = all[i].place, place.weather == nil else { return }
+        place.weather = weather
+        all[i].place = place
+        save()
+        notify([.upsert(id)])
+    }
+
     public func setPlaceName(_ id: Moment.ID, _ name: String) {
         guard let i = all.firstIndex(where: { $0.id == id }), var place = all[i].place, place.name == nil else { return }
         place.name = name

@@ -37,6 +37,8 @@ enum SyncRecords {
         r["longitude"] = m.place?.longitude
         r["accuracy"] = m.place?.accuracy
         r["placeName"] = m.place?.name
+        r["weatherCondition"] = m.place?.weather?.condition
+        r["weatherCelsius"] = m.place?.weather?.celsius
         r["addedAt"] = m.addedAt
         r["batchID"] = m.batchID?.uuidString
         r["cloudID"] = m.cloudID
@@ -58,7 +60,10 @@ enum SyncRecords {
         let place: Place? = {
             guard let lat = r["latitude"] as? Double, let lon = r["longitude"] as? Double,
                   let acc = r["accuracy"] as? Double else { return nil }
-            return Place(latitude: lat, longitude: lon, accuracy: acc, name: r["placeName"] as? String)
+            let weather = (r["weatherCondition"] as? String).flatMap { c in
+                (r["weatherCelsius"] as? Double).map { PlaceWeather(condition: c, celsius: $0) }
+            }
+            return Place(latitude: lat, longitude: lon, accuracy: acc, name: r["placeName"] as? String, weather: weather)
         }()
         let cloudID = r["cloudID"] as? String
         return Moment(id: id, capturedAt: capturedAt, colorHex: colorHex,

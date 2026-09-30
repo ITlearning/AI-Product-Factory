@@ -124,7 +124,7 @@ struct HomeShell: View {
                                 onEnded: { _, vx in endCollectionSwipe(velocity: vx) })
             )
             .onChange(of: progress) { _, p in
-                if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start() }
+                if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start(); PlaceFinder.shared.warm() }
             }
             .onChange(of: swipeHeld) { _, held in
                 // onEnded 가 먼저 돌게 한 박자 미룬다.
@@ -428,12 +428,19 @@ struct HomeShell: View {
     private func makeCamera() {
         guard camera == nil else { return }
         camera = CaptureEngine(destination: { ShotStore.directory },
-                               onRecorded: { m in
+                               onRecorded: { shot in
+            var m = shot
+            if m.place == nil { m.place = PlaceFinder.shared.recentPlace(near: m.capturedAt) }
             store.add(m)
             Task {
                 // 처음 찍을 때만 묻는다 — 이미 물어봤으면 상태가 notDetermined 가 아니다.
                 if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined {
                     _ = await LibraryImporter.requestAccess()
+                }
+                // 위치는 사진 권한 다음 차례로 — 허용하면 방금 찍은 이 사진에도 붙인다(사진 앱 저장에도 들어간다).
+                if m.place == nil, await PlaceFinder.shared.requestIfNeeded(), let place = await PlaceFinder.shared.current() {
+                    store.setPlace(m.id, place)
+                    m.place = place
                 }
                 await store.waitUntilLoaded()
                 await AssetAdopter.adopt(m, store: store)

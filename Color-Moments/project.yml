@@ -36,6 +36,7 @@ targets:
         com.apple.developer.icloud-services: [CloudKit]
         aps-environment: development
         com.apple.security.application-groups: [group.com.itlearning.colormoments]
+        com.apple.developer.weatherkit: true
     info:
       path: ColorMoments/Info.plist
       properties:
@@ -52,6 +53,7 @@ targets:
         INFOPLIST_KEY_NSCameraUsageDescription: 순간의 색을 남기기 위해 카메라를 사용합니다.
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: 고른 사진을 몽돌에 담고, 찍은 시각과 장소를 하루에 씁니다. 사진은 기기 밖으로 나가지 않습니다.
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: 촬영한 사진을 사진 앱에도 저장합니다.
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: 찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait

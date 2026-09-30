@@ -119,6 +119,7 @@
 		62FD808384BFDB6BDEC7143C /* PebbleName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343D1F9744F120B40EEDE985 /* PebbleName.swift */; };
 		632171711E08FE8079B6FF40 /* Memories.swift in Sources */ = {isa = PBXBuildFile; fileRef = 375160E484DA6E545C79AB75 /* Memories.swift */; };
 		643D744E18A16AC3DF5BB2D0 /* WordPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4EE32C11490405892AA591 /* WordPicker.swift */; };
+		66137DD1C4BEED7292A6259B /* WeatherLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B801BBBCB1178424D102539A /* WeatherLookup.swift */; };
 		665406100A5053DE84F452EF /* CoalescingWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227C8DF6F16D015FA44EBC49 /* CoalescingWriter.swift */; };
 		689F997E07A401BE5FFA343A /* subset-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 311898EF3262DE92643FB442 /* subset-chars.txt */; };
 		6A0302EC3828A968F6281D5E /* button-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2C7A8222A62B20B01D87BCE2 /* button-chars.txt */; };
@@ -267,6 +268,7 @@
 		EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		EFA681B381951F2446C44F97 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 239333F689CA9C39141270F0 /* PrivacyInfo.xcprivacy */; };
 		F0DD38512B10A0EC9EF97BD6 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E016D510A0FA71B454E57DF6 /* AVKit.framework */; };
+		F17EACEED7EE887A5F7FE530 /* PlaceFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E607FA8DB377F42C22222F8 /* PlaceFinder.swift */; };
 		F1CEB3009284EB172D1766E8 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
 		F1D68387B4C64AE117698805 /* PebbleLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDAA62ACCAFEE5893EDC3F5 /* PebbleLabView.swift */; };
 		F2AED0EA530722CDA81ECD0C /* PebbleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4228061CA26BCE3FF38B2 /* PebbleWidget.swift */; };
@@ -426,6 +428,7 @@
 		8AEFA57D488E13A66189B401 /* DayIndexPatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayIndexPatchTests.swift; sourceTree = "<group>"; };
 		8DF99FB450EAE23B687B3D6F /* CoalescingWriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoalescingWriterTests.swift; sourceTree = "<group>"; };
 		8E4EE32C11490405892AA591 /* WordPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordPicker.swift; sourceTree = "<group>"; };
+		8E607FA8DB377F42C22222F8 /* PlaceFinder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceFinder.swift; sourceTree = "<group>"; };
 		8FCB350488EA3C0C8613C63F /* SystemFieldsCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemFieldsCache.swift; sourceTree = "<group>"; };
 		915E2C36A82446AD4B2298C3 /* SyncPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncPerformanceTests.swift; sourceTree = "<group>"; };
 		915F51F76D8105385A924494 /* SpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpikeView.swift; sourceTree = "<group>"; };
@@ -455,6 +458,7 @@
 		B3676D77CA8F72C6175CC066 /* ColorExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractorTests.swift; sourceTree = "<group>"; };
 		B6059A219A2BEA73B11E1619 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		B7A571B3502388E791F90524 /* AssetDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDiagnostics.swift; sourceTree = "<group>"; };
+		B801BBBCB1178424D102539A /* WeatherLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherLookup.swift; sourceTree = "<group>"; };
 		BB99387BD580BB034A37204A /* PhotoLabelerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLabelerTests.swift; sourceTree = "<group>"; };
 		BDB546AAD2C0C80DB7EF1B50 /* PhotoContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoContextTests.swift; sourceTree = "<group>"; };
 		BDCE9183C112FFB37E007824 /* PebbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleView.swift; sourceTree = "<group>"; };
@@ -821,8 +825,10 @@
 				F51459035A7DD9B296D1A83E /* PageTabBar.swift */,
 				08B1E31AC9C9E2FE8FDB5438 /* PebbleCollectionView.swift */,
 				BFDAA62ACCAFEE5893EDC3F5 /* PebbleLabView.swift */,
+				8E607FA8DB377F42C22222F8 /* PlaceFinder.swift */,
 				5175844256F2AE80471F6EE6 /* SettingsSheet.swift */,
 				915F51F76D8105385A924494 /* SpikeView.swift */,
+				B801BBBCB1178424D102539A /* WeatherLookup.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -1268,6 +1274,7 @@
 				EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */,
 				98852006EFA9EF70BC5E5A9E /* PhotoLabeler.swift in Sources */,
 				39247208574B16CCDC024E57 /* PhotoSuggester.swift in Sources */,
+				F17EACEED7EE887A5F7FE530 /* PlaceFinder.swift in Sources */,
 				6C99F65B250841163E8552BA /* ReceivedScene.swift in Sources */,
 				01264B590F60C78142E30605 /* SceneBackdrop.swift in Sources */,
 				2C3933EF51B4D3EC2FD3D7C7 /* SceneParts.swift in Sources */,
@@ -1283,6 +1290,7 @@
 				FCEE317A7C230C41A6485A20 /* SyncRecords.swift in Sources */,
 				FBC024F294753C132ABCD31B /* SystemFieldsCache.swift in Sources */,
 				839143816019CFB52E8335B2 /* Tokens.swift in Sources */,
+				66137DD1C4BEED7292A6259B /* WeatherLookup.swift in Sources */,
 				A2ED5B914AD6A2636B7269E4 /* WidgetSnapshot.swift in Sources */,
 				33F453AFE9E4B766D55AC703 /* WordList.swift in Sources */,
 				9A77BBAEF56777997F97B086 /* WordPicker.swift in Sources */,
@@ -1378,6 +1386,7 @@
 				INFOPLIST_FILE = ColorMoments/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "몽돌";
 				INFOPLIST_KEY_NSCameraUsageDescription = "순간의 색을 남기기 위해 카메라를 사용합니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "촬영한 사진을 사진 앱에도 저장합니다.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "고른 사진을 몽돌에 담고, 찍은 시각과 장소를 하루에 씁니다. 사진은 기기 밖으로 나가지 않습니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -1620,6 +1629,7 @@
 				INFOPLIST_FILE = ColorMoments/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "몽돌";
 				INFOPLIST_KEY_NSCameraUsageDescription = "순간의 색을 남기기 위해 카메라를 사용합니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "촬영한 사진을 사진 앱에도 저장합니다.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "고른 사진을 몽돌에 담고, 찍은 시각과 장소를 하루에 씁니다. 사진은 기기 밖으로 나가지 않습니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

@@ -14,7 +14,7 @@ public enum MomentMerge {
                       fileName: local.fileName, source: remote.source,
                       word: useRemoteWord ? remote.word : local.word,
                       labels: useRemoteWord ? remote.labels : (local.labels ?? remote.labels),
-                      assetID: local.assetID, place: remote.place ?? local.place,
+                      assetID: local.assetID, place: Place.merged(remote.place, local.place),
                       addedAt: remote.addedAt ?? local.addedAt, batchID: remote.batchID ?? local.batchID,
                       originalName: local.originalName, cloudID: remote.cloudID ?? local.cloudID)
     }
@@ -32,7 +32,7 @@ public enum MomentMerge {
         return Moment(id: winner.id, capturedAt: winner.capturedAt, colorHex: winner.colorHex,
                       fileName: device.fileName, source: winner.source,
                       word: wordSide.word, labels: wordSide.labels ?? winner.labels ?? loser.labels,
-                      assetID: device.assetID, place: winner.place ?? loser.place,
+                      assetID: device.assetID, place: Place.merged(winner.place, loser.place),
                       addedAt: winner.addedAt ?? loser.addedAt, batchID: winner.batchID ?? loser.batchID,
                       originalName: device.originalName, cloudID: winner.cloudID ?? loser.cloudID)
     }

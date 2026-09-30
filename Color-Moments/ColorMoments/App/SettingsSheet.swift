@@ -8,6 +8,7 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
     @AppStorage(FavoriteAdopter.enabledKey) private var adoptsFavorites = true
+    @AppStorage(PlaceFinder.enabledKey) private var recordsPlace = true
     @AppStorage(MomentReminder.key) private var reminder: MomentReminder.Frequency = .sometimes
     var store: DayStore? = nil
 
@@ -48,6 +49,19 @@ struct SettingsSheet: View {
             }
             .tint(Tone.primary.opacity(0.6))
             .padding(.top, 10)
+            Toggle(isOn: $recordsPlace) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("찍은 곳 남기기").font(Face.line).foregroundStyle(Tone.primary)
+                    Text("몽돌로 찍은 사진 옆에 동네 이름과 그때 날씨가 적혀요.")
+                        .font(Face.caption).foregroundStyle(Tone.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .tint(Tone.primary.opacity(0.6))
+            .padding(.top, 14)
+            .onChange(of: recordsPlace) { _, on in
+                if on { Task { _ = await PlaceFinder.shared.requestIfNeeded() } }
+            }
 
             Text("사진이 없는 날 알림").font(Face.caption).foregroundStyle(Tone.tertiary)
                 .padding(.top, 28)
@@ -81,7 +95,7 @@ struct SettingsSheet: View {
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Tone.base.ignoresSafeArea())
-        .presentationDetents([.height(610)])
+        .presentationDetents([.large])
         .presentationBackground(Tone.base)
         .preferredColorScheme(.dark)
     }
