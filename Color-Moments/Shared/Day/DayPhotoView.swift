@@ -22,6 +22,19 @@ public enum PhotoEnrichment {
         look(condition).map { night ? $0.night : $0.day }
     }
 
+    public enum Fall: Equatable, Sendable { case rain, drizzle, snow, storm }
+
+    /// 구름 아래로 떨어지는 것 — 기본 날씨 심볼엔 이 움직임이 없어 직접 그린다(WeatherGlyph).
+    public static func fall(_ condition: String) -> Fall? {
+        switch look(condition)?.label {
+        case "비": .rain
+        case "이슬비": .drizzle
+        case "눈": .snow
+        case "뇌우": .storm
+        default: nil
+        }
+    }
+
     public static func isNight(_ date: Date, calendar: Calendar = .current) -> Bool {
         let hour = calendar.component(.hour, from: date)
         return hour < 6 || hour >= 19
@@ -193,9 +206,7 @@ struct DayPhotoView: View {
             }
             if let w = m.place?.weather, let label = PhotoEnrichment.label(w.condition) {
                 HStack(spacing: 5) {
-                    if let symbol = PhotoEnrichment.symbol(w.condition, night: PhotoEnrichment.isNight(m.capturedAt)) {
-                        Image(systemName: symbol).imageScale(.small)
-                    }
+                    WeatherGlyph(condition: w.condition, night: PhotoEnrichment.isNight(m.capturedAt))
                     RevealText("\(label) \(Int(w.celsius.rounded()))°", reveal: revealArrivals)
                 }
                 .fixedSize()
@@ -359,4 +370,67 @@ private struct GlyphRise: ViewModifier {
 
 private extension AnyTransition {
     static var glyph: AnyTransition { .modifier(active: GlyphRise(hidden: true), identity: GlyphRise(hidden: false)) }
+}
+
+/// 비·이슬비·눈·뇌우는 구름 아래로 천천히 떨어지고, 나머지는 기본 심볼 그대로.
+/// 동작 줄이기를 켜면 기본 심볼(cloud.rain 등)로 멈춰 있다.
+private struct WeatherGlyph: View {
+    let condition: String
+    let night: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if let fall = PhotoEnrichment.fall(condition), !reduceMotion {
+            ZStack(alignment: .top) {
+                Image(systemName: "cloud").font(.system(size: 11))
+                TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
+                    Canvas { context, size in
+                        Self.draw(fall, at: timeline.date.timeIntervalSinceReferenceDate, in: &context, size: size)
+                    }
+                }
+            }
+            .frame(width: 16, height: 15)
+        } else if let symbol = PhotoEnrichment.symbol(condition, night: night) {
+            Image(systemName: symbol).imageScale(.small)
+        }
+    }
+
+    private static func draw(_ fall: PhotoEnrichment.Fall, at t: TimeInterval, in context: inout GraphicsContext, size: CGSize) {
+        let top: CGFloat = 9.5, bottom = size.height
+        let lanes: [CGFloat] = [4.5, 8.3, 12.1]
+        let period: Double = switch fall {
+        case .rain, .storm: 0.8
+        case .drizzle: 1.3
+        case .snow: 2.4
+        }
+        let flash = fall == .storm && t.truncatingRemainder(dividingBy: 3.2) < 0.16
+
+        for (i, x) in lanes.enumerated() {
+            if flash && i == 1 { continue }
+            let phase = (t / period + Double(i) * 0.37).truncatingRemainder(dividingBy: 1)
+            let y = top + CGFloat(phase) * (bottom - top - 1.5)
+            context.opacity = phase < 0.15 ? phase / 0.15 : phase > 0.7 ? (1 - phase) / 0.3 : 1
+            switch fall {
+            case .rain, .storm:
+                var p = Path()
+                p.move(to: CGPoint(x: x + 0.5, y: y))
+                p.addLine(to: CGPoint(x: x - 0.3, y: y + 2.4))
+                context.stroke(p, with: .foreground, style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+            case .drizzle:
+                context.fill(Path(ellipseIn: CGRect(x: x - 0.75, y: y, width: 1.5, height: 1.5)), with: .foreground)
+            case .snow:
+                let sway = CGFloat(sin((t * 1.6) + Double(i) * 2.1)) * 0.8
+                context.fill(Path(ellipseIn: CGRect(x: x - 0.95 + sway, y: y, width: 1.9, height: 1.9)), with: .foreground)
+            }
+        }
+        if flash {
+            context.opacity = 1
+            var bolt = Path()
+            bolt.move(to: CGPoint(x: 9.2, y: 9))
+            bolt.addLine(to: CGPoint(x: 7.4, y: 11.8))
+            bolt.addLine(to: CGPoint(x: 9.3, y: 11.8))
+            bolt.addLine(to: CGPoint(x: 7.8, y: 14.6))
+            context.stroke(bolt, with: .foreground, style: StrokeStyle(lineWidth: 1.1, lineCap: .round, lineJoin: .round))
+        }
+    }
 }

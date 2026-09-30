@@ -41,6 +41,17 @@ final class PhotoEnrichmentTests: XCTestCase {
         XCTAssertTrue(PhotoEnrichment.isNight(at(19, 0), calendar: cal))
     }
 
+    func testOnlyPrecipitationFalls() {
+        XCTAssertEqual(PhotoEnrichment.fall("rain"), .rain)
+        XCTAssertEqual(PhotoEnrichment.fall("heavyRain"), .rain)
+        XCTAssertEqual(PhotoEnrichment.fall("drizzle"), .drizzle)
+        XCTAssertEqual(PhotoEnrichment.fall("sleet"), .snow)
+        XCTAssertEqual(PhotoEnrichment.fall("strongStorms"), .storm)
+        for still in ["clear", "partlyCloudy", "cloudy", "foggy", "windy", "hail"] {
+            XCTAssertNil(PhotoEnrichment.fall(still), still)
+        }
+    }
+
     func testPartOfDayFollowsTheFourAMDayBoundary() {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
         func part(_ h: Int, _ m: Int) -> String {
