@@ -258,7 +258,9 @@ struct OnboardingView: View {
                             },
                             next: next)
         case .continuing:
-            CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "이어서 보기", next: continueWithPhotos)
+            CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "이어서 보기",
+                      asksPhotos: PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined,
+                      next: continueWithPhotos)
         case .cloud:
             CloudStep(remoteDays: remoteDays, dayCount: store.dayKeys.count, actionTitle: "다음", next: next)
         case .place:

@@ -483,6 +483,8 @@ struct CloudStep: View {
     let remoteDays: Int
     let dayCount: Int
     let actionTitle: String
+    /// 이어 온 사람 — 누르면 사진 권한을 물으니 무엇을 물을지 먼저 한 줄로.
+    var asksPhotos = false
     let next: () -> Void
 
     @State private var signedIn: Bool?
@@ -521,7 +523,8 @@ struct CloudStep: View {
 
     private var detail: String? {
         if remoteDays > 0 {
-            return receiving ? "iCloud에서 \(remoteDays)개의 하루를 가져오는 중" : "iCloud에서 \(remoteDays)개의 하루를 가져왔어요"
+            let got = receiving ? "iCloud에서 \(remoteDays)개의 하루를 가져오는 중" : "iCloud에서 \(remoteDays)개의 하루를 가져왔어요"
+            return asksPhotos ? got + ". 사진은 이 기기 사진첩에서 다시 불러와요." : got
         }
         return signedIn == false ? "설정 › iCloud에서 켤 수 있어요" : nil
     }
