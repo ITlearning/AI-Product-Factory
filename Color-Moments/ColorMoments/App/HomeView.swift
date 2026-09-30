@@ -41,6 +41,8 @@ struct HomeView: View {
     /// 「몽돌」 줄 오른쪽 — 스크롤과 같이 움직인다. 온보딩 중엔 nil 로 숨긴다.
     var onOpenSettings: (() -> Void)? = nil
     var onOpenGate: (() -> Void)? = nil
+    /// 이미 홈인데 탭바의 홈을 또 누르면 오른다 — 맨 위로.
+    var scrollToTop: Int = 0
 
     // 기록이 한 번이라도 생기면 true — 그 뒤엔 사진첩 제안 문구를 다시 보이지 않는다.
     @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
@@ -310,6 +312,9 @@ struct HomeView: View {
                         } else {
                             scheduleLingerEnd()
                         }
+                    }
+                    .onChange(of: scrollToTop) { _, _ in
+                        withAnimation(.easeOut(duration: 0.35)) { proxy.scrollTo("top", anchor: .top) }
                     }
                     .onChange(of: focusDay) { _, newValue in
                         guard let newValue else { return }

@@ -45,6 +45,8 @@ struct HomeShell: View {
     @State private var collectionDragStart: CGFloat = 0
     /// 아래로 스크롤하면 탭바를 고른 칸 하나로 접는다(iOS 26 앱들처럼). 위로 올리거나 누르면 펼친다.
     @State private var tabBarFolded = false
+    @State private var homeToTop = 0
+    @State private var collectionToTop = 0
 
     private enum SwipeSide { case camera }
     @State private var camera: CaptureEngine?
@@ -102,7 +104,8 @@ struct HomeShell: View {
                              || showingSettings,
                          openDay: $openDayRequest,
                          onOpenSettings: onboarding == .none ? { showingSettings = true } : nil,
-                         onOpenGate: onboarding == .none ? debugGate : nil)
+                         onOpenGate: onboarding == .none ? debugGate : nil,
+                         scrollToTop: homeToTop)
                     .offset(x: progress * w)
                     .disabled(abs(progress) > 0.01)
 
@@ -112,7 +115,8 @@ struct HomeShell: View {
                 if collectionLoaded {
                     PebbleCollectionView(store: store, gifts: gifts, closures: closures, embedded: true,
                                          onScrollMinimize: foldTabBar,
-                                         acceptsTaps: progress == -1 && !collectionDragging)
+                                         acceptsTaps: progress == -1 && !collectionDragging,
+                                         scrollToTop: collectionToTop)
                         .offset(x: w + progress * w)
                 }
             }
@@ -369,7 +373,11 @@ struct HomeShell: View {
         guard !dragging, !collectionDragging else { return }
         foldTabBar(false)
         let target: CGFloat = collection ? -1 : 0
-        guard progress != target else { return }
+        guard progress != target else {
+            // 이미 그 칸 — 맨 위로(스크롤 중이든 내려가 있든).
+            if collection { collectionToTop += 1 } else { homeToTop += 1 }
+            return
+        }
         if collection { collectionLoaded = true }
         Haptics.snapped()
         progress = target

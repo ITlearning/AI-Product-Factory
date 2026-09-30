@@ -12,6 +12,8 @@ struct PebbleCollectionView: View {
     /// 넘기는 중이거나 넘어가는 중이면 false — 화면이 손가락을 따라 움직여 손을 뗀 자리가 여전히 그 조약돌 위라,
     /// 닫는 스와이프가 탭으로도 잡혀 홈에 돌아온 뒤 상세가 떴다.
     var acceptsTaps = true
+    /// 이미 모은 조약돌인데 탭바의 그 칸을 또 누르면 오른다 — 맨 위로.
+    var scrollToTop: Int = 0
 
     @State private var opened: OpenedDay?
 
@@ -37,11 +39,21 @@ struct PebbleCollectionView: View {
         let months = months
         VStack(spacing: 0) {
             if embedded { header }
-            ScrollView { grid(months, lazy: true) }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Color.clear.frame(height: 0).id("top")
+                        grid(months, lazy: true)
+                    }
+                }
                 .scrollIndicators(.hidden)
                 .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { old, new in
                     TabBarFold.report(old: old, new: new, to: onScrollMinimize)
                 }
+                .onChange(of: scrollToTop) { _, _ in
+                    withAnimation(.easeOut(duration: 0.35)) { proxy.scrollTo("top", anchor: .top) }
+                }
+            }
         }
         .overlay {
             if months.isEmpty {
