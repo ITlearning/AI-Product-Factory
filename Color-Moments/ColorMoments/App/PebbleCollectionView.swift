@@ -6,7 +6,7 @@ struct PebbleCollectionView: View {
     let store: DayStore
     let gifts: GiftLog
     let closures: DayClosures
-    /// 홈 옆에 붙어 열릴 때 — 제목줄과 돌아가기 버튼을 그린다. nil 이면 내비게이션 안(디버그)에서 쓴다.
+    /// 홈 옆에 붙어 열릴 때 — 제목줄·돌아가기 버튼·왼쪽 가장자리 「쓸면 돌아가기」를 그린다. nil 이면 내비게이션 안(디버그)에서 쓴다.
     var onClose: (() -> Void)? = nil
     /// 넘기는 중이거나 넘어가는 중이면 false — 화면이 손가락을 따라 움직여 손을 뗀 자리가 여전히 그 조약돌 위라,
     /// 닫는 스와이프가 탭으로도 잡혀 홈에 돌아온 뒤 상세가 떴다.
@@ -46,6 +46,9 @@ struct PebbleCollectionView: View {
                 .multilineTextAlignment(.center)
             }
         }
+        .overlay {
+            if onClose != nil { returnHint }
+        }
         .background(Tone.base.ignoresSafeArea())
         .navigationTitle(onClose == nil ? "모은 조약돌" : "")
         .navigationBarTitleDisplayMode(.inline)
@@ -76,12 +79,31 @@ struct PebbleCollectionView: View {
         .padding(.top, 6)
     }
 
+    private var returnHint: some View {
+        HStack(spacing: 7) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(Tone.tertiary)
+                .frame(width: 3, height: 34)
+            Text("쓸면 돌아가기")
+                .font(Face.caption)
+                .foregroundStyle(Tone.tertiary)
+                .fixedSize()
+                .rotationEffect(.degrees(-90))
+                .frame(width: 12, height: 74)
+            Spacer()
+        }
+        .padding(.leading, 1)
+        .frame(maxHeight: .infinity)
+        .allowsHitTesting(false)
+    }
+
     /// lazy: false 는 스크롤 밖에서 통째로 그릴 때(테스트 덤프).
     @ViewBuilder
     func grid(_ months: [(month: String, days: [String])], lazy: Bool) -> some View {
         let body = ForEach(months, id: \.month) { m in
             VStack(alignment: .leading, spacing: 18) {
                 Text(Self.monthTitle(m.month)).font(Face.caption).foregroundStyle(Tone.tertiary)
+                    .padding(.leading, onClose == nil ? 0 : 12)
                 LazyVGrid(columns: columns, spacing: 26) {
                     ForEach(m.days, id: \.self) { cell($0) }
                 }
