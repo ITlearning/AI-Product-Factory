@@ -8,6 +8,7 @@ struct PebbleCollectionView: View {
     let closures: DayClosures
     /// 홈 옆에 붙어 열릴 때 — 제목줄을 그리고 아래 탭바 자리를 비운다. false 면 내비게이션 안(디버그)에서 쓴다.
     var embedded = false
+    var onScrollMinimize: (Bool) -> Void = { _ in }
     /// 넘기는 중이거나 넘어가는 중이면 false — 화면이 손가락을 따라 움직여 손을 뗀 자리가 여전히 그 조약돌 위라,
     /// 닫는 스와이프가 탭으로도 잡혀 홈에 돌아온 뒤 상세가 떴다.
     var acceptsTaps = true
@@ -38,6 +39,9 @@ struct PebbleCollectionView: View {
             if embedded { header }
             ScrollView { grid(months, lazy: true) }
                 .scrollIndicators(.hidden)
+                .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { old, new in
+                    TabBarFold.report(old: old, new: new, to: onScrollMinimize)
+                }
         }
         .overlay {
             if months.isEmpty {

@@ -43,6 +43,8 @@ struct HomeShell: View {
     /// 모은 조약돌 넘기기는 CollectionSwipe(UIKit)가 따로 몬다 — SwiftUI 스와이프의 취소 정리가 건드리지 않게 상태를 나눈다.
     @State private var collectionDragging = false
     @State private var collectionDragStart: CGFloat = 0
+    /// 아래로 스크롤하면 탭바를 고른 칸 하나로 접는다(iOS 26 앱들처럼). 위로 올리거나 누르면 펼친다.
+    @State private var tabBarFolded = false
 
     private enum SwipeSide { case camera }
     @State private var camera: CaptureEngine?
@@ -91,6 +93,7 @@ struct HomeShell: View {
                          keepsakePresented: $keepsakePresented,
                          onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } },
                          onRequestLibraryPicker: openLibraryPicker,
+                         onScrollMinimize: foldTabBar,
                          holdsArrivals: progress != 0 || libraryCoverUp || daySheetPresented || keepsakePresented
                              || showingSettings,
                          openDay: $openDayRequest)
@@ -102,6 +105,7 @@ struct HomeShell: View {
 
                 if collectionLoaded {
                     PebbleCollectionView(store: store, gifts: gifts, closures: closures, embedded: true,
+                                         onScrollMinimize: foldTabBar,
                                          acceptsTaps: progress == -1 && !collectionDragging)
                         .offset(x: w + progress * w)
                 }
@@ -161,7 +165,8 @@ struct HomeShell: View {
         }
         .overlay(alignment: .bottom) {
             if onboarding == .none {
-                PageTabBar(onCollection: progress < -0.5, select: selectPage, camera: openCamera)
+                PageTabBar(onCollection: progress < -0.5, folded: tabBarFolded, select: selectPage,
+                           expand: { foldTabBar(false) }, camera: openCamera)
                     .opacity(progress > 0.01 ? 0 : 1)
                     .allowsHitTesting(progress <= 0.01)
                     .animation(.easeOut(duration: 0.2), value: progress > 0.01)
@@ -343,8 +348,14 @@ struct HomeShell: View {
         progress = 1
     }
 
+    private func foldTabBar(_ folded: Bool) {
+        guard tabBarFolded != folded else { return }
+        tabBarFolded = folded
+    }
+
     private func selectPage(_ collection: Bool) {
         guard !dragging, !collectionDragging else { return }
+        foldTabBar(false)
         let target: CGFloat = collection ? -1 : 0
         guard progress != target else { return }
         if collection { collectionLoaded = true }

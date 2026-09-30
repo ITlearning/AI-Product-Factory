@@ -27,6 +27,8 @@ struct HomeView: View {
 
     // 빈 첫 화면의 "지난 며칠 담기" 제안을 누르면 HomeShell 이 기존 사진첩 담기 화면을 띄운다.
     var onRequestLibraryPicker: () -> Void = {}
+    /// 아래로 스크롤하면 true — 탭바를 작게 접는다.
+    var onScrollMinimize: (Bool) -> Void = { _ in }
 
     // 카메라·사진첩·시트가 홈을 가리는 동안 true — 새 줄 등장 연출을 걷힐 때까지 미룬다.
     var holdsArrivals: Bool = false
@@ -257,6 +259,9 @@ struct HomeView: View {
                         .padding(.top, 72 - geo.safeAreaInsets.top)
                     }
                     .scrollIndicators(.hidden)
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { old, new in
+                        TabBarFold.report(old: old, new: new, to: onScrollMinimize)
+                    }
                     .onScrollPhaseChange { _, phase in
                         withAnimation(.easeOut(duration: 0.2)) { scrolling = phase.isScrolling }
                         if phase.isScrolling {
