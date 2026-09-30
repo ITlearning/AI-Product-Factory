@@ -148,6 +148,47 @@ final class CardExporterTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(wide.width, tall.width)
     }
 
+    func testDumpShareCardLinesWhenAsked() throws {
+        guard let dir = ProcessInfo.processInfo.environment["PEBBLE_DUMP"] else {
+            throw XCTSkip("PEBBLE_DUMP 미지정")
+        }
+        var colors = stride(from: 0.05, through: 0.95, by: 0.05).map { ColorExtractor.RGB(r: $0, g: $0, b: $0) }
+        for h in stride(from: 0.0, to: 360, by: 2.5) {
+            for b in [0.3, 0.8] {
+                var r: CGFloat = 0, g: CGFloat = 0, bl: CGFloat = 0
+                UIColor(hue: h / 360, saturation: 0.7, brightness: b, alpha: 1).getRed(&r, green: &g, blue: &bl, alpha: nil)
+                colors.append(.init(r: Double(r), g: Double(g), b: Double(bl)))
+            }
+        }
+        var samples: [String: (name: PebbleName, hex: String)] = [:]
+        for c in colors {
+            let named = PebbleNaming.name(for: try XCTUnwrap(PebbleNaming.rgb(fromHex: c.hex)))
+            samples[named.name] = (named, c.hex)
+        }
+        func width(_ line: String) -> CGFloat {
+            ImageRenderer(content: Text(line).font(Face.line).fixedSize()).uiImage?.size.width ?? 0
+        }
+        let sorted = samples.values.sorted { width($0.name.line) < width($1.name.line) }
+        let url = URL(fileURLWithPath: dir)
+        try sorted.map { "\($0.name.name)\t\(Int(width($0.name.line)))\t\($0.name.line)" }.joined(separator: "\n")
+            .write(to: url.appendingPathComponent("card-lines.txt"), atomically: true, encoding: .utf8)
+        let tag = ProcessInfo.processInfo.environment["PEBBLE_TAG"] ?? "card"
+        let photos: [(String, UIImage?)] = [("face", nil), ("tall", Self.photo(width: 900, height: 1600)),
+                                            ("wide", Self.photo(width: 1200, height: 900))]
+        for (label, pick) in [("longest", try XCTUnwrap(sorted.last)), ("shortest", try XCTUnwrap(sorted.first))] {
+            let base = Date().addingTimeInterval(-86_400)
+            let moments = (0..<3).map {
+                Moment(capturedAt: base.addingTimeInterval(Double($0) * 1800), colorHex: pick.hex,
+                       fileName: "dl\($0).jpg", source: .app)
+            }
+            for (shape, photo) in photos {
+                let card = try XCTUnwrap(CardExporter.renderRaw(dayKey: "2026-09-23", pebbleMoments: moments,
+                                                                face: moments[0], photo: photo))
+                try XCTUnwrap(card.pngData()).write(to: url.appendingPathComponent("\(tag)-\(label)-\(shape).png"))
+            }
+        }
+    }
+
     /// 줄무늬 사진 — 한 색이면 사진 자체가 빈 판정과 구분이 안 된다.
     static func photo(width: Int, height: Int) -> UIImage {
         let format = UIGraphicsImageRendererFormat()

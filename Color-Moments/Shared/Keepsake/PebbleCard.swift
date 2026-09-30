@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// 건넬 조약돌 카드 — 사진이 주인공. 고른 사진 한 장 + 그날 그라데이션 틀 + 사진 모서리에 걸친 조약돌, 이름·날짜·작은 "몽돌".
+/// 건넬 조약돌 카드 — 사진이 주인공. 고른 사진 한 장 + 그날 그라데이션 틀 + 사진 모서리에 걸친 조약돌, 이름·한 줄·날짜·작은 "몽돌".
 /// 장소·단어는 넣지 않는다. 사진은 호출부가 불러와 넘긴다(Shared 는 Photos 를 모른다).
 public struct PebbleCard: View {
     private let dayKey: String
@@ -38,15 +38,21 @@ public struct PebbleCard: View {
                     .offset(x: pebbleAt.x, y: pebbleAt.y)
             }
             VStack(spacing: 0) {
-                Spacer()
+                Spacer().frame(height: PebbleCardLayout.textTop)
                 if let named = PebbleNaming.name(for: pebbleMoments) {
                     Text(named.name).font(Face.nameDay).foregroundStyle(Tone.primary)
+                    Spacer().frame(height: 6)
+                    Text(named.line).font(Face.line).foregroundStyle(Tone.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: PebbleCardLayout.photoArea.width)
                     Spacer().frame(height: 10)
                 }
                 Text(dateText).font(Face.line).foregroundStyle(Tone.secondary).monospacedDigit()
-                Spacer().frame(height: 40)
+                Spacer(minLength: 0)
                 Text("몽돌").font(Face.caption).foregroundStyle(Tone.tertiary)
-                Spacer().frame(height: 34)
+                Spacer().frame(height: 28)
             }
             .frame(width: PebbleCardLayout.canvas.width, height: PebbleCardLayout.canvas.height)
         }
@@ -88,6 +94,7 @@ public enum PebbleCardLayout {
     // 홈 하루 블록(앞장 314 폭에 돌 84, 앞장 오른쪽 끝 56 안쪽·아래 끝 34 위에서 시작)과 같은 말투.
     public static let pebbleHeight: CGFloat = 84
     static let pebbleInset = CGPoint(x: 56, y: 34)
+    static let textTop: CGFloat = photoArea.maxY + 20
 
     public static func aspect(of photo: UIImage?) -> CGFloat {
         guard let size = photo?.size, size.width > 0, size.height > 0 else { return faceAspect }
