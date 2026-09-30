@@ -91,8 +91,6 @@ struct DayPhotoView: View {
     @State private var revealArrivals = false
     @State private var pacer = RevealPacer()
     @State private var rejections = WordRejections.shared
-    /// 「아니에요」로 방금 바뀐 단어 — 이것만 무지개로 나타난다.
-    @State private var freshWordID: String?
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
     /// task 가 잡아 둔 값은 옛것이다 — 도중에 붙은 동네·날씨는 여기서 다시 읽는다.
@@ -172,9 +170,9 @@ struct DayPhotoView: View {
     private func words(_ m: Moment) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             if let w = m.word {
-                wordText(m, w)
+                wordLine(m, w)
                 Spacer().frame(height: 4)
-                Text(w.meaning).font(Face.wordMeaning).foregroundStyle(Tone.tertiary)
+                RollingLine(w.meaning, shineDelay: 0.12).font(Face.wordMeaning).foregroundStyle(Tone.tertiary)
                 Spacer().frame(height: 12)
             }
             meta(m)
@@ -331,26 +329,13 @@ struct DayPhotoView: View {
         return (chosen ?? first, pool)
     }
 
-    @ViewBuilder
-    private func wordText(_ m: Moment, _ w: PhotoWord) -> some View {
-        // 바뀌는 동안 옛 단어와 새 단어가 겹쳐 있어야 아래 줄이 안 튄다.
-        let text = ZStack(alignment: .leading) {
-            Group {
-                if w.wordID == freshWordID {
-                    AIShimmerWord(text: w.word)
-                } else {
-                    Text(w.word).foregroundStyle(Tone.primary)
-                }
-            }
-            .font(Face.word)
-            .id(w.wordID)
-            .transition(.modifier(active: GlyphRise(hidden: true), identity: GlyphRise(hidden: false)))
-        }
-        if rejections.hasRejected(m.id) {
-            text
-        } else {
-            text.contextMenu {
-                Button("이 단어는 아니에요", systemImage: "arrow.uturn.backward") { Task { await reject(m) } }
+    /// 단어와 ↻ — ↻는 사진마다 한 번 쓰면 사라진다.
+    private func wordLine(_ m: Moment, _ w: PhotoWord) -> some View {
+        HStack(alignment: .center, spacing: 4) {
+            RollingWord(w.word).font(Face.word).foregroundStyle(Tone.primary)
+            if !rejections.hasRejected(m.id) {
+                RejectWordButton { Task { await reject(m) } }
+                    .transition(.opacity)
             }
         }
     }
@@ -366,9 +351,8 @@ struct DayPhotoView: View {
                                 weather: current?.place?.weather?.condition,
                                 appVersion: "\(info?["CFBundleShortVersionString"] ?? "?")(\(info?["CFBundleVersion"] ?? "?"))",
                                 at: Date()))
-        freshWordID = pick.word.id
         Haptics.tickPassed()
-        withAnimation(.easeOut(duration: 0.4)) { store.replaceWord(m.id, PhotoWord(pick.word)) }
+        store.replaceWord(m.id, PhotoWord(pick.word))
     }
 }
 
@@ -571,39 +555,225 @@ private struct WeatherGlyph: View {
     }
 }
 
-/// 「아니에요」로 바뀐 단어 — Apple Intelligence 결의 파스텔 무지개가 오른쪽에서 왼쪽으로 한 번 훑고,
-/// 은은한 빛무리와 함께 흰 글자로 가라앉는다. 동작 줄이기면 그냥 흰 글자.
-private struct AIShimmerWord: View {
-    let text: String
-    @State private var swept = false
-    @State private var settled = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private static let pastel: [Color] = ["#FFC2E2", "#D7B8FF", "#A9C9FF", "#A8F0DC", "#FFE3A8", "#FFC2E2"].map { Color(hex: $0) }
+/// ↻ — 처음 한 번은 「이 단어는 아니에요」로 펼쳐졌다가 접혀 무엇인지 알려 준다. 화면 낭독기는 늘 그 말로 읽는다.
+private struct RejectWordButton: View {
+    let action: () -> Void
+    @AppStorage("didLearnWordReject") private var learned = false
+    @State private var expanded = false
 
     var body: some View {
-        if reduceMotion {
-            Text(text).foregroundStyle(Tone.primary)
-        } else {
-            Text(text)
-                .foregroundStyle(Tone.primary)
-                .opacity(settled ? 1 : 0)
-                .overlay { rainbow.mask { Text(text) }.opacity(settled ? 0 : 1) }
-                .background { rainbow.mask { Text(text) }.blur(radius: 10).opacity(settled ? 0 : 0.7) }
-                .task {
-                    withAnimation(.easeInOut(duration: 1.1)) { swept = true }
-                    try? await Task.sleep(for: .milliseconds(900))
-                    withAnimation(.easeOut(duration: 0.6)) { settled = true }
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.clockwise").font(.system(size: 14, weight: .medium))
+                if expanded {
+                    Text("이 단어는 아니에요").font(Face.caption).fixedSize()
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
+            }
+            .foregroundStyle(Tone.tertiary)
+            .padding(.horizontal, expanded ? 10 : 0)
+            .padding(.vertical, 5)
+            .background { if expanded { Capsule().fill(.white.opacity(0.08)) } }
+            .frame(minWidth: Shape2.minTouch, minHeight: Shape2.minTouch)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.vertical, -7) // 터치는 44pt, 줄 높이는 단어대로
+        .accessibilityLabel("이 단어는 아니에요")
+        .task {
+            guard !learned else { return }
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.35)) { expanded = true }
+            try? await Task.sleep(for: .seconds(3.5))
+            guard !Task.isCancelled else { return } // 다 보기 전에 닫으면 다음에 다시
+            withAnimation(.easeInOut(duration: 0.4)) { expanded = false }
+            learned = true
         }
     }
+}
 
-    /// 글자 폭의 세 배짜리 띠를 왼쪽으로 두 폭 민다 — 글자 위로 색이 오른쪽에서 왼쪽으로 지나간다.
-    private var rainbow: some View {
+private enum GlyphMotion { case below, shown, above }
+
+/// numericText 결 — 아래(below)에서 흐릿하게 올라와 제자리(shown)에, 떠날 땐 위(above)로 흐려진다.
+private struct GlyphRoll: ViewModifier {
+    let motion: GlyphMotion
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(motion == .shown ? 1 : 0)
+            .blur(radius: motion == .shown ? 0 : 3)
+            .offset(y: motion == .below ? 8 : motion == .above ? -8 : 0)
+    }
+}
+
+/// 「아니에요」로 단어가 바뀔 때 — 옛 글자는 위로 한 자씩 빠지고 새 글자는 아래에서 한 자씩 올라온다.
+/// 옛·새 단어를 겹쳐 두어 폭이 튀지 않는다. 바뀔 때 무지개 띠가 한 번 슉 지나간다.
+private struct RollingWord: View {
+    let text: String
+    @State private var layers: [RollLayer]
+    @State private var shine = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(_ text: String) {
+        self.text = text
+        _layers = State(initialValue: [RollLayer(id: 0, text: text, entering: false)])
+    }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            ForEach(layers) { layer in
+                GlyphRow(text: layer.text, entering: layer.entering, leaving: layer.leaving)
+                    .transition(.identity)
+            }
+        }
+        .overlay { if shine > 0 { Shine(delay: 0.1).id(shine).mask { Text(text) } } }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(text)
+        .onChange(of: text) { _, new in
+            guard !reduceMotion else { layers = [RollLayer(id: (layers.last?.id ?? 0) + 1, text: new, entering: false)]; return }
+            for i in layers.indices { layers[i].leaving = true }
+            layers.append(RollLayer(id: (layers.last?.id ?? 0) + 1, text: new, entering: true))
+            shine += 1
+            Task {
+                try? await Task.sleep(for: .milliseconds(900))
+                layers.removeAll(where: \.leaving)
+            }
+        }
+    }
+}
+
+private struct RollLayer: Identifiable {
+    let id: Int
+    let text: String
+    let entering: Bool
+    var leaving = false
+}
+
+private struct GlyphRow: View {
+    let text: String
+    let entering: Bool
+    let leaving: Bool
+    @State private var shown: Int
+    @State private var gone = 0
+
+    init(text: String, entering: Bool, leaving: Bool) {
+        self.text = text
+        self.entering = entering
+        self.leaving = leaving
+        _shown = State(initialValue: entering ? 0 : text.count)
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(text.enumerated()), id: \.offset) { i, c in
+                Text(String(c)).modifier(GlyphRoll(motion: i < gone ? .above : i < shown ? .shown : .below))
+            }
+        }
+        .fixedSize()
+        .task {
+            guard entering else { return }
+            try? await Task.sleep(for: .milliseconds(120))
+            for i in 0..<text.count {
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: 0.32)) { shown = i + 1 }
+                try? await Task.sleep(for: .milliseconds(55))
+            }
+        }
+        .onChange(of: leaving) { _, now in
+            guard now else { return }
+            Task {
+                for i in 0..<text.count {
+                    withAnimation(.easeIn(duration: 0.25)) { gone = i + 1 }
+                    try? await Task.sleep(for: .milliseconds(40))
+                }
+            }
+        }
+    }
+}
+
+/// 뜻풀이 — 두 줄로 넘어갈 수 있어 한 자씩이 아니라 문장째 같은 결로 바뀐다(위로 빠지고 아래에서 올라온다).
+private struct RollingLine: View {
+    let text: String
+    let shineDelay: Double
+    @State private var layers: [RollLayer]
+    @State private var shine = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(_ text: String, shineDelay: Double) {
+        self.text = text
+        self.shineDelay = shineDelay
+        _layers = State(initialValue: [RollLayer(id: 0, text: text, entering: false)])
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(layers) { layer in
+                LineLayer(text: layer.text, entering: layer.entering, leaving: layer.leaving, delay: shineDelay)
+                    .transition(.identity)
+            }
+        }
+        .overlay { if shine > 0 { Shine(delay: shineDelay + 0.1).id(shine).mask { Text(text) } } }
+        .onChange(of: text) { _, new in
+            guard !reduceMotion else { layers = [RollLayer(id: (layers.last?.id ?? 0) + 1, text: new, entering: false)]; return }
+            for i in layers.indices { layers[i].leaving = true }
+            layers.append(RollLayer(id: (layers.last?.id ?? 0) + 1, text: new, entering: true))
+            shine += 1
+            Task {
+                try? await Task.sleep(for: .milliseconds(900))
+                layers.removeAll(where: \.leaving)
+            }
+        }
+    }
+}
+
+private struct LineLayer: View {
+    let text: String
+    let entering: Bool
+    let leaving: Bool
+    let delay: Double
+    @State private var motion: GlyphMotion
+
+    init(text: String, entering: Bool, leaving: Bool, delay: Double) {
+        self.text = text
+        self.entering = entering
+        self.leaving = leaving
+        self.delay = delay
+        _motion = State(initialValue: entering ? .below : .shown)
+    }
+
+    var body: some View {
+        Text(text)
+            .modifier(GlyphRoll(motion: motion))
+            .task {
+                guard entering else { return }
+                try? await Task.sleep(for: .seconds(0.12 + delay))
+                withAnimation(.easeOut(duration: 0.4)) { motion = .shown }
+            }
+            .onChange(of: leaving) { _, now in
+                if now { withAnimation(.easeIn(duration: 0.3)) { motion = .above } }
+            }
+    }
+}
+
+/// 파스텔 무지개 띠가 글자 위를 왼쪽에서 오른쪽으로 한 번 슉 — 글자 모양으로 오려 쓴다(mask).
+private struct Shine: View {
+    let delay: Double
+    @State private var passed = false
+
+    private static let colors: [Color] = [.clear] + ["#FFC2E2", "#D7B8FF", "#A9C9FF", "#A8F0DC", "#FFE3A8"].map { Color(hex: $0) } + [.clear]
+
+    var body: some View {
         GeometryReader { geo in
-            LinearGradient(colors: Self.pastel, startPoint: .leading, endPoint: .trailing)
-                .frame(width: geo.size.width * 3)
-                .offset(x: swept ? -geo.size.width * 2 : 0)
+            let band = max(geo.size.width * 0.7, 80)
+            LinearGradient(colors: Self.colors, startPoint: .leading, endPoint: .trailing)
+                .frame(width: band)
+                .offset(x: passed ? geo.size.width : -band)
+        }
+        .allowsHitTesting(false)
+        .task {
+            try? await Task.sleep(for: .seconds(delay))
+            withAnimation(.easeInOut(duration: 0.7)) { passed = true }
         }
     }
 }
