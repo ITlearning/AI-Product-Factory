@@ -13,9 +13,9 @@ struct PageTabBar: View {
         HStack(spacing: 10) {
             Button(action: camera) {
                 Image(systemName: "camera.fill")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(Tone.primary)
-                    .frame(width: 58, height: 58)
+                    .frame(width: 50, height: 50)
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
