@@ -81,4 +81,27 @@ final class ArrivalNoticeTests: XCTestCase {
         XCTAssertEqual(ArrivalNotice.targets(now: date(2026, 10, 1, 5, 0), calendar: calendar),
                        ["2026-09-30", "2026-10-01"])
     }
+
+    func testSometimesRemindsTwoDaysEachWeek() {
+        let start = PebbleNaming.dayNumber("2026-10-05")!   // 월요일
+        for week in 0..<20 {
+            let days = (0..<7).map { d -> String in
+                let date = Date(timeIntervalSince1970: Double(start + week * 7 + d) * 86_400)
+                var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
+                let c = cal.dateComponents([.year, .month, .day], from: date)
+                return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+            }
+            XCTAssertEqual(days.filter { MomentReminder.fires(on: $0, frequency: .sometimes) }.count, 2, "\(days[0]) 주")
+            XCTAssertEqual(days.filter { MomentReminder.fires(on: $0, frequency: .often) }.count, 7)
+            XCTAssertEqual(days.filter { MomentReminder.fires(on: $0, frequency: .off) }.count, 0)
+        }
+    }
+
+    func testEveningFollowsTheSeason() {
+        let winter = MomentReminder.eveningMinutes(dayKey: "2026-12-20")
+        let summer = MomentReminder.eveningMinutes(dayKey: "2026-06-20")
+        XCTAssertTrue((16 * 60 + 50)...(17 * 60 + 10) ~= winter, "\(winter / 60):\(winter % 60)")
+        XCTAssertTrue((19 * 60 + 25)...(19 * 60 + 40) ~= summer, "\(summer / 60):\(summer % 60)")
+        XCTAssertLessThan(MomentReminder.eveningMinutes(dayKey: "2026-10-31"), MomentReminder.eveningMinutes(dayKey: "2026-10-01"))
+    }
 }

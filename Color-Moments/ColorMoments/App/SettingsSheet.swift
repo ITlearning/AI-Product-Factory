@@ -8,6 +8,8 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
     @AppStorage(FavoriteAdopter.enabledKey) private var adoptsFavorites = true
+    @AppStorage(MomentReminder.key) private var reminder: MomentReminder.Frequency = .sometimes
+    var store: DayStore? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -46,12 +48,40 @@ struct SettingsSheet: View {
             }
             .tint(Tone.primary.opacity(0.6))
             .padding(.top, 10)
+
+            Text("사진이 없는 날 알림").font(Face.caption).foregroundStyle(Tone.tertiary)
+                .padding(.top, 28)
+            HStack(spacing: 8) {
+                ForEach(MomentReminder.Frequency.allCases, id: \.self) { f in
+                    let on = reminder == f
+                    Button {
+                        guard reminder != f else { return }
+                        Haptics.tickPassed()
+                        reminder = f
+                        if let store { Task { await MomentReminder.sync(store: store) } }
+                    } label: {
+                        Text(f.title)
+                            .font(Face.guide)
+                            .foregroundStyle(on ? Tone.primary : Tone.secondary)
+                            .frame(maxWidth: .infinity, minHeight: Shape2.minTouch)
+                            .background(Capsule().fill(on ? Color.white.opacity(0.12) : .clear))
+                            .overlay(Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(.top, 10)
+            Text("아침과 노을 무렵에 가볍게. 담은 날은 오지 않아요.")
+                .font(Face.caption).foregroundStyle(Tone.tertiary)
+                .padding(.top, 8)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Tone.base.ignoresSafeArea())
-        .presentationDetents([.height(470)])
+        .presentationDetents([.height(610)])
         .presentationBackground(Tone.base)
         .preferredColorScheme(.dark)
     }

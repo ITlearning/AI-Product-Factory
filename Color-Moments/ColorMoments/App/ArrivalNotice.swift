@@ -146,3 +146,111 @@ enum ArrivalNotice {
         return calendar.date(byAdding: .day, value: 1, to: sameDayEight)
     }
 }
+
+/// 사진이 없는 날의 가벼운 알림 — 아침 09시 한 줄, 노을 질 무렵(해 지기 20분 전) 한 줄. 그날 한 장이라도 담았으면 오지 않는다.
+/// 2026-10-01 Tabber: 며칠 써 보니 까먹는다(9/24 「매일 알림은 옥죈다」를 다시 연 결정) — 그래서 빈도를 고르게 하고 기본은 가끔.
+enum MomentReminder {
+    enum Frequency: String, CaseIterable {
+        case often, sometimes, off
+
+        var title: String {
+            switch self {
+            case .often: "자주"
+            case .sometimes: "가끔"
+            case .off: "받지 않기"
+            }
+        }
+    }
+
+    static let key = "reminderFrequency"
+    static let idPrefix = "reminder-"
+    static let morningBody = "오늘은 어떤 색을 만나게 될까요."
+    static let eveningBody = "노을 지는 시간이에요. 순간을 남겨 보는 건 어때요?"
+    private static let horizon = 7
+
+    static var frequency: Frequency {
+        UserDefaults.standard.string(forKey: key).flatMap(Frequency.init(rawValue:)) ?? .sometimes
+    }
+
+    /// 순수 판정 — 「가끔」이면 주마다 이틀. 요일은 주마다 바뀐다.
+    static func fires(on dayKey: String, frequency: Frequency) -> Bool {
+        switch frequency {
+        case .off: return false
+        case .often: return true
+        case .sometimes:
+            // 1970-01-01 은 목요일 — 3일 당겨 월요일부터 세야 달력 한 주(월~일)에 딱 이틀이다.
+            guard let day = PebbleNaming.dayNumber(dayKey).map({ $0 + 3 }) else { return false }
+            let week = Int((Double(day) / 7).rounded(.down))
+            let slot = day - week * 7
+            let first = Int(hash("\(week)") % 7)
+            let second = (first + 2 + Int(hash("\(week)b") % 3)) % 7
+            return slot == first || slot == second
+        }
+    }
+
+    /// 순수 판정 — 해 지는 시각(서울 기준 월 중순 값 사이를 이어 붙임)에서 20분 전. 위치 권한 없이 계절만 따른다.
+    static func eveningMinutes(dayKey: String) -> Int {
+        let sunset = [1060, 1090, 1115, 1140, 1165, 1195, 1195, 1170, 1130, 1090, 1050, 1040]  // 1~12월 15일, 분
+        let p = dayKey.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3 else { return 18 * 60 }
+        let m = p[1] - 1, d = Double(p[2])
+        let (a, b, t) = d >= 15 ? (m, (m + 1) % 12, (d - 15) / 30) : ((m + 11) % 12, m, (d + 15) / 30)
+        return Int(Double(sunset[a]) + (Double(sunset[b] - sunset[a])) * t) - 20
+    }
+
+    @MainActor
+    static func sync(store: DayStore) async {
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        let pending = await center.pendingNotificationRequests().map(\.identifier)
+        let mine = pending.filter { $0.hasPrefix(idPrefix) }
+        if !mine.isEmpty { center.removePendingNotificationRequests(withIdentifiers: mine) }
+        guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
+        let frequency = frequency
+        guard frequency != .off else { return }
+
+        let now = Date()
+        let cal = Calendar.current
+        let today = Moment.dayKey(for: now)
+        let arrivals = Set(pending.filter { $0.hasPrefix(ArrivalNotice.idPrefix) })
+        for offset in 0..<horizon {
+            guard let date = cal.date(byAdding: .day, value: offset, to: now) else { continue }
+            let key = Moment.dayKey(for: date)
+            guard fires(on: key, frequency: frequency) else { continue }
+            if key == today && !store.today.isEmpty { continue }
+            let slots: [(String, Int, String)] = [("morning", 9 * 60, morningBody), ("evening", eveningMinutes(dayKey: key), eveningBody)]
+            for (slot, minutes, body) in slots {
+                // 아침 도착 소식(08시)이 오는 날엔 아침 한 줄을 빼 둘이 겹치지 않게.
+                if slot == "morning" && arrivals.contains(ArrivalNotice.idPrefix + previousKey(key)) { continue }
+                var c = cal.dateComponents([.year, .month, .day], from: date)
+                c.hour = minutes / 60; c.minute = minutes % 60
+                guard let fire = cal.date(from: c), fire > now else { continue }
+                let content = UNMutableNotificationContent()
+                content.title = "몽돌"
+                content.body = body
+                content.sound = .default
+                let trigger = UNCalendarNotificationTrigger(dateMatching: c, repeats: false)
+                try? await center.add(UNNotificationRequest(identifier: "\(idPrefix)\(key)-\(slot)", content: content, trigger: trigger))
+            }
+        }
+    }
+
+    /// 오늘 한 장이라도 담으면 — 오늘 남은 알림을 걷는다.
+    static func clearToday() {
+        let key = Moment.dayKey(for: Date())
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: ["\(idPrefix)\(key)-morning", "\(idPrefix)\(key)-evening"])
+    }
+
+    private static func previousKey(_ key: String) -> String {
+        guard let end = Moment.sealDate(for: key),
+              let prev = Calendar.current.date(byAdding: .day, value: -1, to: end.addingTimeInterval(-3600)) else { return key }
+        return Moment.dayKey(for: prev)
+    }
+
+    private static func hash(_ s: String) -> UInt64 {
+        var h: UInt64 = 0xcbf2_9ce4_8422_2325
+        for b in s.utf8 { h ^= UInt64(b); h = h &* 0x0000_0100_0000_01b3 }
+        return h
+    }
+}

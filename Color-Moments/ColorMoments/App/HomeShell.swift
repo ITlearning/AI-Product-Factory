@@ -185,7 +185,7 @@ struct HomeShell: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsSheet(preview: store.finishedDayKeys.max().map { store.pebbleMoments(on: $0) }
-                .flatMap { $0.isEmpty ? nil : $0 } ?? SettingsSheet.sample)
+                .flatMap { $0.isEmpty ? nil : $0 } ?? SettingsSheet.sample, store: store)
         }
         #if DEBUG
         .sheet(isPresented: $showingGate) { SpikeView(inbox: inbox, store: store, gifts: gifts, closures: closures) }

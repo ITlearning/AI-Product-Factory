@@ -49,6 +49,40 @@ struct OnboardingText: View {
     }
 }
 
+/// 사진이 없는 날의 알림 빈도 — 도착 소식 장에서 같이 고른다. 기본 가끔.
+struct ReminderChoice: View {
+    @AppStorage(MomentReminder.key) private var frequency: MomentReminder.Frequency = .sometimes
+    @Environment(\.onboardingInk) private var ink
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("사진이 없는 날엔 아침과 노을 무렵에 가볍게 알려 드릴게요.")
+                .font(Face.caption).foregroundStyle(ink.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                ForEach(MomentReminder.Frequency.allCases, id: \.self) { f in
+                    let on = frequency == f
+                    Button {
+                        guard frequency != f else { return }
+                        Haptics.tickPassed()
+                        frequency = f
+                    } label: {
+                        Text(f.title)
+                            .font(Face.guide)
+                            .foregroundStyle(on ? ink.primary : ink.secondary)
+                            .frame(maxWidth: .infinity, minHeight: Shape2.minTouch)
+                            .background(Capsule().fill(on ? ink.hairline : .clear))
+                            .overlay(Capsule().strokeBorder(ink.hairline, lineWidth: 1))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+        }
+    }
+}
+
 /// 조약돌 모양 고르기 — 첫 화면(모두가 지나가는 유일한 화면)에 둔다. 누르면 위 장면의 조약돌이 그 자리에서 바뀐다.
 struct PebbleStyleChoice: View {
     @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
@@ -327,8 +361,11 @@ struct ArrivalStep: View {
             SceneLayout {
                 ArrivalScene()
             } words: {
-                OnboardingText(title: "사진을 담은 다음 날 아침, 조약돌이 도착하면 한 번 알려 드려요.",
-                               detail: didAskArrivalNotice ? "알림은 설정에서 언제든 바꿀 수 있어요." : nil)
+                VStack(alignment: .leading, spacing: 20) {
+                    OnboardingText(title: "사진을 담은 다음 날 아침, 조약돌이 도착하면 한 번 알려 드려요.",
+                                   detail: didAskArrivalNotice ? "알림은 설정에서 언제든 바꿀 수 있어요." : nil)
+                    ReminderChoice()
+                }
             }
         } actions: {
             if didAskArrivalNotice {
@@ -342,7 +379,10 @@ struct ArrivalStep: View {
                         didAskArrivalNotice = true
                         asking = false
                         answered()
-                        if granted { await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts) }
+                        if granted {
+                            await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts)
+                            await MomentReminder.sync(store: store)
+                        }
                     }
                 }
                 SecondaryAction(title: "괜찮아요") {
