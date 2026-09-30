@@ -38,12 +38,17 @@ struct PageTabBar: View {
 
     private func item(_ title: String, icon: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 3) {
+            // 문구를 빼지 않고 제자리에서 흐리게 — 빼면 사라지는 동안 옛 자리에 남아 칸이 줄 때 옆으로 밀려 보인다.
+            // 접힐 땐 문구가 먼저 빠르게 흐려지고, 펼 땐 칸이 넓어진 뒤 떠오른다.
+            VStack(spacing: folded ? 0 : 3) {
                 Image(systemName: selected ? "\(icon).fill" : icon)
                     .font(.system(size: 17))
-                if !folded {
-                    Text(title).font(Face.tab).transition(.opacity)
-                }
+                Text(title).font(Face.tab).fixedSize()
+                    .opacity(folded ? 0 : 1)
+                    .blur(radius: folded ? 2 : 0)
+                    .scaleEffect(folded ? 0.8 : 1, anchor: .top)
+                    .animation(folded ? .easeOut(duration: 0.12) : .easeOut(duration: 0.22).delay(0.1), value: folded)
+                    .frame(height: folded ? 0 : nil)
             }
             .foregroundStyle(selected ? Tone.primary : Tone.tertiary)
             .frame(width: folded ? 64 : 96, height: folded ? 44 : 50)
