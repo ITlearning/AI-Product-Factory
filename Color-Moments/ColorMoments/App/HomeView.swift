@@ -5,7 +5,6 @@ struct HomeView: View {
 
     let gifts: GiftLog
 
-    let showsSwipeHint: Bool
 
     @Binding var focusDay: String?
 
@@ -115,7 +114,6 @@ struct HomeView: View {
             content
             bottomFade
             if pillActive, let label = pillLabel { monthPill(label) }
-            edgeHints
         }
         .sheet(item: $opened, onDismiss: {
             // opened 가 nil 이 되는 건 닫힘 애니메이션 시작 — 끝난 뒤(onDismiss)에만 가드를 푼다.
@@ -193,6 +191,7 @@ struct HomeView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
                             Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                                .padding(.leading, 30)  // 왼쪽 위 카메라 버튼 자리
                                 .id("top")
                             Spacer().frame(height: 22)
                             if todayInProgress {
@@ -445,41 +444,6 @@ struct HomeView: View {
         .padding(.top, scrubbing ? pillY : 120)
         .transition(.opacity)
         .allowsHitTesting(false)
-    }
-
-    /// 양쪽 몸짓 안내 — 온보딩을 거쳐도 모르는 사람이 있어 늘 희미하게 둔다(2026-10-01 Tabber).
-    /// 한 번도 쓸어 본 적 없으면 조금 더 또렷하게. 오른쪽은 날짜 알약이 뜨는 동안 비켜 준다.
-    private var edgeHints: some View {
-        HStack(spacing: 0) {
-            edgeHint("쓸면 담기", leading: true)
-            Spacer()
-            edgeHint("쓸면 모아 보기", leading: false)
-                .opacity(pillActive ? 0 : 1)
-        }
-        .opacity(showsSwipeHint ? 1 : 0.45)
-        .animation(.easeOut(duration: 0.25), value: pillActive)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    private func edgeHint(_ text: String, leading: Bool) -> some View {
-        HStack(spacing: 7) {
-            if !leading { label(text, degrees: 90) }
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(Tone.tertiary)
-                .frame(width: 3, height: 34)
-            if leading { label(text, degrees: -90) }
-        }
-        .padding(leading ? .leading : .trailing, 5)
-    }
-
-    private func label(_ text: String, degrees: Double) -> some View {
-        Text(text)
-            .font(Face.caption)
-            .foregroundStyle(Tone.tertiary)
-            .fixedSize()
-            .rotationEffect(.degrees(degrees))
-            .frame(width: 12, height: 86)
     }
 
     private var bottomFade: some View {

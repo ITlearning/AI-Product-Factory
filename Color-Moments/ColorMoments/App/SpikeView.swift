@@ -355,7 +355,7 @@ private struct EmptyHomePreview: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             if let store {
-                HomeView(store: store, gifts: gifts, showsSwipeHint: true,
+                HomeView(store: store, gifts: gifts,
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          daySheetPresented: $daySheetPresented,
                          keepsakePresented: $keepsakePresented)

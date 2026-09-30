@@ -6,8 +6,8 @@ struct PebbleCollectionView: View {
     let store: DayStore
     let gifts: GiftLog
     let closures: DayClosures
-    /// 홈 옆에 붙어 열릴 때 — 제목줄·돌아가기 버튼·왼쪽 가장자리 「쓸면 돌아가기」를 그린다. nil 이면 내비게이션 안(디버그)에서 쓴다.
-    var onClose: (() -> Void)? = nil
+    /// 홈 옆에 붙어 열릴 때 — 제목줄을 그리고 아래 탭바 자리를 비운다. false 면 내비게이션 안(디버그)에서 쓴다.
+    var embedded = false
     /// 넘기는 중이거나 넘어가는 중이면 false — 화면이 손가락을 따라 움직여 손을 뗀 자리가 여전히 그 조약돌 위라,
     /// 닫는 스와이프가 탭으로도 잡혀 홈에 돌아온 뒤 상세가 떴다.
     var acceptsTaps = true
@@ -35,7 +35,7 @@ struct PebbleCollectionView: View {
     var body: some View {
         let months = months
         VStack(spacing: 0) {
-            if let onClose { header(onClose) }
+            if embedded { header }
             ScrollView { grid(months, lazy: true) }
                 .scrollIndicators(.hidden)
         }
@@ -49,10 +49,9 @@ struct PebbleCollectionView: View {
             }
         }
         .overlay {
-            if onClose != nil { returnHint }
         }
         .background(Tone.base.ignoresSafeArea())
-        .navigationTitle(onClose == nil ? "모은 조약돌" : "")
+        .navigationTitle(embedded ? "" : "모은 조약돌")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $opened) { day in
             DayMomentsView(dayKey: day.id, store: store, closures: closures, isGifted: gifts.isGifted,
@@ -62,41 +61,10 @@ struct PebbleCollectionView: View {
         }
     }
 
-    private func header(_ onClose: @escaping () -> Void) -> some View {
-        ZStack {
-            Text("모은 조약돌").font(Face.lineCeremony).foregroundStyle(Tone.primary)
-            HStack {
-                Button(action: onClose) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Tone.secondary)
-                        .frame(width: Shape2.minTouch, height: Shape2.minTouch)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("홈으로")
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.top, 6)
-    }
-
-    private var returnHint: some View {
-        HStack(spacing: 7) {
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(Tone.tertiary)
-                .frame(width: 3, height: 34)
-            Text("쓸면 돌아가기")
-                .font(Face.caption)
-                .foregroundStyle(Tone.tertiary)
-                .fixedSize()
-                .rotationEffect(.degrees(-90))
-                .frame(width: 12, height: 74)
-            Spacer()
-        }
-        .padding(.leading, 1)
-        .frame(maxHeight: .infinity)
-        .allowsHitTesting(false)
+    private var header: some View {
+        Text("모은 조약돌").font(Face.lineCeremony).foregroundStyle(Tone.primary)
+            .frame(maxWidth: .infinity, minHeight: Shape2.minTouch)
+            .padding(.top, 6)
     }
 
     /// lazy: false 는 스크롤 밖에서 통째로 그릴 때(테스트 덤프).
@@ -106,7 +74,6 @@ struct PebbleCollectionView: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text(Memories.handfulTitle(month: m.month, today: Moment.dayKey(for: Date())))
                     .font(Face.line).foregroundStyle(Tone.secondary)
-                    .padding(.leading, onClose == nil ? 0 : 12)
                 LazyVGrid(columns: columns, spacing: 18) {
                     ForEach(m.days, id: \.self) { cell($0) }
                 }
@@ -120,7 +87,8 @@ struct PebbleCollectionView: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 24)
+        .padding(.top, 24)
+        .padding(.bottom, embedded ? 110 : 24)
     }
 
     var monthsForPreview: [(month: String, days: [String])] { months }

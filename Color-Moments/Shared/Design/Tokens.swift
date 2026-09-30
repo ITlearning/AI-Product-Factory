@@ -103,6 +103,8 @@ public enum Face {
     public static let line = sans(15)
     public static let today = sans(15)
     public static let caption = sans(13)
+    /// 아래 탭바 라벨.
+    public static let tab = sans(11)
     public static let time = sans(12)
     public static let action = actionBold(17)
     /// 온보딩 주 버튼 — 헤더와 같이 쓰던 lineCeremony(17.5) 대신, 버튼만 굵게.

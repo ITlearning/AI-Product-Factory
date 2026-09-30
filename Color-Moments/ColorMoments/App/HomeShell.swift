@@ -84,7 +84,7 @@ struct HomeShell: View {
             ZStack {
                 Tone.pure.ignoresSafeArea()
 
-                HomeView(store: store, gifts: gifts, showsSwipeHint: !didSwipe && progress == 0,
+                HomeView(store: store, gifts: gifts,
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          onDaySheetDismissed: { daySheetDismissedTick += 1 },
                          daySheetPresented: $daySheetPresented,
@@ -101,7 +101,7 @@ struct HomeShell: View {
                     .offset(x: -w + progress * w)
 
                 if collectionLoaded {
-                    PebbleCollectionView(store: store, gifts: gifts, closures: closures, onClose: { progress = 0 },
+                    PebbleCollectionView(store: store, gifts: gifts, closures: closures, embedded: true,
                                          acceptsTaps: progress == -1 && !collectionDragging)
                         .offset(x: w + progress * w)
                 }
@@ -157,6 +157,25 @@ struct HomeShell: View {
                                                                       today: Moment.dayKey(for: Date()))
                 }
                 Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            // 인스타그램의 + 처럼 — 카메라는 왼쪽 위 버튼으로도 연다(스와이프는 그대로).
+            if progress == 0 && onboarding == .none {
+                Button(action: openCamera) {
+                    Image(systemName: "camera").foregroundStyle(Tone.tertiary)
+                        .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                }
+                .accessibilityLabel("카메라")
+                .padding(.leading, 12).padding(.top, 2)
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if onboarding == .none {
+                PageTabBar(onCollection: progress < -0.5, select: selectPage)
+                    .opacity(progress > 0.01 ? 0 : 1)
+                    .allowsHitTesting(progress <= 0.01)
+                    .animation(.easeOut(duration: 0.2), value: progress > 0.01)
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -326,6 +345,20 @@ struct HomeShell: View {
                 if open != (dragStart > 0.5) { Haptics.snapped() }
                 if open { didSwipe = true }
             }
+    }
+
+    private func openCamera() {
+        makeCamera()
+        progress = 1
+    }
+
+    private func selectPage(_ collection: Bool) {
+        guard !dragging, !collectionDragging else { return }
+        let target: CGFloat = collection ? -1 : 0
+        guard progress != target else { return }
+        if collection { collectionLoaded = true }
+        Haptics.snapped()
+        progress = target
     }
 
     private var collectionSwipeMode: CollectionSwipe.Mode {
