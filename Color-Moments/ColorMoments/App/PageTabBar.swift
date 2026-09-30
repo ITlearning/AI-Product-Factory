@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 아래 탭바 — 왼쪽 동그란 「+」는 카메라(카메라가 왼쪽에서 들어오니 왼쪽에), 캡슐은 홈 · 모은 조약돌.
+/// 아래 탭바 — 왼쪽 동그란 카메라 버튼(카메라가 왼쪽에서 들어오니 왼쪽에), 캡슐은 홈 · 모은 조약돌.
 /// 누르면 스와이프처럼 옆으로 밀려 넘어간다(HomeShell 이 progress 를 옮긴다). iOS 26 은 리퀴드 글래스, 그 전은 반투명 재질.
 struct PageTabBar: View {
     let onCollection: Bool
@@ -12,8 +12,8 @@ struct PageTabBar: View {
     var body: some View {
         HStack(spacing: 10) {
             Button(action: camera) {
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .bold))
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(Tone.primary)
                     .frame(width: 58, height: 58)
                     .contentShape(Circle())
