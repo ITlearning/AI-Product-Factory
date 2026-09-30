@@ -293,6 +293,35 @@ final class AssetReconcilerObserverTests: XCTestCase {
         XCTAssertTrue(observer.isActive)
     }
 
+    func testUntrackedChangeRetriesVisibleCellsOnceItQuietsDown() {
+        let beforeTracking = AssetReconcilerObserver.effect(tracking: false, details: nil, fullAccess: true)
+        XCTAssertEqual(beforeTracking, .init(bumpsAllWhenQuiet: true), "추적 결과가 없으면 어떤 사진인지 모른다 — 지우지는 않는다")
+        let untracked = AssetReconcilerObserver.effect(tracking: true, details: nil, fullAccess: true)
+        XCTAssertEqual(untracked, .init(bumpsAllWhenQuiet: true),
+                       "추적 밖 변경(원본이 늦게 내려온 경우 등)도 잦아든 뒤 뜬 칸에 다시 물어본다")
+    }
+
+    func testTrackedChangeBumpsOnlyThoseAssets() {
+        let details = AssetReconcilerObserver.TrackedChange(changed: ["a"], inserted: ["b"], removedCount: 0)
+        XCTAssertEqual(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: true),
+                       .init(bumpIDs: ["a", "b"]), "바뀐 사진만 다시 요청한다 — 뜬 칸 전체를 끊지 않는다")
+    }
+
+    func testRemovalReconcilesOnlyWithFullAccess() {
+        let details = AssetReconcilerObserver.TrackedChange(changed: [], inserted: [], removedCount: 1)
+        XCTAssertTrue(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: true).reconciles)
+        XCTAssertFalse(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: false).reconciles,
+                       "제한 접근에서는 선택 해제도 삭제로 온다 — 지운 게 아니다")
+    }
+
+    func testNonIncrementalChangeFallsBackToFullRetryAndReconcile() {
+        let details = AssetReconcilerObserver.TrackedChange(incremental: false)
+        XCTAssertEqual(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: true),
+                       .init(bumpsAllWhenQuiet: true, reconciles: true),
+                       "변경 목록이 없으면 무엇이 지워졌는지도 모른다 — 정리는 reconcile 의 전체 조회에 맡긴다")
+        XCTAssertFalse(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: false).reconciles)
+    }
+
     func testUnregistersOnlyWhenRegistered() {
         let idle = Probe()
         var neverActive: AssetReconcilerObserver? = makeObserver(idle)
