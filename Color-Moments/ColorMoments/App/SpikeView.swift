@@ -37,6 +37,7 @@ struct SpikeView: View {
                 #if DEBUG
                 Section {
                     NavigationLink("조약돌 비교 (셰이더)") { PebbleLabView(store: store, gifts: gifts, closures: closures) }
+                    NavigationLink("단어 다시 뽑아 보기 (저장 안 함)") { WordRelabelReport(store: store) }
                 }
                 #endif
                 Section("앱 촬영 (A 경로)") {

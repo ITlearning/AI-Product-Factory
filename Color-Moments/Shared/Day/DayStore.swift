@@ -363,6 +363,14 @@ public final class DayStore {
         notify([.upsert(id)])
     }
 
+    /// 단어가 아직 없을 때만 라벨을 새로 본 것으로 바꾼다 — 단어가 붙은 뒤엔 라벨도 고정이다.
+    public func refreshLabels(_ id: Moment.ID, _ labels: [String]) {
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].word == nil, all[i].labels != labels else { return }
+        all[i].labels = labels
+        save()
+        notify([.upsert(id)])
+    }
+
     public func moment(_ id: Moment.ID) -> Moment? { moments.first { $0.id == id } }
 
     public func recentWordIDs(excluding id: Moment.ID, limit: Int = 14) -> Set<String> {

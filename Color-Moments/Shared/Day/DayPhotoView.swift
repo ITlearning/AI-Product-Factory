@@ -282,12 +282,21 @@ struct DayPhotoView: View {
     /// DayMomentsView 사진 카드와 같은 크기 — 거기서 데운 캐시를 그대로 쓴다.
     private static let previewPixels: CGFloat = 600
 
-    /// 단어가 아직 없는 사진의 라벨 — 없으면 Vision 으로 뽑아 남긴다. 단어가 있거나 Vision 이 실패하면 nil.
+    /// 단어가 아직 없는 사진의 라벨. 저장된 옛 라벨(더 엄격한 기준)은 믿지 않고 다시 보고,
+    /// 몇 분 안에 찍은 같은 장면의 라벨을 합친다 — 한 장이 알아봐지면 옆 장도 같이.
+    /// 단어가 있으면 nil, Vision 이 실패하면 저장된 라벨(없으면 nil — 다음에 열 때 다시).
     private func labelsForWord(_ m: Moment) async -> [String]? {
         guard m.word == nil else { return nil }
-        if let labels = m.labels { return labels }
-        guard let labels = await PhotoLabeler.labels(for: m) else { return nil } // Vision failed — retry next open
-        store.setLabels(m.id, labels)
+        let vocabulary = Set(await BundledWordSource().words().flatMap(\.subjects))
+        guard var labels = await PhotoLabeler.labels(for: m, vocabulary: vocabulary) else { return m.labels }
+        let nearby = store.moments.filter {
+            $0.id != m.id && abs($0.capturedAt.timeIntervalSince(m.capturedAt)) <= 300 && !($0.labels ?? []).isEmpty
+        }
+        for n in nearby.prefix(4) where await PhotoLabeler.sameScene(m, n) {
+            labels += (n.labels ?? []).filter { !labels.contains($0) }
+        }
+        guard !Task.isCancelled else { return nil }
+        if m.labels == nil { store.setLabels(m.id, labels) } else { store.refreshLabels(m.id, labels) }
         return labels
     }
 

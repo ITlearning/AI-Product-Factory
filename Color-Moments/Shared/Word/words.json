@@ -13,7 +13,9 @@
     "water_body",
     "ocean",
     "lake",
-    "river"
+    "river",
+    "waterways",
+    "pool"
    ]
   },
   {
@@ -405,7 +407,9 @@
    "subjects": [
     "ocean",
     "beach",
-    "water_body"
+    "water_body",
+    "waterfall",
+    "surfing"
    ]
   },
   {
@@ -786,6 +790,21 @@
    ],
    "subjects": [],
    "moment": true
+  },
+  {
+   "id": "mulga",
+   "word": "물가",
+   "meaning": "바다나 강, 못 따위의 물이 있는 곳의 가장자리",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "shore",
+    "beach",
+    "sand",
+    "lake",
+    "river"
+   ]
   }
  ]
 }
