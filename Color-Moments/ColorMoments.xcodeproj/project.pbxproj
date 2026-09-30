@@ -209,6 +209,7 @@
 		B7C3D5AD27CA0A7B12C6EC07 /* ColorMomentsControl.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 820CBC257650B8198BCC2B5E /* ColorMomentsControl.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B8632BE5E9E77D6DC909F70B /* WordPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4EE32C11490405892AA591 /* WordPicker.swift */; };
 		B97C1A8CD64C431D667BB646 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
+		BAE7838C1DA2D9D4797B4F79 /* CollectionSwipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAF34CDBFF121BBAE3831F91 /* CollectionSwipe.swift */; };
 		BB2A2EFB0C185E4CF5E6A42C /* ArrivalNoticeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */; };
 		BBA3C897A5072F8F6501382D /* IBMPlexSansKR-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */; };
 		BC08FAC35928BE504FD2119B /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
@@ -461,6 +462,7 @@
 		C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		C8272505EF16B075931B8224 /* WordListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordListTests.swift; sourceTree = "<group>"; };
 		C9CE619222B12DDC48E8D41D /* CaptureExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureExtension.swift; sourceTree = "<group>"; };
+		CAF34CDBFF121BBAE3831F91 /* CollectionSwipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionSwipe.swift; sourceTree = "<group>"; };
 		CB5EE0642C2B995E3015E25E /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		CCB28EF5745DCE3F3B008662 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CCE87849E68DBA4048D0AB81 /* DayGift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGift.swift; sourceTree = "<group>"; };
@@ -806,6 +808,7 @@
 				11362570D9E4DD826EDC96B0 /* ArrivalNotice.swift */,
 				7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */,
 				93F205E2DDC888B76CB362D3 /* CatchUp.swift */,
+				CAF34CDBFF121BBAE3831F91 /* CollectionSwipe.swift */,
 				41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */,
 				F0539FB03BB33151F171D2BD /* HomeShell.swift */,
 				953A1415A221B2ED1198C5E8 /* HomeView.swift */,
@@ -1206,6 +1209,7 @@
 				623BB2FDE9843D953D36B2B9 /* CloudScene.swift in Sources */,
 				0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */,
 				2E6829C3D027ABE7FD401891 /* CoalescingWriter.swift in Sources */,
+				BAE7838C1DA2D9D4797B4F79 /* CollectionSwipe.swift in Sources */,
 				089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */,
 				85404B43045C16239CA26FB5 /* ColorExtractor.swift in Sources */,
 				FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */,

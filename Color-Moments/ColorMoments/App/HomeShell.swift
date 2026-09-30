@@ -37,9 +37,14 @@ struct HomeShell: View {
 
     private static let axisBias: CGFloat = 2.2
     /// 왼쪽으로 끌어 모은 조약돌을 여는 건 오른쪽 가장자리 이 폭 안에서 시작할 때만 — 안쪽은 사진 더미 넘기기(왼쪽 튕기기)가 쓴다.
-    private static let edgeZone: CGFloat = 40
+    private static let edgeZone: CGFloat = 44
+    /// UIKit 팬 속도(pt/s) — SwiftUI 쪽 commitVelocity 는 예상 이동 거리 차이라 단위가 다르다.
+    private static let collectionFlickVelocity: CGFloat = 500
+    /// 모은 조약돌 넘기기는 CollectionSwipe(UIKit)가 따로 몬다 — SwiftUI 스와이프의 취소 정리가 건드리지 않게 상태를 나눈다.
+    @State private var collectionDragging = false
+    @State private var collectionDragStart: CGFloat = 0
 
-    private enum SwipeSide { case camera, collection }
+    private enum SwipeSide { case camera }
     @State private var camera: CaptureEngine?
     @State private var pickingLibrary = false
     // pickingLibrary 는 닫힘 애니메이션 시작에 false 가 된다 — 증정 가드는 커버 onDismiss 에서만 푼다.
@@ -96,12 +101,20 @@ struct HomeShell: View {
                     .offset(x: -w + progress * w)
 
                 if collectionLoaded {
-                    PebbleCollectionView(store: store, gifts: gifts, closures: closures, onClose: { progress = 0 })
+                    PebbleCollectionView(store: store, gifts: gifts, closures: closures, onClose: { progress = 0 },
+                                         acceptsTaps: progress == -1 && !collectionDragging)
                         .offset(x: w + progress * w)
                 }
             }
             .contentShape(Rectangle())
             .simultaneousGesture(swipe(width: w))
+            .background(
+                CollectionSwipe(mode: collectionSwipeMode, edgeZone: Self.edgeZone,
+                                onTouchDown: { if !collectionLoaded { collectionLoaded = true } },
+                                onBegan: beginCollectionSwipe,
+                                onChanged: { moveCollectionSwipe($0, width: w) },
+                                onEnded: { _, vx in endCollectionSwipe(velocity: vx) })
+            )
             .onChange(of: progress) { _, p in
                 if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start() }
             }
@@ -109,7 +122,7 @@ struct HomeShell: View {
                 // onEnded 가 먼저 돌게 한 박자 미룬다.
                 if !held { Task { @MainActor in settleCancelledSwipe() } }
             }
-            .animation(dragging ? nil : .spring(response: 0.42, dampingFraction: 0.86),
+            .animation(dragging || collectionDragging ? nil : .spring(response: 0.42, dampingFraction: 0.86),
                        value: progress)
         }
         .preferredColorScheme(.dark)
@@ -285,25 +298,14 @@ struct HomeShell: View {
                 }
                 guard axis == .horizontal else { return }
                 if !dragging {
-                    let side: SwipeSide
-                    if progress > 0.5 {
-                        side = .camera
-                    } else if progress < -0.5 {
-                        side = .collection
-                    } else if dx > 0 {
-                        side = .camera
-                    } else {
-                        guard v.startLocation.x >= width - Self.edgeZone else { axis = .vertical; return }
-                        side = .collection
-                    }
-                    dragSide = side
+                    // 모은 조약돌 쪽(열기·닫기)과 홈 안쪽 왼쪽 쓸기(사진 더미)는 이 제스처 몫이 아니다.
+                    guard !collectionDragging, progress > -0.5, progress > 0.5 || dx > 0 else { axis = .vertical; return }
+                    dragSide = .camera
                     dragStart = progress
                     dragging = true
-                    if side == .camera, camera == nil { makeCamera() }
-                    if side == .collection { collectionLoaded = true }
+                    if camera == nil { makeCamera() }
                 }
-                let raw = dragStart + dx / width
-                progress = dragSide == .collection ? rubberBandedCollection(raw) : rubberBanded(raw)
+                progress = rubberBanded(dragStart + dx / width)
             }
             .onEnded { v in
                 defer { axis = nil; dragSide = nil }
@@ -311,15 +313,6 @@ struct HomeShell: View {
                 dragging = false
 
                 let vx = v.predictedEndTranslation.width - v.translation.width
-                if dragSide == .collection {
-                    let wasHome = dragStart > -0.5
-                    let far = wasHome ? progress < -Self.commitDistance : progress > -1 + Self.commitDistance
-                    let fast = abs(vx) > Self.commitVelocity && ((vx < 0) == wasHome)
-                    let open = wasHome ? (far || fast) : !(far || fast)
-                    progress = open ? -1 : 0
-                    if open != (dragStart < -0.5) { Haptics.snapped() }
-                    return
-                }
                 let wasHome = dragStart < 0.5
                 let far = wasHome ? progress > Self.commitDistance
                                   : progress < 1 - Self.commitDistance
@@ -331,6 +324,36 @@ struct HomeShell: View {
                 if open != (dragStart > 0.5) { Haptics.snapped() }
                 if open { didSwipe = true }
             }
+    }
+
+    private var collectionSwipeMode: CollectionSwipe.Mode {
+        guard onboarding == .none, !dragging else { return .off }
+        if collectionDragging { return collectionDragStart < -0.5 ? .close : .openFromEdge }
+        if progress == 0 { return .openFromEdge }
+        if progress == -1 { return .close }
+        return .off
+    }
+
+    private func beginCollectionSwipe() {
+        collectionLoaded = true
+        collectionDragStart = progress
+        collectionDragging = true
+    }
+
+    private func moveCollectionSwipe(_ translation: CGFloat, width: CGFloat) {
+        guard collectionDragging, width > 0 else { return }
+        progress = rubberBandedCollection(collectionDragStart + translation / width)
+    }
+
+    private func endCollectionSwipe(velocity vx: CGFloat) {
+        guard collectionDragging else { return }
+        collectionDragging = false
+        let wasHome = collectionDragStart > -0.5
+        let far = wasHome ? progress < -Self.commitDistance : progress > -1 + Self.commitDistance
+        let fast = abs(vx) > Self.collectionFlickVelocity && ((vx < 0) == wasHome)
+        let open = wasHome ? (far || fast) : !(far || fast)
+        progress = open ? -1 : 0
+        if open != !wasHome { Haptics.snapped() }
     }
 
     private func rubberBandedCollection(_ x: CGFloat) -> CGFloat {

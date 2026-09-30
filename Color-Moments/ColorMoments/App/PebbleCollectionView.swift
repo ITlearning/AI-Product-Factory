@@ -8,6 +8,9 @@ struct PebbleCollectionView: View {
     let closures: DayClosures
     /// 홈 옆에 붙어 열릴 때 — 제목줄과 돌아가기 버튼을 그린다. nil 이면 내비게이션 안(디버그)에서 쓴다.
     var onClose: (() -> Void)? = nil
+    /// 넘기는 중이거나 넘어가는 중이면 false — 화면이 손가락을 따라 움직여 손을 뗀 자리가 여전히 그 조약돌 위라,
+    /// 닫는 스와이프가 탭으로도 잡혀 홈에 돌아온 뒤 상세가 떴다.
+    var acceptsTaps = true
 
     @State private var opened: OpenedDay?
 
@@ -99,7 +102,10 @@ struct PebbleCollectionView: View {
 
     private func cell(_ key: String) -> some View {
         let moments = store.pebbleMoments(on: key)
-        return Button { opened = OpenedDay(id: key) } label: {
+        return Button {
+            guard acceptsTaps else { return }
+            opened = OpenedDay(id: key)
+        } label: {
             VStack(spacing: 8) {
                 PebbleView(moments: moments, height: 78, glow: .grid)
                     .frame(height: 96)
