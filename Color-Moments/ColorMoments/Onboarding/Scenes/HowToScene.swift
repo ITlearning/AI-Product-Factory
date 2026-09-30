@@ -26,21 +26,7 @@ struct HowToScene: View {
         .accessibilityHidden(true)
     }
 
-    private var camera: some View {
-        ZStack {
-            Rectangle().fill(Tone.pure)
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(Tone.hairline, lineWidth: 1)
-                .padding(.horizontal, 10)
-                .padding(.top, 30)
-                .padding(.bottom, 58)
-            Circle()
-                .strokeBorder(Tone.primary, lineWidth: 2)
-                .frame(width: 30, height: 30)
-                .frame(maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, 16)
-        }
-    }
+    private var camera: some View { CameraFace() }
 }
 
 /// 모은 조약돌 — 찍는 법의 거울. 손가락이 오른쪽 가장자리를 왼쪽으로 쓸면 조약돌 3열 면이 오른쪽에서 밀려 들어온다.
@@ -137,5 +123,76 @@ enum SwipeMotion {
         let lift = SceneEase.segment(p, from: 1.3, to: 1.6)
         let back = SceneEase.inOut(SceneEase.segment(p, from: 2.7, to: 3.3))
         return State(progress: swipe * (1 - back), finger: appear * (1 - lift))
+    }
+}
+
+private struct CameraFace: View {
+    var body: some View {
+    ZStack {
+        Rectangle().fill(Tone.pure)
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(Tone.hairline, lineWidth: 1)
+            .padding(.horizontal, 10)
+            .padding(.top, 30)
+            .padding(.bottom, 58)
+        Circle()
+            .strokeBorder(Tone.primary, lineWidth: 2)
+            .frame(width: 30, height: 30)
+            .frame(maxHeight: .infinity, alignment: .bottom)
+            .padding(.bottom, 16)
+    }
+    }
+}
+
+/// 카메라 컨트롤 — 옆면 버튼을 누르면 잠든 화면에 카메라가 켜진다.
+struct CameraButtonScene: View {
+
+    private static let width: CGFloat = 108
+
+    var body: some View {
+        SceneClock { t, moving in
+            let s = ButtonMotion.state(at: t.truncatingRemainder(dividingBy: ButtonMotion.cycle), moving: moving)
+            PhoneSilhouette(width: Self.width) {
+                ZStack {
+                    Rectangle().fill(Tone.pure)
+                    CameraFace().opacity(s.camera)
+                }
+            }
+            .overlay(alignment: .trailing) {
+                ZStack {
+                    Capsule().fill(Tone.secondary).frame(width: 4, height: 24)
+                    Circle()
+                        .fill(Tone.primary.opacity(0.85))
+                        .frame(width: 18, height: 18)
+                        .background(Circle().fill(Tone.primary.opacity(0.18)).frame(width: 34, height: 34))
+                        .offset(x: 16 - 7 * s.press)
+                        .opacity(s.finger)
+                }
+                .offset(x: 3, y: 28)
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+enum ButtonMotion {
+    struct State: Equatable {
+        var press: Double
+        var finger: Double
+        var camera: Double
+    }
+
+    static let cycle = 3.4
+
+    /// 손가락 나타남 · 누름 · 카메라 켜짐 · 손가락 걷힘 · 카메라 머묾 · 꺼짐 · 쉼.
+    static func state(at p: Double, moving: Bool) -> State {
+        guard moving else { return State(press: 1, finger: 1, camera: 1) }
+        let appear = SceneEase.segment(p, from: 0, to: 0.3)
+        let press = SceneEase.inOut(SceneEase.segment(p, from: 0.4, to: 0.6))
+        let release = SceneEase.segment(p, from: 0.75, to: 0.95)
+        let lift = SceneEase.segment(p, from: 1.1, to: 1.4)
+        let on = SceneEase.inOut(SceneEase.segment(p, from: 0.6, to: 1.0))
+        let off = SceneEase.inOut(SceneEase.segment(p, from: 2.6, to: 3.0))
+        return State(press: press * (1 - release), finger: appear * (1 - lift), camera: on * (1 - off))
     }
 }

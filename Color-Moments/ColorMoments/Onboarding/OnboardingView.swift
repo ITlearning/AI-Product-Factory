@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 /// 온보딩을 마치고 어디로 가나 — 홈, 카메라가 열린 홈, 방금 받은 하루.
@@ -34,9 +35,12 @@ struct OnboardingView: View {
 
     private struct CeremonyDay: Identifiable { let id: String }
 
+    /// iPhone 16 이후(16e 제외)의 옆면 카메라 컨트롤 — 기종 목록 대신 캡처 컨트롤 지원 여부로 가른다.
+    private static let hasCameraButton = AVCaptureSession().supportsControls
+
     private var steps: [OnboardingStep] {
         OnboardingFlow.steps(continuing: continuing ?? false, skipsFirstPebble: skipsFirstPebble,
-                             asksArrival: asksArrival)
+                             asksArrival: asksArrival, hasCameraButton: Self.hasCameraButton)
     }
 
     private var step: OnboardingStep { steps[min(index, steps.count - 1)] }
@@ -238,6 +242,8 @@ struct OnboardingView: View {
             ArrivalStep(store: store, closures: closures, gifts: gifts, answered: next)
         case .howTo:
             HowToStep(next: next)
+        case .cameraButton:
+            CameraButtonStep(next: next)
         case .collection:
             CollectionStep(next: next)
         case .start:

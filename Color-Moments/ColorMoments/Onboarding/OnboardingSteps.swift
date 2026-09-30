@@ -450,6 +450,25 @@ struct HowToStep: View {
     }
 }
 
+// MARK: 5-1. 카메라 컨트롤 — 그 버튼이 있는 기기만
+
+struct CameraButtonStep: View {
+    let next: () -> Void
+
+    var body: some View {
+        OnboardingPage {
+            SceneLayout {
+                CameraButtonScene()
+            } words: {
+                OnboardingText(title: "옆면 카메라 컨트롤로 바로 몽돌을 열 수 있어요",
+                               detail: "설정 → 카메라 → 카메라 컨트롤에서 몽돌을 고르면 돼요.")
+            }
+        } actions: {
+            PrimaryAction(title: "다음", action: next)
+        }
+    }
+}
+
 // MARK: 6. 모은 조약돌
 
 struct CollectionStep: View {

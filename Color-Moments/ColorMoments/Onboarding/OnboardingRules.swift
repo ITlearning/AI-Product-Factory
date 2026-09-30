@@ -53,13 +53,16 @@ enum OnboardingStep: Hashable {
     case arrival
     case cloud
     case howTo
+    /// 옆면 카메라 컨트롤이 있는 기기만 — 그 버튼으로 몽돌을 여는 설정을 알린다.
+    case cameraButton
     case collection
     case start
 }
 
 enum OnboardingFlow {
 
-    static func steps(continuing: Bool, skipsFirstPebble: Bool, asksArrival: Bool) -> [OnboardingStep] {
+    static func steps(continuing: Bool, skipsFirstPebble: Bool, asksArrival: Bool,
+                      hasCameraButton: Bool = false) -> [OnboardingStep] {
         var steps: [OnboardingStep] = [.intro]
         if continuing {
             steps.append(.continuing)
@@ -68,7 +71,9 @@ enum OnboardingFlow {
         }
         if asksArrival { steps.append(.arrival) }
         if !continuing { steps.append(.cloud) }
-        steps += [.howTo, .collection, .start]
+        steps.append(.howTo)
+        if hasCameraButton { steps.append(.cameraButton) }
+        steps += [.collection, .start]
         return steps
     }
 
