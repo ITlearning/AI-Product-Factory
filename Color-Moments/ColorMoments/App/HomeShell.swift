@@ -159,7 +159,7 @@ struct HomeShell: View {
         .overlay(alignment: .bottom) {
             if onboarding == .none {
                 PageTabBar(onCollection: progress < -0.5, folded: tabBarFolded, select: selectPage,
-                           expand: { foldTabBar(false) }, camera: openCamera)
+                           camera: openCamera)
                     .opacity(progress > 0.01 ? 0 : 1)
                     .allowsHitTesting(progress <= 0.01)
                     .animation(.easeOut(duration: 0.2), value: progress > 0.01)
