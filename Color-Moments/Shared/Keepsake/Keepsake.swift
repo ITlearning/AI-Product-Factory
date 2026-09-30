@@ -18,6 +18,9 @@ public enum Keepsake {
     }
 
     /// URL 이 없으면 카드 이미지만 공유한다 — 문구 자체를 붙이지 않는다.
+    /// 카드를 굽는 동안 — 굽는 건 메인에서 돌아 화면이 잠깐 멈춘다. 멈춰도 읽히게 움직이지 않는 글로.
+    public static let packingText = "건네기 좋게 포장하고 있어요…"
+
     public static func shareText(pebbleName: String, appStoreURL: URL?) -> String? {
         guard let appStoreURL else { return nil }
         return "\(pebbleName)\(objectParticle(after: pebbleName)) 건네요. 나도 몽돌 받아 보기 → \(appStoreURL.absoluteString)"
