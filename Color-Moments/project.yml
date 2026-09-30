@@ -41,6 +41,7 @@ targets:
       path: ColorMoments/Info.plist
       properties:
         UIBackgroundModes: [remote-notification]
+        ITSAppUsesNonExemptEncryption: false
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     settings:
