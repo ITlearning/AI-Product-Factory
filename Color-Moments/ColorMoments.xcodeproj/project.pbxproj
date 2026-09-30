@@ -197,6 +197,7 @@
 		A72BCF9D6E87301BA1102FF9 /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
 		A8B410E526DB99857E8666B2 /* NanumMyeongjo-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */; };
 		A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
+		AB98AF0B4B7518B66824F652 /* AppIconStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5AC5BE0C23EAB44BC44E8F /* AppIconStyle.swift */; };
 		AC0C35B3AC3700E7493FB7BB /* OnboardingRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA584CF5AC77CB4D9554F70D /* OnboardingRulesTests.swift */; };
 		AE0857AF5EDACD9DBF05DC32 /* GiftSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CECA91205032542A8E6CBAD /* GiftSchedule.swift */; };
 		AE398008B7E64F3E92398B36 /* OnboardingGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */; };
@@ -446,6 +447,7 @@
 		AC174529DCE0CC7AD709E79B /* gowun-ksx1001.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "gowun-ksx1001.txt"; sourceTree = "<group>"; };
 		ACD34409978D5C9CDE7304E7 /* WordList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordList.swift; sourceTree = "<group>"; };
 		ACF0FEAA69BCAAE696688328 /* WidgetSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotTests.swift; sourceTree = "<group>"; };
+		AF5AC5BE0C23EAB44BC44E8F /* AppIconStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconStyle.swift; sourceTree = "<group>"; };
 		B180428138319F72B026C570 /* PebbleNameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleNameTests.swift; sourceTree = "<group>"; };
 		B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingGiftTests.swift; sourceTree = "<group>"; };
 		B3649A8DB3B4FF16005111AC /* Keepsake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keepsake.swift; sourceTree = "<group>"; };
@@ -805,6 +807,7 @@
 			isa = PBXGroup;
 			children = (
 				D9C7A51085814AAD190D567A /* AppDelegate.swift */,
+				AF5AC5BE0C23EAB44BC44E8F /* AppIconStyle.swift */,
 				11362570D9E4DD826EDC96B0 /* ArrivalNotice.swift */,
 				7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */,
 				93F205E2DDC888B76CB362D3 /* CatchUp.swift */,
@@ -1192,6 +1195,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				46F2AF21817056E13AD7F919 /* AppDelegate.swift in Sources */,
+				AB98AF0B4B7518B66824F652 /* AppIconStyle.swift in Sources */,
 				879D785A8FD06689896263E6 /* ArrivalNotice.swift in Sources */,
 				A4AFC2BCA964289B816ABE22 /* ArrivalScene.swift in Sources */,
 				C60F65BA453B7C15942834E6 /* Arrivals.swift in Sources */,
@@ -1362,6 +1366,7 @@
 		10973E43CFE49417CE4CCFE5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Classic";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ColorMoments/ColorMoments.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -1603,6 +1608,7 @@
 		B39D43E185A7F74B5184E4E7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Classic";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ColorMoments/ColorMoments.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";

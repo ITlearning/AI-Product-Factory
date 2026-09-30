@@ -243,6 +243,8 @@ struct HomeShell: View {
 
     private func finishOnboarding(_ exit: OnboardingExit) {
         didFinishOnboarding = true
+        // 첫 화면에서 고른 모양 — 고르는 순간 바꾸면 iOS 알림이 온보딩 위에 뜬다.
+        AppIconStyle.apply(PebbleStyle.current)
         #if DEBUG
         debugReplayOnboarding = false
         #endif

@@ -48,6 +48,7 @@ struct SettingsSheet: View {
             guard style != s else { return }
             Haptics.tickPassed()
             style = s
+            AppIconStyle.apply(s)
         } label: {
             VStack(spacing: 10) {
                 Group {

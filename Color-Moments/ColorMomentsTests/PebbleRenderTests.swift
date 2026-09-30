@@ -256,3 +256,48 @@ extension PebbleRenderTests {
             .write(to: URL(fileURLWithPath: dir).appendingPathComponent("collection.png"))
     }
 }
+
+// MARK: - 반듯한 돌 앱 아이콘 — 기본 아이콘(Gemini 그림)과 같은 색 · 바탕 · 후광으로 굽는다
+
+extension PebbleRenderTests {
+
+    static let iconColors = ["#8EABC0", "#A9BFD0", "#DCD7C4", "#EAAA8E", "#D08E84", "#B46D6B"]
+
+    static func iconMoments(dayKey: String) -> [Moment] {
+        let f = ISO8601DateFormatter()
+        let noon = f.date(from: "\(dayKey)T12:00:00+09:00")!
+        return iconColors.enumerated().map { i, hex in
+            Moment(capturedAt: noon.addingTimeInterval(Double(i) * 600), colorHex: hex, fileName: "icon-\(i).jpg", source: .app)
+        }
+    }
+
+    struct ClassicIcon: View {
+        let moments: [Moment]
+        var body: some View {
+            ZStack {
+                Color(hex: "#0C0D12")
+                RoundedRectangle(cornerRadius: 170, style: .continuous)
+                    .fill(LinearGradient(colors: PebbleRenderTests.iconColors.map { Color(hex: $0) },
+                                         startPoint: .top, endPoint: .bottom))
+                    .frame(width: 560, height: 700)
+                    .blur(radius: 80)
+                    .opacity(0.72)
+                LegacyPebbleView(moments: moments, height: 620)
+            }
+            .frame(width: 1024, height: 1024)
+        }
+    }
+
+    func testDumpClassicAppIconWhenAsked() throws {
+        guard let dir = ProcessInfo.processInfo.environment["PEBBLE_DUMP"] else {
+            throw XCTSkip("PEBBLE_DUMP 미지정")
+        }
+        for key in ["2026-10-01"] {
+            let r = ImageRenderer(content: ClassicIcon(moments: Self.iconMoments(dayKey: key)))
+            r.scale = 1
+            r.isOpaque = true
+            try XCTUnwrap(r.uiImage?.pngData())
+                .write(to: URL(fileURLWithPath: dir).appendingPathComponent("appicon-classic-\(key).png"))
+        }
+    }
+}
