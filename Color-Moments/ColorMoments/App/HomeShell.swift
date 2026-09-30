@@ -91,6 +91,7 @@ struct HomeShell: View {
                          keepsakePresented: $keepsakePresented,
                          onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } },
                          onRequestLibraryPicker: openLibraryPicker,
+                         onCamera: openCamera,
                          holdsArrivals: progress != 0 || libraryCoverUp || daySheetPresented || keepsakePresented
                              || showingSettings,
                          openDay: $openDayRequest)
@@ -157,17 +158,6 @@ struct HomeShell: View {
                                                                       today: Moment.dayKey(for: Date()))
                 }
                 Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) }
-            }
-        }
-        .overlay(alignment: .topLeading) {
-            // 인스타그램의 + 처럼 — 카메라는 왼쪽 위 버튼으로도 연다(스와이프는 그대로).
-            if progress == 0 && onboarding == .none {
-                Button(action: openCamera) {
-                    Image(systemName: "camera").foregroundStyle(Tone.tertiary)
-                        .frame(width: Shape2.minTouch, height: Shape2.minTouch)
-                }
-                .accessibilityLabel("카메라")
-                .padding(.leading, 12).padding(.top, 2)
             }
         }
         .overlay(alignment: .bottom) {

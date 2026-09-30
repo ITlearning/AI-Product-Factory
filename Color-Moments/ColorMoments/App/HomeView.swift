@@ -27,6 +27,8 @@ struct HomeView: View {
 
     // 빈 첫 화면의 "지난 며칠 담기" 제안을 누르면 HomeShell 이 기존 사진첩 담기 화면을 띄운다.
     var onRequestLibraryPicker: () -> Void = {}
+    /// 머리글 「+」 — 인스타그램처럼 카메라를 연다(스와이프는 그대로).
+    var onCamera: () -> Void = {}
 
     // 카메라·사진첩·시트가 홈을 가리는 동안 true — 새 줄 등장 연출을 걷힐 때까지 미룬다.
     var holdsArrivals: Bool = false
@@ -190,9 +192,20 @@ struct HomeView: View {
                 ZStack(alignment: .trailing) {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
-                            Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
-                                .padding(.leading, 30)  // 왼쪽 위 카메라 버튼 자리
-                                .id("top")
+                            HStack(alignment: .center, spacing: 2) {
+                                Button(action: onCamera) {
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundStyle(Tone.primary)
+                                        .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("카메라")
+                                // 「+」 글자의 왼쪽 끝을 아래 줄들의 왼쪽 선(28)에 맞춘다 — 44pt 터치 틀의 안쪽 여백만큼.
+                                .padding(.leading, -11)
+                                Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                            }
+                            .id("top")
                             Spacer().frame(height: 22)
                             if todayInProgress {
                                 // 블록을 그릴 때의 dayKey 를 캡처한다 — 탭 시점에 todayKey 를 다시 읽으면
