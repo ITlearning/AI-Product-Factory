@@ -29,7 +29,8 @@
    "subjects": [
     "sky",
     "cloudy"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "yeoubi",
@@ -62,7 +63,8 @@
    "subjects": [
     "sky",
     "sunset_sunrise"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "gaebapbaragi",
@@ -103,7 +105,8 @@
    "subjects": [
     "sky",
     "sunset_sunrise"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "ttanggeomi",
@@ -119,7 +122,8 @@
     "street",
     "alley",
     "road"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "inae",
@@ -179,7 +183,8 @@
    "subjects": [
     "blossom",
     "flower"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "garangbi",
@@ -194,7 +199,8 @@
    "subjects": [
     "umbrella",
     "street"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "boseulbi",
@@ -207,7 +213,8 @@
    "seasons": [],
    "subjects": [
     "umbrella"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "sonagi",
@@ -226,7 +233,8 @@
    "subjects": [
     "umbrella",
     "sky"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "hambaknun",
@@ -242,7 +250,8 @@
    "subjects": [
     "snow",
     "snowman"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "jinnunkkaebi",
@@ -258,7 +267,8 @@
    ],
    "subjects": [
     "snow"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "museori",
@@ -309,7 +319,8 @@
    "subjects": [
     "foliage",
     "tree"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "doenbaram",
@@ -322,7 +333,8 @@
    "seasons": [
     "winter"
    ],
-   "subjects": []
+   "subjects": [],
+   "moment": true
   },
   {
    "id": "hannat",
@@ -336,7 +348,8 @@
    "subjects": [
     "blue_sky",
     "sun"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "haemaji",
@@ -363,7 +376,8 @@
    "seasons": [],
    "subjects": [
     "night_sky"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "dalmaji",
@@ -455,7 +469,8 @@
    "seasons": [],
    "subjects": [
     "cloudy"
-   ]
+   ],
+   "moment": true
   },
   {
    "id": "chanbarammeori",
@@ -466,7 +481,8 @@
    "seasons": [
     "autumn"
    ],
-   "subjects": []
+   "subjects": [],
+   "moment": true
   },
   {
    "id": "saecham",
@@ -721,6 +737,55 @@
     "computer",
     "book"
    ]
+  },
+  {
+   "id": "achimnajeol",
+   "word": "아침나절",
+   "meaning": "아침부터 점심 무렵까지의 한동안",
+   "times": [
+    "morning"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [],
+   "moment": true
+  },
+  {
+   "id": "hannajeol",
+   "word": "한나절",
+   "meaning": "하룻낮의 반쯤 되는 동안",
+   "times": [
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [],
+   "moment": true
+  },
+  {
+   "id": "hanyeoreum",
+   "word": "한여름",
+   "meaning": "더위가 한창인 여름",
+   "times": [],
+   "weathers": [],
+   "seasons": [
+    "summer"
+   ],
+   "subjects": [],
+   "moment": true
+  },
+  {
+   "id": "hangyeoul",
+   "word": "한겨울",
+   "meaning": "추위가 한창인 겨울",
+   "times": [],
+   "weathers": [],
+   "seasons": [
+    "winter"
+   ],
+   "subjects": [],
+   "moment": true
   }
  ]
 }

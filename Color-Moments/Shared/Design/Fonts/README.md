@@ -7,8 +7,8 @@
 |---|---|
 | 원본 | Nanum Myeongjo Regular (Google Fonts) |
 | 라이선스 | SIL Open Font License 1.1 — [`NanumMyeongjo-OFL.txt`](NanumMyeongjo-OFL.txt) |
-| 서브셋 | 162자 (`subset-chars.txt`) |
-| 크기 | 2,987KB → **54.4KB** (상한 60KB, `FontSubsetTests.testSubsetStaysSmall`) |
+| 서브셋 | 168자 (`subset-chars.txt`) |
+| 크기 | 2,987KB → **56.4KB** (상한 100KB, `FontSubsetTests.testSubsetStaysSmall`) |
 
 ## 다시 만들 때
 
@@ -16,7 +16,7 @@
 `FontSubsetTests` 가 그걸 잡지만, 잡히면 아래로 다시 굽는다.
 
 ```bash
-pip install fonttools
+pip install fonttools   # pyftsubset 셔뱅이 깨져 있으면 /usr/bin/python3 -m fontTools.subset
 python3 - <<'PY'   # 필요한 글자 뽑기 — 조약돌 이름 + 워드마크 + 사진 한 단어
 import re, json, pathlib
 src = pathlib.Path("Shared/Day/PebbleName.swift").read_text()

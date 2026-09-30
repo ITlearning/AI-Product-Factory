@@ -41,6 +41,17 @@ final class PhotoEnrichmentTests: XCTestCase {
         XCTAssertTrue(PhotoEnrichment.isNight(at(19, 0), calendar: cal))
     }
 
+    func testRealWeatherFeedsTheWordPicker() {
+        XCTAssertEqual(PhotoEnrichment.wordWeather("cloudy"), .cloudy)
+        XCTAssertEqual(PhotoEnrichment.wordWeather("partlyCloudy"), .clear)
+        XCTAssertEqual(PhotoEnrichment.wordWeather("heavyRain"), .rain)
+        XCTAssertEqual(PhotoEnrichment.wordWeather("thunderstorms"), .rain)
+        XCTAssertEqual(PhotoEnrichment.wordWeather("haze"), .fog)
+        XCTAssertEqual(PhotoEnrichment.wordWeather("breezy"), .wind)
+        XCTAssertNil(PhotoEnrichment.wordWeather("hail"))
+        for c in known { XCTAssertNotNil(PhotoEnrichment.wordWeather(c), c) }
+    }
+
     func testOnlyPrecipitationFalls() {
         XCTAssertEqual(PhotoEnrichment.fall("rain"), .rain)
         XCTAssertEqual(PhotoEnrichment.fall("heavyRain"), .rain)

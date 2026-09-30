@@ -22,6 +22,9 @@ public enum PhotoEnrichment {
         look(condition).map { night ? $0.night : $0.day }
     }
 
+    /// 단어 고르기(WordPicker)가 쓰는 날씨 — 사진 속 하늘 짐작보다 이게 먼저다.
+    public static func wordWeather(_ condition: String) -> Weather? { look(condition)?.word }
+
     public enum Fall: Equatable, Sendable { case rain, drizzle, snow, storm }
 
     /// 구름 아래로 떨어지는 것 — 기본 날씨 심볼엔 이 움직임이 없어 직접 그린다(WeatherGlyph).
@@ -51,19 +54,19 @@ public enum PhotoEnrichment {
         }
     }
 
-    private static func look(_ condition: String) -> (label: String, day: String, night: String)? {
+    private static func look(_ condition: String) -> (label: String, day: String, night: String, word: Weather)? {
         switch condition {
-        case "clear", "mostlyClear", "hot": ("맑음", "sun.max", "moon.stars")
-        case "partlyCloudy": ("구름 조금", "cloud.sun", "cloud.moon")
-        case "mostlyCloudy", "cloudy": ("흐림", "cloud", "cloud")
-        case "drizzle": ("이슬비", "cloud.drizzle", "cloud.drizzle")
-        case "rain", "heavyRain", "sunShowers", "freezingRain", "freezingDrizzle": ("비", "cloud.rain", "cloud.rain")
+        case "clear", "mostlyClear", "hot": ("맑음", "sun.max", "moon.stars", .clear)
+        case "partlyCloudy": ("구름 조금", "cloud.sun", "cloud.moon", .clear)
+        case "mostlyCloudy", "cloudy": ("흐림", "cloud", "cloud", .cloudy)
+        case "drizzle": ("이슬비", "cloud.drizzle", "cloud.drizzle", .drizzle)
+        case "rain", "heavyRain", "sunShowers", "freezingRain", "freezingDrizzle": ("비", "cloud.rain", "cloud.rain", .rain)
         case "snow", "flurries", "heavySnow", "sleet", "sunFlurries", "wintryMix", "blowingSnow", "blizzard":
-            ("눈", "cloud.snow", "cloud.snow")
-        case "foggy", "haze", "smoky": ("안개", "cloud.fog", "cloud.fog")
-        case "windy", "breezy": ("바람", "wind", "wind")
+            ("눈", "cloud.snow", "cloud.snow", .snow)
+        case "foggy", "haze", "smoky": ("안개", "cloud.fog", "cloud.fog", .fog)
+        case "windy", "breezy": ("바람", "wind", "wind", .wind)
         case "thunderstorms", "isolatedThunderstorms", "scatteredThunderstorms", "strongStorms":
-            ("뇌우", "cloud.bolt", "cloud.bolt")
+            ("뇌우", "cloud.bolt", "cloud.bolt", .rain)
         default: nil
         }
     }
@@ -87,6 +90,8 @@ struct DayPhotoView: View {
     @State private var pacer = RevealPacer()
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
+    /// task 가 잡아 둔 값은 옛것이다 — 도중에 붙은 동네·날씨는 여기서 다시 읽는다.
+    private var current: Moment? { moment }
 
     /// 닫히기 전 하루(진행 중인 오늘)의 사진이면 색을 쓰지 않는다 — 로딩 자리·시각 옆 점 모두.
     private func hidesColor(_ m: Moment) -> Bool {
@@ -114,10 +119,14 @@ struct DayPhotoView: View {
                 }
                 .task(id: moment.id) {
                     revealArrivals = true
-                    await assignWordIfNeeded(moment)
-                    await namePlaceIfNeeded(moment)
-                    await findWeatherIfNeeded(moment)
-                    if attribution == nil, moment.place?.weather != nil { attribution = await PhotoEnrichment.attribution?() }
+                    async let named: Void = namePlaceIfNeeded(moment)
+                    // 단어는 한 번 붙으면 안 바뀐다 — 실제 날씨를 먼저 찾고 고른다(라벨은 그동안 뽑는다).
+                    async let weathered: Void = findWeatherIfNeeded(moment)
+                    let labels = await labelsForWord(moment)
+                    await weathered
+                    if let labels { await assignWord(moment, labels: labels) }
+                    await named
+                    if attribution == nil, current?.place?.weather != nil { attribution = await PhotoEnrichment.attribution?() }
                 }
             }
             closeButton
@@ -273,17 +282,21 @@ struct DayPhotoView: View {
     /// DayMomentsView 사진 카드와 같은 크기 — 거기서 데운 캐시를 그대로 쓴다.
     private static let previewPixels: CGFloat = 600
 
-    private func assignWordIfNeeded(_ m: Moment) async {
-        guard m.word == nil else { return }
-        var labels = m.labels
-        if labels == nil {
-            labels = await PhotoLabeler.labels(for: m)
-            guard let labels else { return } // Vision failed — retry next open, don't stamp a bad guess
-            store.setLabels(m.id, labels)
-        }
-        let seen = Set(labels ?? [])
+    /// 단어가 아직 없는 사진의 라벨 — 없으면 Vision 으로 뽑아 남긴다. 단어가 있거나 Vision 이 실패하면 nil.
+    private func labelsForWord(_ m: Moment) async -> [String]? {
+        guard m.word == nil else { return nil }
+        if let labels = m.labels { return labels }
+        guard let labels = await PhotoLabeler.labels(for: m) else { return nil } // Vision failed — retry next open
+        store.setLabels(m.id, labels)
+        return labels
+    }
+
+    private func assignWord(_ m: Moment, labels: [String]) async {
+        guard !Task.isCancelled, current?.word == nil else { return }
+        let seen = Set(labels)
         let words = await BundledWordSource().words()
-        let ctx = PhotoContext(date: m.capturedAt, weather: Weather.inferred(from: seen))
+        let real = current?.place?.weather.flatMap { PhotoEnrichment.wordWeather($0.condition) }
+        let ctx = PhotoContext(date: m.capturedAt, weather: real ?? Weather.inferred(from: seen))
         guard let pw = WordPicker.photoWord(for: ctx, labels: seen, in: words,
                                             excluding: store.recentWordIDs(excluding: m.id), seed: m.id.uuidString) else { return }
         store.assignWord(m.id, pw)

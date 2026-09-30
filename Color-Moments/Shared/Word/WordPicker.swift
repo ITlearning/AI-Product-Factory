@@ -37,12 +37,38 @@ public enum WordPicker {
         for skipRecent in [true, false] {
             for k in steps {
                 let found = pool.filter { !(skipRecent && recent.contains($0.id)) && matches($0, ctx, k) }
-                if !found.isEmpty {
-                    return Array(found.sorted { fnv1a(seed + ":" + $0.id) < fnv1a(seed + ":" + $1.id) }.prefix(limit))
-                }
+                if !found.isEmpty { return ranked(found, seed, limit) }
+            }
+        }
+        return moment(for: ctx, in: words, excluding: recent, seed: seed, limit: limit)
+    }
+
+    /// 사진에 맞는 말이 없으면 그 순간을 말하는 단어로 — 비워 두지 않는다(2026-10-01 Tabber).
+    /// 실제 날씨 → 시간대 → 계절 차례. 대상과 상관없는 「때」의 말만 쓴다 — 신발 사진에 「달무리」가 붙으면 거짓말이다.
+    private static func moment(for ctx: PhotoContext, in words: [WordEntry], excluding recent: Set<String>,
+                               seed: String, limit: Int) -> [WordEntry] {
+        let moments = words.filter(\.moment)
+        let weatherWords = ctx.weather.map { weather in moments.filter { $0.weathers.contains(weather) } } ?? []
+        let timeWords = moments.filter { $0.weathers.isEmpty && !$0.times.isEmpty }
+        let seasonWords = moments.filter { $0.weathers.isEmpty && $0.times.isEmpty }
+        let tiers = [
+            weatherWords.filter { matches($0, ctx, Check(weather: false)) },
+            weatherWords.filter { matches($0, ctx, Check(weather: false, season: false)) },
+            timeWords.filter { matches($0, ctx, Check(weather: false)) },
+            timeWords.filter { matches($0, ctx, Check(weather: false, season: false)) },
+            seasonWords.filter { matches($0, ctx, Check(weather: false)) },
+        ]
+        for skipRecent in [true, false] {
+            for tier in tiers {
+                let found = tier.filter { !(skipRecent && recent.contains($0.id)) }
+                if !found.isEmpty { return ranked(found, seed, limit) }
             }
         }
         return []
+    }
+
+    private static func ranked(_ words: [WordEntry], _ seed: String, _ limit: Int) -> [WordEntry] {
+        Array(words.sorted { fnv1a(seed + ":" + $0.id) < fnv1a(seed + ":" + $1.id) }.prefix(limit))
     }
 
     public static func photoWord(for ctx: PhotoContext, labels: Set<String>, in words: [WordEntry],
