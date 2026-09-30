@@ -37,6 +37,9 @@ final class FontSubsetTests: XCTestCase {
             }
         }
 
+        // 이름은 날짜·제철에 따라 돌아서 색만 훑으면 일부만 나온다 — 목록 전체도 본다.
+        for named in PebbleNaming.allNames { needed.formUnion(named.name.unicodeScalars) }
+
         for w in BundledWordSource.load()?.words ?? [] { needed.formUnion(w.word.unicodeScalars) }
 
         let missing = needed.filter { !glyphExists($0, in: font) }.map(String.init).sorted()

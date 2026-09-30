@@ -1,14 +1,14 @@
 # 번들 글꼴 — 나눔명조 서브셋 · 고운돋움 · 버튼 세미볼드
 
-`DESIGN.md` §2.2 — 명조는 **조약돌 이름 19개 + 워드마크 「몽돌」 + 사진 한 단어(`Shared/Word/words.json`)에만** 쓴다.
+`DESIGN.md` §2.2 — 명조는 **조약돌 이름 98개 + 워드마크 「몽돌」 + 사진 한 단어(`Shared/Word/words.json`)에만** 쓴다.
 날짜·안내·캡션은 고운돋움, **버튼만 IBM Plex Sans KR SemiBold**다(아래).
 
 | | |
 |---|---|
 | 원본 | Nanum Myeongjo Regular (Google Fonts) |
 | 라이선스 | SIL Open Font License 1.1 — [`NanumMyeongjo-OFL.txt`](NanumMyeongjo-OFL.txt) |
-| 서브셋 | 113자 (`subset-chars.txt`) |
-| 크기 | 2,987KB → **37.7KB** |
+| 서브셋 | 162자 (`subset-chars.txt`) |
+| 크기 | 2,987KB → **54.4KB** (상한 60KB, `FontSubsetTests.testSubsetStaysSmall`) |
 
 ## 다시 만들 때
 
@@ -32,7 +32,7 @@ pyftsubset /tmp/nm.ttf --text-file=Shared/Design/Fonts/subset-chars.txt \
   --name-IDs='0,1,2,3,4,5,6,13,14' --drop-tables+=DSIG
 ```
 
-**전체 한글(2MB+)을 넣지 말 것.** 명조로 찍히는 글자는 100자 미만이다.
+**전체 한글(2MB+)을 넣지 말 것.** 명조로 찍히는 글자는 200자 미만이다.
 
 ## 고운돋움 (본문)
 
