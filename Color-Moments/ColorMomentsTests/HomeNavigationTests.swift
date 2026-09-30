@@ -47,3 +47,56 @@ final class HomeNavigationTests: XCTestCase {
         XCTAssertEqual(HomeNavigation.monthIndex(fraction: 0.5, count: 0), 0)
     }
 }
+
+@MainActor
+final class HomeBackdropBlendTests: XCTestCase {
+    func testTopOfListShowsFirstDayAlone() {
+        let b = HomeBackdropBlend()
+        b.setOrder(["d3", "d2", "d1"])
+        b.setReference(400)
+        b.report("d3", top: 520)
+        b.report("d2", top: 900)
+        XCTAssertEqual(b.from, "d3")
+        XCTAssertNil(b.to)
+        XCTAssertEqual(b.t, 0)
+    }
+
+    func testBlendsByDistanceOfNextRowToReference() {
+        let b = HomeBackdropBlend()
+        b.setOrder(["d3", "d2", "d1"])
+        b.setReference(400)
+        b.report("d3", top: 300)
+        b.report("d2", top: 700)
+        XCTAssertEqual(b.from, "d3")
+        XCTAssertEqual(b.to, "d2")
+        // 다음 하루가 기준선까지 1/4 왔다 — smoothstep(0.25)
+        XCTAssertEqual(b.t, 0.15625, accuracy: 0.005)
+
+        b.report("d2", top: 500)
+        XCTAssertEqual(b.t, 0.5, accuracy: 0.005)
+    }
+
+    func testHandsOverWhenNextRowCrossesReference() {
+        let b = HomeBackdropBlend()
+        b.setOrder(["d3", "d2", "d1"])
+        b.setReference(400)
+        b.report("d3", top: -100)
+        b.report("d2", top: 390)
+        b.report("d1", top: 800)
+        XCTAssertEqual(b.from, "d2")
+        XCTAssertEqual(b.to, "d1")
+        XCTAssertLessThan(b.t, 0.05)
+    }
+
+    func testForgottenRowsDropOut() {
+        let b = HomeBackdropBlend()
+        b.setOrder(["d3", "d2"])
+        b.setReference(400)
+        b.report("d3", top: 100)
+        b.report("d2", top: 300)
+        XCTAssertEqual(b.from, "d2")
+        b.forget("d2")
+        b.report("d3", top: 120)
+        XCTAssertEqual(b.from, "d3")
+    }
+}

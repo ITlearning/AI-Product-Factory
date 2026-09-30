@@ -5,6 +5,10 @@ import UIKit
 
 struct LibraryPickerView: View {
     let store: DayStore
+    /// 있으면 그 사이에 찍힌 사진만.
+    var range: Range<Date>? = nil
+    /// 있으면 이 사진들만 — 홈의 「카메라 앱으로 찍은 사진」(카메라로 직접 찍은 것만 골라 둔 목록).
+    var only: [String]? = nil
     let onDone: (Set<String>) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -16,6 +20,7 @@ struct LibraryPickerView: View {
     @State private var loading: Task<Void, Never>?
     @State private var selected: Set<String> = []
     @State private var isImporting = false
+    @State private var importProgress: LibraryImporter.Progress?
     @State private var imageManager = PHCachingImageManager()
 
     private static let gridSpacing: CGFloat = 2
@@ -46,7 +51,15 @@ struct LibraryPickerView: View {
                 topBar
                 content
             }
+            if isImporting {
+                // 고른 사진을 가져오는 동안 격자를 덮는다 — iCloud 에서 받아 오면 몇 초씩 걸려 멈춘 것처럼 보인다.
+                Tone.base.opacity(0.78).ignoresSafeArea()
+                    .transition(.opacity)
+                ImportProgressNote(progress: importProgress)
+                    .transition(.opacity)
+            }
         }
+        .animation(.easeInOut(duration: 0.25), value: isImporting)
         .task { await load() }
         .onDisappear { loading?.cancel() }
         .interactiveDismissDisabled(isImporting)
@@ -246,7 +259,7 @@ struct LibraryPickerView: View {
     private func fetchAssets() {
         loading?.cancel()
         loading = Task { @MainActor in
-            for await update in Self.loadLibrary() {
+            for await update in Self.loadLibrary(range: range, only: only) {
                 guard !Task.isCancelled else { return }
                 library = Library(result: update.result, sections: update.sections)
                 progress = update.done < update.total ? LoadProgress(done: update.done, total: update.total) : nil
@@ -260,11 +273,13 @@ struct LibraryPickerView: View {
     private static let partialInterval: CFAbsoluteTime = 0.25
 
     /// 가져오기·날짜 읽기는 메인 밖에서 조금씩 — 최근 일주일이 모이면 먼저, 그 뒤엔 0.25초마다 보낸다.
-    private static func loadLibrary() -> AsyncStream<LoadUpdate> {
+    private static func loadLibrary(range: Range<Date>?, only: [String]?) -> AsyncStream<LoadUpdate> {
         let piece = Self.piece, partialInterval = Self.partialInterval
         return AsyncStream { continuation in
             let task = Task.detached(priority: .userInitiated) {
-                let result = PHAsset.fetchAssets(with: LibraryImporter.fetchOptions())
+                let options = LibraryImporter.fetchOptions(range: range)
+                let result = only.map { PHAsset.fetchAssets(withLocalIdentifiers: $0, options: options) }
+                    ?? PHAsset.fetchAssets(with: options)
                 let total = result.count
                 var builder = LibrarySectionBuilder()
                 var ids = Set<String>()
@@ -319,10 +334,42 @@ struct LibraryPickerView: View {
                 .enumerateObjects { asset, _, _ in picked.append(asset) }
             return picked.sorted { ($0.creationDate ?? .distantPast) > ($1.creationDate ?? .distantPast) }
         }.value
-        let importedDayKeys = await LibraryImporter().importAssets(toImport, into: store)
+        let importedDayKeys = await LibraryImporter().importAssets(toImport, into: store) { importProgress = $0 }
         isImporting = false
+        importProgress = nil
         onDone(importedDayKeys)
         dismiss()
+    }
+}
+
+/// 사진을 가져오는 동안의 안내 — 사진첩 덮개와 온보딩 「이 사진으로 받기」가 같이 쓴다.
+struct ImportProgressNote: View {
+    let progress: LibraryImporter.Progress?
+    var ink: Color = Tone.primary
+    var subInk: Color = Tone.secondary
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("추억을 가져오고 있어요").font(Face.lineCeremony).foregroundStyle(ink)
+            if let progress, progress.total > 0 {
+                Text("\(min(progress.done, progress.total)) / \(progress.total)장")
+                    .font(Face.caption).monospacedDigit().foregroundStyle(subInk)
+                let fraction = CGFloat(min(progress.done, progress.total)) / CGFloat(progress.total)
+                ZStack(alignment: .leading) {
+                    Capsule().fill(subInk.opacity(0.25))
+                    Capsule().fill(ink).frame(width: 160 * fraction)
+                }
+                .frame(width: 160, height: 3)
+                .animation(.easeOut(duration: 0.25), value: progress.done)
+            } else {
+                ProgressView().tint(subInk)
+            }
+            // 처음부터 알려 둔다 — iCloud 에만 있는 사진은 한 장씩 받아 와서 몇 초씩 걸리고, 모르면 멈춘 것처럼 보인다.
+            Text("iCloud에 있는 사진은 받아 오느라 조금 걸려요")
+                .font(Face.caption).foregroundStyle(subInk)
+        }
+        .multilineTextAlignment(.center)
+        .accessibilityElement(children: .combine)
     }
 }
 

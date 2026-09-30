@@ -1,3 +1,4 @@
+import Photos
 import XCTest
 @testable import ColorMoments
 
@@ -247,5 +248,92 @@ final class AssetReconcilerTests: XCTestCase {
         let readopted = old.withDeviceFields(fileName: Moment.assetFileName(for: "NEW"), assetID: "NEW", originalName: nil)
         let ids = AssetReconciler.removalIDs(snapshot: [old, other], remove: ["X", "Z"], current: [readopted, other])
         XCTAssertEqual(ids, [other.id], "조회 대기 중 파일로 다시 입양된 기록은 새 사진을 가리킨다 — 지우면 안 된다")
+    }
+}
+
+/// 사진 변경 감시는 권한이 생긴 뒤에만 켠다 — 미결정에서 등록하면 첫 화면에 사진 권한 창이 뜬다.
+@MainActor
+final class AssetReconcilerObserverTests: XCTestCase {
+
+    private final class Probe {
+        var status = PHAuthorizationStatus.notDetermined
+        var registered = 0
+        var unregistered = 0
+    }
+
+    private func makeObserver(_ probe: Probe) -> AssetReconcilerObserver {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("observer-\(UUID().uuidString).json")
+        let store = DayStore(fileURL: file, closures: DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        return AssetReconcilerObserver(store: store, env: .init(
+            access: { probe.status },
+            register: { _ in probe.registered += 1 },
+            unregister: { _ in probe.unregistered += 1 }
+        ))
+    }
+
+    func testDoesNotRegisterUntilAccessIsGranted() {
+        let probe = Probe()
+        let observer = makeObserver(probe)
+        observer.activateIfAllowed()
+        XCTAssertEqual(probe.registered, 0, "권한 미결정에서 등록하면 그 자리에서 권한 창이 뜬다")
+        probe.status = .denied
+        observer.activateIfAllowed()
+        XCTAssertEqual(probe.registered, 0, "거부됐으면 감시할 사진이 없다")
+        XCTAssertFalse(observer.isActive)
+    }
+
+    func testRegistersOnceAfterAccessIsGranted() {
+        let probe = Probe()
+        let observer = makeObserver(probe)
+        observer.activateIfAllowed()
+        probe.status = .limited
+        observer.activateIfAllowed()
+        observer.activateIfAllowed()
+        XCTAssertEqual(probe.registered, 1, "권한을 받은 뒤 한 번만 켠다 — 시작·active·권한 요청 뒤에 겹쳐 불린다")
+        XCTAssertTrue(observer.isActive)
+    }
+
+    func testUntrackedChangeRetriesVisibleCellsOnceItQuietsDown() {
+        let beforeTracking = AssetReconcilerObserver.effect(tracking: false, details: nil, fullAccess: true)
+        XCTAssertEqual(beforeTracking, .init(bumpsAllWhenQuiet: true), "추적 결과가 없으면 어떤 사진인지 모른다 — 지우지는 않는다")
+        let untracked = AssetReconcilerObserver.effect(tracking: true, details: nil, fullAccess: true)
+        XCTAssertEqual(untracked, .init(bumpsAllWhenQuiet: true),
+                       "추적 밖 변경(원본이 늦게 내려온 경우 등)도 잦아든 뒤 뜬 칸에 다시 물어본다")
+    }
+
+    func testTrackedChangeBumpsOnlyThoseAssets() {
+        let details = AssetReconcilerObserver.TrackedChange(changed: ["a"], inserted: ["b"], removedCount: 0)
+        XCTAssertEqual(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: true),
+                       .init(bumpIDs: ["a", "b"]), "바뀐 사진만 다시 요청한다 — 뜬 칸 전체를 끊지 않는다")
+    }
+
+    func testRemovalReconcilesOnlyWithFullAccess() {
+        let details = AssetReconcilerObserver.TrackedChange(changed: [], inserted: [], removedCount: 1)
+        XCTAssertTrue(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: true).reconciles)
+        XCTAssertFalse(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: false).reconciles,
+                       "제한 접근에서는 선택 해제도 삭제로 온다 — 지운 게 아니다")
+    }
+
+    func testNonIncrementalChangeFallsBackToFullRetryAndReconcile() {
+        let details = AssetReconcilerObserver.TrackedChange(incremental: false)
+        XCTAssertEqual(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: true),
+                       .init(bumpsAllWhenQuiet: true, reconciles: true),
+                       "변경 목록이 없으면 무엇이 지워졌는지도 모른다 — 정리는 reconcile 의 전체 조회에 맡긴다")
+        XCTAssertFalse(AssetReconcilerObserver.effect(tracking: true, details: details, fullAccess: false).reconciles)
+    }
+
+    func testUnregistersOnlyWhenRegistered() {
+        let idle = Probe()
+        var neverActive: AssetReconcilerObserver? = makeObserver(idle)
+        neverActive?.activateIfAllowed()
+        neverActive = nil
+        XCTAssertEqual(idle.unregistered, 0)
+
+        let granted = Probe()
+        granted.status = .authorized
+        var active: AssetReconcilerObserver? = makeObserver(granted)
+        active?.activateIfAllowed()
+        active = nil
+        XCTAssertEqual(granted.unregistered, 1)
     }
 }

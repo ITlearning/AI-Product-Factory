@@ -50,24 +50,37 @@ enum OnboardingStep: Hashable {
     case firstPebble
     /// iCloud 로 이미 기록이 들어온 사람 — 첫 조약돌 받기 대신 iCloud 상태를 먼저 보여 주고 이어서 본다.
     case continuing
+    /// 찍은 곳·날씨 — 허용하면 사진 보기에 무엇이 붙는지 보여 주고 위치 권한을 묻는다. 이미 정한 기기는 빠진다.
+    /// 찍은 직후에 물으면 「엥 뭐지」 싶어서 온보딩으로 옮겼다(2026-10-01 Tabber).
+    case place
     case arrival
+    /// 사진이 없는 날 알림 빈도 — 알림 권한과 상관없이 늘 보인다(도착 소식 장은 권한을 이미 정했으면 빠져서 거기 넣으면 안 보였다).
+    case reminder
     case cloud
     case howTo
+    /// 옆면 카메라 컨트롤이 있는 기기만 — 그 버튼으로 몽돌을 여는 설정을 알린다.
+    case cameraButton
+    case collection
     case start
 }
 
 enum OnboardingFlow {
 
-    static func steps(continuing: Bool, skipsFirstPebble: Bool, asksArrival: Bool) -> [OnboardingStep] {
+    static func steps(continuing: Bool, skipsFirstPebble: Bool, asksArrival: Bool,
+                      hasCameraButton: Bool = false, asksPlace: Bool = false) -> [OnboardingStep] {
         var steps: [OnboardingStep] = [.intro]
         if continuing {
             steps.append(.continuing)
         } else if !skipsFirstPebble {
             steps.append(.firstPebble)
         }
+        if asksPlace { steps.append(.place) }
         if asksArrival { steps.append(.arrival) }
+        steps.append(.reminder)
         if !continuing { steps.append(.cloud) }
-        steps += [.howTo, .start]
+        steps.append(.howTo)
+        if hasCameraButton { steps.append(.cameraButton) }
+        steps += [.collection, .start]
         return steps
     }
 

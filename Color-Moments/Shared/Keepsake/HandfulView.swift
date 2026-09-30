@@ -26,8 +26,7 @@ public struct HandfulView: View {
                 let side = min(geo.size.width, geo.size.height) * 0.62
                 ZStack {
                     ForEach(Array(placements.enumerated()), id: \.offset) { i, p in
-                        PebbleView(moments: pebbleGroups[i], height: 100 * p.scale)
-                            .rotationEffect(.degrees(p.rotation))
+                        PebbleView(moments: pebbleGroups[i], height: 100 * p.scale, glow: .grid, classicTilt: p.rotation)
                             .offset(x: p.x * side / 2, y: p.y * side / 2)
                     }
                 }

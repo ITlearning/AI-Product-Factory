@@ -5,7 +5,6 @@ struct HomeView: View {
 
     let gifts: GiftLog
 
-    let showsSwipeHint: Bool
 
     @Binding var focusDay: String?
 
@@ -28,22 +27,45 @@ struct HomeView: View {
 
     // 빈 첫 화면의 "지난 며칠 담기" 제안을 누르면 HomeShell 이 기존 사진첩 담기 화면을 띄운다.
     var onRequestLibraryPicker: () -> Void = {}
+    /// 「카메라 앱으로 찍은 사진」 카드 — 그 사진들(카메라로 직접 찍은 것만)만 모아 고르는 시트를 연다.
+    var onRequestTodayPicker: ([String]) -> Void = { _ in }
+    /// 아래로 스크롤하면 true — 탭바를 작게 접는다.
+    var onScrollMinimize: (Bool) -> Void = { _ in }
 
     // 카메라·사진첩·시트가 홈을 가리는 동안 true — 새 줄 등장 연출을 걷힐 때까지 미룬다.
     var holdsArrivals: Bool = false
+
+    /// 밖(온보딩 끝)에서 이 하루를 열어 달라고 할 때 — 열고 나면 nil 로 되돌린다.
+    var openDay: Binding<String?> = .constant(nil)
+
+    /// 「몽돌」 줄 오른쪽 — 스크롤과 같이 움직인다. 온보딩 중엔 nil 로 숨긴다.
+    var onOpenSettings: (() -> Void)? = nil
+    var onOpenGate: (() -> Void)? = nil
+    /// 이미 홈인데 탭바의 홈을 또 누르면 오른다 — 맨 위로.
+    var scrollToTop: Int = 0
 
     // 기록이 한 번이라도 생기면 true — 그 뒤엔 사진첩 제안 문구를 다시 보이지 않는다.
     @AppStorage("didOfferLibraryOnboarding") private var didOfferLibraryOnboarding = false
 
     @State private var opened: OpenedDay?
+    /// 오늘 찍었는데 아직 몽돌에 없는 사진 — 기본 카메라로 찍은 것.
+    @State private var todayPending: [String] = []
+    /// 줄 끝 ✕ 로 접은 사진들("dayKey|id,id") — 처음 보는 사진이 생기면 다시 띄운다. 고르기를 열고 닫는 것만으론 안 접는다.
+    @AppStorage("todayPhotosSeenIDs") private var todayPhotosSeen = ""
+    /// 숫자 굴림(numericText) — 줄이 처음 나타날 땐 0 에서 올라간다.
+    @State private var shownPhotoCount = 0
+    @Environment(\.scenePhase) private var scenePhase
     @State private var sharingDayKey: SharingDay?
     @State private var openedMonth: OpenedMonth?
     @State private var topDayKey: String?
+    @State private var blend = HomeBackdropBlend()
     @State private var scrolling = false
 
     // 스크롤이 멈춘 뒤에도 1.2초는 알약 띠를 살려 둔다 — 손을 떼자마자 사라지면 못 잡는다.
     @State private var lingering = false
     @State private var lingerTask: Task<Void, Never>?
+    // 취소된 스크럽은 onEnded 가 없다 — scrubbing 이 남으면 HomeShell 의 좌우 스와이프가 계속 무시된다.
+    @GestureState private var scrubHeld = false
 
     @State private var arrivals = Arrivals()
 
@@ -109,7 +131,10 @@ struct HomeView: View {
             content
             bottomFade
             if pillActive, let label = pillLabel { monthPill(label) }
-            if showsSwipeHint { swipeHint }
+        }
+        .task(id: "\(todayKey)|\(store.moments.count)|\(store.isLoaded)|\(scenePhase == .active)") {
+            guard store.isLoaded, scenePhase == .active else { return }
+            await refreshTodayPhotos()
         }
         .sheet(item: $opened, onDismiss: {
             // opened 가 nil 이 되는 건 닫힘 애니메이션 시작 — 끝난 뒤(onDismiss)에만 가드를 푼다.
@@ -146,6 +171,12 @@ struct HomeView: View {
         .onChange(of: store.moments.isEmpty) { _, isEmpty in
             if !isEmpty { didOfferLibraryOnboarding = true }
         }
+        .onChange(of: openDay.wrappedValue) { _, key in
+            guard let key else { return }
+            openDay.wrappedValue = nil
+            focusDay = key
+            open(key)
+        }
     }
 
     private func open(_ key: String) {
@@ -165,28 +196,47 @@ struct HomeView: View {
         return "month-\(month)"
     }
 
-    @ViewBuilder
     private var backdrop: some View {
-        if let key = topDayKey ?? days.first {
-            DayGradientView(moments: store.pebbleMoments(on: key), axis: .vertical)
-                .blur(radius: 60)
-                .opacity(0.16)
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 0.45), value: key)
-                .allowsHitTesting(false)
+        HomeBackdrop(blend: blend, store: store, fallback: days.first)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .onChange(of: days, initial: true) { _, keys in blend.setOrder(keys) }
+    }
+
+    private var headerButtons: some View {
+        HStack(spacing: 4) {
+            if let onOpenGate {
+                Button(action: onOpenGate) {
+                    Image(systemName: "wrench.adjustable").foregroundStyle(Tone.hairline)
+                        .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                }
+            }
+            if let onOpenSettings {
+                Button(action: onOpenSettings) {
+                    Image(systemName: "gearshape").foregroundStyle(Tone.tertiary)
+                        .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                }
+                .accessibilityLabel("설정")
+            }
         }
+        // 아이콘 오른쪽 끝을 글 여백(28pt)에 맞춘다 — 터치 영역만 여백으로 넘친다.
+        .padding(.trailing, -12)
     }
 
     private var content: some View {
         GeometryReader { geo in
             let blockWidth = max(0, geo.size.width - 56)  // 첫 배치에서 geo 가 0 이면 음수 프레임이 된다
+            let _ = blend.setReference(geo.size.height * 0.4)
             ScrollViewReader { proxy in
                 ZStack(alignment: .trailing) {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
                             Text("몽돌").font(Face.wordmark).foregroundStyle(Tone.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .overlay(alignment: .trailing) { headerButtons }
                                 .id("top")
                             Spacer().frame(height: 22)
+                            cameraAppCard
                             if todayInProgress {
                                 // 블록을 그릴 때의 dayKey 를 캡처한다 — 탭 시점에 todayKey 를 다시 읽으면
                                 // 04시를 넘긴 뒤 눌렀을 때 방금 열린 새 날짜가 열려 버린다.
@@ -236,6 +286,11 @@ struct HomeView: View {
                                                 if visible { topDayKey = key }
                                             }
                                             .id(key)
+                                            // 배경 섞기용 — 매 프레임 오지만 HomeView 는 이 값을 읽지 않는다(배경 뷰만 다시 그린다).
+                                            .onGeometryChange(for: CGFloat.self) {
+                                                $0.frame(in: .scrollView(axis: .vertical)).minY
+                                            } action: { blend.report(key, top: $0) }
+                                            .onDisappear { blend.forget(key) }
                                             .padding(.top, hasHeader ? 16 : (index == 0 ? 0 : (key < compactCutoff ? 20 : 64)))
                                     }
                                 }
@@ -246,6 +301,9 @@ struct HomeView: View {
                         .padding(.top, 72 - geo.safeAreaInsets.top)
                     }
                     .scrollIndicators(.hidden)
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { old, new in
+                        TabBarFold.report(old: old, new: new, to: onScrollMinimize)
+                    }
                     .onScrollPhaseChange { _, phase in
                         withAnimation(.easeOut(duration: 0.2)) { scrolling = phase.isScrolling }
                         if phase.isScrolling {
@@ -254,6 +312,9 @@ struct HomeView: View {
                         } else {
                             scheduleLingerEnd()
                         }
+                    }
+                    .onChange(of: scrollToTop) { _, _ in
+                        withAnimation(.easeOut(duration: 0.35)) { proxy.scrollTo("top", anchor: .top) }
                     }
                     .onChange(of: focusDay) { _, newValue in
                         guard let newValue else { return }
@@ -272,10 +333,12 @@ struct HomeView: View {
                         .contentShape(Rectangle())
                         .highPriorityGesture(
                             DragGesture(minimumDistance: 0)
+                                .updating($scrubHeld) { _, held, _ in held = true }
                                 .onChanged { v in scrub(to: v.location.y, height: geo.size.height, proxy: proxy) }
                                 .onEnded { _ in endScrub() }
                         )
                         .allowsHitTesting(pillActive)
+                        .onChange(of: scrubHeld) { _, held in if !held && scrubbing { endScrub() } }
                 }
             }
         }
@@ -362,6 +425,82 @@ struct HomeView: View {
         .font(Face.today)
     }
 
+    private var todayPhotosUnseen: Int {
+        let parts = todayPhotosSeen.split(separator: "|", maxSplits: 1)
+        let seen = parts.count == 2 && parts[0] == Substring(todayKey)
+            ? Set(parts[1].split(separator: ",").map(String.init)) : []
+        return todayPending.contains { !seen.contains($0) } ? todayPending.count : 0
+    }
+
+    private var showsTodayPhotos: Bool { todayPhotosUnseen > 0 && !todayClosedWithMoments }
+
+    /// 몽돌 오늘 블록과 떨어뜨려 맨 위에 — 「오늘 찍은 사진」이 몽돌로 찍은 건지 카메라 앱인지 헷갈렸다(2026-10-01 Tabber).
+    @ViewBuilder
+    private var cameraAppCard: some View {
+        if showsTodayPhotos {
+            HStack(spacing: 12) {
+                ZStack {
+                    ForEach(Array(todayPending.prefix(3).enumerated().reversed()), id: \.element) { i, id in
+                        AssetThumb(assetID: id)
+                            .frame(width: 34, height: 34)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .strokeBorder(Tone.base, lineWidth: 1.5))
+                            .rotationEffect(.degrees(Double(i) * 7 - 7))
+                            .offset(x: CGFloat(i) * 9)
+                    }
+                }
+                .frame(width: 52, alignment: .leading)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 0) {
+                        Text("카메라 앱으로 찍은 사진 ")
+                        Text("\(shownPhotoCount)")
+                            .monospacedDigit()
+                            .contentTransition(.numericText(value: Double(shownPhotoCount)))
+                        Text("장")
+                    }
+                    .font(Face.line)
+                    .foregroundStyle(Tone.primary)
+                    Text("눌러서 몽돌에 담기").font(Face.caption).foregroundStyle(Tone.tertiary)
+                }
+                Spacer(minLength: 4)
+                Button {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.88)) {
+                        todayPhotosSeen = "\(todayKey)|" + todayPending.joined(separator: ",")
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Tone.tertiary)
+                        .frame(width: 32, height: Shape2.minTouch)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("카메라 앱 사진 안내 닫기")
+            }
+            .padding(.leading, 12).padding(.trailing, 4).padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.07)))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .onTapGesture { onRequestTodayPicker(todayPending) }
+            .padding(.bottom, 20)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+
+    /// 앱에 들어오면 줄이 목록을 살짝 밀며 내려앉고, 숫자는 0 에서 굴러 올라간다 — 눈에 띄게, 재촉은 없이.
+    private func refreshTodayPhotos() async {
+        let known = Set(store.moments.compactMap(\.assetID))
+        let ids = await TodayPhotos.pending(dayKey: todayKey, excluding: known,
+                                            capturedAt: store.today.map(\.capturedAt), cameraOnly: true).map(\.localIdentifier)
+        let wasShowing = showsTodayPhotos
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.86)) { todayPending = ids }
+        guard showsTodayPhotos else { return }
+        if !wasShowing {
+            shownPhotoCount = 0
+            try? await Task.sleep(nanoseconds: 350_000_000)
+        }
+        withAnimation(.snappy(duration: 0.5)) { shownPhotoCount = ids.count }
+    }
+
     private var libraryOnboardingLine: some View {
         Text("지난 며칠 사진으로 먼저 받아 볼까요?")
             .font(Face.line)
@@ -432,24 +571,6 @@ struct HomeView: View {
         .allowsHitTesting(false)
     }
 
-    private var swipeHint: some View {
-
-        HStack(spacing: 7) {
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(Tone.tertiary)
-                .frame(width: 3, height: 34)
-            Text("쓸면 담기")
-                .font(Face.caption)
-                .foregroundStyle(Tone.tertiary)
-                .fixedSize()
-                .rotationEffect(.degrees(-90))
-                .frame(width: 12, height: 62)
-            Spacer()
-        }
-        .padding(.leading, 5)
-        .allowsHitTesting(false)
-    }
-
     private var bottomFade: some View {
         VStack {
             Spacer()
@@ -480,5 +601,106 @@ struct EmptyDayBlock: View {
             Text("오늘 담은 것은 자정에 조약돌이 돼요")
                 .font(Face.guide).foregroundStyle(Tone.tertiary)
         }
+    }
+}
+
+/// 홈 배경 — 기준선(화면 높이 40%)에 걸린 하루와 다음 하루의 색을, 다음 하루가 기준선에 다가온 만큼 섞는다.
+/// 행 위치는 관찰하지 않는 값에만 쌓고, 섞을 두 하루와 비율만 관찰 대상이라 배경 뷰만 다시 그려진다.
+@Observable
+final class HomeBackdropBlend {
+    private(set) var from: String?
+    private(set) var to: String?
+    private(set) var t: Double = 0
+
+    @ObservationIgnored private var tops: [String: CGFloat] = [:]
+    @ObservationIgnored private var index: [String: Int] = [:]
+    @ObservationIgnored private var order: [String] = []
+    @ObservationIgnored private var reference: CGFloat = 300
+
+    func setOrder(_ keys: [String]) {
+        order = keys
+        index = Dictionary(keys.enumerated().map { ($1, $0) }, uniquingKeysWith: { a, _ in a })
+        tops = tops.filter { index[$0.key] != nil }
+        recompute()
+    }
+
+    func setReference(_ y: CGFloat) {
+        guard y > 0, abs(y - reference) > 0.5 else { return }
+        reference = y
+    }
+
+    func report(_ key: String, top: CGFloat) {
+        tops[key] = top
+        recompute()
+    }
+
+    func forget(_ key: String) {
+        tops[key] = nil
+    }
+
+    private func recompute() {
+        // 기준선 위(또는 걸친)에서 가장 아래에 있는 하루 — 없으면(맨 위) 첫 하루를 그대로.
+        var current: (key: String, top: CGFloat, i: Int)?
+        for (key, top) in tops where top <= reference {
+            guard let i = index[key] else { continue }
+            if current == nil || i > current!.i { current = (key, top, i) }
+        }
+        guard let cur = current else {
+            apply(from: order.first, to: nil, t: 0)
+            return
+        }
+        let nextIndex = cur.i + 1
+        guard nextIndex < order.count, let nextTop = tops[order[nextIndex]], nextTop > cur.top else {
+            apply(from: cur.key, to: nil, t: 0)
+            return
+        }
+        let raw = Double((reference - cur.top) / (nextTop - cur.top))
+        let eased = min(1, max(0, raw))
+        apply(from: cur.key, to: order[nextIndex], t: eased * eased * (3 - 2 * eased))
+    }
+
+    private func apply(from: String?, to: String?, t: Double) {
+        if from != self.from { self.from = from }
+        if to != self.to { self.to = to }
+        // 눈에 안 띌 만큼만 바뀌면 다시 그리지 않는다 — 스크롤 중 매 프레임 들어온다.
+        if abs(t - self.t) > 0.004 || (t == 0 && self.t != 0) || (t == 1 && self.t != 1) { self.t = t }
+    }
+}
+
+/// 배경 두 겹 — 같은 자리에서 불투명도만 바뀐다. 경계에서 from/to 가 넘어가도 그 순간 보이는 색은 같다.
+private struct HomeBackdrop: View {
+    let blend: HomeBackdropBlend
+    let store: DayStore
+    let fallback: String?
+
+    var body: some View {
+        ZStack {
+            if let from = blend.from ?? fallback {
+                layer(from).opacity(1 - (blend.to == nil ? 0 : blend.t))
+            }
+            if let to = blend.to, blend.t > 0 {
+                layer(to).opacity(blend.t)
+            }
+        }
+    }
+
+    private func layer(_ key: String) -> some View {
+        DayGradientView(moments: store.pebbleMoments(on: key), axis: .vertical)
+            .blur(radius: 60)
+            .opacity(0.16)
+    }
+}
+
+/// 사진 앱 사진 한 장의 작은 썸네일 — assetID 로 바로 부른다.
+private struct AssetThumb: View {
+    let assetID: String
+    @State private var image: UIImage?
+
+    var body: some View {
+        ZStack {
+            Tone.hairline
+            if let image { Image(uiImage: image).resizable().scaledToFill() }
+        }
+        .task(id: assetID) { image = await ShotImage.assetSource?.image(assetID: assetID, maxPixel: 120) }
     }
 }

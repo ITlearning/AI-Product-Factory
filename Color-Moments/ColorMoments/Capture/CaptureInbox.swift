@@ -20,8 +20,26 @@ final class CaptureInbox {
     var dayStore: DayStore?
     private(set) var log: [String] = []
     private var task: Task<Void, Never>?
+    private var inFlight: Set<URL> = []
 
-    static var shotsDirectory: URL {
+    private let sessionURLs: () -> [URL]
+    private let invalidate: (URL) async throws -> Void
+    private let adopt: (Moment, DayStore) async -> Void
+    private let shotsDirectory: URL
+
+    init(sessionURLs: @escaping () -> [URL] = { LockedCameraCaptureManager.shared.sessionContentURLs },
+         invalidate: @escaping (URL) async throws -> Void = {
+             try await LockedCameraCaptureManager.shared.invalidateSessionContent(at: $0)
+         },
+         adopt: @escaping (Moment, DayStore) async -> Void = { await AssetAdopter.adopt($0, store: $1) },
+         shotsDirectory: URL = CaptureInbox.shotsDirectory) {
+        self.sessionURLs = sessionURLs
+        self.invalidate = invalidate
+        self.adopt = adopt
+        self.shotsDirectory = shotsDirectory
+    }
+
+    nonisolated static var shotsDirectory: URL {
         let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Shots", isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
@@ -30,17 +48,18 @@ final class CaptureInbox {
 
     func start() {
         guard task == nil else { return }
-        note("수신 시작. 기존 sessionContentURLs \(LockedCameraCaptureManager.shared.sessionContentURLs.count)개")
+        note("수신 시작. 기존 sessionContentURLs \(sessionURLs().count)개")
         task = Task { @MainActor [weak self] in
+            await self?.sweep()
             for await update in LockedCameraCaptureManager.shared.sessionContentUpdates {
                 guard let self else { return }
                 switch update {
                 case .initial(let urls):
                     self.note("initial \(urls.count)개")
-                    for url in urls { await self.ingest(url) }
+                    for url in urls { await self.ingestOnce(url) }
                 case .added(let url):
                     self.note("added \(url.lastPathComponent)")
-                    await self.ingest(url)
+                    await self.ingestOnce(url)
                 case .removed(let url):
                     self.note("removed \(url.lastPathComponent)")
                 @unknown default:
@@ -48,6 +67,18 @@ final class CaptureInbox {
                 }
             }
         }
+    }
+
+    /// 스트림이 .initial·.added 를 끝내 안 보낼 때가 있다(iOS 26.1 실측, 애플 포럼 769209) — 목록을 직접 읽는다.
+    func sweep() async {
+        for url in sessionURLs() { await ingestOnce(url) }
+    }
+
+    private func ingestOnce(_ url: URL) async {
+        let key = url.standardizedFileURL
+        guard inFlight.insert(key).inserted else { return }
+        defer { inFlight.remove(key) }
+        await ingest(url)
     }
 
     func stop() { task?.cancel(); task = nil }
@@ -59,6 +90,8 @@ final class CaptureInbox {
     }
 
     private func ingest(_ url: URL) async {
+        // 저장소 없이 돌면 기록 없이 원본만 무효화된다 — sweep 은 앱이 dayStore 를 꽂기 전에도 불린다.
+        guard dayStore != nil else { note("저장소 연결 전 — 건너뜀 \(url.lastPathComponent)"); return }
         let fm = FileManager.default
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else {
@@ -73,15 +106,18 @@ final class CaptureInbox {
         }
 
         var toAdopt: [Moment] = []
-        for f in files {
-            let dest = CaptureInbox.shotsDirectory.appendingPathComponent(f.lastPathComponent)
+        // 위치 쪽지(LockedPlaceNote)는 사진이 아니다 — 사진을 들여올 때 옆에서 읽기만 한다.
+        for f in files where f.pathExtension.lowercased() != "json" {
+            let dest = shotsDirectory.appendingPathComponent(f.lastPathComponent)
             do {
                 if fm.fileExists(atPath: dest.path) { try fm.removeItem(at: dest) }
                 try fm.copyItem(at: f, to: dest)
                 let size = (try? fm.attributesOfItem(atPath: dest.path)[.size] as? Int) ?? 0
                 imported.append(Imported(url: dest, importedAt: Date(), byteCount: size ?? 0))
                 note("들여옴 \(f.lastPathComponent) \(((size ?? 0) / 1024))KB")
-                if let moment = await record(dest) {
+                let placeNote = (try? Data(contentsOf: LockedPlaceNote.url(for: f)))
+                    .flatMap { try? JSONDecoder().decode(LockedPlaceNote.self, from: $0) }
+                if let moment = await record(dest, placeNote: placeNote) {
                     toAdopt.append(moment)
                 }
             } catch {
@@ -98,7 +134,7 @@ final class CaptureInbox {
             return
         }
         do {
-            try await LockedCameraCaptureManager.shared.invalidateSessionContent(at: url)
+            try await invalidate(url)
             note("원본 무효화 완료")
         } catch {
             note("무효화 실패: \(error.localizedDescription)")
@@ -106,13 +142,13 @@ final class CaptureInbox {
 
         guard let store = dayStore else { return }
         for moment in toAdopt {
-            await AssetAdopter.adopt(moment, store: store)
+            await adopt(moment, store)
         }
     }
 
     /// 색 추출 결과로 store.add 를 부른다. 실제로 넣었을 때만(중복이 아닐 때만) Moment 를 돌려준다 —
     /// 호출부는 이 값이 있을 때만 입양(adopt)을 시도해야 재전달로 인한 이중 저장을 막는다.
-    private func record(_ url: URL) async -> Moment? {
+    private func record(_ url: URL, placeNote: LockedPlaceNote?) async -> Moment? {
         guard let store = dayStore else { return nil }
         let name = url.lastPathComponent
 
@@ -129,11 +165,18 @@ final class CaptureInbox {
 
         let stamp = name.split(separator: "-").last.flatMap { Double($0.replacingOccurrences(of: ".jpg", with: "")) }
         let capturedAt = stamp.map { Date(timeIntervalSince1970: $0) } ?? Date()
-        let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked, originalName: name)
+        let recordsPlace = UserDefaults.standard.object(forKey: PlaceFinder.enabledKey) as? Bool ?? true
+        let place = recordsPlace ? placeNote?.place : nil
+        UserDefaults.standard.set(placeNote?.summary ?? "쪽지 없음(위치 시험 전 확장)", forKey: Self.lockedPlaceProbeKey)
+        let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked,
+                            place: place, originalName: name)
         let added = store.add(moment)
         note("기록 \(hex) · \(Moment.dayKey(for: capturedAt))")
         return added ? moment : nil
     }
+
+    /// 디버그 화면용 — 마지막으로 들여온 잠금화면 사진의 위치 판정.
+    static let lockedPlaceProbeKey = "lockedPlaceProbe"
 
     private func note(_ s: String) {
         let t = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
@@ -142,7 +185,7 @@ final class CaptureInbox {
 
     func loadExisting() {
         let fm = FileManager.default
-        let files = (try? fm.contentsOfDirectory(at: CaptureInbox.shotsDirectory,
+        let files = (try? fm.contentsOfDirectory(at: shotsDirectory,
                                                  includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
         imported = files.compactMap { url in
             let size = (try? fm.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0

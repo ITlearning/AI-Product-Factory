@@ -36,10 +36,12 @@ targets:
         com.apple.developer.icloud-services: [CloudKit]
         aps-environment: development
         com.apple.security.application-groups: [group.com.itlearning.colormoments]
+        com.apple.developer.weatherkit: true
     info:
       path: ColorMoments/Info.plist
       properties:
         UIBackgroundModes: [remote-notification]
+        ITSAppUsesNonExemptEncryption: false
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     settings:
@@ -47,10 +49,12 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.itlearning.colormoments
         GENERATE_INFOPLIST_FILE: true
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIcon-Classic
         INFOPLIST_KEY_CFBundleDisplayName: 몽돌
         INFOPLIST_KEY_NSCameraUsageDescription: 순간의 색을 남기기 위해 카메라를 사용합니다.
-        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: 고른 사진을 몽돌에 담고, 찍은 시각과 장소를 하루에 씁니다. 사진은 기기 밖으로 나가지 않습니다.
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: 고른 사진과 카메라 앱으로 찍은 사진을 몽돌에 담고, iCloud로 이어진 기록의 사진을 다시 불러옵니다. 사진은 기기 밖으로 나가지 않습니다.
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: 촬영한 사진을 사진 앱에도 저장합니다.
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: 찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
@@ -70,11 +74,13 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_CFBundleDisplayName: 몽돌
         INFOPLIST_KEY_NSCameraUsageDescription: 순간의 색을 남기기 위해 카메라를 사용합니다.
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: 찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.
     info:
       path: ColorMomentsCapture/Info.plist
       properties:
         CFBundleDisplayName: 몽돌
         NSCameraUsageDescription: 순간의 색을 남기기 위해 카메라를 사용합니다.
+        NSLocationWhenInUseUsageDescription: 찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.
         EXAppExtensionAttributes:
           EXExtensionPointIdentifier: com.apple.securecapture
 

@@ -98,6 +98,17 @@ final class SyncRecordsTests: XCTestCase {
         XCTAssertNil(SyncRecords.ref(CKRecord.ID(recordName: "x", zoneID: SyncRecords.zoneID)))
     }
 
+    func testDayCarriesThePebbleNameStamp() {
+        let d = SyncRecords.DayState(dayKey: "2025-11-16", closedAt: nil, gifted: true,
+                                     pebbleName: PebbleName(name: "도토리", line: "작은 것에도 가을이 다 들어 있어요."))
+        let r = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: d.dayKey))
+        SyncRecords.fill(r, with: d)
+        XCTAssertEqual(SyncRecords.day(from: r), d)
+        let old = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: "2025-11-17"))
+        old["gifted"] = 1
+        XCTAssertNil(SyncRecords.day(from: old)?.pebbleName, "도장 전 버전이 올린 기록 — 이름 없음")
+    }
+
     func testMalformedMomentIsSkipped() {
         let r = CKRecord(recordType: "Moment", recordID: SyncRecords.recordID(moment: UUID()))
         XCTAssertNil(SyncRecords.moment(from: r), "필수 필드가 없으면 버린다 — 크래시 금지")

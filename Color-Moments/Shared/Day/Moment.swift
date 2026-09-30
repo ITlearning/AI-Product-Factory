@@ -1,14 +1,37 @@
 import Foundation
 
+/// 찍은 시각·장소의 실제 날씨(WeatherKit) — 사진 속 하늘로 짐작한 값은 여기 넣지 않는다.
+public struct PlaceWeather: Codable, Equatable, Sendable {
+    /// WeatherKit WeatherCondition.rawValue
+    public let condition: String
+    public let celsius: Double
+
+    public init(condition: String, celsius: Double) {
+        self.condition = condition
+        self.celsius = celsius
+    }
+}
+
 public struct Place: Codable, Equatable, Sendable {
     public let latitude, longitude, accuracy: Double
     public var name: String?
+    public var weather: PlaceWeather?
 
-    public init(latitude: Double, longitude: Double, accuracy: Double, name: String? = nil) {
+    public init(latitude: Double, longitude: Double, accuracy: Double, name: String? = nil, weather: PlaceWeather? = nil) {
         self.latitude = latitude
         self.longitude = longitude
         self.accuracy = accuracy
         self.name = name
+        self.weather = weather
+    }
+
+    /// 좌표는 앞의 것, 이름·날씨는 비어 있으면 뒤의 것으로 채운다 — 한 기기가 찾은 이름·날씨가 병합에서 지워지지 않게.
+    public static func merged(_ first: Place?, _ second: Place?) -> Place? {
+        guard var p = first ?? second else { return nil }
+        let other = first == nil ? nil : second
+        if p.name == nil { p.name = other?.name }
+        if p.weather == nil { p.weather = other?.weather }
+        return p
     }
 }
 
@@ -67,7 +90,7 @@ public extension Moment {
 
     static let dayBoundaryHour = 4
 
-    private static let calendar: Calendar = {
+    static let calendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = .autoupdatingCurrent
         return cal

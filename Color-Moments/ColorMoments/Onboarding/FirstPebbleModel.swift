@@ -18,6 +18,7 @@ final class FirstPebbleModel {
     private(set) var suggestions: [PhotoSuggester.Suggestion] = []
     private(set) var scanning = false
     var selected: Set<String> = []
+    private(set) var importProgress: LibraryImporter.Progress?
 
     @ObservationIgnored private var pool: [String: PhotoSuggester.Suggestion] = [:]
     @ObservationIgnored private var scan: Task<Void, Never>?
@@ -65,14 +66,16 @@ final class FirstPebbleModel {
         if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
     }
 
-    func importSelected(store: DayStore) async -> (outcome: OnboardingFlow.ImportOutcome, dayKeys: Set<String>) {
+    /// treatsAsNew — 디버그 다시 보기에서 기록이 있어도 첫 담기로 친다(증정이 뜨게).
+    func importSelected(store: DayStore, treatsAsNew: Bool = false) async -> (outcome: OnboardingFlow.ImportOutcome, dayKeys: Set<String>) {
         let assets = selected.compactMap { pool[$0]?.asset }
         guard !assets.isEmpty else { return (.nothing, []) }
         scan?.cancel()
         scanning = false
         phase = .importing
-        let wasEmpty = store.moments.isEmpty
-        let keys = await LibraryImporter().importAssets(assets, into: store)
+        let wasEmpty = treatsAsNew || store.moments.isEmpty
+        let keys = await LibraryImporter().importAssets(assets, into: store) { self.importProgress = $0 }
+        importProgress = nil
         let outcome = OnboardingFlow.outcome(existingRecordsWereEmpty: wasEmpty, importedDayKeys: keys,
                                              today: Moment.dayKey(for: Date()))
         phase = outcome == .nothing ? .suggesting : .received(outcome)

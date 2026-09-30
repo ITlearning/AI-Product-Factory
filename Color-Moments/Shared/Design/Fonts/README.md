@@ -1,14 +1,14 @@
 # 번들 글꼴 — 나눔명조 서브셋 · 고운돋움 · 버튼 세미볼드
 
-`DESIGN.md` §2.2 — 명조는 **조약돌 이름 19개 + 워드마크 「몽돌」 + 사진 한 단어(`Shared/Word/words.json`)에만** 쓴다.
+`DESIGN.md` §2.2 — 명조는 **조약돌 이름 98개 + 워드마크 「몽돌」 + 사진 한 단어(`Shared/Word/words.json`)에만** 쓴다.
 날짜·안내·캡션은 고운돋움, **버튼만 IBM Plex Sans KR SemiBold**다(아래).
 
 | | |
 |---|---|
 | 원본 | Nanum Myeongjo Regular (Google Fonts) |
 | 라이선스 | SIL Open Font License 1.1 — [`NanumMyeongjo-OFL.txt`](NanumMyeongjo-OFL.txt) |
-| 서브셋 | 113자 (`subset-chars.txt`) |
-| 크기 | 2,987KB → **37.7KB** |
+| 서브셋 | 168자 (`subset-chars.txt`) |
+| 크기 | 2,987KB → **56.4KB** (상한 100KB, `FontSubsetTests.testSubsetStaysSmall`) |
 
 ## 다시 만들 때
 
@@ -16,7 +16,7 @@
 `FontSubsetTests` 가 그걸 잡지만, 잡히면 아래로 다시 굽는다.
 
 ```bash
-pip install fonttools
+pip install fonttools   # pyftsubset 셔뱅이 깨져 있으면 /usr/bin/python3 -m fontTools.subset
 python3 - <<'PY'   # 필요한 글자 뽑기 — 조약돌 이름 + 워드마크 + 사진 한 단어
 import re, json, pathlib
 src = pathlib.Path("Shared/Day/PebbleName.swift").read_text()
@@ -32,7 +32,7 @@ pyftsubset /tmp/nm.ttf --text-file=Shared/Design/Fonts/subset-chars.txt \
   --name-IDs='0,1,2,3,4,5,6,13,14' --drop-tables+=DSIG
 ```
 
-**전체 한글(2MB+)을 넣지 말 것.** 명조로 찍히는 글자는 100자 미만이다.
+**전체 한글(2MB+)을 넣지 말 것.** 명조로 찍히는 글자는 200자 미만이다.
 
 ## 고운돋움 (본문)
 
@@ -98,7 +98,8 @@ IBM Plex Sans KR SemiBold(Google Fonts, SIL OFL)를 골랐다 — 고운돋움�
 python3 - <<'PY'   # 버튼 스타일(Face.action·PrimaryAction·SecondaryAction·CloudStep actionTitle)에 쓰는 문자열을 grep 해 채운다
 strings = [
     "닫기", "담기 ", "설정 열기", "다음", "사진 보기", "이 사진으로 받기",
-    "직접 고르기", "알려 주세요", "괜찮아요", "이어서 보기", "지금 한 장 남겨보기", "시작하기",
+    "직접 고르기", "알려 주세요", "적어 주세요", "괜찮아요", "이어서 보기", "지금 한 장 남겨보기", "시작하기",
+    "내 조약돌 보러 가기",
 ]
 chars = set()
 for s in strings: chars |= set(s)

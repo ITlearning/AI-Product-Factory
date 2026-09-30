@@ -5,6 +5,7 @@ struct PebbleSilhouette {
     let topRounding: Double
     let bottomRounding: Double
     let tilt: Double
+    let seed: UInt64
 
     init(dayKey: String) {
 
@@ -26,6 +27,7 @@ struct PebbleSilhouette {
         topRounding = pick(8, 0.32...0.54)
         bottomRounding = pick(16, 0.28...0.52)
         tilt = pick(24, -7...7)
+        seed = h
     }
 }
 
@@ -73,10 +75,10 @@ public struct DashedPebble: View {
     }
 
     public var body: some View {
-        PebbleShape(top: 0.44, bottom: 0.40)
-            .strokeBorder(stroke, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
-            .frame(width: max(0, height) * Shape2.pebbleRatio, height: max(0, height))
-            .frame(height: max(0, height) * 1.16)
+        SoftPebbleOutline()
+            .stroke(stroke, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+            .frame(width: max(0, height) * Shape2.softDiameter, height: max(0, height) * Shape2.softDiameter)
+            .frame(width: max(0, height) * Shape2.pebbleRatio, height: max(0, height) * 1.16)
     }
 }
 

@@ -14,6 +14,7 @@ struct SpikeView: View {
 
     @State private var previewing = false
     #if DEBUG
+    @AppStorage(WordAssistant.enabledKey) private var wordModelEnabled = false
     @State private var diagnostics: AssetDiagnostics.Snapshot?
     @State private var diagnosing = false
     @State private var confirmingRestore = false
@@ -34,6 +35,16 @@ struct SpikeView: View {
     var body: some View {
         NavigationStack {
             List {
+                #if DEBUG
+                Section {
+                    NavigationLink("조약돌 비교 (셰이더)") { PebbleLabView(store: store, gifts: gifts, closures: closures) }
+                    NavigationLink("단어 다시 뽑아 보기 (저장 안 함)") { WordRelabelReport(store: store) }
+                    Toggle("단어 고르기에 Apple Intelligence", isOn: $wordModelEnabled)
+                    LabeledContent("잠금화면 위치",
+                                   value: UserDefaults.standard.string(forKey: CaptureInbox.lockedPlaceProbeKey) ?? "아직 잠금화면 사진 없음")
+                    LabeledContent("앱 위치 권한", value: PlaceFinder.shared.authorizationText)
+                }
+                #endif
                 Section("앱 촬영 (A 경로)") {
                     CaptureScreen(engine: camera)
                         .frame(height: 260)
@@ -211,6 +222,7 @@ struct SpikeView: View {
             #if DEBUG
             .task { await refreshDiagnostics() }
             #endif
+            .onAppear { inbox.loadExisting() }
             .navigationTitle("Gate · 잠금화면 촬영")
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $previewing) {
@@ -349,7 +361,7 @@ private struct EmptyHomePreview: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             if let store {
-                HomeView(store: store, gifts: gifts, showsSwipeHint: true,
+                HomeView(store: store, gifts: gifts,
                          focusDay: $focusDay, closures: closures, scrubbing: $scrubbing,
                          daySheetPresented: $daySheetPresented,
                          keepsakePresented: $keepsakePresented)

@@ -34,5 +34,7 @@ enum HomeWidget {
     static func syncWithArrivalNotice(store: DayStore, closures: DayClosures, gifts: GiftLog) async {
         refresh(store: store, gifts: gifts)
         await ArrivalNotice.sync(store: store, closures: closures, gifts: gifts)
+        if !store.today.isEmpty { MomentReminder.clearToday() }
+        await MomentReminder.sync(store: store)
     }
 }

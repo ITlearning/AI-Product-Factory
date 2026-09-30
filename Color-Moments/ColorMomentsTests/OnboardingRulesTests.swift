@@ -53,7 +53,10 @@ final class OnboardingRulesTests: XCTestCase {
 
     func testFullFlow() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true),
-                       [.intro, .firstPebble, .arrival, .cloud, .howTo, .start])
+                       [.intro, .firstPebble, .arrival, .reminder, .cloud, .howTo, .collection, .start])
+        XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true, asksPlace: true),
+                       [.intro, .firstPebble, .place, .arrival, .reminder, .cloud, .howTo, .collection, .start],
+                       "찍은 곳은 첫 조약돌을 본 바로 뒤 — 사진 옆에 무엇이 붙는지 이어서 보여 준다")
     }
 
     func testDeniedOrEmptyLibrarySkipsFirstPebble() {
@@ -63,17 +66,30 @@ final class OnboardingRulesTests: XCTestCase {
         XCTAssertFalse(OnboardingFlow.skipsFirstPebble(access: .notDetermined, recentCount: nil),
                        "아직 묻지 않았으면 그 단계에서 묻는다")
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: true, asksArrival: true),
-                       [.intro, .arrival, .cloud, .howTo, .start])
+                       [.intro, .arrival, .reminder, .cloud, .howTo, .collection, .start])
     }
 
     func testCloudRecordsReplaceFirstPebbleWithContinuing() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: true, skipsFirstPebble: false, asksArrival: true),
-                       [.intro, .continuing, .arrival, .howTo, .start])
+                       [.intro, .continuing, .arrival, .reminder, .howTo, .collection, .start])
     }
 
     func testArrivalStepOnlyWhenNotAsked() {
         XCTAssertFalse(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: false)
             .contains(.arrival))
+    }
+
+    func testEveryFlowEndsWithHowToThenCollectionThenStart() {
+        for continuing in [false, true] {
+            for skips in [false, true] {
+                for asks in [false, true] {
+                    let steps = OnboardingFlow.steps(continuing: continuing, skipsFirstPebble: skips, asksArrival: asks)
+                    XCTAssertEqual(Array(steps.suffix(3)), [.howTo, .collection, .start],
+                                   "continuing: \(continuing) skips: \(skips) asks: \(asks)")
+                    XCTAssertEqual(steps.filter { $0 == .collection }.count, 1)
+                }
+            }
+        }
     }
 
     func testRemoteDayCountExcludesImported() {

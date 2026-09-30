@@ -17,11 +17,15 @@ public final class CoalescingWriter: @unchecked Sendable {
     }
 
     /// performExpiringActivity 는 블록이 도는 동안만 붙잡는다 — 놓을 때까지 블록을 세워 둔다.
+    /// 붙잡는 블록은 부른 쪽 QoS 를 물려받는다 — 메인에서 부르면 높은 QoS 스레드가 utility 쓰기 큐를 기다리는
+    /// 우선순위 역전(Thread Performance Checker)이 된다. 쓰기 큐와 같은 utility 에서 시작한다.
     public static func expiringActivity(_ reason: String) -> Release {
         let done = DispatchSemaphore(value: 0)
-        ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { expired in
-            if expired { done.signal(); return }
-            done.wait()
+        DispatchQueue.global(qos: .utility).async {
+            ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { expired in
+                if expired { done.signal(); return }
+                done.wait()
+            }
         }
         return { done.signal() }
     }
@@ -75,6 +79,15 @@ public final class CoalescingWriter: @unchecked Sendable {
         }
     }
 
+    public func flushed() async -> Bool {
+        await withCheckedContinuation { done in
+            queue.async {
+                self.drain()
+                done.resume(returning: !self.lastWriteFailed)
+            }
+        }
+    }
+
     /// 밀린 쓰기가 디스크에 닿은 뒤 같은 큐에서 work 를 돌린다 — 다른 파일이 이 파일보다 먼저 남으면 안 될 때.
     public func then(_ work: @escaping @Sendable () -> Void) {
         let release = hold()
@@ -90,7 +103,12 @@ public final class CoalescingWriter: @unchecked Sendable {
         let make = pending
         pending = nil
         lock.unlock()
-        guard let make, let data = make() else { return }
+        guard let make else { return }
+        guard let data = make() else {
+            lastWriteFailed = true
+            print("CoalescingWriter: \(url.lastPathComponent) 인코딩 실패")
+            return
+        }
         do {
             try data.write(to: url, options: .atomic)
             lastWriteFailed = false

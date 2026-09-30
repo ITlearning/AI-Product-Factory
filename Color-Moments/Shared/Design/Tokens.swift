@@ -16,6 +16,9 @@ public enum Tone {
 
     public static let hairline = Color.white.opacity(0.24)
 
+    /// 색을 아직 보여 주면 안 되는 자리(닫히기 전 하루의 사진 로딩 자리·점).
+    public static let veil = Color(white: 0.16)
+
     public static let amber = Color(red: 1, green: 0xD6 / 255, blue: 0x40 / 255)
 
     /// 온보딩 배경 — 받은 조약돌이 없을 때의 따뜻한 중간 톤(어둡게 눌러 쓴다).
@@ -100,6 +103,8 @@ public enum Face {
     public static let line = sans(15)
     public static let today = sans(15)
     public static let caption = sans(13)
+    /// 아래 탭바 라벨.
+    public static let tab = sans(11)
     public static let time = sans(12)
     public static let action = actionBold(17)
     /// 온보딩 주 버튼 — 헤더와 같이 쓰던 lineCeremony(17.5) 대신, 버튼만 굵게.
@@ -120,6 +125,8 @@ public enum Shape2 {
     public static let pill: CGFloat = 100
 
     public static let pebbleRatio: CGFloat = 0.70
+    /// 셰이더 조약돌 지름 = PebbleView 높이 × 이 값 — 예전 둥근 사각형과 눈에 보이는 덩어리가 비슷하게.
+    public static let softDiameter: CGFloat = 0.70
 
     public static let minTouch: CGFloat = 44
 }

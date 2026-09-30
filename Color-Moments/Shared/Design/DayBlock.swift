@@ -160,7 +160,7 @@ public struct DayBlock: View {
             let shape = RoundedRectangle(cornerRadius: radius * k, style: .continuous)
             ZStack(alignment: .bottom) {
 
-                ShotThumbnail(moment: m, maxPixel: Self.cardPixels)
+                ShotThumbnail(moment: m, maxPixel: Self.cardPixels, hidesColor: !sealed)
                 if front {
 
                     LinearGradient(colors: [.clear, .black.opacity(0.55)],
@@ -199,11 +199,15 @@ public struct DayBlock: View {
         }
     }
 
-    private var subtitle: String {
+    private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "ko_KR")
         f.dateFormat = "M월 d일"
-        let date = moments.first.map { f.string(from: $0.capturedAt) } ?? ""
+        return f
+    }()
+
+    private var subtitle: String {
+        let date = moments.first.map { Self.dateFormatter.string(from: $0.capturedAt) } ?? ""
         return "\(date) · \(moments.count)개"
     }
 }

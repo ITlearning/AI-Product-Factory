@@ -14,7 +14,7 @@ public struct CompactDayRow: View {
 
     public var body: some View {
         HStack(spacing: 14) {
-            PebbleView(moments: pebbleMoments, height: Self.height)
+            PebbleView(moments: pebbleMoments, height: Self.height, glow: .grid)
             VStack(alignment: .leading, spacing: 3) {
                 if let named = PebbleNaming.name(for: pebbleMoments) {
                     Text(named.name).font(Face.nameCompact).foregroundStyle(Tone.primary)
@@ -25,11 +25,15 @@ public struct CompactDayRow: View {
         }
     }
 
-    private var subtitle: String {
+    private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "ko_KR")
         f.dateFormat = "M월 d일"
-        let date = moments.first.map { f.string(from: $0.capturedAt) } ?? ""
+        return f
+    }()
+
+    private var subtitle: String {
+        let date = moments.first.map { Self.dateFormatter.string(from: $0.capturedAt) } ?? ""
         return "\(date) · \(moments.count)개"
     }
 }

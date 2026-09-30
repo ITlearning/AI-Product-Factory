@@ -9,8 +9,9 @@ struct KeepsakeShareSheet: View {
     @State private var selection: Moment.ID?
     // 카드용 사진(긴 변 1600px)은 고른 장과 양옆만 들고 있는다. 값이 nil 이면 불러왔지만 없는 사진(색 면).
     @State private var photos: [Moment.ID: UIImage?] = [:]
-    @State private var rendered: (id: Moment.ID, card: RenderedCard)?
-    @State private var presented = false
+    @State private var packing = false
+    @State private var unpackable: Set<Moment.ID> = []
+    @State private var pebbleDrawn: Bool?
 
     init(dayKey: String, store: DayStore, viewingID: Moment.ID? = nil) {
         self.dayKey = dayKey
@@ -21,23 +22,20 @@ struct KeepsakeShareSheet: View {
     private var dayPhotos: [Moment] { store.moments(on: dayKey) }
     private var pebbleMoments: [Moment] { store.pebbleMoments(on: dayKey) }
     private var pebbleName: String { PebbleNaming.name(for: pebbleMoments)?.name ?? "몽돌" }
-    private var current: RenderedCard? {
-        guard selection != nil else { return RenderedCard(card: nil) }
-        return rendered?.id == selection ? rendered?.card : nil
-    }
-
     var body: some View {
         ZStack {
             Tone.base.ignoresSafeArea()
             VStack(spacing: 20) {
                 Spacer().frame(height: 12)
                 pages
-                KeepsakeShareButton(rendered: current, previewTitle: "몽돌 카드",
-                                    message: Keepsake.shareText(pebbleName: pebbleName, appStoreURL: Keepsake.appStoreURL))
+                shareButton
                 Spacer().frame(height: 12)
             }
         }
-        .task(id: selection) { await prepare() }
+        .task(id: selection) {
+            guard let id = selection else { return }
+            await load(around: id)
+        }
     }
 
     private var pages: some View {
@@ -70,22 +68,49 @@ struct KeepsakeShareSheet: View {
         .padding(.horizontal, 40)
     }
 
-    private func prepare() async {
-        guard let id = selection, let m = dayPhotos.first(where: { $0.id == id }) else {
-            rendered = nil
+    @ViewBuilder
+    private var shareButton: some View {
+        Group {
+            if packing {
+                Text(Keepsake.packingText).font(Face.guide).foregroundStyle(Tone.secondary)
+            } else if let id = selection, unpackable.contains(id) {
+                Text("카드를 만들 수 없어요").font(Face.guide).foregroundStyle(Tone.secondary)
+            } else {
+                let ready = selection.map { photos[$0] != nil } ?? false
+                Button { Task { await pack() } } label: {
+                    Text("건네기")
+                        .font(Face.guide)
+                        .foregroundStyle(Tone.primary)
+                        .padding(.horizontal, 24)
+                        .frame(minHeight: Shape2.minTouch)
+                        .background(.white.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(!ready)
+                .opacity(ready ? 1 : 0.5)
+            }
+        }
+        .frame(minHeight: Shape2.minTouch)
+    }
+
+    /// 카드는 건넬 때만 굽는다 — ImageRenderer 는 메인 전용이라, 넘길 때마다 구우면 넘길 때마다 멈춘다.
+    /// 포장 문구가 먼저 그려진 뒤에 굽는다.
+    private func pack() async {
+        guard !packing, let id = selection, let m = dayPhotos.first(where: { $0.id == id }), let loaded = photos[id] else { return }
+        packing = true
+        defer { packing = false }
+        await FramePause.next()
+        await FramePause.next()
+        if pebbleDrawn == nil { pebbleDrawn = CardExporter.pebbleRenders(pebbleMoments) }
+        let raw = pebbleDrawn == true
+            ? CardExporter.renderRaw(dayKey: dayKey, pebbleMoments: pebbleMoments, face: m, photo: loaded) : nil
+        guard let card = await CardExporter.prepare(raw, checksBlank: false) else {
+            unpackable.insert(id)
             return
         }
-        if !presented {
-            await RenderedCard.afterPresentation()
-            presented = true
-        }
-        await load(around: id)
-        guard !Task.isCancelled, selection == id, let loaded = photos[id] else { return }
-        // 넘기는 도중(다른 장이 골라짐)엔 굽지 않는다 — ImageRenderer 는 메인에서 돈다.
-        let raw = CardExporter.renderRaw(dayKey: dayKey, pebbleMoments: pebbleMoments, face: m, photo: loaded)
-        let card = RenderedCard(card: await CardExporter.prepare(raw, region: CardExporter.blankRegion(photo: loaded)))
-        guard !Task.isCancelled, selection == id else { return }
-        rendered = (id, card)
+        guard selection == id else { return }
+        CardSharing.present(image: card.image,
+                            message: Keepsake.shareText(pebbleName: pebbleName, appStoreURL: Keepsake.appStoreURL))
     }
 
     private func load(around id: Moment.ID) async {
@@ -139,7 +164,7 @@ struct KeepsakeCardStage: View {
                     Text("카드를 만들 수 없어요").font(Face.guide).foregroundStyle(Tone.secondary)
                 }
             } else {
-                ProgressView().tint(Tone.secondary)
+                Text(Keepsake.packingText).font(Face.guide).foregroundStyle(Tone.secondary)
             }
         }
     }
@@ -173,5 +198,20 @@ struct KeepsakeShareButton: View {
             }
         }
         .frame(minHeight: Shape2.minTouch)
+    }
+}
+
+/// 구운 카드를 시스템 공유 시트로 — ShareLink 는 누르는 순간 파일이 있어야 해서, 누른 뒤에 굽는 흐름엔 못 쓴다.
+@MainActor
+enum CardSharing {
+    static func present(image: UIImage, message: String?) {
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        guard var top = scene?.keyWindow?.rootViewController else { return }
+        while let next = top.presentedViewController { top = next }
+        let items: [Any] = [image] + (message.map { [$0] } ?? [])
+        let sheet = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        sheet.popoverPresentationController?.sourceView = top.view
+        top.present(sheet, animated: true)
     }
 }

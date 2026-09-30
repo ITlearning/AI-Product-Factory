@@ -37,6 +37,9 @@ final class FontSubsetTests: XCTestCase {
             }
         }
 
+        // 이름은 날짜·제철에 따라 돌아서 색만 훑으면 일부만 나온다 — 목록 전체도 본다.
+        for named in PebbleNaming.allNames { needed.formUnion(named.name.unicodeScalars) }
+
         for w in BundledWordSource.load()?.words ?? [] { needed.formUnion(w.word.unicodeScalars) }
 
         let missing = needed.filter { !glyphExists($0, in: font) }.map(String.init).sorted()
@@ -56,7 +59,7 @@ final class FontSubsetTests: XCTestCase {
             ?? Bundle.main.url(forResource: "NanumMyeongjo-Subset", withExtension: "ttf"),
             "번들에서 서브셋 파일을 못 찾았다")
         let bytes = try Data(contentsOf: url).count
-        XCTAssertLessThan(bytes, 60_000,
+        XCTAssertLessThan(bytes, 100_000,
             "폰트가 \(bytes / 1024)KB — 전체 한글이 들어간 것 같다. 서브셋으로 되돌릴 것")
     }
 

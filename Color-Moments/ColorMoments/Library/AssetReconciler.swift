@@ -165,9 +165,11 @@ enum AssetReconciler {
         let doomed = removalIDs(snapshot: snapshot, remove: plan.remove, current: store.moments)
         let removed = snapshot.filter { doomed.contains($0.id) }
         store.remove(ids: doomed)
+        let remainingBeforeFlush = store.moments
         // 삭제가 디스크에 닿기 전에 사본을 지우면 kill 뒤 되살아난 기록이 빈 파일을 가리킨다.
         guard await store.flushAfterLoad() else { return }
-        let files = leftoverFiles(removed: removed, remaining: store.moments)
+        // 기다리는 사이 메모리에서만 빠진 기록(원격 삭제 등)은 아직 디스크에 있다 — 그 파일도 쓰는 중으로 본다.
+        let files = leftoverFiles(removed: removed, remaining: remainingBeforeFlush + store.moments)
         guard !files.isEmpty else { return }
         await Task.detached(priority: .utility) {
             for name in files { try? FileManager.default.removeItem(at: ShotImage.url(name)) }
@@ -209,56 +211,158 @@ enum AssetReconciler {
     }
 }
 
-/// 사진 앱이 바뀔 때(다른 사진에서 지워도) 알려주는 옵저버. 앱 시작 때 한 번만 등록한다.
+/// 사진 앱이 바뀔 때(다른 사진에서 지워도) 알려주는 옵저버. 사진 권한이 생긴 뒤에만 켠다.
 final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
 
-    private let store: DayStore
-    private var fetchResult: PHFetchResult<PHAsset>?
-    private var fetchGeneration = 0
+    /// 사진 앱에 닿는 부분 — 테스트는 가짜로 바꾼다.
+    struct Env {
+        var access: () -> PHAuthorizationStatus
+        var register: (PHPhotoLibraryChangeObserver) -> Void
+        var unregister: (PHPhotoLibraryChangeObserver) -> Void
 
-    init(store: DayStore) {
+        static let live = Env(
+            access: { PHPhotoLibrary.authorizationStatus(for: .readWrite) },
+            register: { PHPhotoLibrary.shared().register($0) },
+            unregister: { PHPhotoLibrary.shared().unregisterChangeObserver($0) }
+        )
+    }
+
+    static let settleDelay: Duration = .milliseconds(400)
+
+    private let store: DayStore
+    private let env: Env
+    private(set) var isActive = false
+    private var fetchResult: PHFetchResult<PHAsset>?
+    private var trackedIDs: Set<String> = []
+    private var fetchGeneration = 0
+    private var settling: Task<Void, Never>?
+    private var settleAgain = false
+    private var appliedChanges = 0
+    private var refetchNeeded = false
+    private var bumpAllWhenQuiet = false
+
+    init(store: DayStore, env: Env = .live) {
         self.store = store
+        self.env = env
         super.init()
-        PHPhotoLibrary.shared().register(self)
-        Task { @MainActor [weak self] in await self?.refreshFetchResult() }
     }
 
     deinit {
-        PHPhotoLibrary.shared().unregisterChangeObserver(self)
+        if isActive { env.unregister(self) }
     }
 
-    // 사진 앱이 바뀔 때마다(iCloud 사진이 내려오는 동안 잦다) 수천 개를 다시 조회한다 — 메인 밖에서.
+    static func observes(_ status: PHAuthorizationStatus) -> Bool {
+        status == .authorized || status == .limited
+    }
+
+    /// 여러 번 불러도 한 번만 켠다. 권한 미결정에서 등록하면 그 자리에서 사진 권한 창이 뜬다.
+    @MainActor
+    func activateIfAllowed() {
+        guard !isActive, Self.observes(env.access()) else { return }
+        isActive = true
+        env.register(self)
+        Task { @MainActor [weak self] in await self?.refreshFetchResult() }
+    }
+
     @MainActor
     private func refreshFetchResult() async {
         fetchGeneration += 1
         let generation = fetchGeneration
-        let ids = Array(Set(store.moments.compactMap(\.assetID)))
-        guard !ids.isEmpty else { fetchResult = nil; return }
+        let appliedBefore = appliedChanges
+        refetchNeeded = false
+        let ids = Set(store.moments.compactMap(\.assetID))
+        guard !ids.isEmpty else { fetchResult = nil; trackedIDs = []; return }
         let result = await Task.detached(priority: .utility) {
-            PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+            PHAsset.fetchAssets(withLocalIdentifiers: Array(ids), options: nil)
         }.value
         // 조회가 겹치면 늦게 끝난 옛 조회가 새 추적 목록을 덮는다 — 마지막으로 시작한 것만 남긴다.
         guard generation == fetchGeneration else { return }
         fetchResult = result
+        trackedIDs = ids
+        // 기다리는 사이 옛 결과에 적용한 변경이 새 결과보다 늦었을 수 있다 — 다음 묶음에서 다시 조회한다.
+        if appliedChanges != appliedBefore {
+            refetchNeeded = true
+            scheduleSettle()
+        }
+    }
+
+    /// 추적 결과에 대한 변경 — `PHFetchResultChangeDetails` 에서 판정에 쓰는 것만.
+    struct TrackedChange: Equatable {
+        var changed: [String] = []
+        var inserted: [String] = []
+        var removedCount = 0
+        var incremental = true
+    }
+
+    struct ChangeEffect: Equatable {
+        var bumpIDs: Set<String> = []
+        /// 어떤 사진이 바뀐 건지 모른다 — 알림이 잦아든 뒤 뜬 칸에 한 번 다시 물어본다(원본이 늦게 내려온 칸).
+        var bumpsAllWhenQuiet = false
+        var reconciles = false
+    }
+
+    /// 순수 함수 — 변경 한 번에 할 일. 제한 접근에서는 선택 해제도 삭제로 오므로 정리는 전체 접근일 때만.
+    static func effect(tracking: Bool, details: TrackedChange?, fullAccess: Bool) -> ChangeEffect {
+        guard tracking, let details else { return ChangeEffect(bumpsAllWhenQuiet: true) }
+        guard details.incremental else { return ChangeEffect(bumpsAllWhenQuiet: true, reconciles: fullAccess) }
+        return ChangeEffect(bumpIDs: Set(details.changed + details.inserted),
+                            reconciles: fullAccess && details.removedCount > 0)
     }
 
     func photoLibraryDidChange(_ changeInstance: PHChange) {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            // 어떤 자산이 바뀐 건지는 모른다 — iCloud 사진이 막 내려왔을 수도 있으니 뜬 화면에 다시 물어보라고만 알린다.
-            ShotImage.generation.bump()
-            // 제한 접근에서는 선택 해제도 removedObjects 로 온다 — 지운 게 아니므로 전체 접근일 때만 반영.
-            // 직접 지우지 않고 reconcile() 을 부른다 — cloudID 재조회·상한 판정을 한 곳에서만 한다.
-            if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized,
-               let fetchResult = self.fetchResult,
-               let details = changeInstance.changeDetails(for: fetchResult),
-               !details.removedObjects.isEmpty {
+        // 받은 순서대로 적용해야 fetchResultAfterChanges 가 이어진다 — Task 는 순서를 보장하지 않는다.
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated { self?.apply(changeInstance) }
+        }
+    }
+
+    @MainActor
+    private func apply(_ change: PHChange) {
+        let tracking = fetchResult != nil
+        var tracked: TrackedChange?
+        if let current = fetchResult, let details = change.changeDetails(for: current) {
+            fetchResult = details.fetchResultAfterChanges
+            appliedChanges += 1
+            tracked = TrackedChange(changed: details.changedObjects.map(\.localIdentifier),
+                                    inserted: details.insertedObjects.map(\.localIdentifier),
+                                    removedCount: details.removedObjects.count,
+                                    incremental: details.hasIncrementalChanges)
+        }
+        let effect = Self.effect(tracking: tracking, details: tracked, fullAccess: env.access() == .authorized)
+        for id in effect.bumpIDs { ShotImage.generation.bump(assetID: id) }
+        if effect.bumpsAllWhenQuiet { bumpAllWhenQuiet = true }
+        // 직접 지우지 않고 reconcile() 을 부른다 — cloudID 재조회·상한 판정을 한 곳에서만 한다.
+        if effect.reconciles {
+            Task { @MainActor [weak self] in
+                guard let self else { return }
                 await AssetReconciler.reconcile(store: self.store)
+                self.scheduleSettle()
             }
-            // 추적 목록을 지금 저장소 기준으로 다시 세운다 — 새로 입양된 assetID 도 다음 변경부터 잡힌다.
-            await self.refreshFetchResult()
-            // iCloud 사진이 늦게 내려와도 여기서 cloudID 를 다시 찾는다.
-            Task { await CloudIDMapper.refresh(store: self.store) }
+        }
+        scheduleSettle()
+    }
+
+    /// iCloud 사진이 내려오는 동안 알림이 잇달아 온다 — cloudID 찾기와 추적 목록 재조회는 모아서 한 번씩.
+    @MainActor
+    private func scheduleSettle() {
+        guard settling == nil else { settleAgain = true; return }
+        settling = Task { @MainActor [weak self] in await self?.settle() }
+    }
+
+    @MainActor
+    private func settle() async {
+        repeat {
+            try? await Task.sleep(for: Self.settleDelay)
+            settleAgain = false
+            // 먼저 찾아야 방금 이어 붙인 assetID 가 이번 재조회에 들어간다.
+            await CloudIDMapper.refresh(store: store)
+            if refetchNeeded || Set(store.moments.compactMap(\.assetID)) != trackedIDs { await refreshFetchResult() }
+        } while settleAgain
+        settling = nil
+        // 잇달아 올 때 매번 올리면 불러오던 칸이 계속 끊긴다 — 잦아든 뒤 한 번만.
+        if bumpAllWhenQuiet {
+            bumpAllWhenQuiet = false
+            ShotImage.generation.bump()
         }
     }
 }

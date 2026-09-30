@@ -32,6 +32,7 @@ final class CloudSync: CKSyncEngineDelegate {
         store.onLocalChange = { [weak self] changes in self?.enqueue(changes) }
         closures.onLocalChange = { [weak self] key in self?.enqueueDay(key) }
         gifts.onLocalChange = { [weak self] key in self?.enqueueDay(key) }
+        PebbleNaming.stamps.onLocalChange = { [weak self] key in self?.enqueueDay(key) }
 
         if state == nil { enqueueEverything() }
     }
@@ -71,11 +72,13 @@ final class CloudSync: CKSyncEngineDelegate {
         saveZone()
         enqueue(store.moments.map { .upsert($0.id) })
         let keys = Set(store.dayKeys).union(closures.closedDays.keys).union(gifts.giftedDayKeys)
+            .union(PebbleNaming.stamps.names.keys)
         for key in keys.sorted() where closures.closedAt(key) != nil || gifts.isGifted(key) { enqueueDay(key) }
     }
 
     private func dayState(_ key: String) -> SyncRecords.DayState {
-        SyncRecords.DayState(dayKey: key, closedAt: closures.closedAt(key), gifted: gifts.isGifted(key))
+        SyncRecords.DayState(dayKey: key, closedAt: closures.closedAt(key), gifted: gifts.isGifted(key),
+                             pebbleName: PebbleNaming.stamps.name(on: key))
     }
 
     private func record(for id: CKRecord.ID) -> CKRecord? {
@@ -148,10 +151,13 @@ final class CloudSync: CKSyncEngineDelegate {
         let before = dayState(d.dayKey)
         if let at = d.closedAt { closures.applyRemote(dayKey: d.dayKey, closedAt: at) }
         if d.gifted { gifts.applyRemote(gifted: d.dayKey) }
-        // 이 기기가 더 이른 마무리나 받은 증정을 알고 있으면 다시 올린다.
+        if let name = d.pebbleName { PebbleNaming.stamps.applyRemote(dayKey: d.dayKey, name: name) }
+        // 이 기기가 더 이른 마무리나 받은 증정, 앞선 이름 도장을 알고 있으면 다시 올린다.
         let mine = dayState(d.dayKey)
-        if mine.gifted != d.gifted || !Self.sameInstant(mine.closedAt, d.closedAt) { enqueueDay(d.dayKey) }
-        return mine.gifted != before.gifted || !Self.sameInstant(mine.closedAt, before.closedAt)
+        if mine.gifted != d.gifted || !Self.sameInstant(mine.closedAt, d.closedAt) || mine.pebbleName != d.pebbleName {
+            enqueueDay(d.dayKey)
+        }
+        return mine.gifted != before.gifted || !Self.sameInstant(mine.closedAt, before.closedAt) || mine.pebbleName != before.pebbleName
     }
 
     // CloudKit 은 Date 를 밀리초로 자른다 — 정확히 같다로 비교하면 같은 마무리를 끝없이 다시 올린다.

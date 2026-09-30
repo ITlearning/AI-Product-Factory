@@ -92,6 +92,86 @@ final class CoalescingWriterTests: XCTestCase {
         XCTAssertFalse(written)
     }
 
+    /// 입양·가져오기는 이 답을 보고 원본을 지운다 — 쓰기가 디스크에 닿기 전에 답하면 안 되고, 기다리는 동안 메인은 풀려 있어야 한다.
+    @MainActor
+    func testFlushedAnswersOnlyAfterPendingWriteLands() async throws {
+        let url = tempURL("flushed")
+        let writer = CoalescingWriter.forFile(url)
+        let gate = DispatchSemaphore(value: 0)
+        // 메인을 막는 구현으로 돌아가면 아래 signal 에 영영 못 닿는다 — 멈추지 않고 실패하게.
+        DispatchQueue.global().asyncAfter(deadline: .now() + 2) { gate.signal() }
+        writer.write { gate.wait(); return Data("A".utf8) }
+        let answered = LockedBox(false)
+        let flushing = Task { @MainActor () -> Bool in
+            let ok = await writer.flushed()
+            answered.set(true)
+            return ok
+        }
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertFalse(answered.get(), "쓰기가 끝나기 전에 답이 왔거나 메인이 막혔다")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        gate.signal()
+        let ok = await flushing.value
+        XCTAssertTrue(ok)
+        XCTAssertEqual((try? Data(contentsOf: url)).map { String(decoding: $0, as: UTF8.self) }, "A")
+    }
+
+    func testFlushedReportsFailedWriteUntilNextSuccess() async throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nodir-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
+        let writer = CoalescingWriter.forFile(dir.appendingPathComponent("x.json"))
+        writer.write { Data("A".utf8) }
+        let failed = await writer.flushed()
+        XCTAssertFalse(failed, "폴더가 없어 못 썼다 — 호출부가 파일을 지우면 안 된다")
+        let stillFailed = await writer.flushed()
+        XCTAssertFalse(stillFailed, "밀린 게 없어도 마지막 실패는 그대로 알린다")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        writer.write { Data("B".utf8) }
+        let written = await writer.flushed()
+        XCTAssertTrue(written)
+    }
+
+    func testFlushReportsFailureWhenEncodingFails() async {
+        let writer = CoalescingWriter.forFile(tempURL("unencodable"))
+        writer.write { nil }
+        let answered = await writer.flushed()
+        XCTAssertFalse(answered, "인코딩을 못 했으면 디스크에 없다 — 호출부가 사본을 지우면 안 된다")
+        writer.write { nil }
+        XCTAssertFalse(writer.flush())
+    }
+
+    /// 방금 넣은 기록이 디스크에 닿은 뒤에만 true — 그 전엔 답하지 않고, 기다리는 동안 메인을 막지 않는다.
+    @MainActor
+    func testFlushAfterLoadAnswersAfterMomentLandsWithoutBlockingMain() async throws {
+        let url = tempURL("days-async")
+        let store = DayStore(fileURL: url, closures: DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        func onDisk() -> Int {
+            ((try? JSONSerialization.jsonObject(with: Data(contentsOf: url))) as? [Any])?.count ?? 0
+        }
+        let gate = DispatchSemaphore(value: 0)
+        let blocking = LockedBox(false)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 2) { gate.signal() }
+        CoalescingWriter.forFile(url).then { blocking.set(true); gate.wait() }
+        // then 은 막기 전에 밀린 쓰기부터 비운다 — 큐가 막힌 걸 본 뒤에 넣어야 기록이 gate 뒤에 쓰인다.
+        // 메인을 세마포어로 세우면 utility 큐를 기다리는 우선순위 역전 — 잠깐씩 쉬며 본다.
+        for _ in 0..<200 where !blocking.get() { try await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertTrue(blocking.get())
+        store.add(Moment(capturedAt: Date(), colorHex: "#112233", fileName: "a.jpg", source: .app))
+        let answered = LockedBox(false)
+        let flushing = Task { @MainActor () -> Bool in
+            let ok = await store.flushAfterLoad()
+            answered.set(true)
+            return ok
+        }
+        try await Task.sleep(nanoseconds: 150_000_000)
+        XCTAssertFalse(answered.get(), "기록이 디스크에 닿기 전에 답이 왔거나 메인이 막혔다")
+        XCTAssertEqual(onDisk(), 0)
+        gate.signal()
+        let written = await flushing.value
+        XCTAssertTrue(written)
+        XCTAssertEqual(onDisk(), 1)
+    }
+
     func testDefaultExpiringActivityReleases() {
         let release = CoalescingWriter.expiringActivity("test")
         release()

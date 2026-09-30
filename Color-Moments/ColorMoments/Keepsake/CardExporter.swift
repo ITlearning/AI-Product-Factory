@@ -36,6 +36,22 @@ enum CardExporter {
         return bake(PebbleCard(dayKey: dayKey, pebbleMoments: pebbleMoments, face: face, photo: photo))
     }
 
+    /// 렌더러가 조약돌을 그리는지 — 조약돌만 작게 굽어 불투명한 점이 있는지 본다. 색과 무관하다:
+    /// 카드 한 점과 색을 비교하면 둥근 돌로 그린 어두운 조약돌(그믐·먹빛)을 빈 카드로 오판했다(분산 7.7, 기준 50).
+    @MainActor
+    static func pebbleRenders(_ moments: [Moment]) -> Bool {
+        guard !moments.isEmpty else { return false }
+        let renderer = ImageRenderer(content: PebbleView(moments: moments, height: PebbleCardLayout.pebbleHeight, onPhoto: true))
+        renderer.scale = 1
+        guard let cg = renderer.cgImage, let px = pixels(cg, CGRect(x: 0, y: 0, width: cg.width, height: cg.height)) else { return false }
+        var opaque = 0, n = 0
+        for i in stride(from: 3, to: px.data.count, by: 16) {
+            if px.data[i] > 128 { opaque += 1 }
+            n += 1
+        }
+        return n > 0 && Double(opaque) / Double(n) > 0.05
+    }
+
     @MainActor
     static func renderHandfulRaw(month: String, today: String = Moment.dayKey(for: Date()),
                                  pebbleGroups: [[Moment]]) -> UIImage? {
@@ -45,7 +61,9 @@ enum CardExporter {
 
     @MainActor
     private static func bake<V: View>(_ card: V) -> UIImage? {
-        let renderer = ImageRenderer(content: card.frame(width: pointSize.width, height: pointSize.height))
+        // 셰이더의 가장자리·입자 크기가 displayScale 을 본다 — 굽는 배율과 맞춘다.
+        let renderer = ImageRenderer(content: card.frame(width: pointSize.width, height: pointSize.height)
+            .environment(\.displayScale, 3))
         renderer.scale = 3
         return renderer.uiImage
     }
@@ -58,10 +76,11 @@ enum CardExporter {
     }
 
     /// 빈 판정·PNG 인코딩·미리보기 축소는 메인 밖에서. 비었거나 인코딩이 실패하면 nil.
-    static func prepare(_ image: UIImage?, region: CGRect = pebbleRegion) async -> Prepared? {
+    /// checksBlank: false — 조약돌이 그려지는지 pebbleRenders 로 이미 봤다.
+    static func prepare(_ image: UIImage?, region: CGRect = pebbleRegion, checksBlank: Bool = true) async -> Prepared? {
         guard let image else { return nil }
         return await Task.detached(priority: .userInitiated) { () -> Prepared? in
-            guard !isBlank(image, region: region), let data = image.pngData() else { return nil }
+            guard !(checksBlank && isBlank(image, region: region)), let data = image.pngData() else { return nil }
             let side = CGSize(width: pointSize.width / 2, height: pointSize.height / 2)
             let format = UIGraphicsImageRendererFormat()
             format.scale = 2

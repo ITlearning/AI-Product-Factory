@@ -21,9 +21,64 @@ final class WordPickerTests: XCTestCase {
         XCTAssertEqual(pick(dusk, ["ocean", "sky"], words), ["sea"])
     }
 
-    func testNothingFitsMeansNothing() {
-        XCTAssertEqual(pick(dusk, ["laptop"], [w("sea", subjects: ["ocean"])]), [], "맞는 말이 없으면 비워 둔다")
-        XCTAssertEqual(pick(dusk, [], [w("sea", subjects: ["ocean"])]), [])
+    func testNothingInThePhotoFallsBackToTheMoment() {
+        let words = [w("sea", subjects: ["ocean"]), w("duskword", times: [.dusk], subjects: []).asMoment,
+                     w("moonhalo", times: [.dusk], subjects: ["moon"])]
+        XCTAssertEqual(pick(dusk, ["laptop"], words), ["duskword"], "맞는 대상이 없으면 그 때의 말로 — 비워 두지 않는다")
+        XCTAssertEqual(pick(dusk, [], words), ["duskword"])
+    }
+
+    func testMomentFallbackPrefersRealWeatherThenTimeThenSeason() {
+        let rainy = PhotoContext(date: Date(timeIntervalSince1970: 18 * 3600), weather: .rain, calendar: utc)
+        let words = [w("rainword", weathers: [.rain], subjects: []).asMoment,
+                     w("duskword", times: [.dusk], subjects: []).asMoment,
+                     w("winterword", seasons: [.winter], subjects: []).asMoment]
+        XCTAssertEqual(pick(rainy, ["laptop"], words).first, "rainword")
+        XCTAssertEqual(pick(dusk, ["laptop"], words).first, "duskword", "날씨를 모르면 비 말은 안 쓴다")
+        XCTAssertEqual(pick(dusk, ["laptop"], [words[2]]), ["winterword"])
+        XCTAssertEqual(pick(dusk, ["laptop"], [w("dawnword", times: [.dawn], subjects: []).asMoment]), [],
+                       "때의 말도 시간대는 풀지 않는다")
+    }
+
+    func testBannedWordNeverComesBack() {
+        let words = [w("sea", subjects: ["ocean"]), w("shore", subjects: ["ocean"]),
+                     w("duskword", times: [.dusk], subjects: []).asMoment]
+        XCTAssertEqual(pick(dusk, ["ocean"], words, recent: ["shore"]).first, "sea")
+        XCTAssertEqual(WordPicker.candidates(for: dusk, labels: ["ocean"], in: words, excluding: [], seed: "s", banned: ["sea"]).map(\.id),
+                       ["shore"], "버린 단어는 최근 단어처럼 풀리지 않는다")
+        XCTAssertEqual(WordPicker.candidates(for: dusk, labels: ["ocean"], in: words, excluding: [], seed: "s",
+                                             banned: ["sea", "shore"]).map(\.id), ["duskword"], "다 버리면 그 때의 말로")
+    }
+
+    func testModelChoicesAddSafeMomentWords() {
+        let words = [w("heat", times: [.dusk], subjects: ["land"]), w("duskword", times: [.dusk], subjects: []).asMoment,
+                     w("moonhalo", times: [.dusk], subjects: ["moon"])]
+        XCTAssertEqual(WordPicker.choices(for: dusk, labels: ["land"], in: words, excluding: [], seed: "s").map(\.id),
+                       ["heat", "duskword"], "규칙 후보가 하나여도 모델이 고를 여지 — 대상 없는 달무리는 안 들어간다")
+    }
+
+    func testMomentFallbackNeverUsesSubjectWords() {
+        XCTAssertEqual(pick(dusk, ["laptop"], [w("moonhalo", times: [.dusk], subjects: ["moon"])]), [],
+                       "대상을 말하는 단어는 대상이 찍혔을 때만")
+    }
+
+    /// 실제 단어 목록으로 — 사진에서 아무것도 못 알아봐도 어느 시각·계절·날씨든 단어가 붙는다.
+    func testBundledWordsAlwaysGiveAWord() async throws {
+        let words = await BundledWordSource().words()
+        XCTAssertFalse(words.isEmpty)
+        let weathers: [Weather?] = [nil] + Weather.allCases
+        for hour in 0..<24 {
+            for month in [1, 4, 7, 10] {
+                var c = DateComponents(); c.year = 2026; c.month = month; c.day = 15; c.hour = hour
+                let date = utc.date(from: c)!
+                for weather in weathers {
+                    let ctx = PhotoContext(date: date, weather: weather, calendar: utc)
+                    let word = WordPicker.photoWord(for: ctx, labels: [], in: words, excluding: [], seed: "\(hour)-\(month)")
+                    XCTAssertNotNil(word, "\(hour)시 \(month)월 \(weather.map(\.rawValue) ?? "날씨 모름")에 단어가 없다")
+                    if let word { XCTAssertTrue(words.first { $0.id == word.wordID }?.moment == true, word.word) }
+                }
+            }
+        }
     }
 
     func testTimeBandIsNeverRelaxed() {
@@ -77,4 +132,8 @@ final class WordPickerTests: XCTestCase {
         let pw = try XCTUnwrap(WordPicker.photoWord(for: dusk, labels: ["sky"], in: [w("a")], excluding: [], seed: "s"))
         XCTAssertEqual(pw, PhotoWord(wordID: "a", word: "a", meaning: "뜻 a"))
     }
+}
+
+private extension WordEntry {
+    var asMoment: WordEntry { var e = self; e.moment = true; return e }
 }

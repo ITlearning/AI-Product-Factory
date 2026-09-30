@@ -332,8 +332,48 @@ public final class DayStore {
         notify([.upsert(id)])
     }
 
+    /// 방금 찍은 사진에 위치가 늦게 도착했을 때 — 이미 있으면 덮지 않는다.
+    public func setPlace(_ id: Moment.ID, _ place: Place) {
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].place == nil else { return }
+        all[i].place = place
+        save()
+        notify([.upsert(id)])
+    }
+
+    public func setPlaceWeather(_ id: Moment.ID, _ weather: PlaceWeather) {
+        guard let i = all.firstIndex(where: { $0.id == id }), var place = all[i].place, place.weather == nil else { return }
+        place.weather = weather
+        all[i].place = place
+        save()
+        notify([.upsert(id)])
+    }
+
+    public func setPlaceName(_ id: Moment.ID, _ name: String) {
+        guard let i = all.firstIndex(where: { $0.id == id }), var place = all[i].place, place.name == nil else { return }
+        place.name = name
+        all[i].place = place
+        save()
+        notify([.upsert(id)])
+    }
+
     public func setLabels(_ id: Moment.ID, _ labels: [String]) {
         guard let i = all.firstIndex(where: { $0.id == id }), all[i].labels == nil else { return }
+        all[i].labels = labels
+        save()
+        notify([.upsert(id)])
+    }
+
+    /// 「이 단어는 아니에요」 — 사진마다 한 번(WordRejections 가 지킨다). 그 밖엔 단어를 바꾸지 않는다.
+    public func replaceWord(_ id: Moment.ID, _ word: PhotoWord) {
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].word != nil, all[i].word != word else { return }
+        all[i].word = word
+        save()
+        notify([.upsert(id)])
+    }
+
+    /// 단어가 아직 없을 때만 라벨을 새로 본 것으로 바꾼다 — 단어가 붙은 뒤엔 라벨도 고정이다.
+    public func refreshLabels(_ id: Moment.ID, _ labels: [String]) {
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].word == nil, all[i].labels != labels else { return }
         all[i].labels = labels
         save()
         notify([.upsert(id)])
@@ -735,8 +775,9 @@ public final class DayStore {
     @discardableResult
     public func flushAfterLoad() async -> Bool {
         await waitUntilLoaded()
-        let written = flush()
-        return written && !isSaveBlocked
+        let blocked = isSaveBlocked
+        let written = await writer.flushed()
+        return written && !blocked && !isSaveBlocked
     }
 
     /// 지금까지의 저장이 디스크에 닿은 뒤 work 를 돌린다(메인을 막지 않는다).

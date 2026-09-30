@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// 소개 — 조약돌이 굴러와 멈추면 그 뒤로 색이 번진다.
+/// 소개 — 조약돌이 위에서 살며시 내려와 자리에 앉으면 그 뒤로 색이 번진다.
+/// 굴려서 들이지 않는다 — 둥근 돌은 빛·그늘이 그려진 돌이라 돌리면 빛까지 같이 돈다.
 struct IntroScene: View {
     let moments: [Moment]
 
@@ -18,16 +19,18 @@ struct IntroScene: View {
                 }
             }
             .blendMode(.plusLighter)
-            PebbleView(moments: moments, height: 150)
-                .offset(x: arrived || reduceMotion ? 0 : -260)
-                .rotationEffect(.degrees(arrived || reduceMotion ? 0 : -150))
+            // 뒤에 번지는 색이 이미 후광 노릇을 한다 — 둥근 돌 후광까지 겹치면 너무 밝다.
+            PebbleView(moments: moments, height: 150, glow: .bare)
+                .offset(y: arrived || reduceMotion ? 0 : -70)
+                .scaleEffect(arrived || reduceMotion ? 1 : 0.9)
                 .opacity(arrived ? 1 : 0)
         }
         .onAppear {
-            let roll: Animation = reduceMotion ? .easeOut(duration: 0.6) : .easeOut(duration: 1.6)
-            withAnimation(roll.delay(0.25)) { arrived = true }
+            // 살짝 튕기며 앉는다 — 크게 출렁이지 않게 감쇠를 넉넉히.
+            let land: Animation = reduceMotion ? .easeOut(duration: 0.6) : .spring(response: 1.0, dampingFraction: 0.72)
+            withAnimation(land.delay(0.25)) { arrived = true }
             let bloom: Animation = reduceMotion ? .easeOut(duration: 0.6) : .easeOut(duration: 2.4)
-            withAnimation(bloom.delay(reduceMotion ? 0.25 : 1.5)) { bloomed = true }
+            withAnimation(bloom.delay(reduceMotion ? 0.25 : 0.9)) { bloomed = true }
         }
     }
 }

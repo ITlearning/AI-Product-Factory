@@ -211,6 +211,28 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.labels, ["sky"])
     }
 
+    func testLabelsRefreshOnlyUntilAWordIsStamped() {
+        let m = moment(date(2026, 9, 22, 12, 0), name: "r.jpg")
+        store.add(m)
+        store.setLabels(m.id, [])
+        store.refreshLabels(m.id, ["water"])
+        XCTAssertEqual(store.moment(m.id)?.labels, ["water"], "단어가 없으면 다시 본 라벨로 바꾼다")
+        store.assignWord(m.id, PhotoWord(wordID: "yunseul", word: "윤슬", meaning: "뜻"))
+        store.refreshLabels(m.id, ["laptop"])
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.labels, ["water"], "단어가 붙은 뒤엔 고정")
+    }
+
+    func testReplaceWordOnlyChangesAStampedWord() {
+        let m = moment(date(2026, 9, 22, 12, 0), name: "w.jpg")
+        store.add(m)
+        store.replaceWord(m.id, PhotoWord(wordID: "a", word: "가", meaning: "뜻"))
+        XCTAssertNil(store.moment(m.id)?.word, "단어가 없으면 바꿀 것도 없다 — 처음 붙이기는 assignWord")
+        store.setLabels(m.id, ["sky"])
+        store.assignWord(m.id, PhotoWord(wordID: "a", word: "가", meaning: "뜻"))
+        store.replaceWord(m.id, PhotoWord(wordID: "b", word: "나", meaning: "뜻"))
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.word?.wordID, "b")
+    }
+
     func testWordWithoutLabelsIsDroppedOnLoad() throws {
         let legacy = """
         [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC","fileName":"a.jpg","source":"app",

@@ -35,7 +35,7 @@ struct PebbleWidgetView: View {
         VStack(spacing: 6) {
             switch entry.state {
             case .pebble(let latest):
-                PebbleView(moments: latest.moments, height: Self.pebbleHeight)
+                Self.pebble(latest.moments)
                 VStack(spacing: 2) {
                     if let name = latest.name {
                         Text(name).font(Face.nameCompact).foregroundStyle(Tone.primary).lineLimit(1)
@@ -43,7 +43,7 @@ struct PebbleWidgetView: View {
                     Text(latest.dateText).font(Face.caption).foregroundStyle(Tone.tertiary).monospacedDigit()
                 }
             case .arriving(let dayKey):
-                PebbleView(moments: Self.hidden(dayKey), height: Self.pebbleHeight)
+                Self.pebble(Self.hidden(dayKey))
                 Text("도착했어요").font(Face.guide).foregroundStyle(Tone.secondary)
             case .empty:
                 DashedPebble(height: Self.pebbleHeight)
@@ -51,6 +51,15 @@ struct PebbleWidgetView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .containerBackground(Tone.base, for: .widget)
+    }
+
+    @ViewBuilder
+    private static func pebble(_ moments: [Moment]) -> some View {
+        if PebbleStyle.current == .round, PebbleStyle.store.bool(forKey: SoftPebbleView.widgetDebugKey) {
+            PebbleView(moments: moments, height: pebbleHeight, glow: .grid)
+        } else {
+            LegacyPebbleView(moments: moments, height: pebbleHeight)
+        }
     }
 
     private static func hidden(_ dayKey: String) -> [Moment] {

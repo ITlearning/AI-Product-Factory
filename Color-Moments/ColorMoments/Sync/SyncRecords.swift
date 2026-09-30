@@ -11,6 +11,7 @@ enum SyncRecords {
         let dayKey: String
         let closedAt: Date?
         let gifted: Bool
+        var pebbleName: PebbleName? = nil
     }
 
     static func recordID(moment id: UUID) -> CKRecord.ID { CKRecord.ID(recordName: "m-" + id.uuidString, zoneID: zoneID) }
@@ -37,6 +38,8 @@ enum SyncRecords {
         r["longitude"] = m.place?.longitude
         r["accuracy"] = m.place?.accuracy
         r["placeName"] = m.place?.name
+        r["weatherCondition"] = m.place?.weather?.condition
+        r["weatherCelsius"] = m.place?.weather?.celsius
         r["addedAt"] = m.addedAt
         r["batchID"] = m.batchID?.uuidString
         r["cloudID"] = m.cloudID
@@ -58,7 +61,10 @@ enum SyncRecords {
         let place: Place? = {
             guard let lat = r["latitude"] as? Double, let lon = r["longitude"] as? Double,
                   let acc = r["accuracy"] as? Double else { return nil }
-            return Place(latitude: lat, longitude: lon, accuracy: acc, name: r["placeName"] as? String)
+            let weather = (r["weatherCondition"] as? String).flatMap { c in
+                (r["weatherCelsius"] as? Double).map { PlaceWeather(condition: c, celsius: $0) }
+            }
+            return Place(latitude: lat, longitude: lon, accuracy: acc, name: r["placeName"] as? String, weather: weather)
         }()
         let cloudID = r["cloudID"] as? String
         return Moment(id: id, capturedAt: capturedAt, colorHex: colorHex,
@@ -89,10 +95,13 @@ enum SyncRecords {
     static func fill(_ r: CKRecord, with d: DayState) {
         r["closedAt"] = d.closedAt
         r["gifted"] = d.gifted ? 1 : 0
+        r["pebbleName"] = d.pebbleName?.name
+        r["pebbleLine"] = d.pebbleName?.line
     }
 
     static func day(from r: CKRecord) -> DayState? {
         guard case .day(let key) = ref(r.recordID) else { return nil }
-        return DayState(dayKey: key, closedAt: r["closedAt"] as? Date, gifted: (r["gifted"] as? Int ?? 0) != 0)
+        let pebble = (r["pebbleName"] as? String).map { PebbleName(name: $0, line: r["pebbleLine"] as? String ?? "") }
+        return DayState(dayKey: key, closedAt: r["closedAt"] as? Date, gifted: (r["gifted"] as? Int ?? 0) != 0, pebbleName: pebble)
     }
 }
