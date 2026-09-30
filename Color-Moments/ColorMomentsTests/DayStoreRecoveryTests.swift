@@ -185,6 +185,18 @@ final class DayStoreRecoveryTests: XCTestCase {
         XCTAssertFalse(marker.wasHit)
     }
 
+    /// 저장이 막혀 방금 넣은 기록이 디스크에 없다 — 원본을 지우라는 답(true)을 주면 안 된다.
+    func testFlushAfterLoadIsFalseWhileSaveBlocked() async throws {
+        try Data("{\"이건\": 배열이 아니다".utf8).write(to: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: dir.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dir.path) }
+        let store = DayStore(fileURL: file, closures: closures)
+        store.add(Moment(capturedAt: Date(), colorHex: "#112233", fileName: "a.jpg", source: .app))
+        XCTAssertTrue(store.isSaveBlocked, "백업이 없으면 새 기록이 들어와도 막혀 있다")
+        let written = await store.flushAfterLoad()
+        XCTAssertFalse(written)
+    }
+
     private final class Marker: @unchecked Sendable {
         private let lock = NSLock()
         private var hits = 0

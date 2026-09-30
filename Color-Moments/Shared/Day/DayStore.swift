@@ -735,8 +735,9 @@ public final class DayStore {
     @discardableResult
     public func flushAfterLoad() async -> Bool {
         await waitUntilLoaded()
-        let written = flush()
-        return written && !isSaveBlocked
+        let blocked = isSaveBlocked
+        let written = await writer.flushed()
+        return written && !blocked && !isSaveBlocked
     }
 
     /// 지금까지의 저장이 디스크에 닿은 뒤 work 를 돌린다(메인을 막지 않는다).

@@ -75,6 +75,15 @@ public final class CoalescingWriter: @unchecked Sendable {
         }
     }
 
+    public func flushed() async -> Bool {
+        await withCheckedContinuation { done in
+            queue.async {
+                self.drain()
+                done.resume(returning: !self.lastWriteFailed)
+            }
+        }
+    }
+
     /// 밀린 쓰기가 디스크에 닿은 뒤 같은 큐에서 work 를 돌린다 — 다른 파일이 이 파일보다 먼저 남으면 안 될 때.
     public func then(_ work: @escaping @Sendable () -> Void) {
         let release = hold()
