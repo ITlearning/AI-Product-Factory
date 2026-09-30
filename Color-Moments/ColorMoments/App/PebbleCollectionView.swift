@@ -16,7 +16,9 @@ struct PebbleCollectionView: View {
 
     private struct OpenedDay: Identifiable { let id: String }
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+    // 렌치 → 조약돌 비교의 격자와 같은 판(2026-10-01 Tabber) — 4열, 둥근 돌 62 · 반듯한 돌 70.
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+    @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
 
     private var months: [(month: String, days: [String])] {
         let keys = store.finishedDayKeys
@@ -102,9 +104,10 @@ struct PebbleCollectionView: View {
     func grid(_ months: [(month: String, days: [String])], lazy: Bool) -> some View {
         let body = ForEach(months, id: \.month) { m in
             VStack(alignment: .leading, spacing: 18) {
-                Text(Self.monthTitle(m.month)).font(Face.caption).foregroundStyle(Tone.tertiary)
+                Text(Memories.handfulTitle(month: m.month, today: Moment.dayKey(for: Date())))
+                    .font(Face.line).foregroundStyle(Tone.secondary)
                     .padding(.leading, onClose == nil ? 0 : 12)
-                LazyVGrid(columns: columns, spacing: 26) {
+                LazyVGrid(columns: columns, spacing: 18) {
                     ForEach(m.days, id: \.self) { cell($0) }
                 }
             }
@@ -128,12 +131,14 @@ struct PebbleCollectionView: View {
             guard acceptsTaps else { return }
             opened = OpenedDay(id: key)
         } label: {
-            VStack(spacing: 8) {
-                PebbleView(moments: moments, height: 78, glow: .grid)
-                    .frame(height: 96)
-                if let named = PebbleNaming.name(for: moments) {
-                    Text(named.name).font(Face.nameCompact).foregroundStyle(Tone.primary)
+            VStack(spacing: 4) {
+                Group {
+                    switch style {
+                    case .round: SoftPebbleView(moments: moments, height: 62, glow: .grid)
+                    case .classic: LegacyPebbleView(moments: moments, height: 70)
+                    }
                 }
+                .frame(height: 96)
                 Text(Self.dateText(key)).font(Face.caption).monospacedDigit().foregroundStyle(Tone.tertiary)
             }
             .frame(maxWidth: .infinity)
