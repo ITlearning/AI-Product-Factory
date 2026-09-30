@@ -564,13 +564,14 @@ private struct RejectWordButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                Image(systemName: "arrow.clockwise").font(.system(size: 14, weight: .medium))
+                Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .light))
                 if expanded {
                     Text("이 단어는 아니에요").font(Face.caption).fixedSize()
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
             }
-            .foregroundStyle(Tone.tertiary)
+            // 평소엔 가장 옅게(선 단계) — 단어보다 튀지 않게(Tabber). 처음 펼칠 때만 읽히는 밝기.
+            .foregroundStyle(expanded ? Tone.tertiary : Tone.hairline)
             .padding(.horizontal, expanded ? 10 : 0)
             .padding(.vertical, 5)
             .background { if expanded { Capsule().fill(.white.opacity(0.08)) } }
