@@ -249,6 +249,7 @@
 		D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */; };
 		D7F8ADB1DA0E943D1CEA6CAD /* AssetDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A571B3502388E791F90524 /* AssetDiagnostics.swift */; };
 		D8DACCD04F834BF5660772B8 /* PebbleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39920A44AE81D3E3BD8864A /* PebbleCard.swift */; };
+		D979524191335EE906635F53 /* CollectionSwipeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83EA018D5B032948CABE3843 /* CollectionSwipeTests.swift */; };
 		DAFB88696C843D27DC99AA51 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
 		DBB09AAD1137F1515A685A4D /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		DE8C016FD01F472E66561B80 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5175844256F2AE80471F6EE6 /* SettingsSheet.swift */; };
@@ -423,6 +424,7 @@
 		7A186DD3CF9CEE19270ECEAB /* BackgroundHold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundHold.swift; sourceTree = "<group>"; };
 		7EB1163362CD567B08943EB6 /* ColorMomentsCapture.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = ColorMomentsCapture.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		820CBC257650B8198BCC2B5E /* ColorMomentsControl.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ColorMomentsControl.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		83EA018D5B032948CABE3843 /* CollectionSwipeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionSwipeTests.swift; sourceTree = "<group>"; };
 		85E74F70575B7C32C600F8C6 /* GowunDodum-Mini.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GowunDodum-Mini.ttf"; sourceTree = "<group>"; };
 		8747F82BBC5889D32A11161B /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8989FC64793F88406CDE1522 /* ArrivalScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrivalScene.swift; sourceTree = "<group>"; };
@@ -626,6 +628,7 @@
 				968F502570F6DB221F4BBB06 /* CatchUpTests.swift */,
 				547A7E4D2CDA31CFFB9F1A84 /* ChunkedApplyTests.swift */,
 				8DF99FB450EAE23B687B3D6F /* CoalescingWriterTests.swift */,
+				83EA018D5B032948CABE3843 /* CollectionSwipeTests.swift */,
 				B3676D77CA8F72C6175CC066 /* ColorExtractorTests.swift */,
 				05C70E667A14B10F8000505A /* DayClosuresTests.swift */,
 				001315A7B5573B9974966AF7 /* DayGradientTests.swift */,
@@ -1164,6 +1167,7 @@
 				5614CA587EEB5764D1EFBFF2 /* CatchUpTests.swift in Sources */,
 				C880AD6491173648CF11DAE3 /* ChunkedApplyTests.swift in Sources */,
 				EB1E620E065C68D6A4D9F88C /* CoalescingWriterTests.swift in Sources */,
+				D979524191335EE906635F53 /* CollectionSwipeTests.swift in Sources */,
 				A6B7C20174D02F20249A5B7F /* ColorExtractorTests.swift in Sources */,
 				C6042960F0442084AB0338E3 /* DayClosuresTests.swift in Sources */,
 				3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */,

@@ -54,13 +54,25 @@ struct CollectionSwipe: UIViewRepresentable {
             coordinator.install(on: hostRoot())
         }
 
+        /// 창에는 달지 않는다 — 창에 달면 시트·사진 보기 위 터치까지 받아 뒤 홈이 넘어가고, 다른 인식기가
+        /// 이 팬을 기다리느라 아래로 쓸어 닫기가 씹힌다. SwiftUI 는 루트 호스팅 뷰와 컨트롤러 사이에
+        /// UIKitKeyPressResponder 를 끼우므로 next 한 칸이 아니라 응답자 사슬을 따라가 컨트롤러를 찾는다.
         private func hostRoot() -> UIView? {
             var view = superview
-            while let current = view {
-                if current.next is UIViewController { return current }
+            while let current = view, !(current is UIWindow) {
+                if Self.controller(of: current)?.view === current { return current }
                 view = current.superview
             }
-            return window
+            return nil
+        }
+
+        private static func controller(of view: UIView) -> UIViewController? {
+            var responder = view.next
+            while let r = responder, !(r is UIView) {
+                if let controller = r as? UIViewController { return controller }
+                responder = r.next
+            }
+            return nil
         }
     }
 
