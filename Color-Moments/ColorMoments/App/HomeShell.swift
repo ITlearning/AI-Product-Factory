@@ -91,7 +91,6 @@ struct HomeShell: View {
                          keepsakePresented: $keepsakePresented,
                          onDayClosed: { Task { await HomeWidget.syncWithArrivalNotice(store: store, closures: closures, gifts: gifts) } },
                          onRequestLibraryPicker: openLibraryPicker,
-                         onCamera: openCamera,
                          holdsArrivals: progress != 0 || libraryCoverUp || daySheetPresented || keepsakePresented
                              || showingSettings,
                          openDay: $openDayRequest)
@@ -162,7 +161,7 @@ struct HomeShell: View {
         }
         .overlay(alignment: .bottom) {
             if onboarding == .none {
-                PageTabBar(onCollection: progress < -0.5, select: selectPage)
+                PageTabBar(onCollection: progress < -0.5, select: selectPage, camera: openCamera)
                     .opacity(progress > 0.01 ? 0 : 1)
                     .allowsHitTesting(progress <= 0.01)
                     .animation(.easeOut(duration: 0.2), value: progress > 0.01)
@@ -338,6 +337,8 @@ struct HomeShell: View {
     }
 
     private func openCamera() {
+        guard !dragging, !collectionDragging else { return }
+        Haptics.snapped()
         makeCamera()
         progress = 1
     }

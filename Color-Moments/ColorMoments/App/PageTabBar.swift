@@ -1,21 +1,35 @@
 import SwiftUI
 
-/// 홈 · 모은 조약돌 사이를 옮기는 아래 탭바. 누르면 스와이프처럼 옆으로 밀려 넘어간다(HomeShell 이 progress 를 옮긴다).
-/// iOS 26 은 리퀴드 글래스, 그 전은 반투명 재질.
+/// 아래 탭바 — 왼쪽 동그란 「+」는 카메라(카메라가 왼쪽에서 들어오니 왼쪽에), 캡슐은 홈 · 모은 조약돌.
+/// 누르면 스와이프처럼 옆으로 밀려 넘어간다(HomeShell 이 progress 를 옮긴다). iOS 26 은 리퀴드 글래스, 그 전은 반투명 재질.
 struct PageTabBar: View {
     let onCollection: Bool
     let select: (_ collection: Bool) -> Void
+    let camera: () -> Void
 
     @Namespace private var selection
 
     var body: some View {
-        HStack(spacing: 2) {
-            item("홈", icon: "house", selected: !onCollection) { select(false) }
-            item("모은 조약돌", icon: "circle.grid.2x2", selected: onCollection) { select(true) }
+        HStack(spacing: 10) {
+            Button(action: camera) {
+                Image(systemName: "plus")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Tone.primary)
+                    .frame(width: 58, height: 58)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .modifier(Glass(shape: Circle()))
+            .accessibilityLabel("카메라")
+
+            HStack(spacing: 2) {
+                item("홈", icon: "house", selected: !onCollection) { select(false) }
+                item("모은 조약돌", icon: "circle.grid.2x2", selected: onCollection) { select(true) }
+            }
+            .padding(4)
+            .modifier(Glass(shape: Capsule()))
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: onCollection)
         }
-        .padding(4)
-        .modifier(GlassCapsule())
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: onCollection)
         .padding(.bottom, 4)
     }
 
@@ -40,14 +54,16 @@ struct PageTabBar: View {
     }
 }
 
-private struct GlassCapsule: ViewModifier {
+private struct Glass<S: Shape>: ViewModifier {
+    let shape: S
+
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
-            content.glassEffect(.regular.interactive(), in: .capsule)
+            content.glassEffect(.regular.interactive(), in: shape)
         } else {
             content
-                .background(.ultraThinMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 0.5))
+                .background(.ultraThinMaterial, in: shape)
+                .overlay(shape.stroke(.white.opacity(0.08), lineWidth: 0.5))
         }
     }
 }
