@@ -17,8 +17,11 @@ final class LibraryImporter {
         return o
     }
 
+    /// 앱 안의 사진 권한 요청은 모두 여기로 — 받은 뒤 사진 변경 감시를 켜야 한다(`.photoAccessRequested`).
     static func requestAccess() async -> PHAuthorizationStatus {
-        await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        NotificationCenter.default.post(name: .photoAccessRequested, object: nil)
+        return status
     }
 
     /// 이만큼 모이면 한 번에 넣는다 — 한 장씩 넣으면 장마다 홈·사진첩 격자가 다시 그려진다.
@@ -96,4 +99,8 @@ final class LibraryImporter {
             }
         }
     }
+}
+
+extension Notification.Name {
+    static let photoAccessRequested = Notification.Name("photoAccessRequested")
 }

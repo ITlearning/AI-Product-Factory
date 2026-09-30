@@ -353,7 +353,7 @@ struct HomeShell: View {
             Task {
                 // 처음 찍을 때만 묻는다 — 이미 물어봤으면 상태가 notDetermined 가 아니다.
                 if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined {
-                    _ = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+                    _ = await LibraryImporter.requestAccess()
                 }
                 await store.waitUntilLoaded()
                 await AssetAdopter.adopt(m, store: store)

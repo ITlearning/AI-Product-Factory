@@ -61,6 +61,7 @@ struct ColorMomentsApp: App {
                     if reconcilerObserver == nil {
                         reconcilerObserver = AssetReconcilerObserver(store: store)
                     }
+                    reconcilerObserver?.activateIfAllowed()
                     // 로드 직후 입양·정리·cloudID·위젯까지 한꺼번에 몰리면 첫 화면이 끊긴다 — 첫 차례는 조금 쉬었다 한 줄로(active 전환과 합친다).
                     await catchUp.run()
                 }
@@ -69,12 +70,17 @@ struct ColorMomentsApp: App {
                     for: UIApplication.protectedDataDidBecomeAvailableNotification)) { _ in
                     Task { await store.retryLoadIfNeeded() }
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .photoAccessRequested)) { _ in
+                    reconcilerObserver?.activateIfAllowed()
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             // 사진이 담기는 경로는 여러 곳이라(잠금화면·라이브러리 입양 등) active/background 전환마다
             // 다시 맞춰 둔다 — active 는 입양·정리가 끝난 뒤에 계산해야 방금 들어온 사진이 반영된다.
             switch newPhase {
             case .active:
+                // 설정 앱에서 사진 권한을 켜고 돌아온 경우.
+                reconcilerObserver?.activateIfAllowed()
                 Task {
                     await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()

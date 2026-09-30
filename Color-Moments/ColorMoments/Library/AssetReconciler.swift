@@ -209,22 +209,49 @@ enum AssetReconciler {
     }
 }
 
-/// 사진 앱이 바뀔 때(다른 사진에서 지워도) 알려주는 옵저버. 앱 시작 때 한 번만 등록한다.
+/// 사진 앱이 바뀔 때(다른 사진에서 지워도) 알려주는 옵저버. 사진 권한이 생긴 뒤에만 켠다.
 final class AssetReconcilerObserver: NSObject, PHPhotoLibraryChangeObserver {
 
+    /// 사진 앱에 닿는 부분 — 테스트는 가짜로 바꾼다.
+    struct Env {
+        var access: () -> PHAuthorizationStatus
+        var register: (PHPhotoLibraryChangeObserver) -> Void
+        var unregister: (PHPhotoLibraryChangeObserver) -> Void
+
+        static let live = Env(
+            access: { PHPhotoLibrary.authorizationStatus(for: .readWrite) },
+            register: { PHPhotoLibrary.shared().register($0) },
+            unregister: { PHPhotoLibrary.shared().unregisterChangeObserver($0) }
+        )
+    }
+
     private let store: DayStore
+    private let env: Env
+    private(set) var isActive = false
     private var fetchResult: PHFetchResult<PHAsset>?
     private var fetchGeneration = 0
 
-    init(store: DayStore) {
+    init(store: DayStore, env: Env = .live) {
         self.store = store
+        self.env = env
         super.init()
-        PHPhotoLibrary.shared().register(self)
-        Task { @MainActor [weak self] in await self?.refreshFetchResult() }
     }
 
     deinit {
-        PHPhotoLibrary.shared().unregisterChangeObserver(self)
+        if isActive { env.unregister(self) }
+    }
+
+    static func observes(_ status: PHAuthorizationStatus) -> Bool {
+        status == .authorized || status == .limited
+    }
+
+    /// 여러 번 불러도 한 번만 켠다. 권한 미결정에서 등록하면 그 자리에서 사진 권한 창이 뜬다.
+    @MainActor
+    func activateIfAllowed() {
+        guard !isActive, Self.observes(env.access()) else { return }
+        isActive = true
+        env.register(self)
+        Task { @MainActor [weak self] in await self?.refreshFetchResult() }
     }
 
     // 사진 앱이 바뀔 때마다(iCloud 사진이 내려오는 동안 잦다) 수천 개를 다시 조회한다 — 메인 밖에서.

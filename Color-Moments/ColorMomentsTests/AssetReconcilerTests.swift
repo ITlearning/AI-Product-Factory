@@ -1,3 +1,4 @@
+import Photos
 import XCTest
 @testable import ColorMoments
 
@@ -247,5 +248,63 @@ final class AssetReconcilerTests: XCTestCase {
         let readopted = old.withDeviceFields(fileName: Moment.assetFileName(for: "NEW"), assetID: "NEW", originalName: nil)
         let ids = AssetReconciler.removalIDs(snapshot: [old, other], remove: ["X", "Z"], current: [readopted, other])
         XCTAssertEqual(ids, [other.id], "조회 대기 중 파일로 다시 입양된 기록은 새 사진을 가리킨다 — 지우면 안 된다")
+    }
+}
+
+/// 사진 변경 감시는 권한이 생긴 뒤에만 켠다 — 미결정에서 등록하면 첫 화면에 사진 권한 창이 뜬다.
+@MainActor
+final class AssetReconcilerObserverTests: XCTestCase {
+
+    private final class Probe {
+        var status = PHAuthorizationStatus.notDetermined
+        var registered = 0
+        var unregistered = 0
+    }
+
+    private func makeObserver(_ probe: Probe) -> AssetReconcilerObserver {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("observer-\(UUID().uuidString).json")
+        let store = DayStore(fileURL: file, closures: DayClosures(defaults: UserDefaults(suiteName: UUID().uuidString)!))
+        return AssetReconcilerObserver(store: store, env: .init(
+            access: { probe.status },
+            register: { _ in probe.registered += 1 },
+            unregister: { _ in probe.unregistered += 1 }
+        ))
+    }
+
+    func testDoesNotRegisterUntilAccessIsGranted() {
+        let probe = Probe()
+        let observer = makeObserver(probe)
+        observer.activateIfAllowed()
+        XCTAssertEqual(probe.registered, 0, "권한 미결정에서 등록하면 그 자리에서 권한 창이 뜬다")
+        probe.status = .denied
+        observer.activateIfAllowed()
+        XCTAssertEqual(probe.registered, 0, "거부됐으면 감시할 사진이 없다")
+        XCTAssertFalse(observer.isActive)
+    }
+
+    func testRegistersOnceAfterAccessIsGranted() {
+        let probe = Probe()
+        let observer = makeObserver(probe)
+        observer.activateIfAllowed()
+        probe.status = .limited
+        observer.activateIfAllowed()
+        observer.activateIfAllowed()
+        XCTAssertEqual(probe.registered, 1, "권한을 받은 뒤 한 번만 켠다 — 시작·active·권한 요청 뒤에 겹쳐 불린다")
+        XCTAssertTrue(observer.isActive)
+    }
+
+    func testUnregistersOnlyWhenRegistered() {
+        let idle = Probe()
+        var neverActive: AssetReconcilerObserver? = makeObserver(idle)
+        neverActive?.activateIfAllowed()
+        neverActive = nil
+        XCTAssertEqual(idle.unregistered, 0)
+
+        let granted = Probe()
+        granted.status = .authorized
+        var active: AssetReconcilerObserver? = makeObserver(granted)
+        active?.activateIfAllowed()
+        active = nil
+        XCTAssertEqual(granted.unregistered, 1)
     }
 }
