@@ -172,7 +172,7 @@ struct DayPhotoView: View {
             if let w = m.word {
                 wordLine(m, w)
                 Spacer().frame(height: 4)
-                RollingLine(w.meaning, shineDelay: 0.12).font(Face.wordMeaning).foregroundStyle(Tone.tertiary)
+                RollingLine(w.meaning, delay: 0.12).font(Face.wordMeaning).foregroundStyle(Tone.tertiary)
                 Spacer().frame(height: 12)
             }
             meta(m)
@@ -608,11 +608,10 @@ private struct GlyphRoll: ViewModifier {
 }
 
 /// 「아니에요」로 단어가 바뀔 때 — 옛 글자는 위로 한 자씩 빠지고 새 글자는 아래에서 한 자씩 올라온다.
-/// 옛·새 단어를 겹쳐 두어 폭이 튀지 않는다. 바뀔 때 무지개 띠가 한 번 슉 지나간다.
+/// 옛·새 단어를 겹쳐 두어 폭이 튀지 않는다.
 private struct RollingWord: View {
     let text: String
     @State private var layers: [RollLayer]
-    @State private var shine = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(_ text: String) {
@@ -627,14 +626,12 @@ private struct RollingWord: View {
                     .transition(.identity)
             }
         }
-        .overlay { if shine > 0 { Shine(delay: 0.1).id(shine).mask { Text(text) } } }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(text)
         .onChange(of: text) { _, new in
             guard !reduceMotion else { layers = [RollLayer(id: (layers.last?.id ?? 0) + 1, text: new, entering: false)]; return }
             for i in layers.indices { layers[i].leaving = true }
             layers.append(RollLayer(id: (layers.last?.id ?? 0) + 1, text: new, entering: true))
-            shine += 1
             Task {
                 try? await Task.sleep(for: .milliseconds(900))
                 layers.removeAll(where: \.leaving)
@@ -695,30 +692,27 @@ private struct GlyphRow: View {
 /// 뜻풀이 — 두 줄로 넘어갈 수 있어 한 자씩이 아니라 문장째 같은 결로 바뀐다(위로 빠지고 아래에서 올라온다).
 private struct RollingLine: View {
     let text: String
-    let shineDelay: Double
+    let delay: Double
     @State private var layers: [RollLayer]
-    @State private var shine = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(_ text: String, shineDelay: Double) {
+    init(_ text: String, delay: Double) {
         self.text = text
-        self.shineDelay = shineDelay
+        self.delay = delay
         _layers = State(initialValue: [RollLayer(id: 0, text: text, entering: false)])
     }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             ForEach(layers) { layer in
-                LineLayer(text: layer.text, entering: layer.entering, leaving: layer.leaving, delay: shineDelay)
+                LineLayer(text: layer.text, entering: layer.entering, leaving: layer.leaving, delay: delay)
                     .transition(.identity)
             }
         }
-        .overlay { if shine > 0 { Shine(delay: shineDelay + 0.1).id(shine).mask { Text(text) } } }
         .onChange(of: text) { _, new in
             guard !reduceMotion else { layers = [RollLayer(id: (layers.last?.id ?? 0) + 1, text: new, entering: false)]; return }
             for i in layers.indices { layers[i].leaving = true }
             layers.append(RollLayer(id: (layers.last?.id ?? 0) + 1, text: new, entering: true))
-            shine += 1
             Task {
                 try? await Task.sleep(for: .milliseconds(900))
                 layers.removeAll(where: \.leaving)
@@ -753,27 +747,5 @@ private struct LineLayer: View {
             .onChange(of: leaving) { _, now in
                 if now { withAnimation(.easeIn(duration: 0.3)) { motion = .above } }
             }
-    }
-}
-
-/// 파스텔 무지개 띠가 글자 위를 왼쪽에서 오른쪽으로 한 번 슉 — 글자 모양으로 오려 쓴다(mask).
-private struct Shine: View {
-    let delay: Double
-    @State private var passed = false
-
-    private static let colors: [Color] = [.clear] + ["#FFC2E2", "#D7B8FF", "#A9C9FF", "#A8F0DC", "#FFE3A8"].map { Color(hex: $0) } + [.clear]
-
-    var body: some View {
-        GeometryReader { geo in
-            let band = max(geo.size.width * 0.7, 80)
-            LinearGradient(colors: Self.colors, startPoint: .leading, endPoint: .trailing)
-                .frame(width: band)
-                .offset(x: passed ? geo.size.width : -band)
-        }
-        .allowsHitTesting(false)
-        .task {
-            try? await Task.sleep(for: .seconds(delay))
-            withAnimation(.easeInOut(duration: 0.7)) { passed = true }
-        }
     }
 }
