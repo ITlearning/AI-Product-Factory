@@ -1,4 +1,5 @@
 import AVKit
+import os
 import SwiftUI
 import UIKit
 
@@ -235,6 +236,7 @@ final class PreviewController: UIViewController {
         layer.frame = view.bounds
         view.layer.insertSublayer(layer, at: 0)
         attached = true
+        CaptureEngine.log.notice("preview attached bounds=\(self.view.bounds.debugDescription, privacy: .public)")
     }
 }
 
