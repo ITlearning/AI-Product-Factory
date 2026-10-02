@@ -44,7 +44,7 @@ body.preview .gaps { display: block; position: absolute; inset: 0; z-index: 50; 
   background: linear-gradient(145deg, #303137, #16171a 45%, #222328);
   box-shadow: 0 0 0 3px #44454b, inset 0 0 0 2px rgba(255,255,255,.09), 0 90px 170px rgba(0,0,0,.72), 0 30px 60px rgba(0,0,0,.5); }
 .phone .screen { position: relative; width: 100%; aspect-ratio: 1206 / 2622; border-radius: 116px; overflow: hidden; background: #000; }
-.phone .screen > img.shot { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.phone .screen > img.shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .phone .island { position: absolute; top: 1.26%; left: 50%; transform: translateX(-50%); width: 31.3%; aspect-ratio: 126 / 37; border-radius: 100px; background: #000; z-index: 6; }
 /* 정사이즈(1206) 기준 높이 162 — 실제 시각·배터리를 덮는다. 아래 끝을 흐려 밑 화면과 경계가 안 보이게 */
 .sb { position: absolute; left: 0; right: 0; top: 0; height: 6.6%; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 0 9.5% 0 13.2%; box-sizing: border-box;
@@ -62,11 +62,6 @@ body.preview .gaps { display: block; position: absolute; inset: 0; z-index: 50; 
 .vf-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .vf-dot { position: absolute; left: 44%; top: 0; width: 12%; height: 3%; background: #000; z-index: 4; }
 
-.gift-ph { position: absolute; inset: 0; background: #000; display: none; }
-.gift-ph.on { display: block; }
-.gift-ph img { position: absolute; left: 6%; top: 18%; width: 88%; -webkit-mask-image: radial-gradient(circle, #000 44%, transparent 66%); mask-image: radial-gradient(circle, #000 44%, transparent 66%); }
-.gift-ph .n { position: absolute; left: 0; right: 0; top: 66%; text-align: center; font-family: 'MongdolSerif'; font-size: 86px; color: rgba(255,255,255,.92); }
-.gift-ph .l { position: absolute; left: 0; right: 0; top: 72.5%; text-align: center; font-family: 'MongdolSans'; font-size: 44px; color: rgba(255,255,255,.64); }
 </style>
 </head>
 <body>
@@ -119,9 +114,7 @@ body.preview .gaps { display: block; position: absolute; inset: 0; z-index: 50; 
     </div>
     <div class="phone" style="left:330px; top:800px; width:880px">
       <div class="screen">
-        <img class="shot" src="input/gift.png" onerror="this.remove(); document.getElementById('giftPh').classList.add('on')">
-        <div class="gift-ph" id="giftPh"><img src="../../ColorMoments/Assets.xcassets/AppIcon.appiconset/icon-1024.png"><div class="n">하늘빛</div><div class="l">올려다본 날이었네요.</div></div>
-        <div class="sb" style="background:#000"><span class="t">9:41</span><svg><use href="#sbicons"/></svg></div>
+        <img class="shot" src="input/gift.jpg">
         <div class="island"></div>
       </div>
     </div>
@@ -160,8 +153,8 @@ body.preview .gaps { display: block; position: absolute; inset: 0; z-index: 50; 
   <div class="f" style="left:6900px">
     <div class="phone" style="left:360px; top:250px; width:880px">
       <div class="screen">
-        <img class="shot" src="input/collection.png" onerror="this.onerror=null; this.src='input/collection.jpg'">
-        <div class="sb" style="background:#05070A"><span class="t">9:41</span><svg><use href="#sbicons"/></svg></div>
+        <img class="shot" src="input/collection.png">
+        <div class="sb" style="background:#06070A"><span class="t">9:41</span><svg><use href="#sbicons"/></svg></div>
         <div class="island"></div>
       </div>
     </div>
