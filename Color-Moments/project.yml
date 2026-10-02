@@ -10,7 +10,7 @@ settings:
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ZMXTCSPNUZ
     SWIFT_STRICT_CONCURRENCY: minimal
-    MARKETING_VERSION: "0.1"
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
 targets:
   ColorMoments:
@@ -79,6 +79,8 @@ targets:
       path: ColorMomentsCapture/Info.plist
       properties:
         CFBundleDisplayName: 몽돌
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSCameraUsageDescription: 순간의 색을 남기기 위해 카메라를 사용합니다.
         NSLocationWhenInUseUsageDescription: 찍은 곳을 사진 옆에 적어 두고 그때 날씨를 찾으려고 위치를 사용합니다.
         EXAppExtensionAttributes:
@@ -107,6 +109,8 @@ targets:
       path: ColorMomentsControl/Info.plist
       properties:
         CFBundleDisplayName: 몽돌
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 

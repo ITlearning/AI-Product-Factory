@@ -39,6 +39,9 @@ xcodebuild -project ColorMoments.xcodeproj -scheme ColorMoments \
 
 `DEVELOPMENT_TEAM` 은 `ZMXTCSPNUZ`(CodeStudy와 동일)로 박혀 있다.
 
+TestFlight 업로드는 `bundle exec fastlane beta` — 셋업과 CodeStudy 와 다른 점은 [`fastlane/SETUP.md`](fastlane/SETUP.md).
+버전은 `project.yml` 의 `MARKETING_VERSION` 을 고치고 `xcodegen generate` 한다(Xcode General 탭에서 바꾸지 말 것).
+
 ## 설정 목록에 뜨기 위한 요구사항 (2026-09-22 실기기에서 배움)
 
 **타깃이 셋 필요하다.** 하나라도 빠지면 증상이 다르게 나타난다 — 2026-09-22 iPhone 16 Pro 실측:
