@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>몽돌 App Store 미리보기</title>
+<style>
+@font-face { font-family: 'MongdolSerif'; src: url('fonts/NanumMyeongjo-Bold.ttf'); font-weight: 700; }
+@font-face { font-family: 'MongdolSans'; src: url('../../Shared/Design/Fonts/GowunDodum-Hangul.ttf'); }
+
+/* 장 사이에 스토어 간격(상세 화면 약 10pt ≈ 1320 기준 60px)을 실제로 비워 두고 그 위로 이어 그린다 —
+   간격 없이 잘라 이으면 스토어에서 넘어가는 폰·조약돌이 간격만큼 밀려 끊겨 보인다. */
+:root { --gap: 60px; }
+html, body { margin: 0; background: #1d1d1f; }
+#canvas { position: relative; width: 8220px; height: 2868px; background: #06070A; overflow: hidden; }
+body.preview { overflow-x: hidden; }
+body.preview #stage { transform-origin: 0 0; }
+body.frame { width: 1320px; height: 2868px; overflow: hidden; }
+.f { position: absolute; top: 0; width: 1320px; height: 2868px; }
+.gaps { display: none; }
+body.preview .gaps { display: block; position: absolute; inset: 0; z-index: 50; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 1320px, #1d1d1f 1320px 1380px); }
+
+/* 하루 한 장 — 왼쪽 새벽에서 오른쪽 밤까지 끊기지 않는 그라데이션 */
+.tint { position: absolute; inset: 0; opacity: .7;
+  background: linear-gradient(90deg, #172041 0%, #1d3152 18%, #33363a 40%, #3f2c27 58%, #3b2230 76%, #1d1733 100%); }
+.glow { position: absolute; inset: 0; opacity: .85;
+  /* filter: blur 를 쓰지 않는다 — 8192px 를 넘는 층은 크롬이 끝까지 못 그려 검은 네모가 남는다 */
+  background:
+    radial-gradient(1500px 1900px at 1040px 2350px, rgba(84,104,190,0.95) 0%, rgba(84,104,190,0.74) 22%, rgba(84,104,190,0.46) 44%, rgba(84,104,190,0.19) 66%, rgba(84,104,190,0.05) 84%, transparent 100%),
+    radial-gradient(1500px 1800px at 2460px 1300px, rgba(126,170,220,0.90) 0%, rgba(126,170,220,0.70) 22%, rgba(126,170,220,0.43) 44%, rgba(126,170,220,0.18) 66%, rgba(126,170,220,0.05) 84%, transparent 100%),
+    radial-gradient(1500px 1800px at 3830px 2300px, rgba(240,220,196,0.60) 0%, rgba(240,220,196,0.47) 22%, rgba(240,220,196,0.29) 44%, rgba(240,220,196,0.12) 66%, rgba(240,220,196,0.03) 84%, transparent 100%),
+    radial-gradient(1500px 1800px at 5180px 1450px, rgba(240,170,140,0.85) 0%, rgba(240,170,140,0.66) 22%, rgba(240,170,140,0.41) 44%, rgba(240,170,140,0.17) 66%, rgba(240,170,140,0.04) 84%, transparent 100%),
+    radial-gradient(1500px 1800px at 6560px 2300px, rgba(222,140,150,0.82) 0%, rgba(222,140,150,0.64) 22%, rgba(222,140,150,0.39) 44%, rgba(222,140,150,0.16) 66%, rgba(222,140,150,0.04) 84%, transparent 100%),
+    radial-gradient(1600px 1900px at 7950px 1300px, rgba(100,78,160,0.95) 0%, rgba(100,78,160,0.74) 22%, rgba(100,78,160,0.46) 44%, rgba(100,78,160,0.19) 66%, rgba(100,78,160,0.05) 84%, transparent 100%); }
+.grain { position: absolute; left: 0; top: 0; width: 1320px; height: 2868px; opacity: .09; mix-blend-mode: overlay; pointer-events: none; z-index: 40;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+
+.copy { position: absolute; left: 100px; width: 1120px; text-align: center; z-index: 30; }
+.copy .mark { font-family: 'MongdolSerif'; font-size: 60px; color: rgba(255,255,255,.64); margin-bottom: 46px; letter-spacing: .02em; }
+.copy h1 { margin: 0; font-family: 'MongdolSerif'; font-weight: 700; font-size: 100px; line-height: 1.36; color: rgba(255,255,255,.92); letter-spacing: -.012em; word-break: keep-all; }
+.copy p { margin: 42px auto 0; max-width: 1080px; font-family: 'MongdolSans'; font-size: 52px; line-height: 1.55; color: rgba(255,255,255,.7); word-break: keep-all; }
+
+.phone { position: absolute; box-sizing: border-box; padding: 20px; border-radius: 136px; z-index: 20;
+  background: linear-gradient(145deg, #303137, #16171a 45%, #222328);
+  box-shadow: 0 0 0 3px #44454b, inset 0 0 0 2px rgba(255,255,255,.09), 0 90px 170px rgba(0,0,0,.72), 0 30px 60px rgba(0,0,0,.5); }
+.phone .screen { position: relative; width: 100%; aspect-ratio: 1206 / 2622; border-radius: 116px; overflow: hidden; background: #000; }
+.phone .screen > img.shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.phone .island { position: absolute; top: 1.26%; left: 50%; transform: translateX(-50%); width: 31.3%; aspect-ratio: 126 / 37; border-radius: 100px; background: #000; z-index: 6; }
+/* 정사이즈(1206) 기준 높이 162 — 실제 시각·배터리를 덮는다. 아래 끝을 흐려 밑 화면과 경계가 안 보이게 */
+.sb { position: absolute; left: 0; right: 0; top: 0; height: 6.6%; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 0 9.5% 0 13.2%; box-sizing: border-box;
+  -webkit-mask-image: linear-gradient(#000 82%, transparent); mask-image: linear-gradient(#000 82%, transparent); }
+.sb .t { font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; font-weight: 600; font-size: 37px; color: #fff; letter-spacing: -.01em; padding-top: 6px; }
+.sb svg { height: 24px; width: 120px; }
+
+.card { position: absolute; border-radius: 34px; overflow: hidden; box-shadow: 0 48px 96px rgba(0,0,0,.62); }
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card .shade { position: absolute; left: 0; right: 0; bottom: 0; height: 33%; background: linear-gradient(transparent, rgba(0,0,0,.45)); }
+.hero-pebble { position: absolute; z-index: 12;
+  -webkit-mask-image: radial-gradient(circle at 50% 51%, #000 44%, transparent 64%); mask-image: radial-gradient(circle at 50% 51%, #000 44%, transparent 64%); }
+
+.vf-photo { position: absolute; left: 2.49%; top: 8.70%; width: 95.02%; height: 63.16%; border-radius: 5.76% / 3.99%; overflow: hidden; }
+.vf-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vf-dot { position: absolute; left: 44%; top: 0; width: 12%; height: 3%; background: #000; z-index: 4; }
+
+/* 노치 판(?device=notch, 6.5인치 1284×2778) — 같은 그림을 1284/1320 로 줄이고, 폰만 iPhone 13 Pro Max 모양 */
+body.notch #canvas { transform-origin: 0 0; }
+body.notch.frame { width: 1284px; height: 2778px; }
+body.notch .phone { border-radius: 13.73% / 6.5%; }
+body.notch .phone .screen { aspect-ratio: 1284 / 2778; border-radius: 12% / 5.546%; }
+body.notch .phone .island { top: 0; width: 40.794%; aspect-ratio: 174.6 / 31.5; border-radius: 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 174.6 31.5' preserveAspectRatio='none'><path fill='%23000' d='M0 0H174.6A6 6 0 0 0 168.6 6V11.5A20 20 0 0 1 148.6 31.5H26A20 20 0 0 1 6 11.5V6A6 6 0 0 0 0 0Z'/></svg>") 0 0 / 100% 100% no-repeat; }
+body.notch .sb { display: grid; grid-template-columns: 31% 1fr 31%; grid-template-rows: 51.5% 1fr; place-items: center; padding: 0; }
+body.notch .sb .t { grid-area: 1 / 1; padding-top: 3px; }
+body.notch .sb svg { grid-area: 1 / 3; }
+/* 화면이 조금 더 넓어 cover 로 위아래 0.24%씩 잘린다 — 사진 칸을 그만큼 다시 맞추고, 노치 밑으로 비치는 초록 점을 가린다 */
+body.notch .vf-photo { top: 8.5%; height: 63.47%; }
+body.notch .vf-dot { left: 42%; width: 16%; height: 4.4%; }
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="sbicons" viewBox="0 0 120 24"><g fill="#fff">
+    <rect x="0" y="15" width="6" height="8" rx="1.5"/><rect x="9" y="11" width="6" height="12" rx="1.5"/><rect x="18" y="7" width="6" height="16" rx="1.5"/><rect x="27" y="3" width="6" height="20" rx="1.5"/>
+    <path d="M52 8.5a15 15 0 0 1 19 0l-2.4 2.6a11.5 11.5 0 0 0-14.2 0zM55.6 12.6a9.6 9.6 0 0 1 11.8 0l-2.5 2.7a6 6 0 0 0-6.8 0zM59.2 16.8a4 4 0 0 1 4.6 0L61.5 19.4z"/>
+    <rect x="82" y="4" width="32" height="16" rx="4.5" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/><rect x="85" y="7" width="26" height="10" rx="2.5"/><rect x="116" y="9" width="2.5" height="6" rx="1" fill-opacity=".45"/>
+  </g></symbol>
+</svg>
+<div id="stage">
+<div id="canvas">
+  <div class="tint"></div>
+  <div class="glow"></div>
+
+  <!-- 1 · 순간의 색이 하루의 조약돌이 돼요 -->
+  <div class="f" style="left:0">
+    <div class="copy" style="top:200px">
+      <div class="mark">몽돌</div>
+      <h1>순간의 색이<br>하루의 조약돌이 돼요</h1>
+      <p>찍어 두기만 하면, 하루가 끝날 때<br>그날의 색이 조약돌 하나로 와요</p>
+    </div>
+    <div class="card" style="left:250px; top:1170px; width:685px; height:750px; transform:rotate(-3deg); filter:brightness(.5)"><img src="input/wall.jpg"></div>
+    <div class="card" style="left:230px; top:1205px; width:725px; height:780px; transform:rotate(2deg); filter:brightness(.72)"><img src="input/city.jpg"></div>
+    <div class="card" style="left:200px; top:1245px; width:785px; height:800px"><img src="input/brick.jpg"><div class="shade"></div></div>
+    <img class="hero-pebble" src="../../ColorMoments/Assets.xcassets/AppIcon.appiconset/icon-1024.png" style="left:420px; top:1380px; width:1420px">
+  </div>
+
+  <!-- 2 · 찍을 땐, 색을 몰라요 -->
+  <div class="f" style="left:1380px">
+    <div class="copy" style="bottom:200px">
+      <h1>찍을 땐,<br>색을 몰라요</h1>
+      <p>잠금화면에서도, 늘 쓰던 카메라로도.<br>지나가는 순간만 붙잡아요</p>
+    </div>
+    <div class="phone" style="left:530px; top:240px; width:880px; transform:rotate(-10deg)">
+      <div class="screen">
+        <img class="shot" src="input/viewfinder.png">
+        <div class="vf-dot"></div>
+        <div class="vf-photo"><img src="input/sky.jpg"></div>
+        <div class="island"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 · 자고 일어나면, 어제가 와 있어요 -->
+  <div class="f" style="left:2760px">
+    <div class="copy" style="top:240px">
+      <h1>자고 일어나면,<br>어제가 와 있어요</h1>
+      <p>그날 담은 색들이 조약돌 하나로 빚어져요</p>
+    </div>
+    <div class="phone" style="left:330px; top:800px; width:880px">
+      <div class="screen">
+        <img class="shot" src="input/gift.jpg">
+        <div class="island"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 · 사진마다 한 단어가 남아요 -->
+  <div class="f" style="left:4140px">
+    <div class="phone" style="left:160px; top:-380px; width:1000px">
+      <div class="screen">
+        <img class="shot" src="input/photo-view.png">
+        <div class="island"></div>
+      </div>
+    </div>
+    <div class="copy" style="bottom:200px">
+      <h1>사진마다<br>한 단어가 남아요</h1>
+      <p>그 순간의 시각과 동네, 그때 날씨까지</p>
+    </div>
+  </div>
+
+  <!-- 5 · 담은 날만, 조용히 쌓여요 -->
+  <div class="f" style="left:5520px">
+    <div class="copy" style="top:240px">
+      <h1>담은 날만,<br>조용히 쌓여요</h1>
+      <p>매일 하지 않아도 괜찮아요</p>
+    </div>
+    <div class="phone" style="left:530px; top:830px; width:880px; transform:rotate(10deg)">
+      <div class="screen">
+        <img class="shot" src="input/home.png">
+        <div class="sb" style="background:linear-gradient(#0D0C0E, #121011)"><span class="t">9:41</span><svg><use href="#sbicons"/></svg></div>
+        <div class="island"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 · 모아 보면, 한 달이 한 줌 -->
+  <div class="f" style="left:6900px">
+    <div class="phone" style="left:360px; top:250px; width:880px">
+      <div class="screen">
+        <img class="shot" src="input/collection.png">
+        <div class="sb" style="background:#06070A"><span class="t">9:41</span><svg><use href="#sbicons"/></svg></div>
+        <div class="island"></div>
+      </div>
+    </div>
+    <div class="copy" style="bottom:200px">
+      <h1>모아 보면,<br>한 달이 한 줌</h1>
+      <p>받은 조약돌이 달마다 모여요</p>
+    </div>
+  </div>
+
+  <div class="grain" style="left:0px"></div>
+  <div class="grain" style="left:1380px"></div>
+  <div class="grain" style="left:2760px"></div>
+  <div class="grain" style="left:4140px"></div>
+  <div class="grain" style="left:5520px"></div>
+  <div class="grain" style="left:6900px"></div>
+  <div class="gaps"></div>
+</div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const n = parseInt(q.get('frame') || '0', 10);
+  const notch = q.get('device') === 'notch';
+  // 1284/1320 로 줄이면 높이가 2790 — 2778 에 맞게 위아래를 6px 씩 똑같이 잘라낸다
+  const k = notch ? 1284 / 1320 : 1, H = notch ? 2778 : 2868, dy = (H - 2868 * k) / 2;
+  const canvas = document.getElementById('canvas');
+  if (notch) document.body.classList.add('notch');
+  if (n >= 1 && n <= 6) {
+    document.body.classList.add('frame');
+    canvas.style.transform = notch
+      ? `translate(${(n - 1) * -1380 * k}px, ${dy}px) scale(${k})`
+      : `translateX(${(n - 1) * -1380}px)`;
+  } else {
+    document.body.classList.add('preview');
+    if (notch) canvas.style.transform = `translateY(${dy}px) scale(${k})`;
+    const fit = () => {
+      const z = innerWidth / (8220 * k);
+      const s = document.getElementById('stage');
+      s.style.transform = `scale(${z})`;
+      s.style.height = `${H * z}px`;
+    };
+    addEventListener('resize', fit); fit();
+  }
+</script>
+</body>
+</html>
