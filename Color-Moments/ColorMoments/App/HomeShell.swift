@@ -6,6 +6,7 @@ struct HomeShell: View {
     let inbox: CaptureInbox
     let gifts: GiftLog
     let closures: DayClosures
+    let cameraRequest: CameraRequest
     // 입양·정리·cloudID·위젯 한 차례 — 온보딩이 넘기는 동안 뒤에서 돌리고 끝나기를 기다린다.
     var prepare: () async -> Void = {}
 
@@ -142,6 +143,12 @@ struct HomeShell: View {
         .preferredColorScheme(.dark)
         .onChange(of: store.dayKeys) { _, keys in
             if onboardingGiftDay != nil { onboardingGiftDay = OnboardingGift.retained(onboardingGiftDay, dayKeys: keys) }
+        }
+        .onChange(of: cameraRequest.pending && OnboardingGate.opensRequestedCamera(onboarding), initial: true) { _, opens in
+            guard opens else { return }
+            cameraRequest.pending = false
+            makeCamera()
+            progress = 1
         }
         // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.

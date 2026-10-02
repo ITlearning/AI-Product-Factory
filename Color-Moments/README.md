@@ -62,6 +62,13 @@ xcodebuild -project ColorMoments.xcodeproj -scheme ColorMoments \
 즉 **앱 본체에 실제 카메라 세션과 `AVCaptureEventInteraction` 이 있어야 한다.**
 목록 화면만 있는 앱은 카메라 컨트롤 대상이 될 수 없다.
 
+**잠금이 풀린 채 카메라 컨트롤·제어센터로 열면 확장이 아니라 앱 본체가 뜬다.** 이때 몇 초 안에
+카메라 세션이 돌고 `AVCaptureEventInteraction` 이 붙어 있지 않으면 SpringBoard 가 앱을 죽인다
+(기기 로그: `Capture Application Requirements Unmet: "Camera not actively used; AVCaptureEventInteraction not installed"`).
+크래시 로그엔 `EXC_CRASH (SIGKILL)` · `RUNNINGBOARD 0` · 쉬고 있는 메인 스레드만 남아 원인이 안 보인다.
+그래서 `ColorCaptureIntent.perform()` 이 앱 본체에서 불리면 홈이 카메라를 연다(`CameraRequest`).
+(2026-10-02 TestFlight 1.0.0(1) 크래시 4건, 참고: JuniperPhoton 「Addressing Unexpected Terminations when launching from unlocked Camera Control」)
+
 애플 문서(Creating a camera experience for the Lock Screen) 원문:
 > Create a control widget that launches the capture extension when the device is locked.
 > Include the `CameraCaptureIntent` in your app target, **control widget extension target**,
