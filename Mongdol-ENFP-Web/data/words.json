@@ -1,0 +1,726 @@
+{
+ "version": 2,
+ "words": [
+  {
+   "id": "yunseul",
+   "word": "윤슬",
+   "meaning": "햇빛이나 달빛에 비쳐 반짝이는 잔물결",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "water",
+    "water_body",
+    "ocean",
+    "lake",
+    "river"
+   ]
+  },
+  {
+   "id": "neungae",
+   "word": "는개",
+   "meaning": "안개보다 굵고 이슬비보다 가는 비",
+   "times": [],
+   "weathers": [
+    "drizzle",
+    "fog"
+   ],
+   "seasons": [],
+   "subjects": [
+    "sky",
+    "cloudy"
+   ]
+  },
+  {
+   "id": "yeoubi",
+   "word": "여우비",
+   "meaning": "볕이 난 날 잠깐 뿌리다 그치는 비",
+   "times": [
+    "morning",
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [
+    "rain",
+    "clear"
+   ],
+   "seasons": [],
+   "subjects": [
+    "sky",
+    "blue_sky"
+   ]
+  },
+  {
+   "id": "haegeoreum",
+   "word": "해거름",
+   "meaning": "해가 서쪽으로 넘어가는 무렵",
+   "times": [
+    "dusk"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "sky",
+    "sunset_sunrise"
+   ]
+  },
+  {
+   "id": "gaebapbaragi",
+   "word": "개밥바라기",
+   "meaning": "저녁 서쪽 하늘에 뜨는 금성",
+   "times": [
+    "dusk",
+    "night"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "night_sky"
+   ]
+  },
+  {
+   "id": "saetbyeol",
+   "word": "샛별",
+   "meaning": "새벽 동쪽 하늘에 뜨는 금성",
+   "times": [
+    "dawn"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "night_sky"
+   ]
+  },
+  {
+   "id": "meondong",
+   "word": "먼동",
+   "meaning": "날이 밝아 올 무렵의 동쪽 하늘",
+   "times": [
+    "dawn"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "sky",
+    "sunset_sunrise"
+   ]
+  },
+  {
+   "id": "ttanggeomi",
+   "word": "땅거미",
+   "meaning": "해가 진 뒤 어둑해질 무렵",
+   "times": [
+    "dusk"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "sky",
+    "street",
+    "alley",
+    "road"
+   ]
+  },
+  {
+   "id": "inae",
+   "word": "이내",
+   "meaning": "해 질 무렵 멀리 보이는 푸르스름하고 흐릿한 기운",
+   "times": [
+    "dusk"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "mountain",
+    "sky"
+   ]
+  },
+  {
+   "id": "dalmuri",
+   "word": "달무리",
+   "meaning": "달 언저리에 둥글게 생기는 허연 테",
+   "times": [
+    "night"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "moon",
+    "night_sky"
+   ]
+  },
+  {
+   "id": "ajirangi",
+   "word": "아지랑이",
+   "meaning": "봄볕에 공기가 아른아른 움직이는 것",
+   "times": [
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [],
+   "seasons": [
+    "spring"
+   ],
+   "subjects": [
+    "road",
+    "land",
+    "grass"
+   ]
+  },
+  {
+   "id": "kkotsaemchuwi",
+   "word": "꽃샘추위",
+   "meaning": "봄꽃이 필 무렵 잠깐 드는 추위",
+   "times": [],
+   "weathers": [],
+   "seasons": [
+    "spring"
+   ],
+   "subjects": [
+    "blossom",
+    "flower"
+   ]
+  },
+  {
+   "id": "garangbi",
+   "word": "가랑비",
+   "meaning": "가늘게 내리는 비",
+   "times": [],
+   "weathers": [
+    "drizzle",
+    "rain"
+   ],
+   "seasons": [],
+   "subjects": [
+    "umbrella",
+    "street"
+   ]
+  },
+  {
+   "id": "boseulbi",
+   "word": "보슬비",
+   "meaning": "바람 없이 가늘고 성기게 내리는 비",
+   "times": [],
+   "weathers": [
+    "drizzle"
+   ],
+   "seasons": [],
+   "subjects": [
+    "umbrella"
+   ]
+  },
+  {
+   "id": "sonagi",
+   "word": "소나기",
+   "meaning": "갑자기 세차게 쏟아지다 그치는 비",
+   "times": [
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [
+    "rain"
+   ],
+   "seasons": [
+    "summer"
+   ],
+   "subjects": [
+    "umbrella",
+    "sky"
+   ]
+  },
+  {
+   "id": "hambaknun",
+   "word": "함박눈",
+   "meaning": "굵고 탐스럽게 내리는 눈",
+   "times": [],
+   "weathers": [
+    "snow"
+   ],
+   "seasons": [
+    "winter"
+   ],
+   "subjects": [
+    "snow",
+    "snowman"
+   ]
+  },
+  {
+   "id": "jinnunkkaebi",
+   "word": "진눈깨비",
+   "meaning": "비가 섞여 내리는 눈",
+   "times": [],
+   "weathers": [
+    "snow",
+    "rain"
+   ],
+   "seasons": [
+    "winter"
+   ],
+   "subjects": [
+    "snow"
+   ]
+  },
+  {
+   "id": "museori",
+   "word": "무서리",
+   "meaning": "늦가을 처음 내리는 묽은 서리",
+   "times": [
+    "dawn",
+    "morning"
+   ],
+   "weathers": [],
+   "seasons": [
+    "autumn"
+   ],
+   "subjects": [
+    "grass",
+    "foliage"
+   ]
+  },
+  {
+   "id": "sandeulbaram",
+   "word": "산들바람",
+   "meaning": "시원하고 가볍게 부는 바람",
+   "times": [],
+   "weathers": [],
+   "seasons": [
+    "spring",
+    "summer",
+    "autumn"
+   ],
+   "subjects": [
+    "foliage",
+    "grass",
+    "flower",
+    "tree"
+   ]
+  },
+  {
+   "id": "hanuibaram",
+   "word": "하늬바람",
+   "meaning": "서쪽에서 부는 선선한 바람",
+   "times": [],
+   "weathers": [
+    "wind"
+   ],
+   "seasons": [
+    "autumn"
+   ],
+   "subjects": [
+    "foliage",
+    "tree"
+   ]
+  },
+  {
+   "id": "doenbaram",
+   "word": "된바람",
+   "meaning": "매섭게 부는 북쪽 바람",
+   "times": [],
+   "weathers": [
+    "wind"
+   ],
+   "seasons": [
+    "winter"
+   ],
+   "subjects": []
+  },
+  {
+   "id": "hannat",
+   "word": "한낮",
+   "meaning": "해가 가장 높이 뜬 때",
+   "times": [
+    "noon"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "blue_sky",
+    "sun"
+   ]
+  },
+  {
+   "id": "haemaji",
+   "word": "해맞이",
+   "meaning": "떠오르는 해를 맞는 일",
+   "times": [
+    "dawn"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "sun",
+    "sunset_sunrise"
+   ]
+  },
+  {
+   "id": "hanbam",
+   "word": "한밤",
+   "meaning": "깊은 밤",
+   "times": [
+    "night"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "night_sky"
+   ]
+  },
+  {
+   "id": "dalmaji",
+   "word": "달맞이",
+   "meaning": "떠오르는 달을 맞는 일",
+   "times": [
+    "dusk",
+    "night"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "moon"
+   ]
+  },
+  {
+   "id": "mulbora",
+   "word": "물보라",
+   "meaning": "물결이 부딪쳐 흩어지는 잔 물방울",
+   "times": [],
+   "weathers": [],
+   "seasons": [
+    "summer"
+   ],
+   "subjects": [
+    "ocean",
+    "beach",
+    "water_body"
+   ]
+  },
+  {
+   "id": "biseolgeoji",
+   "word": "비설거지",
+   "meaning": "비가 오려 할 때 젖으면 안 될 것을 치우는 일",
+   "times": [],
+   "weathers": [
+    "rain",
+    "cloudy"
+   ],
+   "seasons": [],
+   "subjects": [
+    "umbrella"
+   ]
+  },
+  {
+   "id": "haeneomi",
+   "word": "해넘이",
+   "meaning": "해가 넘어가는 일",
+   "times": [
+    "dusk"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "sunset_sunrise"
+   ]
+  },
+  {
+   "id": "byeotbaragi",
+   "word": "볕바라기",
+   "meaning": "볕을 쬐는 일",
+   "times": [
+    "morning",
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [],
+   "seasons": [
+    "autumn",
+    "winter",
+    "spring"
+   ],
+   "subjects": [
+    "sun",
+    "window",
+    "cat",
+    "dog"
+   ]
+  },
+  {
+   "id": "meokjanggureum",
+   "word": "먹장구름",
+   "meaning": "먹빛처럼 짙은 구름",
+   "times": [],
+   "weathers": [
+    "cloudy",
+    "rain"
+   ],
+   "seasons": [],
+   "subjects": [
+    "cloudy"
+   ]
+  },
+  {
+   "id": "chanbarammeori",
+   "word": "찬바람머리",
+   "meaning": "가을에 찬 바람이 불기 시작할 무렵",
+   "times": [],
+   "weathers": [],
+   "seasons": [
+    "autumn"
+   ],
+   "subjects": []
+  },
+  {
+   "id": "saecham",
+   "word": "새참",
+   "meaning": "일을 하다가 잠깐 쉬면서 먹는 음식",
+   "times": [
+    "morning",
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "food",
+    "bread",
+    "dessert"
+   ]
+  },
+  {
+   "id": "gyeotduri",
+   "word": "곁두리",
+   "meaning": "끼니 밖에 틈틈이 먹는 음식",
+   "times": [
+    "morning",
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "food",
+    "bread",
+    "dessert",
+    "fruit"
+   ]
+  },
+  {
+   "id": "jujeonburi",
+   "word": "주전부리",
+   "meaning": "때를 가리지 않고 조금씩 먹는 군음식",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "dessert",
+    "cake",
+    "bread",
+    "fruit"
+   ]
+  },
+  {
+   "id": "kkini",
+   "word": "끼니",
+   "meaning": "아침·점심·저녁처럼 때맞춰 먹는 밥",
+   "times": [
+    "morning",
+    "noon",
+    "dusk",
+    "night"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "food"
+   ]
+  },
+  {
+   "id": "mokchugim",
+   "word": "목축임",
+   "meaning": "목이 마를 때 조금 마셔 목을 축이는 일",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "drink",
+    "coffee",
+    "cup"
+   ]
+  },
+  {
+   "id": "mokkoji",
+   "word": "모꼬지",
+   "meaning": "놀이나 잔치로 여러 사람이 모이는 일",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "celebration"
+   ]
+  },
+  {
+   "id": "malbeot",
+   "word": "말벗",
+   "meaning": "이야기를 나눌 수 있는 벗",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "people"
+   ]
+  },
+  {
+   "id": "golmok",
+   "word": "골목",
+   "meaning": "큰길에서 동네 안으로 이리저리 난 좁은 길",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "alley",
+    "street"
+   ]
+  },
+  {
+   "id": "gilmotungi",
+   "word": "길모퉁이",
+   "meaning": "길이 구부러지거나 꺾여 돌아가는 자리",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "street",
+    "road"
+   ]
+  },
+  {
+   "id": "gilseop",
+   "word": "길섶",
+   "meaning": "길의 가장자리",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "road",
+    "grass",
+    "shrub"
+   ]
+  },
+  {
+   "id": "bulbit",
+   "word": "불빛",
+   "meaning": "켜 놓은 등이나 타는 불의 빛",
+   "times": [
+    "dusk",
+    "night"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "lamp",
+    "light",
+    "candle",
+    "fire"
+   ]
+  },
+  {
+   "id": "bitsal",
+   "word": "빛살",
+   "meaning": "비치는 빛의 줄기",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "light",
+    "window",
+    "sun"
+   ]
+  },
+  {
+   "id": "haetbal",
+   "word": "햇발",
+   "meaning": "사방으로 뻗친 햇살",
+   "times": [
+    "morning",
+    "noon",
+    "afternoon"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "sun",
+    "window"
+   ]
+  },
+  {
+   "id": "bogeumjari",
+   "word": "보금자리",
+   "meaning": "지내기에 포근하고 아늑한 곳",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "bedroom",
+    "bed",
+    "sofa",
+    "pillow"
+   ]
+  },
+  {
+   "id": "sonttae",
+   "word": "손때",
+   "meaning": "오래 쓰고 매만져 길이 든 흔적",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "book",
+    "desk",
+    "table",
+    "wood_processed"
+   ]
+  },
+  {
+   "id": "danjam",
+   "word": "단잠",
+   "meaning": "아주 달게 곤히 자는 잠",
+   "times": [
+    "night",
+    "dawn"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "bed",
+    "pillow",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "jjam",
+   "word": "짬",
+   "meaning": "하던 일에서 잠깐 손을 뗄 수 있는 겨를",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "laptop",
+    "computer",
+    "desk",
+    "cup"
+   ]
+  },
+  {
+   "id": "gyeoreul",
+   "word": "겨를",
+   "meaning": "무엇을 하거나 생각할 수 있는 여유",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "laptop",
+    "computer",
+    "book"
+   ]
+  }
+ ]
+}
