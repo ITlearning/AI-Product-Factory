@@ -129,3 +129,22 @@ final class CaptureInboxTests: XCTestCase {
         XCTAssertEqual(session.invalidated, [sessionDir])
     }
 }
+
+@MainActor
+final class CaptureIntentTests: XCTestCase {
+
+    func testAppHostInstallsCameraRequest() {
+        XCTAssertNotNil(ColorCaptureIntent.opensApp, "앱이 꽂지 않으면 카메라 컨트롤로 열린 앱이 몇 초 뒤 죽는다")
+    }
+
+    func testPerformAsksAppToOpenCamera() async throws {
+        let installed = ColorCaptureIntent.opensApp
+        defer { ColorCaptureIntent.opensApp = installed }
+        let request = CameraRequest()
+        ColorCaptureIntent.opensApp = { request.pending = true }
+
+        _ = try await ColorCaptureIntent().perform()
+
+        XCTAssertTrue(request.pending)
+    }
+}

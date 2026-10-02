@@ -11,6 +11,7 @@ struct ColorMomentsApp: App {
     @State private var reconcilerObserver: AssetReconcilerObserver?
     @State private var sync: CloudSync?
     @State private var catchUp: CatchUp
+    @State private var cameraRequest: CameraRequest
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
@@ -21,6 +22,10 @@ struct ColorMomentsApp: App {
         PhotoEnrichment.attribution = WeatherLookup.attribution
         WordAssistant.install()
         BackgroundHold.install()
+        // 인텐트는 첫 화면보다 먼저 올 수 있다 — 홈이 뜨면 이 표시를 보고 카메라를 연다.
+        let cameraRequest = CameraRequest()
+        _cameraRequest = State(initialValue: cameraRequest)
+        ColorCaptureIntent.opensApp = { cameraRequest.pending = true }
         // store 가 같은 closures 인스턴스를 봐야 「마무리하기」가 그 자리에서 반영된다.
         let closures = DayClosures()
         _closures = State(initialValue: closures)
@@ -45,7 +50,7 @@ struct ColorMomentsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures,
+            HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures, cameraRequest: cameraRequest,
                       prepare: { [catchUp] in await catchUp.run() })
                 .task {
                     Task(priority: .userInitiated) { await SoftPebbleView.precompile() }
@@ -104,4 +109,10 @@ struct ColorMomentsApp: App {
             }
         }
     }
+}
+
+/// 카메라 컨트롤·제어센터가 앱을 열었다는 표시 — 홈이 카메라를 열고 내린다.
+@Observable
+final class CameraRequest {
+    var pending = false
 }
