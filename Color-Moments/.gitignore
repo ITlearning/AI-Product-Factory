@@ -14,3 +14,16 @@ xcuserdata/
 .env
 .env.*
 .superpowers/
+# fastlane 이 읽는 값의 빈 틀 — 이것만 커밋한다.
+!fastlane/.env.default
+
+# fastlane 산출물
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output
+*.ipa
+*.dSYM.zip
+
+# Bundler
+vendor/bundle/
+.bundle/
