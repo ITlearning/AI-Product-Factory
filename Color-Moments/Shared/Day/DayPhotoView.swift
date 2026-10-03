@@ -304,22 +304,21 @@ struct DayPhotoView: View {
     }
 
     private func assignWord(_ m: Moment, labels: [String]) async {
+        // 틀려서 지운 단어를 다시 고를 때도 ↻ 로 버린 단어는 빼야 한다.
         guard !Task.isCancelled, current?.word == nil,
-              let pick = await pickWord(for: m, labels: labels), !Task.isCancelled else { return }
+              let pick = await pickWord(for: m, labels: labels, banned: rejections.rejected(m.id)), !Task.isCancelled else { return }
         store.assignWord(m.id, PhotoWord(pick.word))
     }
 
     /// 규칙 후보(+그 순간의 말) 안에서 고른다 — Apple Intelligence 가 되는 기기는 모델이, 아니면 규칙 1순위.
     private func pickWord(for m: Moment, labels: [String], banned: Set<String> = []) async -> (word: WordEntry, pool: [WordEntry])? {
-        let seen = Set(labels)
         let words = await BundledWordSource().words()
         let weather = current?.place?.weather
-        let ctx = PhotoContext(date: m.capturedAt,
-                               weather: weather.flatMap { PhotoEnrichment.wordWeather($0.condition) } ?? Weather.inferred(from: seen))
+        let ctx = PhotoContext(current ?? m, labels: labels)
         let recent = store.recentWordIDs(excluding: m.id).union(rejections.avoided)
         let seed = m.id.uuidString
-        let rule = WordPicker.candidates(for: ctx, labels: seen, in: words, excluding: recent, seed: seed, banned: banned)
-        let pool = WordPicker.choices(for: ctx, labels: seen, in: words, excluding: recent, seed: seed, banned: banned)
+        let rule = WordPicker.candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
+        let pool = WordPicker.choices(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
         guard let first = rule.first ?? pool.first else { return nil }
         let input = WordChoice(candidates: pool.map { .init(id: $0.id, word: $0.word, meaning: $0.meaning) },
                                labels: labels, date: m.capturedAt,

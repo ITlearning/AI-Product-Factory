@@ -755,11 +755,7 @@ public final class DayStore {
         guard let items = try? decoder.decode([Failable<Moment>].self, from: data) else { return ([], .unreadable) }
         let decoded = items.compactMap(\.value)
         let skipped = items.count - decoded.count
-        let moments = decoded.map { m in
-            var m = m
-            if m.labels == nil { m.word = nil }
-            return m
-        }
+        let moments = decoded.map { $0.checkingWord(in: BundledWordSource.cached, retired: BundledWordSource.retired) }
         return (moments, skipped > 0 ? .partial(skipped: skipped) : nil)
     }
 

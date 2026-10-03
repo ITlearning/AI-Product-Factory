@@ -238,12 +238,12 @@ final class DayStoreTests: XCTestCase {
         [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC","fileName":"a.jpg","source":"app",
           "word":{"wordID":"haegeoreum","word":"해거름","meaning":"m"}},
          {"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T04:00:00Z","colorHex":"#AABBCC","fileName":"b.jpg","source":"app",
-          "labels":["sky"],"word":{"wordID":"meondong","word":"먼동","meaning":"m"}}]
+          "labels":["alley"],"word":{"wordID":"golmok","word":"골목","meaning":"m"}}]
         """
         try Data(legacy.utf8).write(to: tempFile)
         let ms = DayStore(fileURL: tempFile, closures: closures).moments.sorted { $0.fileName < $1.fileName }
         XCTAssertNil(ms[0].word, "사진을 안 보고 붙은 옛 단어는 지운다")
-        XCTAssertEqual(ms[1].word?.wordID, "meondong", "사진을 보고 붙은 단어는 그대로")
+        XCTAssertEqual(ms[1].word?.wordID, "golmok", "사진을 보고 붙은 단어는 그대로")
     }
 
     private func imported(_ at: Date, added: Date, batch: UUID, name: String, asset: String? = nil) -> Moment {
