@@ -124,9 +124,9 @@ final class CloudSync: CKSyncEngineDelegate {
             forget(id)
             if case .moment(let uuid) = SyncRecords.ref(id) { deletes.insert(uuid) }
         }
-        let push = await store.applyRemoteInChunks(upserts: upserts, deletes: deletes,
-                                                   excluding: { [weak self] in self?.pendingMomentDeletes() ?? [] },
-                                                   pause: FramePause.next)
+        let (push, _) = await Self.applyFetched(upserts: upserts, deletes: deletes, to: store,
+                                                excluding: { [weak self] in self?.pendingMomentDeletes() ?? [] },
+                                                pause: FramePause.next)
         guard engine === current else { return }
         enqueue(push)
         persistSystemFields()
@@ -139,6 +139,29 @@ final class CloudSync: CKSyncEngineDelegate {
             guard case .deleteRecord(let id) = $0, case .moment(let uuid) = SyncRecords.ref(id) else { return nil }
             return uuid
         })
+    }
+
+    /// 받은 변경을 넣는다. 받은 삭제는 다른 기기가 실제로 지운 것 — 뺀 사진을 이 기기의 ♥ 담기가 다시 담으면
+    /// 그 기기로 되살아 돌아가니 적어 두고, 이 기기에만 있던 사본 파일은 가리킬 기록이 없으니 지운다.
+    @discardableResult
+    static func applyFetched(upserts: [Moment], deletes: Set<Moment.ID>, to store: DayStore,
+                             excluding: () -> Set<Moment.ID>, pause: () async -> Void,
+                             now: Date = Date(), defaults: UserDefaults = .standard)
+        async -> (push: [StoreChange], cleanup: Task<Void, Never>?) {
+        let leaving = deletes.isEmpty ? [] : store.moments.filter { deletes.contains($0.id) }
+        let push = await store.applyRemoteInChunks(upserts: upserts, deletes: deletes, excluding: excluding, pause: pause)
+        guard !leaving.isEmpty else { return (push, nil) }
+        RemovedPhotos.noteGone(leaving, remaining: store.moments, now: now, defaults: defaults)
+        return (push, store.removeLeftoverFiles(of: leaving))
+    }
+
+    /// 올리다 받은 「서버에 없음」 — 다른 기기가 지웠을 수도, iCloud 설정에서 몽돌 데이터를 지운 뒤 존이 다시 생겼을 수도 있다.
+    /// 기록은 다시 올리면 되살아나니 지우지만, 이 기기에만 있던 원본 파일은 남긴다(icloud-sync §8 「로컬은 둔다」).
+    static func dropUnknown(_ id: Moment.ID, from store: DayStore, now: Date = Date(), defaults: UserDefaults = .standard) {
+        guard let gone = store.moment(id) else { return }
+        store.applyRemote(upserts: [], deletes: [id])
+        // 다른 기기가 뺀 사진이면 받은 삭제가 뒤에 와도 지울 기록이 없어 못 적는다 — 여기서 적는다.
+        RemovedPhotos.noteGone([gone], remaining: store.moments, now: now, defaults: defaults)
     }
 
     // 다른 기기에서 받음·닫힘·사진이 들어오면 이 기기의 예약 알림·위젯도 맞춘다 — 안 그러면 이미 받은 날 알림이 울린다.
@@ -261,9 +284,9 @@ final class CloudSync: CKSyncEngineDelegate {
                     add([.saveRecord(id)])
                 case .unknownItem:
                     forget(id)
-                    // 다른 기기가 지운 기록이다 — Moment 를 다시 저장하면 되살아난다(§3-4). Day 만 다시 올린다.
+                    // 서버에 없는 기록이다 — Moment 를 다시 저장하면 되살아난다(§3-4). Day 만 다시 올린다.
                     if case .moment(let uuid) = SyncRecords.ref(id) {
-                        store.applyRemote(upserts: [], deletes: [uuid])
+                        Self.dropUnknown(uuid, from: store)
                         refreshSurfaces()
                     } else {
                         add([.saveRecord(id)])

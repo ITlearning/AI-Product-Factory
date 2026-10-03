@@ -26,17 +26,20 @@ final class CaptureInbox {
     private let invalidate: (URL) async throws -> Void
     private let adopt: (Moment, DayStore) async -> Void
     private let shotsDirectory: URL
+    private let removedNames: () -> Set<String>
 
     init(sessionURLs: @escaping () -> [URL] = { LockedCameraCaptureManager.shared.sessionContentURLs },
          invalidate: @escaping (URL) async throws -> Void = {
              try await LockedCameraCaptureManager.shared.invalidateSessionContent(at: $0)
          },
          adopt: @escaping (Moment, DayStore) async -> Void = { await AssetAdopter.adopt($0, store: $1) },
-         shotsDirectory: URL = CaptureInbox.shotsDirectory) {
+         shotsDirectory: URL = CaptureInbox.shotsDirectory,
+         removedNames: @escaping () -> Set<String> = { RemovedPhotos.originalNames() }) {
         self.sessionURLs = sessionURLs
         self.invalidate = invalidate
         self.adopt = adopt
         self.shotsDirectory = shotsDirectory
+        self.removedNames = removedNames
     }
 
     nonisolated static var shotsDirectory: URL {
@@ -106,8 +109,11 @@ final class CaptureInbox {
         }
 
         var toAdopt: [Moment] = []
+        let removed = removedNames()
         // 위치 쪽지(LockedPlaceNote)는 사진이 아니다 — 사진을 들여올 때 옆에서 읽기만 한다.
         for f in files where f.pathExtension.lowercased() != "json" {
+            // 무효화에 실패해 다시 온 세션 — 그사이 몽돌에서 뺀 사진은 add 의 중복 판정에 안 걸린다.
+            guard !removed.contains(f.lastPathComponent) else { note("뺀 사진이라 건너뜀 \(f.lastPathComponent)"); continue }
             let dest = shotsDirectory.appendingPathComponent(f.lastPathComponent)
             do {
                 if fm.fileExists(atPath: dest.path) { try fm.removeItem(at: dest) }

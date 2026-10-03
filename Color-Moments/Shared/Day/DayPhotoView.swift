@@ -88,6 +88,8 @@ private struct DayPhotoLoadKey: Equatable {
 struct DayPhotoView: View {
     let momentID: Moment.ID
     let store: DayStore
+    /// 「몽돌에서 빼기」를 확인했을 때 — 빼고 옆 사진으로 넘기거나 보기를 닫는 건 부른 쪽이 한다. nil 이면 메뉴를 두지 않는다.
+    var onTakeOut: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var image: UIImage?
@@ -97,13 +99,16 @@ struct DayPhotoView: View {
     @State private var revealArrivals = false
     @State private var pacer = RevealPacer()
     @State private var rejections = WordRejections.shared
+    @State private var confirmingTakeOut = false
 
     private var moment: Moment? { store.moments.first { $0.id == momentID } }
     /// task 가 잡아 둔 값은 옛것이다 — 도중에 붙은 동네·날씨는 여기서 다시 읽는다.
     private var current: Moment? { moment }
 
     /// 닫히기 전 하루(진행 중인 오늘)의 사진이면 색을 쓰지 않는다 — 로딩 자리·시각 옆 점 모두.
-    private func hidesColor(_ m: Moment) -> Bool {
+    private func hidesColor(_ m: Moment) -> Bool { Self.hidesColor(m, store: store) }
+
+    static func hidesColor(_ m: Moment, store: DayStore) -> Bool {
         m.dayKey == Moment.dayKey(for: Date()) && !store.isFinished(m.dayKey)
     }
 
@@ -138,11 +143,47 @@ struct DayPhotoView: View {
                     if attribution == nil, current?.place?.weather != nil { attribution = await PhotoEnrichment.attribution?() }
                 }
             }
-            closeButton
-                .padding(.horizontal, 18).padding(.top, 8)
+            HStack {
+                closeButton
+                Spacer()
+                if onTakeOut != nil, moment != nil { moreButton }
+            }
+            .padding(.horizontal, 18).padding(.top, 8)
         }
         .statusBarHidden()
         .accessibilityAction(.escape) { dismiss() }
+        .confirmationDialog("몽돌에서 뺄까요?", isPresented: $confirmingTakeOut, titleVisibility: .visible,
+                            presenting: moment) { _ in
+            Button("빼기", role: .destructive) { onTakeOut?() }
+            Button("그대로 둘게요", role: .cancel) {}
+        } message: { m in
+            Text(Self.takeOutNote(m, store: store))
+        }
+    }
+
+    /// 닫기 알약의 짝 — 메뉴는 하나뿐이고 길게 눌러 여는 메뉴는 두지 않는다(Tabber).
+    private var moreButton: some View {
+        Menu {
+            Button("몽돌에서 빼기", role: .destructive) { confirmingTakeOut = true }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Tone.secondary)
+                .frame(width: Shape2.minTouch, height: Shape2.minTouch)
+                .background(.white.opacity(0.12), in: Circle())
+        }
+        .accessibilityLabel("더 보기")
+    }
+
+    /// 사진 앱에 있다고 말할 수 있는 건 assetID·cloudID 가 있을 때뿐 — 다른 기기에만 파일로 있는 사진(remote-)도
+    /// 빼면 그 기기가 파일을 지워 다시 못 본다. 안 닫힌 오늘은 조약돌 얘기를 하지 않는다.
+    static func takeOutNote(_ m: Moment, store: DayStore) -> String {
+        let kept = m.assetID != nil || m.cloudID != nil
+            ? "사진 앱에는 그대로 남아요." : "사진 앱에 없는 사진이라 빼면 다시 볼 수 없어요."
+        guard !hidesColor(m, store: store) else { return kept }
+        if store.moments(on: m.dayKey).count == 1 { return kept + " 이 하루의 조약돌도 사라져요." }
+        guard store.pebbleMoments(on: m.dayKey).contains(where: { $0.id == m.id }) else { return kept }
+        return kept + " 조약돌은 남은 사진으로 다시 그려져요."
     }
 
     private var closeButton: some View {

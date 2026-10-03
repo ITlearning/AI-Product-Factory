@@ -39,7 +39,7 @@ final class CaptureInboxTests: XCTestCase {
         try await super.tearDown()
     }
 
-    private func makeInbox() -> CaptureInbox {
+    private func makeInbox(removed: Set<String> = []) -> CaptureInbox {
         let session = session!
         return CaptureInbox(
             sessionURLs: { session.urls },
@@ -49,7 +49,21 @@ final class CaptureInboxTests: XCTestCase {
                 try FileManager.default.removeItem(at: url)
             },
             adopt: { m, _ in session.adopted.append(m.fileName) },
-            shotsDirectory: shots)
+            shotsDirectory: shots,
+            removedNames: { removed })
+    }
+
+    // 무효화에 실패해 다시 온 세션 — 그사이 몽돌에서 뺀 사진은 다시 들이지 않고, 세션은 이번엔 끊는다.
+    func testRedeliveredSessionSkipsAPhotoTakenOutOfMongdol() async {
+        let inbox = makeInbox(removed: [shotName])
+        inbox.dayStore = store
+
+        await inbox.sweep()
+
+        XCTAssertTrue(store.moments.isEmpty)
+        XCTAssertTrue(session.adopted.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: shots.appendingPathComponent(shotName).path))
+        XCTAssertEqual(session.invalidated, [sessionDir])
     }
 
     // 2026-09-29 16 Pro: 세션 목록엔 1개가 있는데 sessionContentUpdates 가 .initial 을 안 보내 사진이 남았다.

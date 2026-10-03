@@ -17,6 +17,10 @@ public struct DayMomentsView: View {
     @State private var confirmingFinish = false
     @State private var sharing = false
     @State private var lastViewed: Moment.ID?
+    // 사진 보기에서 한 장을 빼고 옆 사진으로 넘어갔다 — 보기는 열린 채 이 사진을 보인다.
+    @State private var showing: Moment.ID?
+    // 혼자 남은 사진을 뺐다 — 보기가 그 사진 칸으로 줄어 돌아간 뒤에 뺀다.
+    @State private var takingOut: Moment.ID?
     @Namespace private var zoom
 
     private static let photo = CGSize(width: 190, height: 127)
@@ -60,10 +64,12 @@ public struct DayMomentsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         topBar
-                        Spacer().frame(height: 24)
-                        header
-                        Spacer().frame(height: 30)
-                        timeline(width: max(0, geo.size.width - 56))
+                        if !moments.isEmpty {
+                            Spacer().frame(height: 24)
+                            header
+                            Spacer().frame(height: 30)
+                            timeline(width: max(0, geo.size.width - 56))
+                        }
                         if store.canClose(dayKey) {
                             Spacer().frame(height: 40)
                             finishButton
@@ -78,10 +84,40 @@ public struct DayMomentsView: View {
         }
         .presentationDragIndicator(.hidden)
         .onChange(of: viewing?.id) { _, id in if let id { lastViewed = id } }
-        .fullScreenCover(item: $viewing) { m in
-            DayPhotoView(momentID: m.id, store: store)
-                .navigationTransition(.zoom(sourceID: m.id, in: zoom))
+        .fullScreenCover(item: $viewing, onDismiss: photoClosed) { m in
+            let id = showing ?? m.id
+            DayPhotoView(momentID: id, store: store, onTakeOut: { takeOut(id) })
+                .id(id)
+                .navigationTransition(.zoom(sourceID: id, in: zoom))
         }
+        // 마지막 사진이 빠지면(여기서 뺐든 사진 앱·다른 기기에서 지웠든) 빈 하루를 붙들지 않는다.
+        .onChange(of: moments.isEmpty) { _, empty in if empty { dismiss() } }
+    }
+
+    private func takeOut(_ id: Moment.ID) {
+        guard let next = Self.shownAfterTakingOut(id, from: moments) else {
+            takingOut = id
+            viewing = nil
+            return
+        }
+        store.takeOut(id)
+        withAnimation(.easeOut(duration: 0.3)) { showing = next }
+        lastViewed = next
+    }
+
+    private func photoClosed() {
+        showing = nil
+        guard let id = takingOut else { return }
+        takingOut = nil
+        if lastViewed == id { lastViewed = nil }
+        withAnimation(.easeOut(duration: 0.35)) { _ = store.takeOut(id) }
+    }
+
+    /// 뺀 다음 보일 사진 — 뒤 사진, 맨 끝이면 앞 사진. 혼자였으면 nil(보기를 닫는다).
+    static func shownAfterTakingOut(_ id: Moment.ID, from moments: [Moment]) -> Moment.ID? {
+        guard let i = moments.firstIndex(where: { $0.id == id }) else { return nil }
+        if moments.indices.contains(i + 1) { return moments[i + 1].id }
+        return i > 0 ? moments[i - 1].id : nil
     }
 
     private var topBar: some View {
