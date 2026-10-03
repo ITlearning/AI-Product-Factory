@@ -128,8 +128,7 @@ final class CloudSync: CKSyncEngineDelegate {
         let push = await store.applyRemoteInChunks(upserts: upserts, deletes: deletes,
                                                    excluding: { [weak self] in self?.pendingMomentDeletes() ?? [] },
                                                    pause: FramePause.next)
-        // 다른 기기에서 뺀 사진을 이 기기의 ♥ 담기가 다시 담으면 그 기기로 되살아 돌아간다.
-        RemovedPhotos.noteGone(leaving, stillHeld: store.containsAsset)
+        settleRemoteDeletes(leaving)
         guard engine === current else { return }
         enqueue(push)
         persistSystemFields()
@@ -142,6 +141,14 @@ final class CloudSync: CKSyncEngineDelegate {
             guard case .deleteRecord(let id) = $0, case .moment(let uuid) = SyncRecords.ref(id) else { return nil }
             return uuid
         })
+    }
+
+    /// 다른 기기에서 지운 기록 — 뺀 사진을 이 기기의 ♥ 담기가 다시 담으면 그 기기로 되살아 돌아간다.
+    /// 이 기기에만 있던 사본 파일은 가리킬 기록이 없어 다시 볼 길이 없다 — 남기지 않는다.
+    private func settleRemoteDeletes(_ leaving: [Moment]) {
+        guard !leaving.isEmpty else { return }
+        RemovedPhotos.noteGone(leaving, remaining: store.moments)
+        store.removeLeftoverFiles(of: leaving)
     }
 
     // 다른 기기에서 받음·닫힘·사진이 들어오면 이 기기의 예약 알림·위젯도 맞춘다 — 안 그러면 이미 받은 날 알림이 울린다.
@@ -268,7 +275,7 @@ final class CloudSync: CKSyncEngineDelegate {
                     if case .moment(let uuid) = SyncRecords.ref(id) {
                         let gone = store.moment(uuid).map { [$0] } ?? []
                         store.applyRemote(upserts: [], deletes: [uuid])
-                        RemovedPhotos.noteGone(gone, stillHeld: store.containsAsset)
+                        settleRemoteDeletes(gone)
                         refreshSurfaces()
                     } else {
                         add([.saveRecord(id)])

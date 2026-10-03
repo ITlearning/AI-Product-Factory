@@ -494,19 +494,30 @@ public final class DayStore {
     }
 
     /// 사진 보기의 「몽돌에서 빼기」 — 기록만 지운다(사진 앱 사진은 그대로). 지운 기록은 iCloud 로 다른 기기에도 번진다.
-    /// 기록은 이 자리에서 빠지고, 이 기기에 남은 사본 파일은 돌려준 Task 가 지운다.
+    /// 알아서 담는 길이 되살리지 않게 RemovedPhotos 에 적고, 이 기기에 남은 사본 파일은 돌려준 Task 가 지운다.
     @MainActor
     @discardableResult
-    public func takeOut(_ id: Moment.ID) -> Task<Void, Never>? {
+    public func takeOut(_ id: Moment.ID, noting defaults: UserDefaults = .standard) -> Task<Void, Never>? {
         guard let m = moment(id) else { return nil }
+        RemovedPhotos.note(m, defaults: defaults)
         remove(ids: [id])
-        let name = m.fileName
-        guard !name.hasPrefix("asset-"), !name.hasPrefix("remote-") else { return nil }
-        let inUse = { self.moments.contains { $0.fileName == name } }
+        return removeLeftoverFiles(of: [m])
+    }
+
+    /// 지운 기록의 사본 파일 — 남은 기록이 아무도 안 쓰는 것만, 지운 게 디스크에 닿은 뒤에 지운다.
+    @MainActor
+    @discardableResult
+    public func removeLeftoverFiles(of removed: [Moment]) -> Task<Void, Never>? {
+        let names = Set(removed.map(\.fileName).filter { !$0.hasPrefix("asset-") && !$0.hasPrefix("remote-") })
+        guard !names.isEmpty else { return nil }
+        let free = { names.subtracting(self.moments.map(\.fileName)) }
         return Task { @MainActor in
             // 삭제가 디스크에 닿기 전에 지우면 kill 뒤 되살아난 기록이 빈 파일을 가리킨다.
-            guard !inUse(), await flushAfterLoad(), !inUse() else { return }
-            try? FileManager.default.removeItem(at: ShotImage.url(name))
+            guard !free().isEmpty, await flushAfterLoad() else { return }
+            let files = free()
+            await Task.detached(priority: .utility) {
+                for name in files { try? FileManager.default.removeItem(at: ShotImage.url(name)) }
+            }.value
         }
     }
 

@@ -100,7 +100,9 @@ struct DayPhotoView: View {
     private var current: Moment? { moment }
 
     /// 닫히기 전 하루(진행 중인 오늘)의 사진이면 색을 쓰지 않는다 — 로딩 자리·시각 옆 점 모두.
-    private func hidesColor(_ m: Moment) -> Bool {
+    private func hidesColor(_ m: Moment) -> Bool { Self.hidesColor(m, store: store) }
+
+    static func hidesColor(_ m: Moment, store: DayStore) -> Bool {
         m.dayKey == Moment.dayKey(for: Date()) && !store.isFinished(m.dayKey)
     }
 
@@ -149,7 +151,7 @@ struct DayPhotoView: View {
             Button("빼기", role: .destructive) { onTakeOut?() }
             Button("그대로 둘게요", role: .cancel) {}
         } message: { m in
-            Text(takeOutNote(m))
+            Text(Self.takeOutNote(m, store: store))
         }
     }
 
@@ -167,11 +169,12 @@ struct DayPhotoView: View {
         .accessibilityLabel("더 보기")
     }
 
-    /// 사진 앱에 없는 사진(권한 없이 찍은 것)은 빼면 다시 못 본다. 안 닫힌 오늘은 조약돌 얘기를 하지 않는다.
-    private func takeOutNote(_ m: Moment) -> String {
-        let kept = store.fileBacked.contains { $0.id == m.id }
-            ? "사진 앱에 없는 사진이라 빼면 다시 볼 수 없어요." : "사진 앱에는 그대로 남아요."
-        guard !hidesColor(m) else { return kept }
+    /// 사진 앱에 있다고 말할 수 있는 건 assetID·cloudID 가 있을 때뿐 — 다른 기기에만 파일로 있는 사진(remote-)도
+    /// 빼면 그 기기가 파일을 지워 다시 못 본다. 안 닫힌 오늘은 조약돌 얘기를 하지 않는다.
+    static func takeOutNote(_ m: Moment, store: DayStore) -> String {
+        let kept = m.assetID != nil || m.cloudID != nil
+            ? "사진 앱에는 그대로 남아요." : "사진 앱에 없는 사진이라 빼면 다시 볼 수 없어요."
+        guard !hidesColor(m, store: store) else { return kept }
         if store.moments(on: m.dayKey).count == 1 { return kept + " 이 하루의 조약돌도 사라져요." }
         guard store.pebbleMoments(on: m.dayKey).contains(where: { $0.id == m.id }) else { return kept }
         return kept + " 조약돌은 남은 사진으로 다시 그려져요."
