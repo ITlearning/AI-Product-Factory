@@ -41,7 +41,7 @@ public struct WordChoice: Sendable, Equatable {
         WordChoice(candidates: candidates.reversed(), labels: labels, date: date, weather: weather, place: place)
     }
 
-    public func prompt(calendar: Calendar = .current) -> String {
+    public func prompt(calendar: Calendar = PhotoContext.korea) -> String {
         let day = DateFormatter()
         day.locale = Locale(identifier: "ko_KR")
         day.calendar = calendar

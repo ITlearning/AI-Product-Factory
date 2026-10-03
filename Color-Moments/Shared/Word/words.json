@@ -27,8 +27,7 @@
    "meaning": "안개보다 굵고 이슬비보다 가는 비",
    "times": [],
    "weathers": [
-    "drizzle",
-    "fog"
+    "drizzle"
    ],
    "seasons": [],
    "subjects": [
@@ -37,8 +36,7 @@
    ],
    "moment": true,
    "conditions": [
-    "drizzle",
-    "foggy"
+    "drizzle"
    ]
   },
   {
@@ -2089,7 +2087,10 @@
    ],
    "seasons": [],
    "subjects": [],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "drizzle"
+   ]
   },
   {
    "id": "angaebi",
@@ -2097,15 +2098,13 @@
    "meaning": "안개처럼 부옇게 보이는 가는 비",
    "times": [],
    "weathers": [
-    "drizzle",
-    "fog"
+    "drizzle"
    ],
    "seasons": [],
    "subjects": [],
    "moment": true,
    "conditions": [
-    "drizzle",
-    "foggy"
+    "drizzle"
    ]
   },
   {
@@ -2118,7 +2117,10 @@
    ],
    "seasons": [],
    "subjects": [],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "drizzle"
+   ]
   },
   {
    "id": "garangnun",

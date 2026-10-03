@@ -203,18 +203,32 @@ final class WordPickerTests: XCTestCase {
         XCTAssertFalse(contradicted("fromnewerversion", ctx(15, .clear)), "모르는 id 는 새 버전 단어 — 지우면 다른 기기 단어를 덮는다")
     }
 
-    func testLoadingClearsOnlyContradictedWords() {
+    func testShownWordHidesOnlyContradictedOrRetiredWords() {
         let place = Place(latitude: 37.5, longitude: 127, accuracy: 10, weather: PlaceWeather(condition: "clear", celsius: 20))
         let words = [w("foxrain", weathers: [.rain], subjects: ["blue_sky"]), w("sky", subjects: ["sky"])]
         func moment(_ id: String, labels: [String]?) -> Moment {
             Moment(capturedAt: Date(timeIntervalSince1970: 15 * 3600), colorHex: "#888888", fileName: "x.jpg", source: .app,
                    word: PhotoWord(wordID: id, word: id, meaning: ""), labels: labels, place: place)
         }
-        XCTAssertNil(moment("foxrain", labels: ["blue_sky", "sky"]).checkingWord(in: words, retired: []).word)
-        XCTAssertEqual(moment("sky", labels: ["sky"]).checkingWord(in: words, retired: []).word?.wordID, "sky")
-        XCTAssertNil(moment("sky", labels: nil).checkingWord(in: words, retired: []).word, "사진을 안 보고 붙은 옛 단어")
-        XCTAssertEqual(moment("foxrain", labels: ["sky"]).checkingWord(in: [], retired: []).word?.wordID, "foxrain",
-                       "목록을 못 읽었으면 아무것도 지우지 않는다")
+        XCTAssertNil(moment("foxrain", labels: ["blue_sky", "sky"]).standingWord(in: words, retired: []))
+        XCTAssertNil(moment("sky", labels: ["sky"]).standingWord(in: words, retired: ["sky"]), "뺀 단어")
+        XCTAssertEqual(moment("sky", labels: ["sky"]).standingWord(in: words, retired: [])?.wordID, "sky")
+        XCTAssertEqual(moment("fromnewer", labels: ["sky"]).standingWord(in: words, retired: [])?.wordID, "fromnewer",
+                       "모르는 id 는 새 버전 단어 — 가리지 않는다")
+        XCTAssertEqual(moment("foxrain", labels: ["sky"]).standingWord(in: [], retired: [])?.wordID, "foxrain",
+                       "목록을 못 읽었으면 가리지 않는다")
+    }
+
+    func testPhotosAbroadUseLocalClockFromLongitude() {
+        var c = DateComponents(); c.year = 2026; c.month = 7; c.day = 15; c.hour = 12   // UTC 12시 = 파리 오후, 서울 밤 9시
+        c.timeZone = TimeZone(identifier: "UTC")
+        let at = Calendar(identifier: .gregorian).date(from: c)!
+        let paris = Moment(capturedAt: at, colorHex: "#888888", fileName: "p.jpg", source: .app,
+                           place: Place(latitude: 48.86, longitude: 2.35, accuracy: 10))
+        let seoul = Moment(capturedAt: at, colorHex: "#888888", fileName: "s.jpg", source: .app,
+                           place: Place(latitude: 37.57, longitude: 126.98, accuracy: 10))
+        XCTAssertEqual(PhotoContext(paris, labels: []).timeBand, .noon, "파리 한낮에 「여름밤」이 붙으면 안 된다")
+        XCTAssertEqual(PhotoContext(seoul, labels: []).hour, 21)
     }
 
     /// Tabber 기기 사진에서 틀렸던 자리 — 실제 단어 목록으로(2026-10-03 실측을 본뜬 사례, 실제 기록은 넣지 않는다).

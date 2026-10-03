@@ -169,7 +169,7 @@ struct DayPhotoView: View {
     @ViewBuilder
     private func words(_ m: Moment) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let w = m.word {
+            if let w = m.standingWord() {
                 wordLine(m, w)
                 Spacer().frame(height: 4)
                 RollingLine(w.meaning, delay: 0.12).font(Face.wordMeaning).foregroundStyle(Tone.tertiary)
@@ -285,11 +285,11 @@ struct DayPhotoView: View {
     /// DayMomentsView 사진 카드와 같은 크기 — 거기서 데운 캐시를 그대로 쓴다.
     private static let previewPixels: CGFloat = 600
 
-    /// 단어가 아직 없는 사진의 라벨. 저장된 옛 라벨(더 엄격한 기준)은 믿지 않고 다시 보고,
-    /// 몇 분 안에 찍은 같은 장면의 라벨을 합친다 — 한 장이 알아봐지면 옆 장도 같이.
-    /// 단어가 있으면 nil, Vision 이 실패하면 저장된 라벨(없으면 nil — 다음에 열 때 다시).
+    /// 단어가 없거나 틀린 사진의 라벨. 저장된 옛 라벨(더 엄격한 기준)은 믿지 않고 다시 보고,
+    /// 몇 분 안에 찍은 같은 장면의 라벨을 합친다 — 한 장이 알아봐지면 옆 장도 같이. 저장은 단어와 함께(stampWord).
+    /// 맞는 단어가 있으면 nil, Vision 이 실패하면 저장된 라벨(없으면 nil — 다음에 열 때 다시).
     private func labelsForWord(_ m: Moment) async -> [String]? {
-        guard m.word == nil else { return nil }
+        guard m.standingWord() == nil else { return nil }
         let vocabulary = Set(await BundledWordSource().words().flatMap(\.subjects))
         guard var labels = await PhotoLabeler.labels(for: m, vocabulary: vocabulary) else { return m.labels }
         let nearby = store.moments.filter {
@@ -299,15 +299,15 @@ struct DayPhotoView: View {
             labels += (n.labels ?? []).filter { !labels.contains($0) }
         }
         guard !Task.isCancelled else { return nil }
-        if m.labels == nil { store.setLabels(m.id, labels) } else { store.refreshLabels(m.id, labels) }
         return labels
     }
 
     private func assignWord(_ m: Moment, labels: [String]) async {
-        // 틀려서 지운 단어를 다시 고를 때도 ↻ 로 버린 단어는 빼야 한다.
-        guard !Task.isCancelled, current?.word == nil,
+        let stale = current?.word
+        // 틀린 단어를 바꿀 때도 ↻ 로 버린 단어는 빼야 한다.
+        guard !Task.isCancelled, current?.standingWord() == nil,
               let pick = await pickWord(for: m, labels: labels, banned: rejections.rejected(m.id)), !Task.isCancelled else { return }
-        store.assignWord(m.id, PhotoWord(pick.word))
+        store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: stale)
     }
 
     /// 규칙 후보(+그 순간의 말) 안에서 고른다 — Apple Intelligence 가 되는 기기는 모델이, 아니면 규칙 1순위.
@@ -332,16 +332,23 @@ struct DayPhotoView: View {
     private func wordLine(_ m: Moment, _ w: PhotoWord) -> some View {
         HStack(alignment: .center, spacing: 4) {
             RollingWord(w.word).font(Face.word).foregroundStyle(Tone.primary)
-            if !rejections.hasRejected(m.id) {
+            if !rejections.hasRejected(m.id), hasAlternative(m, w) {
                 RejectWordButton { Task { await reject(m) } }
                     .transition(.opacity)
             }
         }
     }
 
+    /// 바꿀 단어가 없으면 ↻ 를 두지 않는다 — 눌러도 아무 일이 없다(라벨 없는 사진 약 12%, 2026-10-03 교차 검증).
+    private func hasAlternative(_ m: Moment, _ w: PhotoWord) -> Bool {
+        let labels = m.labels ?? []
+        return !WordPicker.choices(for: PhotoContext(m, labels: labels), labels: labels, in: BundledWordSource.cached,
+                                   excluding: [], seed: m.id.uuidString, banned: [w.wordID]).isEmpty
+    }
+
     /// 사진마다 한 번 — 다음 후보로 바꾸고, 그때의 라벨·후보를 이 기기에만 남긴다.
     private func reject(_ m: Moment) async {
-        guard let old = current?.word, !rejections.hasRejected(m.id) else { return }
+        guard let old = current?.standingWord(), !rejections.hasRejected(m.id) else { return }
         let labels = current?.labels ?? []
         guard let pick = await pickWord(for: m, labels: labels, banned: [old.wordID]) else { return }
         let info = Bundle.main.infoDictionary

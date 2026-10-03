@@ -167,16 +167,10 @@ extension PhotoWord {
 }
 
 extension Moment {
-    /// 불러올 때 — labels 없이 붙은 단어(사진을 안 보고 고른 옛 규칙)와 아는 사실이 뒤집는 단어를 지운다. 사진을 열면 다시 고른다.
-    /// iCloud 에서 받을 때는 거르지 않는다 — 받는 쪽이 지우면 합치기가 로컬 단어를 되올리고, 두 기기가 서로 그러면 끝없이 돈다.
-    func checkingWord(in words: [WordEntry], retired: Set<String>) -> Moment {
-        guard let word else { return self }
-        var m = self
-        if let labels {
-            if WordPicker.contradicted(word, context: PhotoContext(self, labels: labels), in: words, retired: retired) { m.word = nil }
-        } else {
-            m.word = nil
-        }
-        return m
+    /// 사진 보기에 보일 단어 — 아는 사실이 뒤집은 단어·뺀(retired) 단어는 가리고, 열 때 새로 골라 단어와 라벨을 한 번에 바꾼다.
+    /// 불러올 때 지우지 않는다 — 빈 단어가 iCloud 로 먼저 올라가면 옛 단어를 든 기기가 되올려 새로 고른 단어를 이긴다(2026-10-03 교차 검증 N2).
+    func standingWord(in words: [WordEntry] = BundledWordSource.cached, retired: Set<String> = BundledWordSource.retired) -> PhotoWord? {
+        guard let word, let labels else { return nil }
+        return WordPicker.contradicted(word, context: PhotoContext(self, labels: labels), in: words, retired: retired) ? nil : word
     }
 }

@@ -233,6 +233,21 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.word?.wordID, "b")
     }
 
+    /// 빈 단어로 먼저 올라가지 않게 단어와 라벨을 한 번에 — 그사이 다른 기기 단어가 왔으면 덮지 않는다.
+    func testStampWordReplacesOnlyTheWordItSaw() {
+        let m = moment(date(2026, 9, 22, 12, 0), name: "s.jpg")
+        store.add(m)
+        let first = PhotoWord(wordID: "a", word: "가", meaning: "뜻")
+        store.stampWord(m.id, first, labels: ["sky"], replacing: nil)
+        XCTAssertEqual(store.moment(m.id)?.word, first)
+        XCTAssertEqual(store.moment(m.id)?.labels, ["sky"])
+        store.stampWord(m.id, PhotoWord(wordID: "b", word: "나", meaning: "뜻"), labels: ["sky"], replacing: nil)
+        XCTAssertEqual(store.moment(m.id)?.word, first, "본 단어(nil)와 지금 단어가 다르면 덮지 않는다")
+        store.stampWord(m.id, PhotoWord(wordID: "c", word: "다", meaning: "뜻"), labels: ["water"], replacing: first)
+        XCTAssertEqual(store.moment(m.id)?.word?.wordID, "c")
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.labels, ["water"])
+    }
+
     func testWordWithoutLabelsIsDroppedOnLoad() throws {
         let legacy = """
         [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC","fileName":"a.jpg","source":"app",

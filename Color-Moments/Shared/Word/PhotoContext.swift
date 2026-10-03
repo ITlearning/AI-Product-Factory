@@ -37,8 +37,18 @@ public struct PhotoContext: Equatable, Sendable {
         return c
     }()
 
+    /// 한국 밖에서 찍은 사진(자리가 있을 때)은 경도로 잡은 현지 시각 — 파리 오후 두 시 사진에 「여름밤」이 붙지 않게.
+    /// 경도 15° 가 한 시간이라 유럽·중국 서부는 한두 시간 어긋날 수 있다. 어느 기기에서 봐도 같은 값이라 단어가 갈리지 않는다.
+    public static func calendar(for m: Moment) -> Calendar {
+        guard let p = m.place, !((33...39.5).contains(p.latitude) && (124...132).contains(p.longitude)) else { return korea }
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(secondsFromGMT: Int((p.longitude / 15).rounded()) * 3600) ?? korea.timeZone
+        return c
+    }
+
     /// 실제 날씨(WeatherKit)가 먼저, 없으면 사진 속 하늘 짐작.
-    public init(_ m: Moment, labels: [String], calendar: Calendar = PhotoContext.korea) {
+    public init(_ m: Moment, labels: [String], calendar: Calendar? = nil) {
+        let calendar = calendar ?? Self.calendar(for: m)
         let real = m.place?.weather
         self.init(date: m.capturedAt,
                   weather: real.flatMap { PhotoEnrichment.wordWeather($0.condition) } ?? Weather.inferred(from: Set(labels)),

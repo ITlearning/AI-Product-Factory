@@ -363,6 +363,16 @@ public final class DayStore {
         notify([.upsert(id)])
     }
 
+    /// 단어와 라벨을 한 번에 — 처음 붙일 때도, 틀린 단어를 바꿀 때도. 빈 단어로 먼저 올라가면 옛 단어를 든 기기가 되올린다.
+    /// stale 이 지금 단어와 다르면(고르는 사이 다른 기기의 단어가 왔으면) 덮지 않는다.
+    public func stampWord(_ id: Moment.ID, _ word: PhotoWord, labels: [String], replacing stale: PhotoWord?) {
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].word == stale, all[i].word != word else { return }
+        all[i].word = word
+        all[i].labels = labels
+        save()
+        notify([.upsert(id)])
+    }
+
     /// 「이 단어는 아니에요」 — 사진마다 한 번(WordRejections 가 지킨다). 그 밖엔 단어를 바꾸지 않는다.
     public func replaceWord(_ id: Moment.ID, _ word: PhotoWord) {
         guard let i = all.firstIndex(where: { $0.id == id }), all[i].word != nil, all[i].word != word else { return }
@@ -755,7 +765,11 @@ public final class DayStore {
         guard let items = try? decoder.decode([Failable<Moment>].self, from: data) else { return ([], .unreadable) }
         let decoded = items.compactMap(\.value)
         let skipped = items.count - decoded.count
-        let moments = decoded.map { $0.checkingWord(in: BundledWordSource.cached, retired: BundledWordSource.retired) }
+        let moments = decoded.map { m in
+            var m = m
+            if m.labels == nil { m.word = nil }
+            return m
+        }
         return (moments, skipped > 0 ? .partial(skipped: skipped) : nil)
     }
 
