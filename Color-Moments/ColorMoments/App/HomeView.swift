@@ -488,7 +488,7 @@ struct HomeView: View {
 
     /// 앱에 들어오면 줄이 목록을 살짝 밀며 내려앉고, 숫자는 0 에서 굴러 올라간다 — 눈에 띄게, 재촉은 없이.
     private func refreshTodayPhotos() async {
-        let known = Set(store.moments.compactMap(\.assetID))
+        let known = Set(store.moments.compactMap(\.assetID)).union(RemovedPhotos.assetIDs())
         let ids = await TodayPhotos.pending(dayKey: todayKey, excluding: known,
                                             capturedAt: store.today.map(\.capturedAt), cameraOnly: true).map(\.localIdentifier)
         let wasShowing = showsTodayPhotos

@@ -158,7 +158,7 @@ enum FavoriteAdopter {
     static func run(store: DayStore, defaults: UserDefaults = .standard) async {
         guard isEnabled(defaults) else { return }
         let adopted = defaults.stringArray(forKey: adoptedKey) ?? []
-        let known = Set(store.moments.compactMap(\.assetID)).union(adopted)
+        let known = Set(store.moments.compactMap(\.assetID)).union(adopted).union(RemovedPhotos.assetIDs(defaults))
         let today = Moment.dayKey(for: Date())
         let fresh = await TodayPhotos.pending(dayKey: today, excluding: known,
                                               capturedAt: store.moments(on: today).map(\.capturedAt), favoritesOnly: true)

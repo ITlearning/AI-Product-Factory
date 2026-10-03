@@ -124,9 +124,12 @@ final class CloudSync: CKSyncEngineDelegate {
             forget(id)
             if case .moment(let uuid) = SyncRecords.ref(id) { deletes.insert(uuid) }
         }
+        let leaving = deletes.isEmpty ? [] : store.moments.filter { deletes.contains($0.id) }
         let push = await store.applyRemoteInChunks(upserts: upserts, deletes: deletes,
                                                    excluding: { [weak self] in self?.pendingMomentDeletes() ?? [] },
                                                    pause: FramePause.next)
+        // 다른 기기에서 뺀 사진을 이 기기의 ♥ 담기가 다시 담으면 그 기기로 되살아 돌아간다.
+        RemovedPhotos.noteGone(leaving, stillHeld: store.containsAsset)
         guard engine === current else { return }
         enqueue(push)
         persistSystemFields()
@@ -263,7 +266,9 @@ final class CloudSync: CKSyncEngineDelegate {
                     forget(id)
                     // 다른 기기가 지운 기록이다 — Moment 를 다시 저장하면 되살아난다(§3-4). Day 만 다시 올린다.
                     if case .moment(let uuid) = SyncRecords.ref(id) {
+                        let gone = store.moment(uuid).map { [$0] } ?? []
                         store.applyRemote(upserts: [], deletes: [uuid])
+                        RemovedPhotos.noteGone(gone, stillHeld: store.containsAsset)
                         refreshSurfaces()
                     } else {
                         add([.saveRecord(id)])
