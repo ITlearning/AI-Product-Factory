@@ -59,16 +59,19 @@ INTAKE: 1쪽 brief → [3] PRD DRAFT(`/brainstorming`). 사진이 기기 밖으�
 
 ### 준비
 
+맥북에서 만든 묶음 `mongdol-macstudio.zip`(AirDrop)의 `setup.sh` 하나가 아래를 한 번에 한다.
+
 - [ ] 저장소를 받고 이 브랜치(`docs/mongdol-word-llm`) 또는 머지 뒤 main
-- [ ] **Xcode 27(iOS 27 SDK)** — A1 실측에 필요. 맥북은 Xcode 26.3(iOS 26.2 SDK)까지 있다
-- [ ] **백업 자료 옮기기** `~/Downloads/mongdol-backup-20261001/`(맥북) — `days.json`(54장의 라벨·단어), `word-rejections.json`(↻ 기록). 개인 기록이라 저장소엔 올리지 않는다. AirDrop 으로
-- [ ] (선택) 맥북의 Claude 메모리 `~/.claude/projects/-Users-tabber-AI-Product-Factory/memory/` 를 같은 경로로 복사. 저장소 경로가 같아야 폴더 이름이 맞는다. 안 옮겨도 이 문서로 이어 갈 수 있다
-- [ ] Python: `mlx-vlm`(로컬 VLM), `coremltools`, `transformers`/`open_clip`(SigLIP2)
+- [ ] **백업 자료** `~/Downloads/mongdol-backup-20261001/` — `days.json`(54장의 라벨·단어), `word-rejections.json`(↻ 기록). 개인 기록이라 저장소엔 올리지 않는다
+- [ ] 맥북의 Claude 메모리를 맥스튜디오의 저장소 경로에 맞는 폴더로 복사. 안 옮겨도 이 문서로 이어 갈 수 있다
+- [ ] Python 환경 `~/.venvs/mongdol-word-lab`(Python 3.12, `mlx-vlm`·`coremltools`·`torch`·`transformers`, 맥북에서 설치해 본 버전으로 고정)
+- [ ] gh 의 ITlearning 로그인 확인(로그인은 손으로)
+
+**Xcode 27 은 맥스튜디오에 깔지 않는다.** Xcode 27 은 macOS 26.6 이상이 필요한데 맥스튜디오는 26.2 다. A1 실측은 iPhone 에서 돌기 때문에 맥 성능과 상관없다. A1 을 고르게 되면 **맥북**(macOS 26.6.2, 그대로 설치 가능)에 Xcode 27 을 깔고, iPhone 16 Pro 를 iOS 27 로 올려 잰다.
 
 ### 맥스튜디오가 잘하는 일
 
 - **평가 세트**: Tabber 사진 수백 장에 정답 단어를 붙인다. 로컬 큰 VLM(MLX)으로 초안을 만들고 Tabber 가 판정한다. 사진이 맥 밖으로 나가지 않고 API 비용도 없다
-- **A1 실측**: iOS 27 에서 사진+후보 ~100개가 문맥 8,192토큰에 드는지, 지연, 순서 편향
 - **A2 준비**: SigLIP2 텍스트 인코더(565MB)로 단어 임베딩을 굽고, 단어별 영어 시각 묘사를 만든다
 - **목록 키우기**: 큰 모델로 「목록에 없어서 못 고른 말」 초안 → 표준국어대사전 대조
 - **「개선에 참여하기」 가공**: 들어온 제안을 모아 걸러 목록 후보로
