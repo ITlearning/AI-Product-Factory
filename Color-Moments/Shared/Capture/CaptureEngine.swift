@@ -40,7 +40,7 @@ public final class CaptureEngine: NSObject {
 
     public var displayZoom: Double = 1
 
-    public var zoomPresets: [Double] = []
+    public var zoomLadder: ZoomLadder?
 
     // capture 큐에서 대입되고 메인(제스처)에서 읽힌다 — 관찰 대상에서 빼고 잠금으로 지킨다.
     @ObservationIgnored private let deviceLock = NSLock()
@@ -145,66 +145,36 @@ public final class CaptureEngine: NSObject {
     }
 
     public func pinchZoom(scale: Double, began: Bool) {
-        guard let d = device else { return }
-        if began {
-            if d.isRampingVideoZoom {
-                try? d.lockForConfiguration(); d.cancelVideoZoomRamp(); d.unlockForConfiguration()
-            }
-            zoomAnchor = Double(d.videoZoomFactor)
-        }
-        setRawZoom(zoomAnchor * scale)
+        guard let d = device, let ladder = zoomLadder else { return }
+        if began { zoomAnchor = ladder.display(forRaw: Double(d.videoZoomFactor)) }
+        setRawZoom(ladder.raw(forDisplay: zoomAnchor * scale))
     }
 
-    public var currentDisplayZoom: Double {
-        guard let d = device else { return 1 }
-        return Double(d.videoZoomFactor * d.displayVideoZoomFactorMultiplier)
-    }
-
-    public func setDisplayZoom(_ display: Double, animated: Bool = true) {
-        guard let d = device, d.displayVideoZoomFactorMultiplier > 0 else { return }
-        let raw = display / Double(d.displayVideoZoomFactorMultiplier)
-        guard animated else { setRawZoom(raw); return }
-        let lo = Double(d.minAvailableVideoZoomFactor)
-        let hi = min(Double(d.maxAvailableVideoZoomFactor), 12)
-        let clamped = min(max(raw, lo), hi)
+    public func setDisplayZoom(_ display: Double) {
+        guard let d = device, let ladder = zoomLadder else { return }
+        let from = ladder.display(forRaw: Double(d.videoZoomFactor))
         do {
             try d.lockForConfiguration()
-            d.ramp(toVideoZoomFactor: CGFloat(clamped), withRate: 8)
+            d.ramp(toVideoZoomFactor: Self.available(ladder.raw(forDisplay: display), on: d),
+                   withRate: ZoomLadder.rampRate(from: from, to: ladder.clamped(display)))
             d.unlockForConfiguration()
         } catch { return }
-
-    }
-
-    public func scrubDisplayZoom(_ display: Double) {
-        guard let d = device, d.displayVideoZoomFactorMultiplier > 0 else { return }
-        if d.isRampingVideoZoom {
-            try? d.lockForConfiguration(); d.cancelVideoZoomRamp(); d.unlockForConfiguration()
-        }
-        setRawZoom(display / Double(d.displayVideoZoomFactorMultiplier))
-    }
-
-    public var displayZoomRange: ClosedRange<Double> {
-        guard let d = device else { return 1...1 }
-        let m = Double(d.displayVideoZoomFactorMultiplier)
-        let lo = Double(d.minAvailableVideoZoomFactor) * m
-        let hardMax = Double(d.maxAvailableVideoZoomFactor) * m
-        let hi = min(hardMax, max((zoomPresets.max() ?? 5) * 2, lo * 4))
-        return lo...hi
     }
 
     private var zoomAnchor: Double = 1
 
     private func setRawZoom(_ raw: Double) {
         guard let d = device else { return }
-        let lo = Double(d.minAvailableVideoZoomFactor)
-        let hi = min(Double(d.maxAvailableVideoZoomFactor), 12)
-        let clamped = min(max(raw, lo), hi)
         do {
             try d.lockForConfiguration()
-            d.videoZoomFactor = CGFloat(clamped)
+            d.videoZoomFactor = Self.available(raw, on: d)
             d.unlockForConfiguration()
         } catch { return }
 
+    }
+
+    private static func available(_ raw: Double, on d: AVCaptureDevice) -> CGFloat {
+        CGFloat(min(max(raw, Double(d.minAvailableVideoZoomFactor)), Double(d.maxAvailableVideoZoomFactor)))
     }
 
     private var confirmationToken = 0
@@ -243,17 +213,17 @@ public final class CaptureEngine: NSObject {
                session.canAddInput(input) {
                 session.addInput(input)
                 self.device = d
-                let mult = d.displayVideoZoomFactorMultiplier
-
-                var presets: [Double] = [Double(d.minAvailableVideoZoomFactor * mult), 1.0]
-                presets += d.virtualDeviceSwitchOverVideoZoomFactors.map { $0.doubleValue * Double(mult) }
-                let cleaned: [Double] = Array(Set(presets.map { Double(($0 * 10).rounded() / 10) }))
-                    .filter { $0 >= Double(d.minAvailableVideoZoomFactor * mult) - 0.01 }
-                    .sorted()
-                DispatchQueue.main.async { self.zoomPresets = cleaned }
             }
             if session.canAddOutput(output) { session.addOutput(output) }
             session.commitConfiguration()
+            if let d = device {
+                let switchOvers = d.virtualDeviceSwitchOverVideoZoomFactors.map(\.doubleValue)
+                let ladder = ZoomLadder(multiplier: Double(d.displayVideoZoomFactorMultiplier), switchOvers: switchOvers,
+                                        minRaw: Double(d.minAvailableVideoZoomFactor),
+                                        maxRaw: Double(d.maxAvailableVideoZoomFactor))
+                Self.log.notice("zoom multiplier=\(d.displayVideoZoomFactorMultiplier, privacy: .public) switchOvers=\(switchOvers, privacy: .public) maxRaw=\(d.maxAvailableVideoZoomFactor, privacy: .public) native=\(d.activeFormat.secondaryNativeResolutionZoomFactors, privacy: .public) presets=\(ladder.presets, privacy: .public) range=\(ladder.range.upperBound, privacy: .public)")
+                DispatchQueue.main.async { self.zoomLadder = ladder }
+            }
             Self.log.notice("configured device=\(picked?.deviceType.rawValue ?? "none", privacy: .public) inputs=\(self.session.inputs.count, privacy: .public)")
 
             let layer = AVCaptureVideoPreviewLayer(session: session)

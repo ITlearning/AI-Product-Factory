@@ -118,7 +118,8 @@ final class FontSubsetTests: XCTestCase {
         let root = Self.fontsDir.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let sources = ["Shared/Capture/CaptureScreen.swift", "Shared/Capture/ShotViewer.swift",
                        "Shared/Capture/CaptureEngine.swift", "ColorMomentsControl/PebbleWidget.swift",
-                       "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift"]
+                       "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift",
+                       "Shared/Capture/ZoomLadder.swift"]
         var needed = Set<Unicode.Scalar>()
         for path in sources {
             let text = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
