@@ -248,32 +248,31 @@ final class TakeOutTests: XCTestCase {
         XCTAssertTrue(ids.contains("L/\(RemovedPhotos.keep)"))
     }
 
-    // MARK: 다른 기기에서 뺀 사진 (CloudSync.settleRemoteDeletes 와 같은 순서)
+    // MARK: 다른 기기에서 뺀 사진 — CloudSync 가 받은 삭제·unknownItem 에 부르는 함수 그대로
 
-    private func receiveDelete(_ ids: Set<Moment.ID>, now: Date) -> [Moment] {
-        let leaving = store.moments.filter { ids.contains($0.id) }
-        store.applyRemote(upserts: [], deletes: ids)
-        RemovedPhotos.noteGone(leaving, remaining: store.moments, now: now, defaults: defaults)
-        return leaving
+    @discardableResult
+    private func receiveDelete(_ ids: Set<Moment.ID>, now: Date) async -> Task<Void, Never>? {
+        await CloudSync.applyFetched(upserts: [], deletes: ids, to: store, excluding: { [] }, pause: {},
+                                     now: now, defaults: defaults).cleanup
     }
 
-    func testAPhotoTakenOutOnAnotherDeviceIsRememberedHere() {
+    func testAPhotoTakenOutOnAnotherDeviceIsRememberedHere() async {
         var m = inPhotos(date(2026, 9, 22, 9), "#CC3322", asset: "L/here")
         m.cloudID = "C/1"
         store.add(m)
 
-        _ = receiveDelete([m.id], now: date(2026, 9, 22, 20))
+        await receiveDelete([m.id], now: date(2026, 9, 22, 20))
 
         XCTAssertEqual(RemovedPhotos.assetIDs(defaults), ["L/here"])
         XCTAssertEqual(RemovedPhotos.cloudIDs(defaults), ["C/1"])
     }
 
     // 검토 F2-a: 이 기기가 사진을 찾기 전에 다른 기기가 뺐다 — cloudID 로 적고, ♥ 담기 후보를 cloudID 로 거른다.
-    func testAnUnresolvedRecordTakenOutElsewhereIsRememberedByCloudIDAndFiltersCandidates() {
+    func testAnUnresolvedRecordTakenOutElsewhereIsRememberedByCloudIDAndFiltersCandidates() async {
         let m = unresolved(date(2026, 9, 22, 9), cloud: "C/1")
         store.add(m)
 
-        _ = receiveDelete([m.id], now: date(2026, 9, 22, 20))
+        await receiveDelete([m.id], now: date(2026, 9, 22, 20))
 
         XCTAssertEqual(RemovedPhotos.cloudIDs(defaults), ["C/1"])
         let kept = RemovedPhotos.keeping(["L/taken-out", "L/other", "L/no-cloud"],
@@ -283,14 +282,14 @@ final class TakeOutTests: XCTestCase {
     }
 
     // 중복을 합치느라 지운 기록 — 같은 사진을 넘겨받은 기록이 남아 있으니 뺀 사진이 아니다.
-    func testARemoteDeleteThatHandsThePhotoToATwinIsNotRemembered() {
+    func testARemoteDeleteThatHandsThePhotoToATwinIsNotRemembered() async {
         let local = Moment(capturedAt: date(2026, 9, 22, 9), colorHex: "#CC3322",
                            fileName: Moment.assetFileName(for: "L/1"), source: .app, assetID: "L/1", cloudID: "C/1")
         let twin = unresolved(date(2026, 9, 22, 9), cloud: "C/1")
         store.add(local)
         store.add(twin)
 
-        _ = receiveDelete([local.id], now: date(2026, 9, 22, 20))
+        await receiveDelete([local.id], now: date(2026, 9, 22, 20))
 
         XCTAssertEqual(store.moments.map(\.assetID), ["L/1"])
         XCTAssertTrue(RemovedPhotos.assetIDs(defaults).isEmpty)
@@ -298,31 +297,48 @@ final class TakeOutTests: XCTestCase {
     }
 
     // 검토 F3: 다른 기기의 정리 삭제가 옛 사진을 한꺼번에 지워도 사용자가 뺀 사진이 목록에서 밀리지 않게.
-    func testOldPhotosDeletedElsewhereAreNotRemembered() {
+    func testOldPhotosDeletedElsewhereAreNotRemembered() async {
         let taken = inPhotos(date(2026, 9, 22, 9), "#CC3322", asset: "L/taken")
         store.add(taken)
         store.takeOut(taken.id, noting: defaults)
         let old = (0...RemovedPhotos.keep).map { inPhotos(date(2026, 9, 1, 9), "#2233CC", asset: "L/old-\($0)") }
         store.add(contentsOf: old)
 
-        _ = receiveDelete(Set(old.map(\.id)), now: date(2026, 9, 22, 20))
+        await receiveDelete(Set(old.map(\.id)), now: date(2026, 9, 22, 20))
 
         XCTAssertEqual(RemovedPhotos.assetIDs(defaults), ["L/taken"], "알아서 담는 길은 오늘 사진만 본다")
     }
 
-    // 검토 F1: 사진 권한 없는 기기의 파일 — 다른 기기에서 빼면 가리킬 기록이 없어진다. 고아로 남기지 않는다.
-    func testAFileOnlyThisDeviceHadIsDeletedWhenAnotherDeviceTakesItOut() async throws {
+    // 검토 F1: 사진 권한 없는 기기의 파일 — 받은 삭제면 다른 기기가 실제로 뺀 것이다. 고아로 남기지 않는다.
+    func testAFetchedDeletionRemovesTheFileOnlyThisDeviceHad() async throws {
         let shot = try writeShot()
         let m = Moment(capturedAt: date(2026, 9, 22, 9), colorHex: "#CC3322", fileName: shot.name, source: .locked,
                        originalName: shot.name)
         store.add(m)
 
-        let leaving = receiveDelete([m.id], now: date(2026, 9, 22, 20))
-        await store.removeLeftoverFiles(of: leaving)?.value
+        await receiveDelete([m.id], now: date(2026, 9, 22, 20))?.value
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: shot.url.path))
         XCTAssertEqual(RemovedPhotos.originalNames(defaults), [shot.name], "잠금화면 재전달도 막는다")
         XCTAssertTrue(DayStore(fileURL: tempFile, closures: closures).moments.isEmpty)
+    }
+
+    // 재검증 R2: unknownItem 은 서버에 없다는 뜻일 뿐이다(iCloud 데이터를 지운 뒤 존이 다시 생긴 경우 등) — 유일한 원본은 남긴다.
+    func testAnUnknownItemDropsTheRecordButKeepsTheFileOnlyThisDeviceHad() async throws {
+        let shot = try writeShot()
+        let m = Moment(capturedAt: date(2026, 9, 22, 9), colorHex: "#CC3322", fileName: shot.name, source: .locked,
+                       originalName: shot.name)
+        store.add(m)
+
+        CloudSync.dropUnknown(m.id, from: store, now: date(2026, 9, 22, 20), defaults: defaults)
+        let flushed = await store.flushAfterLoad()
+        await Task.yield()
+
+        XCTAssertTrue(flushed)
+
+        XCTAssertTrue(store.moments.isEmpty, "다시 올리면 되살아나니 기록은 지운다")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shot.url.path))
+        XCTAssertEqual(RemovedPhotos.originalNames(defaults), [shot.name], "다른 기기가 뺀 것이면 받은 삭제가 와도 못 적는다")
     }
 
     func testALeftoverFileStillUsedByAnotherRecordIsKept() async throws {
