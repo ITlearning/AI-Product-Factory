@@ -9,8 +9,11 @@ LAB = os.path.expanduser("~/mongdol-word-lab")
 rows = json.load(open(f"{LAB}/eval.json"))
 words = {w["id"]: w for w in json.load(open(f"{LAB}/words.json"))}
 # --color: 색채 없는 말(plain_words.txt)을 뒤 묶음으로 따로 보인다.
-COLOR = "--color" in sys.argv
-OUT = f"{LAB}/prompts-color" if COLOR else f"{LAB}/prompts"
+COLOR = "--color" in sys.argv or "--balance" in sys.argv
+# --balance: 맞는 말이 먼저, 둘 다 맞을 때만 결 있는 말. 보금자리가 「포근한 아무 곳」으로 둘러대는 말이 되지 않게 뜻을 좁힌다.
+BALANCE = "--balance" in sys.argv
+OUT = f"{LAB}/prompts-balance" if BALANCE else f"{LAB}/prompts-color" if COLOR else f"{LAB}/prompts"
+NARROW = {"보금자리": "사람이 살며 쉬는 집 안이나 잠자리 (카페·가게·바깥은 아니다)"}
 here = os.path.dirname(os.path.abspath(__file__))
 PLAIN = {t for l in open(f"{here}/plain_words.txt") if not l.startswith("#") for t in l.split()}
 os.makedirs(OUT, exist_ok=True)
@@ -32,6 +35,10 @@ COLOR_RULE4. 사진에 보이지 않는 것을 말하는 단어는 고르지 않
 {"see": "사진에 보이는 것 한 줄", "word": "후보 중 한 단어", "outside": "목록 밖 단어 또는 빈 문자열"}"""
 
 
+def meaning(i):
+    return NARROW.get(words[i]["word"], words[i]["meaning"]) if BALANCE else words[i]["meaning"]
+
+
 def prompt(r):
     lines = [f"찍은 때: {r['local']} ({r['partOfDay']}), {SEASON[r['season']]}"]
     if r.get("weather"):
@@ -45,14 +52,18 @@ def prompt(r):
         vivid = [i for i in ids if words[i]["word"] not in PLAIN]
         plain = [i for i in ids if words[i]["word"] in PLAIN]
         lines.append(f"후보 — 결이 있는 말 {len(vivid)}개:")
-        lines += [f"- {words[i]['word']}: {words[i]['meaning']}" for i in vivid]
-        lines.append(f"후보 — 이름표 같은 말 {len(plain)}개 (위 묶음에 맞는 말이 없을 때만):")
-        lines += [f"- {words[i]['word']}: {words[i]['meaning']}" for i in plain]
+        lines += [f"- {words[i]['word']}: {meaning(i)}" for i in vivid]
+        lines.append((f"후보 — 이름표 같은 말 {len(plain)}개:" if BALANCE else f"후보 — 이름표 같은 말 {len(plain)}개 (위 묶음에 맞는 말이 없을 때만):"))
+        lines += [f"- {words[i]['word']}: {meaning(i)}" for i in plain]
     else:
         lines.append(f"후보 {len(ids)}개:")
-        lines += [f"- {words[i]['word']}: {words[i]['meaning']}" for i in ids]
-    rule4 = ("사물이나 때의 이름을 그대로 부르는 말(이름표 같은 말)보다, 빛·움직임·마음결이 담긴 말을 먼저 고른다.\n"
-             "   사진에 맞는 결 있는 말이 없을 때만 이름표 같은 말로 간다.\n") if COLOR else ""
+        lines += [f"- {words[i]['word']}: {meaning(i)}" for i in ids]
+    if BALANCE:
+        rule4 = ("사진에 맞는 말인지가 먼저다. 결 있는 말이 사진과 조금이라도 어긋나면, 맞는 이름표 같은 말을 고른다.\n"
+                 "   둘 다 사진에 꼭 맞을 때만 이름표 같은 말보다 빛·움직임·마음결이 담긴 말을 고른다.\n")
+    else:
+        rule4 = ("사물이나 때의 이름을 그대로 부르는 말(이름표 같은 말)보다, 빛·움직임·마음결이 담긴 말을 먼저 고른다.\n"
+                 "   사진에 맞는 결 있는 말이 없을 때만 이름표 같은 말로 간다.\n")
     return INSTRUCTIONS.replace("COLOR_RULE4.", ("4. " + rule4 + "5.") if COLOR else "4.") + "\n\n" + "\n".join(lines)
 
 
