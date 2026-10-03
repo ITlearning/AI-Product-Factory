@@ -37,11 +37,23 @@ public struct WordEntry: Codable, Equatable, Sendable {
     /// 기온을 말하는 단어 — 기온을 모르면 붙지 않는다.
     public var minCelsius: Double?
     public var maxCelsius: Double?
+    /// 시각(0~23)으로 좁힌다 — 한밤은 23~2시. 시간대 칸보다 좁을 때.
+    public var hours: [Int] = []
+    /// WeatherKit 원래 이름 중 하나일 때만(작달비 = heavyRain). 날씨를 모르면 붙지 않는다.
+    public var conditions: [String] = []
+    /// 해 높이(°) — 땅거미는 해가 진 뒤라 0 아래. 시간대 칸은 계절마다 해와 어긋난다.
+    public var sunMin: Double?
+    public var sunMax: Double?
+    /// 달 나이(일) 구간 중 하나 — 조각달 [[3, 7], [22, 26]].
+    public var moonAges: [[Double]] = []
+    /// 맞지만 밋밋한 말(한나절·한낮) — 다른 「때」 말이 없을 때만. Tabber 가 가장 많이 버렸다.
+    public var fallback: Bool = false
 }
 
 extension WordEntry {
     private enum CodingKeys: String, CodingKey {
         case id, word, meaning, times, weathers, seasons, subjects, moment, months, needs, with, minCelsius, maxCelsius
+        case hours, conditions, sunMin, sunMax, moonAges, fallback
     }
 
     public init(from decoder: Decoder) throws {
@@ -59,6 +71,12 @@ extension WordEntry {
         with = try c.decodeIfPresent([String].self, forKey: .with) ?? []
         minCelsius = try c.decodeIfPresent(Double.self, forKey: .minCelsius)
         maxCelsius = try c.decodeIfPresent(Double.self, forKey: .maxCelsius)
+        hours = try c.decodeIfPresent([Int].self, forKey: .hours) ?? []
+        conditions = try c.decodeIfPresent([String].self, forKey: .conditions) ?? []
+        sunMin = try c.decodeIfPresent(Double.self, forKey: .sunMin)
+        sunMax = try c.decodeIfPresent(Double.self, forKey: .sunMax)
+        moonAges = try c.decodeIfPresent([[Double]].self, forKey: .moonAges) ?? []
+        fallback = try c.decodeIfPresent(Bool.self, forKey: .fallback) ?? false
     }
 }
 
