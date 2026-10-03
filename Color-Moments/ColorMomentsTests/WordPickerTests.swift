@@ -182,7 +182,8 @@ final class WordPickerTests: XCTestCase {
 
     func testOnlyKnownFactsContradictAStampedWord() {
         func ctx(_ hour: Int, _ weather: Weather?, _ celsius: Double? = nil) -> PhotoContext {
-            PhotoContext(date: Date(timeIntervalSince1970: Double(hour) * 3600), weather: weather, celsius: celsius, calendar: utc)
+            PhotoContext(date: Date(timeIntervalSince1970: Double(hour) * 3600), weather: weather, celsius: celsius,
+                         coordinate: (0, 0), calendar: utc)
         }
         var shimmer = w("shimmer", subjects: ["water"]); shimmer.needs = [.sun]
         var frost = w("frost", subjects: ["grass"]); frost.maxCelsius = 5
@@ -296,6 +297,54 @@ final class WordPickerTests: XCTestCase {
         XCTAssertNotEqual(word(3, 15, desk + ["coffee", "laptop"]), "짬", "토요일엔 일하다 쉬는 틈이 아니다")
         XCTAssertEqual(word(2, 15, desk + ["book"]), "갈피")
         XCTAssertEqual(word(2, 15, desk + ["toy", "stuffed_animals"]), "놀잇감")
+    }
+
+    /// 고른 맥락에서 그 단어가 「틀렸다」고 지워지면, 열 때마다 바뀌고 iCloud 로 계속 올라간다(2026-10-03 교차 검증 — 윤슬·불볕더위).
+    func testAPickedWordIsNeverContradictedInTheSameMoment() async throws {
+        let words = await BundledWordSource().words()
+        let conditions: [String?] = [nil, "clear", "mostlyCloudy", "drizzle", "rain", "heavyRain", "sunShowers", "sleet", "snow",
+                                     "flurries", "foggy", "haze", "breezy", "windy", "thunderstorms"]
+        var checked = 0
+        for month in 1...12 {
+            for hour in stride(from: 0, to: 24, by: 2) {
+                for condition in conditions {
+                    for celsius in [nil, -12.0, 3, 18, 34] as [Double?] {
+                        let weather = condition.flatMap(PhotoEnrichment.wordWeather)
+                        let ctx = seoul(month, 9, hour, weather: weather, celsius: celsius, condition: condition)
+                        let picked = WordPicker.choices(for: ctx, labels: ["outdoor", "sky", "water", "table", "coffee", "laptop"],
+                                                        in: words, excluding: [], seed: "p")
+                        for w in picked {
+                            checked += 1
+                            XCTAssertFalse(WordPicker.contradicted(PhotoWord(w), context: ctx, in: words, retired: []),
+                                           "\(w.word) — \(month)월 \(hour)시 \(condition ?? "-") \(celsius.map { "\($0)°" } ?? "-")")
+                        }
+                    }
+                }
+            }
+        }
+        XCTAssertGreaterThan(checked, 10_000)
+    }
+
+    func testRainAndFogWordsFollowTheRealWeather() async throws {
+        let words = await BundledWordSource().words()
+        func first(_ condition: String) -> [String] {
+            let ctx = seoul(10, 15, 14, weather: PhotoEnrichment.wordWeather(condition), celsius: 15, condition: condition)
+            return (0..<20).compactMap { WordPicker.photoWord(for: ctx, labels: [], in: words, excluding: [], seed: "s\($0)")?.word }
+        }
+        XCTAssertFalse(first("heavyRain").contains("가랑비"), "폭우에 가는 비")
+        XCTAssertTrue(first("heavyRain").allSatisfy { $0 == "작달비" }, "\(Set(first("heavyRain")))")
+        XCTAssertFalse(first("thunderstorms").contains("가랑비"))
+        XCTAssertTrue(Set(first("haze")).isDisjoint(with: ["는개", "안개비", "밤안개"]), "미세먼지 낀 마른 날에 비 말")
+        XCTAssertTrue(Set(first("sleet")).isDisjoint(with: ["가랑비", "빗소리"]), "\(Set(first("sleet")))")
+    }
+
+    func testWordFactsUseKoreanTimeWhateverTheDeviceZone() {
+        var c = DateComponents(); c.year = 2026; c.month = 10; c.day = 2; c.hour = 14; c.minute = 30   // UTC → 23:30 KST
+        c.timeZone = TimeZone(identifier: "UTC")
+        let m = Moment(capturedAt: Calendar(identifier: .gregorian).date(from: c)!, colorHex: "#888888", fileName: "x.jpg", source: .app)
+        let ctx = PhotoContext(m, labels: [])
+        XCTAssertEqual(ctx.hour, 23)
+        XCTAssertEqual(ctx.timeBand, .night)
     }
 
     func testRecentIsExcludedThenReleased() {

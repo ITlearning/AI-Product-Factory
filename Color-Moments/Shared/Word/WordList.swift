@@ -19,6 +19,7 @@ public enum WordNeed: String, Codable, Sendable {
     case sun
 }
 
+/// 함정: 이미 있는 id 의 조건을 넓히지 말 것(좁히기만) — 옛 버전 기기는 넓어진 자리의 그 단어를 틀렸다고 지운다. 넓히려면 새 id.
 public struct WordEntry: Codable, Equatable, Sendable {
     public let id: String
     public let word: String

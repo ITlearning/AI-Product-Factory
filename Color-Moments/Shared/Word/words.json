@@ -35,7 +35,11 @@
     "sky",
     "cloudy"
    ],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "drizzle",
+    "foggy"
+   ]
   },
   {
    "id": "yeoubi",
@@ -113,7 +117,7 @@
     23
    ],
    "sunMin": -8,
-   "sunMax": 0
+   "sunMax": -1
   },
   {
    "id": "inae",
@@ -190,15 +194,17 @@
    "meaning": "가늘게 내리는 비",
    "times": [],
    "weathers": [
-    "drizzle",
-    "rain"
+    "drizzle"
    ],
    "seasons": [],
    "subjects": [
     "umbrella",
     "street"
    ],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "drizzle"
+   ]
   },
   {
    "id": "boseulbi",
@@ -212,7 +218,10 @@
    "subjects": [
     "umbrella"
    ],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "drizzle"
+   ]
   },
   {
    "id": "sonagi",
@@ -232,7 +241,13 @@
     "umbrella",
     "sky"
    ],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "heavyRain",
+    "sunShowers",
+    "isolatedThunderstorms",
+    "scatteredThunderstorms"
+   ]
   },
   {
    "id": "hambaknun",
@@ -1950,7 +1965,19 @@
    "seasons": [],
    "subjects": [],
    "moment": true,
-   "maxCelsius": 10
+   "maxCelsius": 10,
+   "conditions": [
+    "rain",
+    "heavyRain",
+    "drizzle",
+    "sunShowers",
+    "freezingRain",
+    "freezingDrizzle",
+    "thunderstorms",
+    "isolatedThunderstorms",
+    "scatteredThunderstorms",
+    "strongStorms"
+   ]
   },
   {
    "id": "bambi",
@@ -1965,7 +1992,19 @@
    ],
    "seasons": [],
    "subjects": [],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "rain",
+    "heavyRain",
+    "drizzle",
+    "sunShowers",
+    "freezingRain",
+    "freezingDrizzle",
+    "thunderstorms",
+    "isolatedThunderstorms",
+    "scatteredThunderstorms",
+    "strongStorms"
+   ]
   },
   {
    "id": "bombi",
@@ -2003,11 +2042,24 @@
    "meaning": "비가 내리는 소리",
    "times": [],
    "weathers": [
-    "rain"
+    "rain",
+    "drizzle"
    ],
    "seasons": [],
    "subjects": [],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "rain",
+    "heavyRain",
+    "drizzle",
+    "sunShowers",
+    "freezingRain",
+    "freezingDrizzle",
+    "thunderstorms",
+    "isolatedThunderstorms",
+    "scatteredThunderstorms",
+    "strongStorms"
+   ]
   },
   {
    "id": "ure",
@@ -2050,7 +2102,11 @@
    ],
    "seasons": [],
    "subjects": [],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "drizzle",
+    "foggy"
+   ]
   },
   {
    "id": "meonjijam",
@@ -2120,7 +2176,10 @@
    ],
    "seasons": [],
    "subjects": [],
-   "moment": true
+   "moment": true,
+   "conditions": [
+    "foggy"
+   ]
   },
   {
    "id": "bamnun",

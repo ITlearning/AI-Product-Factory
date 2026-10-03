@@ -19,31 +19,48 @@ public enum WordPicker {
                                         "animal", "mammal"]
     static let backdropReach = 2
 
-    /// 시간대·계절·달·시각·해 높이·달 나이·주장(해·기온). 계절도 풀지 않는다 — 계절이 붙은 단어는 계절이 곧 뜻이다(10월의 아지랑이).
-    private static func fits(_ w: WordEntry, _ ctx: PhotoContext) -> Bool {
-        if !w.times.isEmpty, !w.times.contains(ctx.timeBand) { return false }
-        if !w.hours.isEmpty, !w.hours.contains(ctx.hour) { return false }
-        if !w.weekdays.isEmpty, !w.weekdays.contains(ctx.weekday) { return false }
-        if !w.seasons.isEmpty, !w.seasons.contains(ctx.season) { return false }
-        if !w.months.isEmpty, !w.months.contains(ctx.month) { return false }
-        if let min = w.sunMin, ctx.sunAltitude < min { return false }
-        if let max = w.sunMax, ctx.sunAltitude > max { return false }
+    enum Verdict { case yes, unknown, no }
+
+    /// 이 단어가 이 순간에 맞나 — 고를 때(yes 만)와 이미 붙은 단어를 지울 때(no 만)가 같은 판정을 쓴다.
+    /// 둘이 갈라지면 고르자마자 지워지고, 지운 기기가 다시 올려 기기 사이를 돈다(2026-10-03 교차 검증).
+    /// 시각·달·요일·해 높이·달 나이는 늘 안다(한국 시간, 자리를 모르면 서울). 날씨·원래 날씨·기온은 모를 수 있다 — 모르면 고르지도 지우지도 않는다.
+    /// 계절은 풀지 않는다 — 계절이 붙은 단어는 계절이 곧 뜻이다(10월의 아지랑이).
+    static func judge(_ w: WordEntry, _ ctx: PhotoContext) -> Verdict {
+        if !w.times.isEmpty, !w.times.contains(ctx.timeBand) { return .no }
+        if !w.hours.isEmpty, !w.hours.contains(ctx.hour) { return .no }
+        if !w.weekdays.isEmpty, !w.weekdays.contains(ctx.weekday) { return .no }
+        if !w.seasons.isEmpty, !w.seasons.contains(ctx.season) { return .no }
+        if !w.months.isEmpty, !w.months.contains(ctx.month) { return .no }
+        if let min = w.sunMin, ctx.sunAltitude < min { return .no }
+        if let max = w.sunMax, ctx.sunAltitude > max { return .no }
+        if w.needs.contains(.sun), ctx.sunAltitude < 0 { return .no }
         if !w.moonAges.isEmpty, !w.moonAges.contains(where: { $0.count == 2 && $0[0] <= ctx.moonAge && ctx.moonAge <= $0[1] }) {
-            return false
+            return .no
         }
-        if w.needs.contains(.sun), ctx.weather != .clear || ctx.sunAltitude < 0 { return false }
-        if let min = w.minCelsius { guard let c = ctx.celsius, c >= min else { return false } }
-        if let max = w.maxCelsius { guard let c = ctx.celsius, c <= max else { return false } }
-        return true
+        var unknown = false
+        if !w.weathers.isEmpty || w.needs.contains(.sun) {
+            if let weather = ctx.weather {
+                if !w.weathers.isEmpty, !w.weathers.contains(weather) { return .no }
+                if w.needs.contains(.sun), weather != .clear { return .no }
+            } else {
+                unknown = true
+            }
+        }
+        if !w.conditions.isEmpty {
+            if let c = ctx.condition { if !w.conditions.contains(c) { return .no } } else { unknown = true }
+        }
+        if w.minCelsius != nil || w.maxCelsius != nil {
+            if let c = ctx.celsius {
+                if let min = w.minCelsius, c < min { return .no }
+                if let max = w.maxCelsius, c > max { return .no }
+            } else {
+                unknown = true
+            }
+        }
+        return unknown ? .unknown : .yes
     }
 
-    /// 날씨를 알면 그 날씨와 맞는 말만, 모르면 날씨 말은 안 쓴다 — 틀린 날씨 말은 영구히 남는다.
-    private static func weatherAllows(_ w: WordEntry, _ ctx: PhotoContext) -> Bool {
-        if !w.conditions.isEmpty { guard let c = ctx.condition, w.conditions.contains(c) else { return false } }
-        guard !w.weathers.isEmpty else { return true }
-        guard let weather = ctx.weather else { return false }
-        return w.weathers.contains(weather)
-    }
+    private static func fits(_ w: WordEntry, _ ctx: PhotoContext) -> Bool { judge(w, ctx) == .yes }
 
     /// banned — 「이 단어는 아니에요」로 버린 단어. recent 와 달리 끝까지 안 쓴다.
     /// labels 는 Vision 이 내준 순서(확신도 순) 그대로 — 앞에 잡힌 대상의 단어가 이긴다.
@@ -57,7 +74,7 @@ public enum WordPicker {
         let usable = seen.filter { !backdrop.contains($0) || leads.contains($0) }
         let pool = words.filter {
             !$0.subjects.isEmpty && !usable.isDisjoint(with: $0.subjects) && ($0.with.isEmpty || !seen.isDisjoint(with: $0.with))
-                && weatherAllows($0, ctx) && fits($0, ctx)
+                && fits($0, ctx)
         }
         for skipRecent in [true, false] {
             let found = pool.filter { !(skipRecent && recent.contains($0.id)) }
@@ -71,7 +88,7 @@ public enum WordPicker {
     /// 대상과 상관없는 「때」의 말만 쓴다 — 신발 사진에 「먹장구름」이 붙으면 거짓말이다.
     private static func moment(for ctx: PhotoContext, in words: [WordEntry], excluding recent: Set<String>,
                                seed: String, limit: Int) -> [WordEntry] {
-        let moments = words.filter { $0.moment && weatherAllows($0, ctx) && fits($0, ctx) }
+        let moments = words.filter { $0.moment && fits($0, ctx) }
         for skipRecent in [true, false] {
             let found = moments.filter { !(skipRecent && recent.contains($0.id)) }
             guard !found.isEmpty else { continue }
@@ -88,9 +105,10 @@ public enum WordPicker {
         return 3
     }
 
-    /// 조건 갈래 수 — 밤비(비 + 밤)가 가랑비(비)보다 그 순간에 꼭 맞는다.
+    /// 조건 갈래 수 — 밤비(비 + 밤)가 빗소리(비)보다 그 순간에 꼭 맞는다.
+    /// 원래 날씨 하나만 받는 말(작달비 = heavyRain)은 그 날씨에 가장 꼭 맞아 한 갈래를 더 쳐 준다.
     static func specificity(_ w: WordEntry) -> Int {
-        [!w.weathers.isEmpty || !w.conditions.isEmpty, !w.needs.isEmpty, !w.times.isEmpty || !w.hours.isEmpty,
+        [!w.weathers.isEmpty || !w.conditions.isEmpty, w.conditions.count == 1, !w.needs.isEmpty, !w.times.isEmpty || !w.hours.isEmpty,
          w.sunMin != nil || w.sunMax != nil, !w.seasons.isEmpty || !w.months.isEmpty,
          w.minCelsius != nil || w.maxCelsius != nil, !w.moonAges.isEmpty, !w.with.isEmpty, !w.weekdays.isEmpty].filter { $0 }.count
     }
@@ -133,31 +151,7 @@ public enum WordPicker {
                                     retired: Set<String>) -> Bool {
         if retired.contains(word.wordID) { return true }
         guard let w = words.first(where: { $0.id == word.wordID }) else { return false }
-        if !w.times.isEmpty, !w.times.contains(ctx.timeBand) { return true }
-        if !w.hours.isEmpty, !w.hours.contains(ctx.hour) { return true }
-        if !w.weekdays.isEmpty, !w.weekdays.contains(ctx.weekday) { return true }
-        if !w.seasons.isEmpty, !w.seasons.contains(ctx.season) { return true }
-        if !w.months.isEmpty, !w.months.contains(ctx.month) { return true }
-        if !w.moonAges.isEmpty, !w.moonAges.contains(where: { $0.count == 2 && $0[0] <= ctx.moonAge && ctx.moonAge <= $0[1] }) {
-            return true
-        }
-        if w.needs.contains(.sun), ctx.timeBand == .night { return true }
-        // 자리를 모르면 서울로 본 해 높이라 뒤집는 근거로 쓰지 않는다.
-        if ctx.placeKnown {
-            if let min = w.sunMin, ctx.sunAltitude < min { return true }
-            if let max = w.sunMax, ctx.sunAltitude > max { return true }
-            if w.needs.contains(.sun), ctx.sunAltitude < 0 { return true }
-        }
-        if let weather = ctx.weather {
-            if !w.weathers.isEmpty, !w.weathers.contains(weather) { return true }
-            if w.needs.contains(.sun), weather != .clear { return true }
-        }
-        if let c = ctx.condition, !w.conditions.isEmpty, !w.conditions.contains(c) { return true }
-        if let c = ctx.celsius {
-            if let min = w.minCelsius, c < min { return true }
-            if let max = w.maxCelsius, c > max { return true }
-        }
-        return false
+        return judge(w, ctx) == .no
     }
 
     // Hasher 금지 — 프로세스마다 시드가 달라 같은 사진의 후보가 바뀐다.
@@ -174,6 +168,7 @@ extension PhotoWord {
 
 extension Moment {
     /// 불러올 때 — labels 없이 붙은 단어(사진을 안 보고 고른 옛 규칙)와 아는 사실이 뒤집는 단어를 지운다. 사진을 열면 다시 고른다.
+    /// iCloud 에서 받을 때는 거르지 않는다 — 받는 쪽이 지우면 합치기가 로컬 단어를 되올리고, 두 기기가 서로 그러면 끝없이 돈다.
     func checkingWord(in words: [WordEntry], retired: Set<String>) -> Moment {
         guard let word else { return self }
         var m = self

@@ -11,8 +11,6 @@ public struct PhotoContext: Equatable, Sendable {
     public let condition: String?
     public let celsius: Double?
     public let sunAltitude: Double
-    /// 해 높이를 실제 찍은 자리로 계산했나(아니면 서울로 본 값).
-    public let placeKnown: Bool
     public let moonAge: Double
 
     public init(date: Date, weather: Weather? = nil, celsius: Double? = nil, condition: String? = nil,
@@ -28,12 +26,19 @@ public struct PhotoContext: Equatable, Sendable {
         self.celsius = celsius
         let at = coordinate ?? Celestial.seoul
         sunAltitude = Celestial.sunAltitude(at: date, latitude: at.latitude, longitude: at.longitude)
-        placeKnown = coordinate != nil
         moonAge = Celestial.moonAge(at: date)
     }
 
+    /// 단어의 시각·달·요일은 한국 시간으로 본다 — 보는 기기의 시간대로 보면 해외에 있는 기기가 같은 사진에 다른 판정을 내려
+    /// iCloud 로 서로의 단어를 지운다(2026-10-03 교차 검증: 파리 기기와 사진 5.7%). 몽돌은 한국 앱이다.
+    public static let korea: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        return c
+    }()
+
     /// 실제 날씨(WeatherKit)가 먼저, 없으면 사진 속 하늘 짐작.
-    public init(_ m: Moment, labels: [String], calendar: Calendar = .current) {
+    public init(_ m: Moment, labels: [String], calendar: Calendar = PhotoContext.korea) {
         let real = m.place?.weather
         self.init(date: m.capturedAt,
                   weather: real.flatMap { PhotoEnrichment.wordWeather($0.condition) } ?? Weather.inferred(from: Set(labels)),

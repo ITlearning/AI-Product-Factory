@@ -67,13 +67,11 @@ enum SyncRecords {
             return Place(latitude: lat, longitude: lon, accuracy: acc, name: r["placeName"] as? String, weather: weather)
         }()
         let cloudID = r["cloudID"] as? String
-        // 옛 버전 기기가 올린 틀린 단어도 로컬과 같은 규칙으로 거른다.
         return Moment(id: id, capturedAt: capturedAt, colorHex: colorHex,
                       fileName: Moment.receivedFileName(cloudID: cloudID, id: id), source: source,
                       word: word, labels: labels, place: place,
                       addedAt: r["addedAt"] as? Date,
                       batchID: (r["batchID"] as? String).flatMap(UUID.init(uuidString:)), cloudID: cloudID)
-            .checkingWord(in: BundledWordSource.cached, retired: BundledWordSource.retired)
     }
 
     /// 받은 레코드를 메인 밖에서 미리 풀어 둔 것 — 메인에서는 사전 넣기와 applyRemote 만 한다.
