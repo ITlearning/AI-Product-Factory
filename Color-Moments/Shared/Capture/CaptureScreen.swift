@@ -120,12 +120,13 @@ public struct CaptureScreen: View {
 
     private var controls: some View {
         VStack(spacing: 18) {
-            ZoomPills(presets: engine.zoomPresets, zoom: engine.displayZoom) {
+            let presets = engine.zoomLadder?.presets ?? []
+            ZoomPills(ladder: engine.zoomLadder, zoom: engine.displayZoom) {
                 engine.setDisplayZoom($0); Haptics.snapped()
             }
             .frame(height: 44)
-            .opacity(engine.zoomPresets.count > 1 ? 1 : 0)
-            .disabled(engine.zoomPresets.count <= 1)
+            .opacity(presets.count > 1 ? 1 : 0)
+            .disabled(presets.count <= 1)
 
             ZStack {
                 Button { Haptics.captured(); engine.capture() } label: {
@@ -304,16 +305,17 @@ struct ShotStackView: View {
 }
 
 struct ZoomPills: View {
-    let presets: [Double]
+    let ladder: ZoomLadder?
     let zoom: Double
     let onSelect: (Double) -> Void
 
     var body: some View {
+        let nearest = ladder?.nearest(to: zoom)
         HStack(spacing: 6) {
-            ForEach(presets, id: \.self) { preset in
-                let active = isActive(preset)
+            ForEach(ladder?.presets ?? [], id: \.self) { preset in
+                let active = preset == nearest
                 Button { onSelect(preset) } label: {
-                    Text(active ? zoomText(zoom) : presetText(preset))
+                    Text(active ? ZoomLadder.label(zoom) : ZoomLadder.presetLabel(preset))
                         .font(.system(size: 13, weight: active ? .semibold : .medium, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(active ? Tone.amber : Tone.secondary)
@@ -324,20 +326,6 @@ struct ZoomPills: View {
                 .buttonStyle(.plain)
             }
         }
-        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: zoom)
-    }
-
-    private func isActive(_ preset: Double) -> Bool {
-        guard let nearest = presets.min(by: { abs($0 - zoom) < abs($1 - zoom) }) else { return false }
-        return nearest == preset
-    }
-
-    private func zoomText(_ z: Double) -> String {
-        let shown = (z * 10).rounded() / 10
-        return shown < 10 ? String(format: "%.1f×", shown) : String(format: "%.0f×", shown)
-    }
-
-    private func presetText(_ z: Double) -> String {
-        z < 1 ? String(format: "%.1f", z).replacingOccurrences(of: "0.", with: ".") : String(format: "%.0f", z)
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: nearest)
     }
 }
