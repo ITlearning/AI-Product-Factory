@@ -68,13 +68,18 @@ BUCKETS = [
     ("평범", "특징 없음", 8, lambda r: not labels(r) & {"people", "food", "tableware", "utensil"} and len(r["labels"]) <= 3),
 ]
 
-picked, days = [], set()
+# 앨범에서 Tabber 가 뺀 사진은 다시 고르지 않고, 남은 사진은 그대로 둔 채 빈자리만 같은 갈래에서 채운다.
+previous = json.load(open(f"{LAB}/eval-extra.json")) if os.path.exists(f"{LAB}/album-now.txt") else []
+in_album = set(open(f"{LAB}/album-now.txt").read().split()) if previous else set()
+removed = {p["id"] for p in previous if p["id"] not in in_album}
+picked = [p for p in previous if p["id"] in in_album]
+days = {p["local"][:10] for p in previous}
 for group, name, n, test in BUCKETS:
-    got = 0
+    got = sum(p["bucket"] == name for p in picked)
     for r in rows:
         if got == n:
             break
-        if r["id"] in {p["id"] for p in picked} or r["local"][:10] in days:
+        if r["id"] in removed or r["id"] in {p["id"] for p in picked} or r["local"][:10] in days:
             continue
         if usable(r) and test(r):
             picked.append({**r, "group": group, "bucket": name})

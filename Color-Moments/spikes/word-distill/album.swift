@@ -10,10 +10,13 @@ let assets = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
 
 let existing = PHFetchOptions()
 existing.predicate = NSPredicate(format: "title == %@", title)
-guard PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: existing).count == 0 else {
-    print("이미 있음: \(title)"); exit(1)
-}
+// 앨범이 있으면 빠진 사진만 더한다 — Tabber 가 뺀 사진은 eval-extra.json 에 없으니 되살아나지 않는다.
+let found = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: existing).firstObject
 try! PHPhotoLibrary.shared().performChangesAndWait {
-    PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: title).addAssets(assets)
+    if let found {
+        PHAssetCollectionChangeRequest(for: found)!.addAssets(assets)
+    } else {
+        PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: title).addAssets(assets)
+    }
 }
 print("\(title) 앨범에 \(assets.count)장")
