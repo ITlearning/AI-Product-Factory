@@ -199,8 +199,9 @@ Apple 기준의 「수집」은 기기 밖으로 보내 개발자(또는 제3자
 | 위치 | 장소 이름·날씨를 찾을 때 Apple(지오코딩·WeatherKit)이 그 자리에서 처리 | 아니다 — 개발자 서버 없음 |
 | 사진 분석(한 단어·추천) | 기기 안 Vision | 아니다 |
 | 알림 | 기기 안 로컬 예약 | 아니다 |
+| 새 버전 확인 (1.1~) | 설정을 열 때 하루 한 번 Apple 조회 API(`itunes.apple.com/lookup`)에 몽돌의 bundleId·country 만 | 아니다 — 사용자·기기 정보를 보내지 않는다 |
 
-코드 근거: 앱·확장 어디에도 `URLSession`·외부 주소가 없다(2026-10-03 확인). `PrivacyInfo.xcprivacy` 도 수집 데이터 없음 · 추적 없음.
+코드 근거: 1.0.0 은 앱·확장 어디에도 `URLSession`·외부 주소가 없다(2026-10-03 확인). 1.1 부터 앱 본체 `UpdateCheck` 하나만 위 조회 API 를 부른다 — ephemeral 세션, 주소의 bundleId·country 말고 보내는 값 없음, 확장에는 없다. `PrivacyInfo.xcprivacy` 도 수집 데이터 없음 · 추적 없음(조회 결과 캐시는 이미 적어 둔 UserDefaults `CA92.1` 안).
 
 ---
 

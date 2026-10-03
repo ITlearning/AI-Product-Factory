@@ -14,9 +14,23 @@ struct SettingsSheet: View {
     @State private var placeAccess = PlaceFinder.shared.access
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(MomentReminder.key) private var reminder: MomentReminder.Frequency = .sometimes
+    @State private var hasUpdate = false
     var store: DayStore? = nil
 
     var body: some View {
+        ScrollView {
+            content.padding(.horizontal, 24)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .safeAreaInset(edge: .bottom, spacing: 0) { footer }
+        .background(Tone.base.ignoresSafeArea())
+        .presentationDetents([.large])
+        .presentationBackground(Tone.base)
+        .preferredColorScheme(.dark)
+        .task { hasUpdate = await UpdateCheck.live.newerVersion(than: AppVersion.current.short) != nil }
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("설정").font(Face.lineCeremony).foregroundStyle(Tone.primary)
@@ -96,14 +110,35 @@ struct SettingsSheet: View {
             Text("아침과 노을 무렵에 가볍게. 담은 날은 오지 않아요.")
                 .font(Face.caption).foregroundStyle(Tone.tertiary)
                 .padding(.top, 8)
-            Spacer(minLength: 0)
+                .padding(.bottom, 24)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// 맨 아래 고정 — 작은 화면에선 위 내용만 스크롤된다.
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if hasUpdate {
+                Button { UIApplication.shared.open(UpdateCheck.storeURL) } label: {
+                    HStack(spacing: 6) {
+                        Text("새 버전이 있어요").foregroundStyle(Tone.secondary)
+                        Text("·").foregroundStyle(Tone.tertiary)
+                        Text("업데이트").foregroundStyle(Tone.primary)
+                    }
+                    .font(Face.guide)
+                    .frame(maxWidth: .infinity, minHeight: Shape2.minTouch, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("새 버전이 있어요. 업데이트")
+            }
+            Text(AppVersion.current.line)
+                .font(Face.caption).foregroundStyle(Tone.tertiary)
+                .padding(.bottom, 8)
         }
         .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Tone.base.ignoresSafeArea())
-        .presentationDetents([.large])
-        .presentationBackground(Tone.base)
-        .preferredColorScheme(.dark)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Tone.base)
     }
 
     private func option(_ s: PebbleStyle, _ title: String) -> some View {
