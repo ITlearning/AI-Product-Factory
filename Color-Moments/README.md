@@ -42,6 +42,20 @@ xcodebuild -project ColorMoments.xcodeproj -scheme ColorMoments \
 TestFlight 업로드는 `bundle exec fastlane beta` — 셋업과 CodeStudy 와 다른 점은 [`fastlane/SETUP.md`](fastlane/SETUP.md).
 버전은 `project.yml` 의 `MARKETING_VERSION` 을 고치고 `xcodegen generate` 한다(Xcode General 탭에서 바꾸지 말 것).
 
+### 버전 규칙 (2026-10-03 Tabber, CodeStudy 와 같은 방식)
+
+`x.y.z` 세 자리. 빌드 번호(`CURRENT_PROJECT_VERSION`)는 fastlane 이 TestFlight 마지막 번호 + 1 로 붙이니 손대지 않는다.
+
+| 올리는 자리 | 언제 | 예 |
+|---|---|---|
+| 가운데 `y` (끝은 0) | 기능을 묶어 내는 사이클 | 1.1.0 — 사진 한 단어 정확도·사진 빼기·배율·새 버전 알림 |
+| 끝 `z` | 고치기·작은 보탬·스토어 정보만 바꾸기 | 1.0.1 |
+| 앞 `x` | 앱의 축이 바뀔 때만 | — |
+
+- 출시한 커밋엔 `mongdol-vx.y.z` 태그를 단다(저장소에 앱이 여럿이라 앞에 이름을 붙인다 — `v1.1.0` 은 CodeStudy 것).
+- main 에 다음 버전이 들어간 뒤 출시본을 고쳐야 하면 태그에서 `release/mongdol-x.y` 브랜치를 따서 고치고, main 에도 합친다.
+- 1.1 부터 설정의 업데이트 줄(`UpdateCheck`)은 세 자리를 숫자로 비교한다(1.10 > 1.9) — 자리 수를 바꾸지 말 것.
+
 ## 설정 목록에 뜨기 위한 요구사항 (2026-09-22 실기기에서 배움)
 
 **타깃이 셋 필요하다.** 하나라도 빠지면 증상이 다르게 나타난다 — 2026-09-22 iPhone 16 Pro 실측:
