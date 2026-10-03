@@ -233,17 +233,32 @@ final class DayStoreTests: XCTestCase {
         XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.word?.wordID, "b")
     }
 
+    /// 빈 단어로 먼저 올라가지 않게 단어와 라벨을 한 번에 — 그사이 다른 기기 단어가 왔으면 덮지 않는다.
+    func testStampWordReplacesOnlyTheWordItSaw() {
+        let m = moment(date(2026, 9, 22, 12, 0), name: "s.jpg")
+        store.add(m)
+        let first = PhotoWord(wordID: "a", word: "가", meaning: "뜻")
+        store.stampWord(m.id, first, labels: ["sky"], replacing: nil)
+        XCTAssertEqual(store.moment(m.id)?.word, first)
+        XCTAssertEqual(store.moment(m.id)?.labels, ["sky"])
+        store.stampWord(m.id, PhotoWord(wordID: "b", word: "나", meaning: "뜻"), labels: ["sky"], replacing: nil)
+        XCTAssertEqual(store.moment(m.id)?.word, first, "본 단어(nil)와 지금 단어가 다르면 덮지 않는다")
+        store.stampWord(m.id, PhotoWord(wordID: "c", word: "다", meaning: "뜻"), labels: ["water"], replacing: first)
+        XCTAssertEqual(store.moment(m.id)?.word?.wordID, "c")
+        XCTAssertEqual(DayStore(fileURL: tempFile, closures: closures).moments.first?.labels, ["water"])
+    }
+
     func testWordWithoutLabelsIsDroppedOnLoad() throws {
         let legacy = """
         [{"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T03:00:00Z","colorHex":"#AABBCC","fileName":"a.jpg","source":"app",
           "word":{"wordID":"haegeoreum","word":"해거름","meaning":"m"}},
          {"id":"\(UUID().uuidString)","capturedAt":"2026-09-22T04:00:00Z","colorHex":"#AABBCC","fileName":"b.jpg","source":"app",
-          "labels":["sky"],"word":{"wordID":"meondong","word":"먼동","meaning":"m"}}]
+          "labels":["alley"],"word":{"wordID":"golmok","word":"골목","meaning":"m"}}]
         """
         try Data(legacy.utf8).write(to: tempFile)
         let ms = DayStore(fileURL: tempFile, closures: closures).moments.sorted { $0.fileName < $1.fileName }
         XCTAssertNil(ms[0].word, "사진을 안 보고 붙은 옛 단어는 지운다")
-        XCTAssertEqual(ms[1].word?.wordID, "meondong", "사진을 보고 붙은 단어는 그대로")
+        XCTAssertEqual(ms[1].word?.wordID, "golmok", "사진을 보고 붙은 단어는 그대로")
     }
 
     private func imported(_ at: Date, added: Date, batch: UUID, name: String, asset: String? = nil) -> Moment {

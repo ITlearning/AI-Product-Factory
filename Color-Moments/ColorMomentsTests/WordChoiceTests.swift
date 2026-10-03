@@ -84,4 +84,14 @@ final class WordRejectionsTests: XCTestCase {
         log.record(entry(UUID(), "haze"))
         XCTAssertEqual(log.avoided, ["haze"])
     }
+
+    /// 해외 사진은 규칙과 같은 달력으로 — 파리 한낮 사진의 프롬프트에 「밤(21:00)」이 들어가면 모델이 낮 후보를 버린다.
+    func testPromptUsesTheCalendarItWasGiven() {
+        var paris = Calendar(identifier: .gregorian); paris.timeZone = TimeZone(secondsFromGMT: 0)!
+        var c = DateComponents(); c.year = 2026; c.month = 7; c.day = 15; c.hour = 12; c.timeZone = TimeZone(identifier: "UTC")
+        let choice = WordChoice(candidates: [.init(id: "a", word: "가", meaning: "뜻")], labels: [],
+                                date: Calendar(identifier: .gregorian).date(from: c)!, calendar: paris)
+        XCTAssertTrue(choice.prompt().contains("(12:00)"), choice.prompt())
+        XCTAssertTrue(choice.reversed.prompt().contains("(12:00)"), "순서를 뒤집어 물을 때도 같은 달력")
+    }
 }

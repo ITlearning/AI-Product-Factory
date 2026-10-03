@@ -40,6 +40,8 @@ public final class WordRejections {
 
     public func hasRejected(_ momentID: UUID) -> Bool { entries.contains { $0.momentID == momentID } }
 
+    public func rejected(_ momentID: UUID) -> Set<String> { Set(entries.filter { $0.momentID == momentID }.map(\.wordID)) }
+
     public var avoided: Set<String> {
         Set(Dictionary(grouping: entries, by: \.wordID).filter { $0.value.count >= Self.avoidAfter }.keys)
     }

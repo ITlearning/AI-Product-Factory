@@ -7,8 +7,8 @@
 |---|---|
 | 원본 | Nanum Myeongjo Regular (Google Fonts) |
 | 라이선스 | SIL Open Font License 1.1 — [`NanumMyeongjo-OFL.txt`](NanumMyeongjo-OFL.txt) |
-| 서브셋 | 168자 (`subset-chars.txt`) |
-| 크기 | 2,987KB → **56.4KB** (상한 100KB, `FontSubsetTests.testSubsetStaysSmall`) |
+| 서브셋 | 242자 (`subset-chars.txt`) |
+| 크기 | 2,987KB → **82.2KB** (상한 100KB, `FontSubsetTests.testSubsetStaysSmall`) |
 
 ## 다시 만들 때
 
@@ -21,7 +21,9 @@ python3 - <<'PY'   # 필요한 글자 뽑기 — 조약돌 이름 + 워드마크
 import re, json, pathlib
 src = pathlib.Path("Shared/Day/PebbleName.swift").read_text()
 words = json.loads(pathlib.Path("Shared/Word/words.json").read_text())["words"]
-chars = set("".join(re.findall(r'name: "([^"]+)"', src))) | set("몽돌") | set("".join(w["word"] for w in words))
+# 목록에서 뺀 단어(먼동·곁두리)도 이미 붙은 사진엔 남는다 — 지금 서브셋의 글자는 지우지 않고 더하기만 한다.
+keep = set(pathlib.Path("Shared/Design/Fonts/subset-chars.txt").read_text())
+chars = keep | set("".join(re.findall(r'name: "([^"]+)"', src))) | set("몽돌") | set("".join(w["word"] for w in words))
 pathlib.Path("Shared/Design/Fonts/subset-chars.txt").write_text("".join(sorted(chars)))
 PY
 

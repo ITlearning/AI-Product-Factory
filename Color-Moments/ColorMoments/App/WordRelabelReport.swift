@@ -69,23 +69,21 @@ struct WordRelabelReport: View {
             guard let image = await ShotImage.thumbnail(m, maxPixel: 600)?.cgImage else { continue }
             let before = PhotoLabeler.labels(for: image) ?? []
             let after = PhotoLabeler.labels(for: image, vocabulary: vocabulary) ?? []
-            let real = m.place?.weather.flatMap { PhotoEnrichment.wordWeather($0.condition) }
             func pick(_ labels: [String]) -> (String, Bool) {
-                let seen = Set(labels)
-                let ctx = PhotoContext(date: m.capturedAt, weather: real ?? Weather.inferred(from: seen))
-                guard let w = WordPicker.candidates(for: ctx, labels: seen, in: words, excluding: [], seed: m.id.uuidString).first
+                let ctx = PhotoContext(m, labels: labels)
+                guard let w = WordPicker.candidates(for: ctx, labels: labels, in: words, excluding: [], seed: m.id.uuidString).first
                 else { return ("없음", false) }
-                return (w.word, !seen.isDisjoint(with: w.subjects))
+                return (w.word, !Set(labels).isDisjoint(with: w.subjects))
             }
             let (wb, fb) = pick(before), (wa, fa) = pick(after)
             var model: String?, reason = ""
             if #available(iOS 26.0, *) {
-                let seen = Set(after)
-                let ctx = PhotoContext(date: m.capturedAt, weather: real ?? Weather.inferred(from: seen))
-                let pool = WordPicker.choices(for: ctx, labels: seen, in: words, excluding: [], seed: m.id.uuidString)
+                let ctx = PhotoContext(m, labels: after)
+                let pool = WordPicker.choices(for: ctx, labels: after, in: words, excluding: [], seed: m.id.uuidString)
                 let weather = m.place?.weather.flatMap { w in PhotoEnrichment.label(w.condition).map { "\($0) \(Int(w.celsius.rounded()))°" } }
                 let input = WordChoice(candidates: pool.map { .init(id: $0.id, word: $0.word, meaning: $0.meaning) },
-                                       labels: after, date: m.capturedAt, weather: weather, place: m.place?.name)
+                                       labels: after, date: m.capturedAt, weather: weather, place: m.place?.name,
+                                       calendar: PhotoContext.calendar(for: m))
                 if pool.count > 1, let v = await WordAssistant.verdict(input) {
                     model = v.agreed ?? "불일치 \(v.forward ?? "실패")/\(v.reversed ?? "실패")"
                     reason = v.reason

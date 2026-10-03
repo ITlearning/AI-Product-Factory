@@ -55,7 +55,18 @@ final class WordListTests: XCTestCase {
         let supported: Set<String>
         do { supported = Set(try VNClassifyImageRequest().supportedIdentifiers()) }
         catch { throw XCTSkip("이 환경에서 Vision 분류 목록을 못 읽는다: \(error)") }
-        let bad = try list().words.flatMap { w in w.subjects.filter { !supported.contains($0) }.map { "\(w.word):\($0)" } }
+        let bad = try list().words.flatMap { w in (w.subjects + w.with).filter { !supported.contains($0) }.map { "\(w.word):\($0)" } }
         XCTAssertTrue(bad.isEmpty, "Vision 에 없는 분류 이름 — 이 단어는 영영 안 나온다: \(bad)")
+    }
+
+    /// WeatherKit 원래 이름 — 틀리면 그 단어는 영영 안 나온다.
+    func testConditionsAreRealWeatherKitNames() throws {
+        let unknown = try list().words.flatMap { w in w.conditions.filter { PhotoEnrichment.wordWeather($0) == nil }.map { "\(w.word):\($0)" } }
+        XCTAssertTrue(unknown.isEmpty, "몽돌이 모르는 날씨 이름: \(unknown)")
+    }
+
+    func testRetiredWordsAreNotInTheList() throws {
+        let l = try list()
+        XCTAssertTrue(Set(l.retired).isDisjoint(with: l.words.map(\.id)))
     }
 }
