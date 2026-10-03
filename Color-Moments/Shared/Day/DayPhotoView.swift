@@ -357,6 +357,8 @@ struct DayPhotoView: View {
         guard let old = current?.standingWord(), !rejections.hasRejected(m.id) else { return }
         let labels = current?.labels ?? []
         guard let pick = await pickWord(for: m, labels: labels, banned: [old.wordID]) else { return }
+        // 고르는 사이 다른 기기의 단어가 왔으면 바꾸지 않았으니 ↻ 도 쓰지 않은 것으로 둔다.
+        guard store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: old) else { return }
         let info = Bundle.main.infoDictionary
         rejections.record(.init(momentID: m.id, wordID: old.wordID, replacedBy: pick.word.id, labels: labels,
                                 candidates: pick.pool.map(\.id), partOfDay: PhotoEnrichment.partOfDay(m.capturedAt),
@@ -364,7 +366,6 @@ struct DayPhotoView: View {
                                 appVersion: "\(info?["CFBundleShortVersionString"] ?? "?")(\(info?["CFBundleVersion"] ?? "?"))",
                                 at: Date()))
         Haptics.tickPassed()
-        store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: old)
     }
 }
 
