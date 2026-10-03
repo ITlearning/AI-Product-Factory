@@ -3,6 +3,21 @@ import XCTest
 
 final class PebbleNameTests: XCTestCase {
 
+    // 시뮬레이터 앱에 쌓인 도장이 계산한 이름을 덮지 않게 — 2026-09-21 에 「별무리」가 찍힌 시뮬레이터에서 4건이 깨졌다.
+    private var suite = ""
+    private var saved: PebbleNameLog!
+
+    override func setUp() {
+        suite = "pebble-name-tests-\(UUID().uuidString)"
+        saved = PebbleNaming.stamps
+        PebbleNaming.stamps = PebbleNameLog(defaults: UserDefaults(suiteName: suite)!)
+    }
+
+    override func tearDown() {
+        PebbleNaming.stamps = saved
+        UserDefaults().removePersistentDomain(forName: suite)
+    }
+
     private func moment(_ hex: String, minute: Int = 0) -> Moment {
         Moment(capturedAt: Date(timeIntervalSince1970: 1_790_000_000 + Double(minute) * 60),
                colorHex: hex, fileName: "\(hex)-\(minute).jpg", source: .app)
