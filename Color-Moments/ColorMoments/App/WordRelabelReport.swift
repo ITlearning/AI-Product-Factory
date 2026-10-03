@@ -82,7 +82,8 @@ struct WordRelabelReport: View {
                 let pool = WordPicker.choices(for: ctx, labels: after, in: words, excluding: [], seed: m.id.uuidString)
                 let weather = m.place?.weather.flatMap { w in PhotoEnrichment.label(w.condition).map { "\($0) \(Int(w.celsius.rounded()))°" } }
                 let input = WordChoice(candidates: pool.map { .init(id: $0.id, word: $0.word, meaning: $0.meaning) },
-                                       labels: after, date: m.capturedAt, weather: weather, place: m.place?.name)
+                                       labels: after, date: m.capturedAt, weather: weather, place: m.place?.name,
+                                       calendar: PhotoContext.calendar(for: m))
                 if pool.count > 1, let v = await WordAssistant.verdict(input) {
                     model = v.agreed ?? "불일치 \(v.forward ?? "실패")/\(v.reversed ?? "실패")"
                     reason = v.reason

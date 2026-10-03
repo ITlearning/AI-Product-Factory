@@ -74,6 +74,12 @@ public enum PhotoEnrichment {
     }
 }
 
+/// 보는 중에 날씨·자리가 와서 단어가 가려지면(standingWord nil) 작업을 다시 돌려 그 자리에서 새로 고른다.
+private struct PhotoWordTaskKey: Equatable {
+    let id: Moment.ID
+    let needsWord: Bool
+}
+
 private struct DayPhotoLoadKey: Equatable {
     let fileName: String
     let generation: Int
@@ -120,7 +126,7 @@ struct DayPhotoView: View {
                                           generation: ShotImage.generation.value(for: moment.assetID))) {
                     await load(moment)
                 }
-                .task(id: moment.id) {
+                .task(id: PhotoWordTaskKey(id: moment.id, needsWord: moment.standingWord() == nil)) {
                     revealArrivals = true
                     async let named: Void = namePlaceIfNeeded(moment)
                     // 단어는 한 번 붙으면 안 바뀐다 — 실제 날씨를 먼저 찾고 고른다(라벨은 그동안 뽑는다).
@@ -323,7 +329,7 @@ struct DayPhotoView: View {
         let input = WordChoice(candidates: pool.map { .init(id: $0.id, word: $0.word, meaning: $0.meaning) },
                                labels: labels, date: m.capturedAt,
                                weather: weather.flatMap { w in PhotoEnrichment.label(w.condition).map { "\($0) \(Int(w.celsius.rounded()))°" } },
-                               place: current?.place?.name)
+                               place: current?.place?.name, calendar: PhotoContext.calendar(for: current ?? m))
         let chosen = await WordAssist.choose(input).flatMap { id in pool.first { $0.id == id } }
         return (chosen ?? first, pool)
     }
@@ -358,7 +364,7 @@ struct DayPhotoView: View {
                                 appVersion: "\(info?["CFBundleShortVersionString"] ?? "?")(\(info?["CFBundleVersion"] ?? "?"))",
                                 at: Date()))
         Haptics.tickPassed()
-        store.replaceWord(m.id, PhotoWord(pick.word))
+        store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: old)
     }
 }
 

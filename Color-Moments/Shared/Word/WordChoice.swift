@@ -18,13 +18,17 @@ public struct WordChoice: Sendable, Equatable {
     public let date: Date
     public let weather: String?
     public let place: String?
+    /// 규칙과 같은 달력(PhotoContext.calendar(for:)) — 다르면 해외 사진의 후보와 프롬프트 속 시각이 어긋난다.
+    public let calendar: Calendar
 
-    public init(candidates: [Candidate], labels: [String], date: Date, weather: String? = nil, place: String? = nil) {
+    public init(candidates: [Candidate], labels: [String], date: Date, weather: String? = nil, place: String? = nil,
+                calendar: Calendar = PhotoContext.korea) {
         self.candidates = candidates
         self.labels = labels
         self.date = date
         self.weather = weather
         self.place = place
+        self.calendar = calendar
     }
 
     public static let instructions = """
@@ -38,10 +42,12 @@ public struct WordChoice: Sendable, Equatable {
 
     /// 순서만 뒤집은 같은 물음 — 모델은 앞 후보를 고르는 버릇이 있어 두 번 물어 같을 때만 따른다.
     public var reversed: WordChoice {
-        WordChoice(candidates: candidates.reversed(), labels: labels, date: date, weather: weather, place: place)
+        WordChoice(candidates: candidates.reversed(), labels: labels, date: date, weather: weather, place: place, calendar: calendar)
     }
 
-    public func prompt(calendar: Calendar = PhotoContext.korea) -> String {
+    public func prompt() -> String { prompt(calendar: calendar) }
+
+    public func prompt(calendar: Calendar) -> String {
         let day = DateFormatter()
         day.locale = Locale(identifier: "ko_KR")
         day.calendar = calendar
