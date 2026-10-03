@@ -46,6 +46,8 @@ public struct WordEntry: Codable, Equatable, Sendable {
     public var sunMax: Double?
     /// 달 나이(일) 구간 중 하나 — 조각달 [[3, 7], [22, 26]].
     public var moonAges: [[Double]] = []
+    /// 요일(1 일요일 ~ 7 토요일) — 일터·짬은 평일에만.
+    public var weekdays: [Int] = []
     /// 맞지만 밋밋한 말(한나절·한낮) — 다른 「때」 말이 없을 때만. Tabber 가 가장 많이 버렸다.
     public var fallback: Bool = false
 }
@@ -53,7 +55,7 @@ public struct WordEntry: Codable, Equatable, Sendable {
 extension WordEntry {
     private enum CodingKeys: String, CodingKey {
         case id, word, meaning, times, weathers, seasons, subjects, moment, months, needs, with, minCelsius, maxCelsius
-        case hours, conditions, sunMin, sunMax, moonAges, fallback
+        case hours, conditions, sunMin, sunMax, moonAges, weekdays, fallback
     }
 
     public init(from decoder: Decoder) throws {
@@ -76,6 +78,7 @@ extension WordEntry {
         sunMin = try c.decodeIfPresent(Double.self, forKey: .sunMin)
         sunMax = try c.decodeIfPresent(Double.self, forKey: .sunMax)
         moonAges = try c.decodeIfPresent([[Double]].self, forKey: .moonAges) ?? []
+        weekdays = try c.decodeIfPresent([Int].self, forKey: .weekdays) ?? []
         fallback = try c.decodeIfPresent(Bool.self, forKey: .fallback) ?? false
     }
 }

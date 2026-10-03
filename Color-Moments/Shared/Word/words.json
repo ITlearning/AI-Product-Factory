@@ -1,5 +1,5 @@
 {
- "version": 4,
+ "version": 5,
  "words": [
   {
    "id": "yunseul",
@@ -558,27 +558,6 @@
    ]
   },
   {
-   "id": "malbeot",
-   "word": "말벗",
-   "meaning": "이야기를 나눌 수 있는 벗",
-   "times": [],
-   "weathers": [],
-   "seasons": [],
-   "subjects": [
-    "people"
-   ],
-   "with": [
-    "food",
-    "drink",
-    "tableware",
-    "drinking_glass",
-    "plate",
-    "bowl",
-    "cup",
-    "coffee"
-   ]
-  },
-  {
    "id": "golmok",
    "word": "골목",
    "meaning": "큰길에서 동네 안으로 이리저리 난 좁은 길",
@@ -679,18 +658,6 @@
    ]
   },
   {
-   "id": "sonttae",
-   "word": "손때",
-   "meaning": "오래 쓰고 매만져 길이 든 흔적",
-   "times": [],
-   "weathers": [],
-   "seasons": [],
-   "subjects": [
-    "book",
-    "desk"
-   ]
-  },
-  {
    "id": "jjam",
    "word": "짬",
    "meaning": "하던 일에서 잠깐 손을 뗄 수 있는 겨를",
@@ -698,23 +665,35 @@
    "weathers": [],
    "seasons": [],
    "subjects": [
+    "coffee",
+    "cup",
+    "mug",
+    "tea_drink",
+    "dessert",
+    "cookie",
+    "cake"
+   ],
+   "with": [
     "laptop",
     "computer",
-    "desk",
-    "cup"
-   ]
-  },
-  {
-   "id": "gyeoreul",
-   "word": "겨를",
-   "meaning": "무엇을 하거나 생각할 수 있는 여유",
-   "times": [],
-   "weathers": [],
-   "seasons": [],
-   "subjects": [
-    "laptop",
-    "computer",
-    "book"
+    "computer_monitor",
+    "document"
+   ],
+   "weekdays": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "hours": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
    ]
   },
   {
@@ -1194,7 +1173,6 @@
     "hamburger"
    ],
    "hours": [
-    21,
     22,
     23,
     0,
@@ -1222,6 +1200,9 @@
     "martini",
     "mojito",
     "tequila"
+   ],
+   "with": [
+    "people"
    ]
   },
   {
@@ -1340,22 +1321,6 @@
     "swing_playground",
     "slide_toy",
     "seesaw"
-   ]
-  },
-  {
-   "id": "jangnangam",
-   "word": "장난감",
-   "meaning": "아이들이 가지고 노는 물건",
-   "times": [],
-   "weathers": [],
-   "seasons": [],
-   "subjects": [
-    "toy",
-    "stuffed_animals",
-    "doll",
-    "vehicle_toy",
-    "train_toy",
-    "blocks"
    ]
   },
   {
@@ -2517,6 +2482,431 @@
     1,
     2
    ]
+  },
+  {
+   "id": "naeeum",
+   "word": "내음",
+   "meaning": "코끝에 닿는 향긋한 기운",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "coffee",
+    "coffee_bean",
+    "tea_drink",
+    "teapot",
+    "bread",
+    "baked_goods",
+    "croissant",
+    "pastry",
+    "muffin",
+    "scone"
+   ]
+  },
+  {
+   "id": "natsul",
+   "word": "낮술",
+   "meaning": "낮에 마시는 술",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "beer",
+    "wine",
+    "red_wine",
+    "white_wine",
+    "sparkling_wine",
+    "cocktail",
+    "liquor",
+    "sangria",
+    "margarita",
+    "martini",
+    "mojito",
+    "tequila"
+   ],
+   "hours": [
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+   ]
+  },
+  {
+   "id": "bamsul",
+   "word": "밤술",
+   "meaning": "밤에 마시는 술",
+   "times": [
+    "night"
+   ],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "beer",
+    "wine",
+    "red_wine",
+    "white_wine",
+    "sparkling_wine",
+    "cocktail",
+    "liquor",
+    "sangria",
+    "margarita",
+    "martini",
+    "mojito",
+    "tequila"
+   ]
+  },
+  {
+   "id": "neutachim",
+   "word": "늦아침",
+   "meaning": "아침때가 지나 늦게 먹는 아침밥",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "food",
+    "bread",
+    "croissant",
+    "bagel",
+    "white_bread",
+    "pastry",
+    "muffin",
+    "scone",
+    "pancake",
+    "waffle",
+    "fried_egg",
+    "omelet",
+    "scrambled_eggs",
+    "cereal",
+    "oatmeal",
+    "yogurt",
+    "sandwich",
+    "coffee"
+   ],
+   "hours": [
+    10,
+    11
+   ]
+  },
+  {
+   "id": "neutjeonyeok",
+   "word": "늦저녁",
+   "meaning": "저녁때가 지나 늦게 먹는 저녁밥",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "food",
+    "rice",
+    "soup",
+    "ramen",
+    "pasta",
+    "spaghetti",
+    "pizza",
+    "pepperoni",
+    "steak",
+    "salad",
+    "sushi",
+    "curry",
+    "hamburger",
+    "fried_chicken",
+    "stir_fry",
+    "dumpling",
+    "meat",
+    "plate",
+    "bowl",
+    "chopsticks"
+   ],
+   "hours": [
+    20,
+    21
+   ]
+  },
+  {
+   "id": "dangeot",
+   "word": "단것",
+   "meaning": "설탕이나 과자처럼 맛이 단 먹을거리",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "cake",
+    "cake_regular",
+    "birthday_cake",
+    "wedding_cake",
+    "cupcake",
+    "cheesecake",
+    "brownie",
+    "tiramisu",
+    "donut",
+    "cookie",
+    "chocolate",
+    "chocolate_chip",
+    "candy",
+    "candy_other",
+    "candy_cane",
+    "lollipop",
+    "marshmallow",
+    "caramel",
+    "taffy",
+    "ice_cream",
+    "frozen_dessert",
+    "popsicle",
+    "pudding",
+    "dessert",
+    "baklava",
+    "crepe",
+    "flan",
+    "jello",
+    "gingerbread",
+    "fruitcake",
+    "strudel"
+   ]
+  },
+  {
+   "id": "yeoreumnagi",
+   "word": "여름나기",
+   "meaning": "여름을 지내어 넘기는 일",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "ice_cream",
+    "popsicle",
+    "frozen_dessert",
+    "ice",
+    "smoothie",
+    "juice",
+    "milkshake",
+    "watermelon",
+    "electric_fan"
+   ],
+   "months": [
+    6,
+    7,
+    8
+   ],
+   "minCelsius": 28
+  },
+  {
+   "id": "gyeoulnagi",
+   "word": "겨울나기",
+   "meaning": "겨울을 지내어 넘기는 일",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "soup",
+    "ramen",
+    "kettle",
+    "teapot",
+    "tea_drink",
+    "thermos",
+    "fireplace"
+   ],
+   "months": [
+    12,
+    1,
+    2
+   ],
+   "maxCelsius": 5
+  },
+  {
+   "id": "galpi",
+   "word": "갈피",
+   "meaning": "포개진 책장 한 장 한 장의 사이",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "book",
+    "magazine",
+    "printed_page",
+    "newspaper"
+   ]
+  },
+  {
+   "id": "jeokbarim",
+   "word": "적바림",
+   "meaning": "나중에 보려고 간단히 적어 둔 글",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "sticky_note"
+   ]
+  },
+  {
+   "id": "geulwol",
+   "word": "글월",
+   "meaning": "편지를 달리 이르는 말",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "envelope"
+   ],
+   "with": [
+    "handwriting"
+   ]
+  },
+  {
+   "id": "nanal",
+   "word": "나날",
+   "meaning": "이어지는 하루하루의 날들",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "calendar"
+   ]
+  },
+  {
+   "id": "geulssi",
+   "word": "글씨",
+   "meaning": "손으로 쓴 글자의 모양",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "handwriting"
+   ]
+  },
+  {
+   "id": "giljabi",
+   "word": "길잡이",
+   "meaning": "길을 이끌어 주는 것",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "map",
+    "compass"
+   ]
+  },
+  {
+   "id": "ilteo",
+   "word": "일터",
+   "meaning": "일을 하는 곳",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "cubicle",
+    "whiteboard",
+    "flipchart",
+    "computer_monitor",
+    "laptop"
+   ],
+   "with": [
+    "cubicle",
+    "whiteboard",
+    "flipchart",
+    "computer_keyboard",
+    "document"
+   ],
+   "weekdays": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "hours": [
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17
+   ]
+  },
+  {
+   "id": "bulgeurimja",
+   "word": "불그림자",
+   "meaning": "유리나 물에 비친 불빛",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "lamp",
+    "candle",
+    "candlestick",
+    "lantern",
+    "light_bulb",
+    "chandelier"
+   ],
+   "with": [
+    "window",
+    "drinking_glass"
+   ],
+   "sunMax": -1
+  },
+  {
+   "id": "hanpan",
+   "word": "한판",
+   "meaning": "한 번 벌이는 놀이판",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "board_game",
+    "chess",
+    "play_card",
+    "poker",
+    "backgammon",
+    "domino",
+    "dice",
+    "videogame",
+    "gamepad"
+   ]
+  },
+  {
+   "id": "yetgeot",
+   "word": "옛것",
+   "meaning": "오래된 옛날의 것",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "typewriter",
+    "cassette",
+    "diskette"
+   ]
+  },
+  {
+   "id": "kkureomi",
+   "word": "꾸러미",
+   "meaning": "꾸려서 싼 물건",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "gift"
+   ]
+  },
+  {
+   "id": "noritgam",
+   "word": "놀잇감",
+   "meaning": "놀이에 쓰는 물건",
+   "times": [],
+   "weathers": [],
+   "seasons": [],
+   "subjects": [
+    "toy",
+    "stuffed_animals",
+    "doll",
+    "figurine",
+    "blocks",
+    "vehicle_toy",
+    "train_toy",
+    "puzzles",
+    "jigsaw"
+   ]
   }
  ],
  "retired": [
@@ -2526,6 +2916,9 @@
   "biseolgeoji",
   "danjam",
   "dalmaji",
-  "hanuibaram"
+  "hanuibaram",
+  "sonttae",
+  "malbeot",
+  "gyeoreul"
  ]
 }

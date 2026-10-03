@@ -276,6 +276,28 @@ final class WordPickerTests: XCTestCase {
         XCTAssertEqual(pick(seoul(10, 2, 22, weather: .rain), [], [rain, nightRain]).first, "nightrain")
     }
 
+    func testWeekdaysNarrowWords() {
+        var office = w("office", subjects: ["laptop"]); office.weekdays = [2, 3, 4, 5, 6]
+        XCTAssertEqual(pick(seoul(10, 2, 14), ["laptop"], [office]), ["office"], "2026-10-02 금요일")
+        XCTAssertEqual(pick(seoul(10, 3, 14), ["laptop"], [office]), [], "토요일")
+    }
+
+    /// Tabber: 「책상 위에 뭐가 있다고만 하면 다 손때, 말벗으로 퉁치던데 그게 너무 싫어서」(2026-10-03).
+    func testDeskPhotosSayWhatIsOnTheDesk() async throws {
+        let words = await BundledWordSource().words()
+        XCTAssertTrue(Set(words.map(\.word)).isDisjoint(with: ["손때", "말벗", "겨를"]))
+        func word(_ day: Int, _ hour: Int, _ labels: [String]) -> String? {
+            WordPicker.photoWord(for: seoul(10, day, hour, weather: .clear, celsius: 20), labels: labels, in: words,
+                                 excluding: [], seed: "desk")?.word
+        }
+        let desk = ["structure", "wood_processed", "furniture", "table"]
+        XCTAssertNotEqual(word(2, 15, desk + ["laptop", "computer"]), "짬", "노트북만 있으면 일하는 중")
+        XCTAssertEqual(word(2, 15, desk + ["coffee", "laptop"]), "짬", "평일 낮 노트북 옆 커피")
+        XCTAssertNotEqual(word(3, 15, desk + ["coffee", "laptop"]), "짬", "토요일엔 일하다 쉬는 틈이 아니다")
+        XCTAssertEqual(word(2, 15, desk + ["book"]), "갈피")
+        XCTAssertEqual(word(2, 15, desk + ["toy", "stuffed_animals"]), "놀잇감")
+    }
+
     func testRecentIsExcludedThenReleased() {
         let words = [w("a"), w("b")]
         XCTAssertEqual(pick(dusk, ["sky"], words, recent: ["a"]), ["b"])

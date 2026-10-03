@@ -23,6 +23,7 @@ public enum WordPicker {
     private static func fits(_ w: WordEntry, _ ctx: PhotoContext) -> Bool {
         if !w.times.isEmpty, !w.times.contains(ctx.timeBand) { return false }
         if !w.hours.isEmpty, !w.hours.contains(ctx.hour) { return false }
+        if !w.weekdays.isEmpty, !w.weekdays.contains(ctx.weekday) { return false }
         if !w.seasons.isEmpty, !w.seasons.contains(ctx.season) { return false }
         if !w.months.isEmpty, !w.months.contains(ctx.month) { return false }
         if let min = w.sunMin, ctx.sunAltitude < min { return false }
@@ -91,7 +92,7 @@ public enum WordPicker {
     static func specificity(_ w: WordEntry) -> Int {
         [!w.weathers.isEmpty || !w.conditions.isEmpty, !w.needs.isEmpty, !w.times.isEmpty || !w.hours.isEmpty,
          w.sunMin != nil || w.sunMax != nil, !w.seasons.isEmpty || !w.months.isEmpty,
-         w.minCelsius != nil || w.maxCelsius != nil, !w.moonAges.isEmpty, !w.with.isEmpty].filter { $0 }.count
+         w.minCelsius != nil || w.maxCelsius != nil, !w.moonAges.isEmpty, !w.with.isEmpty, !w.weekdays.isEmpty].filter { $0 }.count
     }
 
     /// 단어의 대상이 사진에서 몇 번째로 잡혔나 — 작을수록 주인공. 하늘은 모든 대상 뒤.
@@ -134,6 +135,7 @@ public enum WordPicker {
         guard let w = words.first(where: { $0.id == word.wordID }) else { return false }
         if !w.times.isEmpty, !w.times.contains(ctx.timeBand) { return true }
         if !w.hours.isEmpty, !w.hours.contains(ctx.hour) { return true }
+        if !w.weekdays.isEmpty, !w.weekdays.contains(ctx.weekday) { return true }
         if !w.seasons.isEmpty, !w.seasons.contains(ctx.season) { return true }
         if !w.months.isEmpty, !w.months.contains(ctx.month) { return true }
         if !w.moonAges.isEmpty, !w.moonAges.contains(where: { $0.count == 2 && $0[0] <= ctx.moonAge && ctx.moonAge <= $0[1] }) {

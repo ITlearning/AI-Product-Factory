@@ -5,6 +5,7 @@ public struct PhotoContext: Equatable, Sendable {
     public let season: Season
     public let month: Int
     public let hour: Int
+    public let weekday: Int
     public let weather: Weather?
     /// WeatherKit 원래 이름(heavyRain·flurries…) — 일곱 갈래 날씨로 뭉개기 전.
     public let condition: String?
@@ -16,8 +17,9 @@ public struct PhotoContext: Equatable, Sendable {
 
     public init(date: Date, weather: Weather? = nil, celsius: Double? = nil, condition: String? = nil,
                 coordinate: (latitude: Double, longitude: Double)? = nil, calendar: Calendar = .current) {
-        let c = calendar.dateComponents([.hour, .month], from: date)
+        let c = calendar.dateComponents([.hour, .month, .weekday], from: date)
         hour = c.hour ?? 12
+        weekday = c.weekday ?? 1
         timeBand = Self.timeBand(hour: hour)
         month = c.month ?? 1
         season = Self.season(month: month)
