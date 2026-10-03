@@ -22,7 +22,7 @@ for key in keys:
     path = f"{out}/{key}.json"
     if os.path.exists(path):
         continue
-    question = open(f"{LAB}/prompts/{key}.txt").read()
+    question = open(f"{LAB}/{os.environ.get('PROMPTS', 'prompts')}/{key}.txt").read()
     prompt = apply_chat_template(processor, config, question, num_images=1, enable_thinking=False)
     t = time.time()
     result = generate(model, processor, prompt, image=[f"{LAB}/photos/{key}.jpg"], max_tokens=300, temperature=0.0)

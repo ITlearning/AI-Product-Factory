@@ -3,11 +3,17 @@
 import json
 import os
 import random
+import sys
 
 LAB = os.path.expanduser("~/mongdol-word-lab")
 rows = json.load(open(f"{LAB}/eval.json"))
 words = {w["id"]: w for w in json.load(open(f"{LAB}/words.json"))}
-os.makedirs(f"{LAB}/prompts", exist_ok=True)
+# --color: 색채 없는 말(plain_words.txt)을 뒤 묶음으로 따로 보인다.
+COLOR = "--color" in sys.argv
+OUT = f"{LAB}/prompts-color" if COLOR else f"{LAB}/prompts"
+here = os.path.dirname(os.path.abspath(__file__))
+PLAIN = {t for l in open(f"{here}/plain_words.txt") if not l.startswith("#") for t in l.split()}
+os.makedirs(OUT, exist_ok=True)
 
 SEASON = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}
 
@@ -18,7 +24,7 @@ INSTRUCTIONS = """사진 일기 앱 「몽돌」이 사진 한 장에 붙일 순
 1. 사진을 직접 보고, 이 사진의 주인공(무엇을 찍었나)과 그 순간(무엇을 하던 때인가)을 먼저 알아본다.
 2. 주인공이나 순간을 가장 잘 불러 주는 단어를 고른다.
 3. 그런 단어가 없을 때만 찍은 때·날씨·계절을 말하는 단어로 간다.
-4. 사진에 보이지 않는 것을 말하는 단어는 고르지 않는다. 후보에 없는 말은 답에 쓰지 않는다.
+COLOR_RULE4. 사진에 보이지 않는 것을 말하는 단어는 고르지 않는다. 후보에 없는 말은 답에 쓰지 않는다.
 
 후보에는 없지만 이 사진에 훨씬 잘 맞는 순우리말이 떠오르면 따로 하나 적는다(없으면 비운다).
 
@@ -35,12 +41,22 @@ def prompt(r):
         lines.append(f"곳: {r['place']}")
     ids = list(r["allowed"])
     random.Random(r["key"]).shuffle(ids)
-    lines.append(f"후보 {len(ids)}개:")
-    lines += [f"- {words[i]['word']}: {words[i]['meaning']}" for i in ids]
-    return INSTRUCTIONS + "\n\n" + "\n".join(lines)
+    if COLOR:
+        vivid = [i for i in ids if words[i]["word"] not in PLAIN]
+        plain = [i for i in ids if words[i]["word"] in PLAIN]
+        lines.append(f"후보 — 결이 있는 말 {len(vivid)}개:")
+        lines += [f"- {words[i]['word']}: {words[i]['meaning']}" for i in vivid]
+        lines.append(f"후보 — 이름표 같은 말 {len(plain)}개 (위 묶음에 맞는 말이 없을 때만):")
+        lines += [f"- {words[i]['word']}: {words[i]['meaning']}" for i in plain]
+    else:
+        lines.append(f"후보 {len(ids)}개:")
+        lines += [f"- {words[i]['word']}: {words[i]['meaning']}" for i in ids]
+    rule4 = ("사물이나 때의 이름을 그대로 부르는 말(이름표 같은 말)보다, 빛·움직임·마음결이 담긴 말을 먼저 고른다.\n"
+             "   사진에 맞는 결 있는 말이 없을 때만 이름표 같은 말로 간다.\n") if COLOR else ""
+    return INSTRUCTIONS.replace("COLOR_RULE4.", ("4. " + rule4 + "5.") if COLOR else "4.") + "\n\n" + "\n".join(lines)
 
 
 for r in rows:
-    open(f"{LAB}/prompts/{r['key']}.txt", "w").write(prompt(r))
+    open(f"{OUT}/{r['key']}.txt", "w").write(prompt(r))
 print(len(rows), "개")
 print(prompt(rows[0])[:1800])
