@@ -6,13 +6,14 @@ import random
 import sys
 
 LAB = os.path.expanduser("~/mongdol-word-lab")
-rows = json.load(open(f"{LAB}/eval.json"))
+TRAIN = "--train" in sys.argv
+rows = json.load(open(f"{LAB}/{'train' if TRAIN else 'eval'}.json"))
 words = {w["id"]: w for w in json.load(open(f"{LAB}/words.json"))}
 # --color: 색채 없는 말(plain_words.txt)을 뒤 묶음으로 따로 보인다.
 COLOR = "--color" in sys.argv or "--balance" in sys.argv
 # --balance: 맞는 말이 먼저, 둘 다 맞을 때만 결 있는 말. 보금자리가 「포근한 아무 곳」으로 둘러대는 말이 되지 않게 뜻을 좁힌다.
 BALANCE = "--balance" in sys.argv
-OUT = f"{LAB}/prompts-balance" if BALANCE else f"{LAB}/prompts-color" if COLOR else f"{LAB}/prompts"
+OUT = f"{LAB}/prompts-train" if TRAIN else f"{LAB}/prompts-balance" if BALANCE else f"{LAB}/prompts-color" if COLOR else f"{LAB}/prompts"
 NARROW = {"보금자리": "사람이 살며 쉬는 집 안이나 잠자리 (카페·가게·바깥은 아니다)"}
 here = os.path.dirname(os.path.abspath(__file__))
 PLAIN = {t for l in open(f"{here}/plain_words.txt") if not l.startswith("#") for t in l.split()}

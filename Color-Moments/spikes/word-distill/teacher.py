@@ -25,7 +25,7 @@ for key in keys:
     question = open(f"{LAB}/{os.environ.get('PROMPTS', 'prompts')}/{key}.txt").read()
     prompt = apply_chat_template(processor, config, question, num_images=1, enable_thinking=False)
     t = time.time()
-    result = generate(model, processor, prompt, image=[f"{LAB}/photos/{key}.jpg"], max_tokens=300, temperature=0.0)
+    result = generate(model, processor, prompt, image=[f"{LAB}/{os.environ.get('PHOTOS', 'photos')}/{key}.jpg"], max_tokens=300, temperature=0.0)
     text = getattr(result, "text", result)
     found = re.search(r"\{.*\}", text, re.S)
     try:

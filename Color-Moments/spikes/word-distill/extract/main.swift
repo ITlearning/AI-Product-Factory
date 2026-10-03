@@ -1,6 +1,7 @@
 // 버리는 실험 코드. 평가 사진 100장(몽돌 54 + 추가 46)마다
 // 지금 규칙의 단어, judge 가 허락하는 후보, Vision 값(라벨 확신도 전부·사진 지문)을 뽑고 선생에게 줄 사진을 저장한다.
-// 결과는 ~/mongdol-word-lab 에만 쓴다. 실행: ./build.sh && .build/extract
+// 결과는 ~/mongdol-word-lab 에만 쓴다. 실행: ./build.sh && .build/extract [eval|train]
+// train: train-ids.txt 의 사진 → train.json · train-features.json · photos-train/
 import AppKit
 import Foundation
 import Photos
@@ -10,7 +11,8 @@ let lab = URL(fileURLWithPath: NSString(string: "~/mongdol-word-lab").expandingT
 let daysURL = URL(fileURLWithPath: NSString(string: "~/Downloads/mongdol-backup-20261001/days.json").expandingTildeInPath)
 let wordsURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     .appendingPathComponent("../../../Shared/Word/words.json").standardized
-let photosDir = lab.appendingPathComponent("photos")
+let mode = CommandLine.arguments.dropFirst().first ?? "eval"
+let photosDir = lab.appendingPathComponent(mode == "train" ? "photos-train" : "photos")
 try? FileManager.default.createDirectory(at: photosDir, withIntermediateDirectories: true)
 
 let list = try JSONDecoder().decode(WordList.self, from: Data(contentsOf: wordsURL))
@@ -38,6 +40,30 @@ struct Item {
 
 var items: [Item] = []
 
+func libraryItem(_ id: String, asset a: PHAsset, prefix: String, set: String, bucket: String?) -> Item? {
+    guard let date = a.creationDate else { return nil }
+    let place = a.location.map { Place(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude,
+                                       accuracy: $0.horizontalAccuracy) }
+    // 규칙의 동점 순서가 실행마다 같도록 사진 id 로 정한 UUID.
+    let h = String(format: "%016llx%016llx", WordPicker.fnv1a(id), WordPicker.fnv1a("uuid:" + id))
+    let uuid = UUID(uuidString: [h.prefix(8), h.dropFirst(8).prefix(4), h.dropFirst(12).prefix(4), h.dropFirst(16).prefix(4), h.dropFirst(20)]
+        .joined(separator: "-"))!
+    let m = Moment(id: uuid, capturedAt: date, colorHex: "", fileName: "", source: .library, assetID: id, place: place)
+    return Item(key: prefix + String(WordPicker.fnv1a(id), radix: 16).prefix(8), set: set,
+                bucket: bucket, moment: m, phoneLabels: nil, localID: id)
+}
+
+func assets(_ ids: [String]) -> [String: PHAsset] {
+    var byID: [String: PHAsset] = [:]
+    PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil).enumerateObjects { a, _, _ in byID[a.localIdentifier] = a }
+    return byID
+}
+
+if mode == "train" {
+    let ids = try String(contentsOf: lab.appendingPathComponent("train-ids.txt"), encoding: .utf8).split(separator: "\n").map(String.init)
+    let byID = assets(ids)
+    items = ids.compactMap { id in byID[id].flatMap { libraryItem(id, asset: $0, prefix: "t-", set: "train", bucket: nil) } }
+} else {
 let days = try decoder.decode([Moment].self, from: Data(contentsOf: daysURL))
 let cloudIDs = days.compactMap { $0.cloudID.map(PHCloudIdentifier.init(stringValue:)) }
 let mapping = PHPhotoLibrary.shared().localIdentifierMappings(for: cloudIDs)
@@ -56,17 +82,13 @@ for m in days {
 }
 
 let extras = try JSONSerialization.jsonObject(with: Data(contentsOf: lab.appendingPathComponent("eval-extra.json"))) as! [[String: Any]]
-let extraAssets = PHAsset.fetchAssets(withLocalIdentifiers: extras.map { $0["id"] as! String }, options: nil)
-var byID: [String: PHAsset] = [:]
-extraAssets.enumerateObjects { a, _, _ in byID[a.localIdentifier] = a }
+let byID = assets(extras.map { $0["id"] as! String })
 for e in extras {
     let id = e["id"] as! String
-    guard let a = byID[id], let date = a.creationDate else { continue }
-    let place = a.location.map { Place(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude,
-                                       accuracy: $0.horizontalAccuracy) }
-    let m = Moment(id: UUID(), capturedAt: date, colorHex: "", fileName: "", source: .library, assetID: id, place: place)
-    items.append(Item(key: "x-" + String(WordPicker.fnv1a(id), radix: 16).prefix(8), set: "extra",
-                      bucket: e["bucket"] as? String, moment: m, phoneLabels: nil, localID: id))
+    if let a = byID[id], let item = libraryItem(id, asset: a, prefix: "x-", set: "extra", bucket: e["bucket"] as? String) {
+        items.append(item)
+    }
+}
 }
 
 func image(_ asset: PHAsset, maxPixel: CGFloat) -> CGImage? {
@@ -98,6 +120,7 @@ for item in items {
           let small = image(asset, maxPixel: 600), let large = image(asset, maxPixel: 1024) else {
         missing.append(item.key); continue
     }
+    if rows.count % 100 == 0 { FileHandle.standardError.write("\(rows.count)/\(items.count)\n".data(using: .utf8)!) }
     saveJPEG(large, to: photosDir.appendingPathComponent(item.key + ".jpg"))
 
     let macLabels = PhotoLabeler.labels(for: small, vocabulary: vocabulary) ?? []
@@ -141,9 +164,9 @@ for item in items {
 }
 
 let opts: JSONSerialization.WritingOptions = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-try JSONSerialization.data(withJSONObject: rows, options: opts).write(to: lab.appendingPathComponent("eval.json"))
+try JSONSerialization.data(withJSONObject: rows, options: opts).write(to: lab.appendingPathComponent(mode == "train" ? "train.json" : "eval.json"))
 try JSONSerialization.data(withJSONObject: ["classifyLabels": classifyOrder ?? [], "photos": features])
-    .write(to: lab.appendingPathComponent("features.json"))
+    .write(to: lab.appendingPathComponent(mode == "train" ? "train-features.json" : "features.json"))
 let words170 = list.words.map { ["id": $0.id, "word": $0.word, "meaning": $0.meaning, "moment": $0.moment, "fallback": $0.fallback] }
 try JSONSerialization.data(withJSONObject: words170, options: opts).write(to: lab.appendingPathComponent("words.json"))
 FileHandle.standardError.write("사진 \(rows.count)장, 못 찾음 \(missing.count): \(missing)\n".data(using: .utf8)!)
