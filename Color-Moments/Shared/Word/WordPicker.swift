@@ -160,6 +160,20 @@ public enum WordPicker {
         return judge(w, ctx) == .no
     }
 
+    public static func modelCandidates(for ctx: PhotoContext, in words: [WordEntry], excluding recent: Set<String>,
+                                       banned: Set<String>, pebbleName: String?) -> [WordEntry] {
+        words.filter {
+            !$0.rest && !banned.contains($0.id) && !recent.contains($0.id) && $0.word != pebbleName && judge($0, ctx) == .yes
+        }
+    }
+
+    public static func best(_ scores: [String: Float], among words: [WordEntry], seed: String,
+                            notInGroupOf skip: WordEntry?) -> WordEntry? {
+        words.filter { scores[$0.id] != nil && (skip == nil || $0.group != skip?.group) }
+            .map { (w: $0, s: (scores[$0.id]! * 1000).rounded(), h: fnv1a(seed + ":" + $0.id)) }
+            .min { ($0.s, $1.h) > ($1.s, $0.h) }?.w
+    }
+
     // Hasher 금지 — 프로세스마다 시드가 달라 같은 사진의 후보가 바뀐다.
     public static func fnv1a(_ s: String) -> UInt64 {
         var h: UInt64 = 0xcbf2_9ce4_8422_2325
