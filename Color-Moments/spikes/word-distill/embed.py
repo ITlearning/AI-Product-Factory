@@ -1,5 +1,6 @@
 """3단계 후보 — 이미지 인코더로 사진 값을 뽑는다. 결과: ~/mongdol-word-lab/emb-<이름>.npz (keys, x)
-실행: python embed.py mobileclip2-s0 | mobileclip2-s2 | siglip2-b16"""
+실행: python embed.py <이름> — mobileclip2-s0 | mobileclip2-s2 (연구용 라이선스라 앱엔 못 넣는다)
+  상업 가능: siglip2-b16 · tinyclip-8m · tinyclip-39m · dinov2-s · mnv4-m · clip-b32-laion"""
 import glob
 import os
 import sys
@@ -20,6 +21,35 @@ if name.startswith("mobileclip2"):
     model.eval().to(device)
     encoder = model.visual
     encode = lambda batch: model.encode_image(batch)
+elif name == "clip-b32-laion":
+    import open_clip
+    model, _, preprocess = open_clip.create_model_and_transforms("ViT-B-32", pretrained="laion2b_s34b_b79k")
+    model.eval().to(device)
+    encoder = model.visual
+    encode = lambda batch: model.encode_image(batch)
+elif name.startswith("tinyclip"):
+    from transformers import CLIPImageProcessor, CLIPModel
+    repo = {"tinyclip-8m": "wkcn/TinyCLIP-ViT-8M-16-Text-3M-YFCC15M",
+            "tinyclip-39m": "wkcn/TinyCLIP-ViT-39M-16-Text-19M-YFCC15M"}[name]
+    model = CLIPModel.from_pretrained(repo).eval().to(device)
+    processor = CLIPImageProcessor.from_pretrained(repo)
+    encoder = model.vision_model
+    preprocess = lambda img: processor(images=img, return_tensors="pt")["pixel_values"][0]
+    encode = lambda batch: model.get_image_features(pixel_values=batch)
+elif name == "dinov2-s":
+    from transformers import AutoImageProcessor, AutoModel
+    model = AutoModel.from_pretrained("facebook/dinov2-small").eval().to(device)
+    processor = AutoImageProcessor.from_pretrained("facebook/dinov2-small")
+    encoder = model
+    preprocess = lambda img: processor(images=img, return_tensors="pt")["pixel_values"][0]
+    encode = lambda batch: model(pixel_values=batch).pooler_output
+elif name == "mnv4-m":
+    import timm
+    model = timm.create_model("mobilenetv4_conv_medium.e500_r256_in1k", pretrained=True, num_classes=0).eval().to(device)
+    cfg = timm.data.resolve_data_config({}, model=model)
+    preprocess = timm.data.create_transform(**cfg)
+    encoder = model
+    encode = lambda batch: model(batch)
 else:
     from transformers import AutoImageProcessor, AutoModel
     repo = "google/siglip2-base-patch16-224"
