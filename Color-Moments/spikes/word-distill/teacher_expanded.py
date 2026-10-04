@@ -1,6 +1,6 @@
 """넓어진 단어 목록(기존 170 + 사전에서 고른 말)으로 선생을 두 번 묻는다.
 1) 사진의 장면 갈래 최대 3개 → 2) 그 갈래의 새 말 + judge 가 허락한 기존 말 중 한 단어.
-새 말은 v3 목록(빼기 반영)이고, 사실 조건(cond.py — 앱 judge 와 같은 규칙)을 통과한 것만 후보에 오른다.
+새 말은 v4 목록(v3 + 기존 말 대상 힌트·쉬게 하기)이고, 사실 조건(cond.py — 앱 judge 와 같은 규칙)을 통과한 것만 후보에 오른다.
 실행: python teacher_expanded.py [--train] → answers/qwen35-expanded[-train]/<key>.json
 --train: 학습 사진 3,000장(photos-train). 끊겨도 다시 실행하면 남은 사진부터 이어 간다."""
 import json
@@ -18,13 +18,13 @@ import cond
 LAB = os.path.expanduser("~/mongdol-word-lab")
 MODEL = "mlx-community/Qwen3.5-35B-A3B-4bit"
 TRAIN = "--train" in sys.argv
-OUT = f"{LAB}/answers/qwen35-v3" + ("-train" if TRAIN else "")
+OUT = f"{LAB}/answers/qwen35-v4" + ("-train" if TRAIN else "")
 PHOTOS = f"{LAB}/photos-train" if TRAIN else f"{LAB}/photos"
 os.makedirs(OUT, exist_ok=True)
 rows = json.load(open(f"{LAB}/{'train' if TRAIN else 'eval'}.json"))
-vocab = json.load(open(f"{LAB}/words-expanded-v3.json"))
+vocab = json.load(open(f"{LAB}/words-expanded-v4.json"))
 PLACES = cond.places()
-old = {w["id"]: w for w in vocab if not w["new"]}
+old = {w["id"]: w for w in vocab if not w["new"] and not w.get("rest")}
 new_by_cat = {}
 for w in vocab:
     if w["new"]:
@@ -95,7 +95,7 @@ for n, r in enumerate(todo, 1):
     ctx = cond.Context(r, PLACES.get(r["key"]))
     cands = [old[i] for i in r["allowed"] if i in old] + [w for c in cats for w in new_by_cat.get(c, []) if cond.ok(w["cond"], ctx)]
     random.Random(r["key"]).shuffle(cands)
-    lines = "\n".join(f"- {w['word']}: {w['meaning']}" for w in cands)
+    lines = "\n".join(f"- {w['word']}: {w['meaning']}" + (f" ({w['hint']})" if w.get("hint") else "") for w in cands)
     a2, raw2 = ask(model, processor, config, STEP2.format(when=when(r), n=len(cands), cands=lines), image, 200)
     word = a2.get("word", "").strip()
     hit = next((w for w in cands if w["word"] == word), None)
