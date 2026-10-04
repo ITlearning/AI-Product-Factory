@@ -1,0 +1,35 @@
+몽돌 오픈소스·출처 고지
+
+1. 단어 뜻풀이 — 국립국어원 표준국어대사전
+   출처: 국립국어원 표준국어대사전 (https://stdict.korean.go.kr)
+   라이선스: 크리에이티브 커먼즈 저작자표시-동일조건변경허락 2.0 대한민국 (CC BY-SA 2.0 KR)
+   https://creativecommons.org/licenses/by-sa/2.0/kr/
+   일부 뜻풀이는 사전의 첫 뜻을 그대로 쓰지 않고 새로 썼습니다(긴 뜻풀이를 한 줄로 줄임).
+   이 뜻풀이를 다시 쓰는 경우 같은 라이선스(CC BY-SA 2.0 KR)를 따라야 합니다.
+
+2. 이미지 모델 — TinyCLIP
+   출처: https://github.com/wkcn/TinyCLIP (Microsoft)
+   라이선스: MIT License. 몽돌의 단어 모델은 이 모델의 이미지 인코더를 Core ML(int8)로 바꿔 앱 안에서 씁니다.
+   아래는 라이선스 전문입니다.
+
+MIT License
+
+Copyright (c) Microsoft Corporation.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

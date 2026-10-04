@@ -134,6 +134,13 @@ struct SettingsSheet: View {
             }
             Text(AppVersion.current.line)
                 .font(Face.caption).foregroundStyle(Tone.tertiary)
+            Text("단어는 이 기기 안에서 사진을 보고 고릅니다")
+                .font(Face.caption).foregroundStyle(Tone.tertiary)
+                .padding(.top, 4)
+            Text("단어 뜻풀이 · 국립국어원 표준국어대사전 (CC BY-SA 2.0 KR) · 이미지 모델 TinyCLIP (MIT)")
+                .font(Face.caption).foregroundStyle(Tone.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
                 .padding(.bottom, 8)
         }
         .padding(.horizontal, 24)

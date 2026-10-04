@@ -14,6 +14,8 @@ struct WordRelabelReport: View {
         let added: [String]
         let beforeFits: Bool
         let afterFits: Bool
+        let rule: String
+        let student: String
     }
 
     @State private var rows: [Row] = []
@@ -26,8 +28,16 @@ struct WordRelabelReport: View {
                 LabeledContent("대상과 맞춘 단어 (전 → 후)",
                                value: "\(rows.filter(\.beforeFits).count) → \(rows.filter(\.afterFits).count)")
                 LabeledContent("단어가 바뀌는 사진", value: "\(rows.filter { $0.before != $0.after }.count)")
+                LabeledContent("규칙 ≠ 학생", value: "\(rows.filter { $0.rule != $0.student }.count)")
             } footer: {
                 Text("저장하지 않는다. 옆 장 합치기·최근 단어 피하기는 빼고 비교한다.")
+            }
+            Section("규칙 단어 / 학생 단어") {
+                ForEach(rows) { r in
+                    Text("\(r.when)  \(r.rule) / \(r.student)\(r.rule == r.student ? "" : "  ◀")")
+                        .font(.body.monospacedDigit())
+                        .textSelection(.enabled)
+                }
             }
             Section("바뀌는 사진") {
                 ForEach(changed) { r in
@@ -46,6 +56,29 @@ struct WordRelabelReport: View {
     }
 
     private var changed: [Row] { rows.filter { $0.before != $0.after } }
+
+    /// 같은 사진에 WordChooser 를 두 번 — 지금 WordScorer 로(학생), 잠시 nil 로(규칙). 저장·기록은 하지 않는다.
+    private func compare(_ m: Moment, labels: [String], words: [WordEntry]) async -> (rule: String, student: String) {
+        let ctx = PhotoContext(m, labels: labels)
+        let recent = store.recentWordIDs(excluding: m.id)
+        let name = store.pebbleName(on: m.dayKey)
+        func choose() async -> String {
+            let suite = "relabel-report"
+            let defaults = UserDefaults(suiteName: suite)!
+            defaults.removePersistentDomain(forName: suite)
+            let outcome = await WordChooser.choose(moment: m, context: ctx, labels: labels, words: words, recent: recent,
+                                                   banned: [], pebbleName: name, skip: nil,
+                                                   attempts: WordAttempts(defaults: defaults))
+            if case .word(let w, _) = outcome { return w.word }
+            return outcome == nil ? "없음" : "미정"
+        }
+        let student = await choose()
+        let saved = WordScorer.score
+        WordScorer.score = nil
+        defer { WordScorer.score = saved }
+        let rule = await choose()
+        return (rule, student)
+    }
 
     private func run() async {
         let words = await BundledWordSource().words()
@@ -66,8 +99,10 @@ struct WordRelabelReport: View {
                 return (w.word, !Set(labels).isDisjoint(with: w.subjects))
             }
             let (wb, fb) = pick(before), (wa, fa) = pick(after)
+            let (rule, student) = await compare(m, labels: after, words: words)
             rows.append(Row(id: m.id, when: format.string(from: m.capturedAt), before: wb, after: wa,
-                            added: after.filter { !before.contains($0) }, beforeFits: fb, afterFits: fa))
+                            added: after.filter { !before.contains($0) }, beforeFits: fb, afterFits: fa,
+                            rule: rule, student: student))
         }
     }
 }
