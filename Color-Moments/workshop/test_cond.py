@@ -18,3 +18,10 @@ def test_context_reads_the_table(tmp_path, monkeypatch):
     x = cond.Context({"local": "2026-02-16 20:00", "labels": []}, None)
     assert cond.ok({"lunar": ["12-last"]}, x)
     assert not cond.ok({"lunar": ["01-01"]}, x)
+
+
+def test_dates_past_the_library_range_have_no_key():
+    from datetime import date
+    assert lunar_table.lunar_of(date(2055, 9, 1)) is None
+    assert lunar_table.lunar_of(date(2050, 12, 31)) == "11-18"
+    assert lunar_table.build({"08-24"}, 2051, 2055) == {}

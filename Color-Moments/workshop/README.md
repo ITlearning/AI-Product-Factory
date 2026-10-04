@@ -25,5 +25,5 @@
 새 id 는 git 기록의 모든 id·`retired` 를 피한다. 만든 뒤 음력 표와 명조 서브셋(`Shared/Design/Fonts/README.md`)을 다시 만든다.
 
 ## 음력 표
-`python lunar_table.py <words.json> ../Shared/Word/lunar-days.json` — 단어들의 `lunar` 조건에 나온 날만 2000~2060년 범위로 뽑는다.
+`python lunar_table.py <words.json> ../Shared/Word/lunar-days.json` — 단어들의 `lunar` 조건에 나온 날만 2000~2050년 범위로 뽑는다(korean_lunar_calendar 가 2050년까지만 안다. 넘는 날은 `lunar_of` 가 None).
 앱과 `cond.py` 가 같은 표를 읽는다. 표가 없으면 `cond.py` 는 빈 표로 돌고 음력 조건은 모두 맞지 않는다. 윤달은 평달로 치지 않는다.

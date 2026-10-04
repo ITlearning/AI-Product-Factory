@@ -72,7 +72,7 @@ PR-4 ─> PR-5 ───────────────┘
 | `Shared/Word/LunarDays.swift` (새) | `lunar-days.json` 읽기, 날짜 → 음력 키 | 1 |
 | `Shared/Word/PhotoContext.swift` | `dateKey`("yyyy-MM-dd")·`solarKey`("MM-dd") | 1 |
 | `Shared/Word/WordPicker.swift` | `judge` 음력·양력, `modelCandidates`·`best` | 1, 5 |
-| `Shared/Word/lunar-days.json` (생성) | 한국 음력 표 2000~2060 | 2, 3 |
+| `Shared/Word/lunar-days.json` (생성) | 한국 음력 표 2000~2050 (korean_lunar_calendar 범위) | 2, 3 |
 | `Shared/Word/words.json` (생성) | v6 목록 | 3 |
 | `workshop/**` | 공방(파이썬·Swift 도구) | 2, 3, 6, 8 |
 | `Shared/Word/WordScorer.swift` (새) | 주입 지점 + 2초 상한 | 5 |
@@ -233,7 +233,7 @@ git commit -m "feat(mongdol): 단어에 쉬게 하기·음력·양력·갈래 �
 - Modify: `workshop/cond.py` (표 사용·윤달)
 
 **Interfaces:**
-- Produces: `workshop/lunar_table.py build(keys: set[str], start=2000, end=2060) -> dict[str, list[str]]` · 출력 파일 형식 `{"version": 1, "days": {"2026-02-16": ["12-29", "12-last"]}}` · `cond.Context.lunar_keys: set[str]`
+- Produces: `workshop/lunar_table.py build(keys: set[str], start=2000, end=2050) -> dict[str, list[str]]` · 출력 파일 형식 `{"version": 1, "days": {"2026-02-16": ["12-29", "12-last"]}}` · `cond.Context.lunar_keys: set[str]`
 - Consumes: 없음
 
 - [ ] **Step 1: 옮기기**
@@ -284,7 +284,7 @@ def lunar_of(d):
     return None if "Intercalation" in iso else iso[5:10]
 
 
-def build(keys, start=2000, end=2060):
+def build(keys, start=2000, end=2050):
     days, d = {}, date(start, 1, 1)
     while d <= date(end, 12, 31):
         k = lunar_of(d)
