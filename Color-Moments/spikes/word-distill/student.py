@@ -1,6 +1,8 @@
 """2단계 학생 — Vision 값(라벨 확신도 1,303 + 사진 지문 768) 위의 층 하나로 170개 중 고르기.
 judge 가 허락한 후보 밖은 가리고(학습·평가 모두) 선생(Qwen) 답을 따라 배운다.
-실행: python student.py [선생 이름=qwen35] → 학습 곡선, 평가 94장 성적, 미판정 단어를 answers/student-<n>/ 에 쓴다."""
+실행: python student.py [선생 이름=qwen35] [--emb 인코더이름] [--with-vision]
+  --emb: Vision 값 대신 embed.py 가 뽑은 인코더 값(3단계). --with-vision: 둘을 이어 붙인다.
+→ 학습 곡선, 평가 94장 성적, 미판정 단어를 answers/student-<이름>-<n>/ 에 쓴다."""
 import json
 import os
 import sys
@@ -9,7 +11,17 @@ import numpy as np
 import torch
 
 LAB = os.path.expanduser("~/mongdol-word-lab")
-TEACHER = sys.argv[1] if len(sys.argv) > 1 else "qwen35"
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+TEACHER = args[0] if args and args[0] != "" else "qwen35"
+EMB = sys.argv[sys.argv.index("--emb") + 1] if "--emb" in sys.argv else None
+if EMB in args:
+    args.remove(EMB)
+    TEACHER = args[0] if args else "qwen35"
+WITH_VISION = "--with-vision" in sys.argv
+TAG = (EMB or "vision") + ("+vision" if EMB and WITH_VISION else "")
+if EMB:
+    _e = np.load(f"{LAB}/emb-{EMB}.npz")
+    EMBS = dict(zip(_e["keys"], _e["x"]))
 words = json.load(open(f"{LAB}/words.json"))
 index = {w["id"]: i for i, w in enumerate(words)}
 by_word = {w["word"]: w["id"] for w in words}
@@ -31,7 +43,12 @@ def load(split, answers):
             wid = by_word.get(json.load(open(p)).get("word", "").strip())
             if wid in r["allowed"]:
                 label = index[wid]
-        X.append(np.concatenate([f["classify"], f["print"]]))
+        vision = np.concatenate([f["classify"], f["print"]])
+        if EMB:
+            e = EMBS[r["key"]]
+            X.append(np.concatenate([e, vision]) if WITH_VISION else e)
+        else:
+            X.append(vision)
         M.append(mask)
         y.append(label)
         keys.append(r["key"])
@@ -64,7 +81,7 @@ Xtr, Mtr, ytr, _, _ = load("train", f"{TEACHER}-train")
 keep = ytr >= 0
 Xtr, Mtr, ytr = Xtr[keep], Mtr[keep], ytr[keep]
 Xev, Mev, yev, kev, rows_ev = load("eval", TEACHER)
-print(f"학습 {len(ytr)}장 (선생 답이 후보 안), 평가 {len(kev)}장, 선생이 쓴 단어 {len(set(ytr))}개")
+print(f"[{TAG}] 학습 {len(ytr)}장 (선생 답이 후보 안), 평가 {len(kev)}장, 선생이 쓴 단어 {len(set(ytr))}개")
 
 rng = np.random.default_rng(0)
 order = rng.permutation(len(ytr))
@@ -84,7 +101,7 @@ for n in [1000, 2000, len(ytr)]:
     model = fit(Xtr[idx], Mtr[idx], ytr[idx], decay)
     pred = predict(model, Xev, Mev)
     same = (pred == yev).mean()
-    out = f"{LAB}/answers/student-{n}"
+    out = f"{LAB}/answers/.student-{TAG}-{n}"
     os.makedirs(out, exist_ok=True)
     good = judged = 0
     for k, p in zip(kev, pred):
