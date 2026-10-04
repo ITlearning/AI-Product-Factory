@@ -385,9 +385,8 @@ struct DayPhotoView: View {
         let labels = m.labels ?? []
         let ctx = PhotoContext(m, labels: labels)
         if WordScorer.score != nil {
-            let currentEntry = BundledWordSource.cached.first { $0.id == w.wordID }
-            return WordPicker.modelCandidates(for: ctx, in: BundledWordSource.cached, excluding: [], banned: [w.wordID], pebbleName: nil)
-                .contains { $0.group != currentEntry?.group }
+            return WordPicker.hasModelAlternative(to: w, context: ctx, in: BundledWordSource.cached,
+                                                  scorable: WordScorer.scorableIDs, pebbleName: store.pebbleName(on: m.dayKey))
         }
         return !WordPicker.choices(for: ctx, labels: labels, in: BundledWordSource.cached,
                                    excluding: [], seed: m.id.uuidString, banned: [w.wordID]).isEmpty

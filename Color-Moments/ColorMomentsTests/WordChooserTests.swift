@@ -17,7 +17,7 @@ final class WordChooserTests: XCTestCase {
         attempts = WordAttempts(defaults: UserDefaults(suiteName: "WordChooserTests")!)
         attempts.clear(m.id)
     }
-    override func tearDown() { WordScorer.score = nil; super.tearDown() }
+    override func tearDown() { WordScorer.score = nil; WordScorer.scorableIDs = nil; super.tearDown() }
 
     private func choose(_ words: [WordEntry], recent: Set<String> = [], banned: Set<String> = [], pebble: String? = nil,
                         skip: WordEntry? = nil, labels: [String] = ["ocean"]) async -> WordChooser.Outcome? {
@@ -57,6 +57,42 @@ final class WordChooserTests: XCTestCase {
     func testNoScorerUsesTheRule() async {
         WordScorer.score = nil
         let r7 = id(await choose([w("sea", subjects: ["ocean"]), w("b")])); XCTAssertEqual(r7, "sea")
+    }
+
+    func testScoresThatCoverNoCandidateFallToRule() async {
+        WordScorer.score = { _ in ["elsewhere": 0.9] }
+        let r = id(await choose([w("sea", subjects: ["ocean"]), w("b")]))
+        XCTAssertEqual(r, "sea")
+    }
+
+    func testRetryRuleFallbackPrefersAnotherGroup() async {
+        WordScorer.score = nil
+        let words = [w("a", subjects: ["ocean"]), w("b", subjects: ["ocean"]), w("c", group: "빛·하늘", subjects: ["sky"])]
+        let plain = id(await choose(words, banned: ["a"], labels: ["ocean", "sky"]))
+        XCTAssertEqual(plain, "b", "갈래를 따지지 않으면 바다 단어가 앞선다")
+        let retry = id(await choose(words, banned: ["a"], skip: words[0], labels: ["ocean", "sky"]))
+        XCTAssertEqual(retry, "c", "↻ 의 규칙 단어도 다른 갈래부터")
+    }
+
+    func testRetryRuleFallbackKeepsTheSameGroupWhenNothingElse() async {
+        WordScorer.score = nil
+        let words = [w("a", subjects: ["ocean"]), w("b", subjects: ["ocean"])]
+        let r = id(await choose(words, banned: ["a"], skip: words[0]))
+        XCTAssertEqual(r, "b")
+    }
+
+    func testModelAlternativeNeedsAnotherGroup() {
+        let current = PhotoWord(wordID: "a", word: "a", meaning: "뜻")
+        let alt = { (words: [WordEntry], scorable: Set<String>?, pebble: String?) in
+            WordPicker.hasModelAlternative(to: current, context: self.ctx, in: words, scorable: scorable, pebbleName: pebble)
+        }
+        let words = [w("a"), w("b"), w("c", group: "빛·하늘")]
+        XCTAssertTrue(alt(words, nil, nil))
+        XCTAssertFalse(alt([w("a"), w("b")], nil, nil), "같은 갈래뿐이면 ↻ 가 바꿀 단어가 없다")
+        XCTAssertFalse(alt(words, ["a", "b"], nil), "모델이 점수를 못 내는 단어는 대안이 아니다")
+        XCTAssertTrue(alt(words, ["a", "c"], nil))
+        XCTAssertFalse(alt(words, nil, "c"), "그날 조약돌 이름은 대안이 아니다")
+        XCTAssertFalse(alt([w("a"), w("c", group: "빛·하늘", rest: true)], nil, nil))
     }
 
     func testFailureLeavesItForLater() async {

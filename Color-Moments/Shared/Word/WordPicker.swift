@@ -167,6 +167,14 @@ public enum WordPicker {
         }
     }
 
+    /// ↻ 를 둘 만한가 — 모델이 실제로 고를 수 있는 단어(scorable) 중 그날 조약돌 이름이 아니고 갈래가 다른 것이 있어야 한다.
+    public static func hasModelAlternative(to current: PhotoWord, context ctx: PhotoContext, in words: [WordEntry],
+                                           scorable: Set<String>?, pebbleName: String?) -> Bool {
+        let group = words.first { $0.id == current.wordID }?.group
+        return modelCandidates(for: ctx, in: words, excluding: [], banned: [current.wordID], pebbleName: pebbleName)
+            .contains { (scorable?.contains($0.id) ?? true) && $0.group != group }
+    }
+
     public static func best(_ scores: [String: Float], among words: [WordEntry], seed: String,
                             notInGroupOf skip: WordEntry?) -> WordEntry? {
         words.filter { scores[$0.id]?.isFinite == true && (skip == nil || $0.group != skip?.group) }

@@ -26,10 +26,15 @@ public enum WordChooser {
             }
         }
         let open = words.filter { $0.word != pebbleName }
-        let rule = WordPicker.candidates(for: ctx, labels: labels, in: open, excluding: recent, seed: seed, banned: banned)
-        let pool = WordPicker.choices(for: ctx, labels: labels, in: open, excluding: recent, seed: seed, banned: banned)
-        guard let first = rule.first ?? pool.first else { return nil }
-        attempts.clear(m.id)
-        return .word(first, pool: pool)
+        let passes = skip.map { s in [open.filter { $0.group != s.group }, open] } ?? [open]
+        for words in passes {
+            let rule = WordPicker.candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
+            let pool = WordPicker.choices(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
+            if let first = rule.first ?? pool.first {
+                attempts.clear(m.id)
+                return .word(first, pool: pool)
+            }
+        }
+        return nil
     }
 }
