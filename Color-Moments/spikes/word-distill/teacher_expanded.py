@@ -1,11 +1,13 @@
 """넓어진 단어 목록(기존 170 + 사전에서 고른 말)으로 선생을 두 번 묻는다.
 1) 사진의 장면 갈래 최대 3개 → 2) 그 갈래의 새 말 + judge 가 허락한 기존 말 중 한 단어.
 새 말에는 아직 시각·날씨 조건이 없다 — 선생이 찍은 때를 보고 가린다.
-실행: python teacher_expanded.py → answers/qwen35-expanded/<key>.json"""
+실행: python teacher_expanded.py [--train] → answers/qwen35-expanded[-train]/<key>.json
+--train: 학습 사진 3,000장(photos-train). 끊겨도 다시 실행하면 남은 사진부터 이어 간다."""
 import json
 import os
 import random
 import re
+import sys
 import time
 
 from mlx_vlm import apply_chat_template, generate, load
@@ -13,9 +15,11 @@ from mlx_vlm.utils import load_config
 
 LAB = os.path.expanduser("~/mongdol-word-lab")
 MODEL = "mlx-community/Qwen3.5-35B-A3B-4bit"
-OUT = f"{LAB}/answers/qwen35-expanded"
+TRAIN = "--train" in sys.argv
+OUT = f"{LAB}/answers/qwen35-expanded" + ("-train" if TRAIN else "")
+PHOTOS = f"{LAB}/photos-train" if TRAIN else f"{LAB}/photos"
 os.makedirs(OUT, exist_ok=True)
-rows = json.load(open(f"{LAB}/eval.json"))
+rows = json.load(open(f"{LAB}/{'train' if TRAIN else 'eval'}.json"))
 vocab = json.load(open(f"{LAB}/words-expanded.json"))
 old = {w["id"]: w for w in vocab if not w["new"]}
 new_by_cat = {}
@@ -75,11 +79,13 @@ def ask(model, processor, config, text, image, tokens):
 model, processor = load(MODEL)
 config = load_config(MODEL)
 cat_text = "\n".join(f"- {k}: {v}" for k, v in CATS.items())
-for r in rows:
+todo = [r for r in rows if not os.path.exists(f"{OUT}/{r['key']}.json")]
+done_before = len(rows) - len(todo)
+started = time.time()
+print(f"전체 {len(rows)}장 · 이미 {done_before}장 · 이번에 {len(todo)}장", flush=True)
+for n, r in enumerate(todo, 1):
     path = f"{OUT}/{r['key']}.json"
-    if os.path.exists(path):
-        continue
-    image = f"{LAB}/photos/{r['key']}.jpg"
+    image = f"{PHOTOS}/{r['key']}.jpg"
     t = time.time()
     a1, raw1 = ask(model, processor, config, STEP1.format(cats=cat_text, when=when(r)), image, 150)
     cats = [c for c in a1.get("cats", []) if c in CATS][:3] or ["마음·순간"]
@@ -92,4 +98,9 @@ for r in rows:
     json.dump({"word": word, "id": hit["id"] if hit else None, "new": bool(hit and hit["new"]), "cats": cats,
                "candidates": len(cands), "see": a2.get("see", a1.get("see", "")), "raw": raw2,
                "seconds": round(time.time() - t, 1)}, open(path, "w"), ensure_ascii=False)
-    print(r["key"], cats, word, "(새 말)" if hit and hit["new"] else "", len(cands), round(time.time() - t, 1), flush=True)
+    per = (time.time() - started) / n
+    left = len(todo) - n
+    h, m = divmod(int(per * left / 60), 60)
+    finish = time.strftime("%H:%M", time.localtime(time.time() + per * left))
+    print(f"[{done_before + n}/{len(rows)}] 남은 {left}장 · 남은 시간 {h}시간 {m}분 (끝 {finish}) · 장당 {per:.1f}초 · "
+          f"{word}{' (새 말)' if hit and hit['new'] else ''}", flush=True)
