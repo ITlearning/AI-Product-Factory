@@ -17,6 +17,7 @@ public enum WordChooser {
                         return .word(w, pool: pool)
                     }
                 }
+            } catch WordScorer.Failure.broken {
             } catch {
                 // 사진 창을 닫아 취소된 것은 실패가 아니다.
                 if error is CancellationError || Task.isCancelled { return .later }

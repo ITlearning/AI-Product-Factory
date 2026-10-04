@@ -65,6 +65,13 @@ final class WordChooserTests: XCTestCase {
         XCTAssertEqual(attempts.failures(m.id), 1)
     }
 
+    func testBrokenModelGoesStraightToRuleWithoutCounting() async {
+        WordScorer.score = { _ in throw WordScorer.Failure.broken }
+        let r = id(await choose([w("sea", subjects: ["ocean"])]))
+        XCTAssertEqual(r, "sea", "모델이 깨졌으면 첫 번째에 바로 규칙 단어")
+        XCTAssertEqual(attempts.failures(m.id), 0)
+    }
+
     func testThirdFailureFallsBackToRule() async {
         WordScorer.score = { _ in throw WordScorer.Failure.unavailable }
         attempts.fail(m.id); attempts.fail(m.id)

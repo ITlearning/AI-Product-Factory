@@ -2,7 +2,8 @@ import Foundation
 
 /// 앱 타깃이 꽂는다(ColorMoments/App/WordModel.swift). 확장에는 없다 — nil 이면 규칙.
 public enum WordScorer {
-    public enum Failure: Error { case unavailable, timedOut }
+    /// broken = 모델 파일이 깨져 다시 해도 소용없다 — 고르기는 세지 않고 바로 규칙으로.
+    public enum Failure: Error { case unavailable, timedOut, broken }
 
     public nonisolated(unsafe) static var score: (@Sendable (Moment) async throws -> [String: Float])?
 

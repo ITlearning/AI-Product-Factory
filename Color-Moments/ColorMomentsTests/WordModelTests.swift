@@ -17,6 +17,32 @@ final class WordModelTests: XCTestCase {
         XCTAssertEqual(s["a"]!, 0.2, accuracy: 0.01); XCTAssertEqual(s["b"]!, 0.9, accuracy: 0.01)
     }
 
+    func testScoresUseRowMajorIdsByDim() throws {
+        let json = try JSONSerialization.data(withJSONObject: ["format": 1, "wordsVersion": 6, "dim": 2, "ids": ["a", "b", "c"],
+                                                               "mean": [0, 0], "std": [1, 1], "bias": [0, 0, 0]])
+        let w: [Float16] = [1, 2, 3, 4, 5, 6]
+        let h = try WordModel.Head.load(json: json, bin: w.withUnsafeBufferPointer { Data(buffer: $0) }, expected: ["a", "b", "c"])
+        let s = h.scores([0.5, 0.25])
+        XCTAssertEqual(s["a"]!, 1.0, accuracy: 1e-4); XCTAssertEqual(s["b"]!, 2.5, accuracy: 1e-4); XCTAssertEqual(s["c"]!, 4.0, accuracy: 1e-4)
+    }
+
+    func testWrongLengthEmbeddingGivesNoScores() throws {
+        let (j, b) = head(ids: ["a", "b"])
+        let h = try WordModel.Head.load(json: j, bin: b, expected: ["a", "b"])
+        XCTAssertTrue(h.scores([0.2]).isEmpty)
+        XCTAssertTrue(h.scores([0.2, 0.9, 0.1]).isEmpty)
+    }
+
+    func testPermanentLoadFailureIsNotRetried() async {
+        let calls = Counter()
+        let engine = WordModel.Engine { calls.tick(); throw WordModel.LoadError.idMismatch }
+        for _ in 0..<2 {
+            do { _ = try await engine.load(); XCTFail("깨진 모델은 실패해야 한다") }
+            catch { XCTAssertEqual(error as? WordScorer.Failure, .broken) }
+        }
+        XCTAssertEqual(calls.value, 1, "한 번 못 읽으면 다시 읽지 않는다")
+    }
+
     func testBiasIsAddedOnce() throws {
         let (j, b) = head(ids: ["a", "b"], bias: [0.5, -0.25])
         let h = try WordModel.Head.load(json: j, bin: b, expected: ["a", "b"])
@@ -74,11 +100,18 @@ final class WordModelTests: XCTestCase {
         let plugins = [Bundle.main.builtInPlugInsURL, Bundle.main.bundleURL.appendingPathComponent("Extensions")].compactMap { $0 }
         for dir in plugins {
             for appex in (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? [] {
-                for name in ["WordEncoder.mlmodelc", "WordHead.bin", "words.json", "lunar-days.json"] {
+                for name in ["WordEncoder.mlmodelc", "WordHead.json", "WordHead.bin", "words.json", "lunar-days.json"] {
                     XCTAssertFalse(FileManager.default.fileExists(atPath: appex.appendingPathComponent(name).path),
                                    "\(appex.lastPathComponent) 에 \(name) — 확장 크기·메모리")
                 }
             }
         }
     }
+}
+
+private final class Counter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var n = 0
+    var value: Int { lock.lock(); defer { lock.unlock() }; return n }
+    func tick() { lock.lock(); n += 1; lock.unlock() }
 }
