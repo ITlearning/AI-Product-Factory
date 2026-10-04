@@ -67,8 +67,45 @@ final class WordChooserTests: XCTestCase {
 
     func testThirdFailureFallsBackToRule() async {
         WordScorer.score = { _ in throw WordScorer.Failure.unavailable }
-        attempts.fail(m.id); attempts.fail(m.id); attempts.fail(m.id)
-        let r8 = id(await choose([w("sea", subjects: ["ocean"])])); XCTAssertEqual(r8, "sea")
+        attempts.fail(m.id); attempts.fail(m.id)
+        let r = id(await choose([w("sea", subjects: ["ocean"])]))
+        XCTAssertEqual(r, "sea")
+        XCTAssertEqual(attempts.failures(m.id), 0, "규칙 단어를 붙이면 기록을 지운다")
+    }
+
+    func testFirstAndSecondFailureStayLater() async {
+        WordScorer.score = { _ in throw WordScorer.Failure.unavailable }
+        attempts.fail(m.id)
+        if case .later = await choose([w("sea", subjects: ["ocean"])]) {} else { XCTFail("2번째 실패는 비워 둔다") }
+        XCTAssertEqual(attempts.failures(m.id), 2)
+    }
+
+    func testRuleFallbackAlsoAvoidsPebbleName() async {
+        WordScorer.score = nil
+        let r = id(await choose([w("sea", subjects: ["ocean"]), w("b", subjects: ["ocean"])], pebble: "sea"))
+        XCTAssertEqual(r, "b")
+    }
+
+    func testNonFiniteScoresAreIgnored() {
+        let r = WordPicker.best(["a": .nan, "b": 0.1], among: [w("a"), w("b")], seed: "s", notInGroupOf: nil)?.id
+        XCTAssertEqual(r, "b")
+    }
+
+    func testCancellationIsNotAFailure() async {
+        WordScorer.score = { _ in try await Task.sleep(for: .seconds(5)); return [:] }
+        let words = [w("a")]
+        let t = Task { await self.choose(words) }
+        try? await Task.sleep(for: .milliseconds(100))
+        t.cancel()
+        _ = await t.value
+        XCTAssertEqual(attempts.failures(m.id), 0)
+    }
+
+    func testScorerThatIgnoresCancellationStillTimesOut() async {
+        WordScorer.score = { _ in Thread.sleep(forTimeInterval: 3); return [:] }
+        let start = Date()
+        _ = try? await WordScorer.scores(for: m, within: 0.2)
+        XCTAssertLessThan(Date().timeIntervalSince(start), 1)
     }
 
     func testSlowScorerTimesOut() async {

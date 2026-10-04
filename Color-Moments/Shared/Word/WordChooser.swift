@@ -18,12 +18,17 @@ public enum WordChooser {
                     }
                 }
             } catch {
+                // 사진 창을 닫아 취소된 것은 실패가 아니다.
+                if error is CancellationError || Task.isCancelled { return .later }
                 attempts.fail(m.id)
-                return .later
+                if attempts.failures(m.id) < WordAttempts.limit { return .later }
             }
         }
-        let rule = WordPicker.candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
-        let pool = WordPicker.choices(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
-        return (rule.first ?? pool.first).map { .word($0, pool: pool) }
+        let open = words.filter { $0.word != pebbleName }
+        let rule = WordPicker.candidates(for: ctx, labels: labels, in: open, excluding: recent, seed: seed, banned: banned)
+        let pool = WordPicker.choices(for: ctx, labels: labels, in: open, excluding: recent, seed: seed, banned: banned)
+        guard let first = rule.first ?? pool.first else { return nil }
+        attempts.clear(m.id)
+        return .word(first, pool: pool)
     }
 }

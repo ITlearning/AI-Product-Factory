@@ -169,7 +169,7 @@ public enum WordPicker {
 
     public static func best(_ scores: [String: Float], among words: [WordEntry], seed: String,
                             notInGroupOf skip: WordEntry?) -> WordEntry? {
-        words.filter { scores[$0.id] != nil && (skip == nil || $0.group != skip?.group) }
+        words.filter { scores[$0.id]?.isFinite == true && (skip == nil || $0.group != skip?.group) }
             .map { (w: $0, s: (scores[$0.id]! * 1000).rounded(), h: fnv1a(seed + ":" + $0.id)) }
             .min { ($0.s, $1.h) > ($1.s, $0.h) }?.w
     }
