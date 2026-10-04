@@ -54,6 +54,7 @@
 		20BA6C3D955339FFEE5D1C78 /* ShotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0455554135392A7015D4068F /* ShotStore.swift */; };
 		2106F212ED450D8F5C0130AB /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
 		222B37199099F7A940817E14 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
+		22D7F36103EA440247B6834D /* lunar-days.json in Resources */ = {isa = PBXBuildFile; fileRef = 452858DEF9018E249641A3F3 /* lunar-days.json */; };
 		270CAD891873FBDB57862C11 /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		2776BED233E8B1FDCD4FBC6D /* CatchUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F205E2DDC888B76CB362D3 /* CatchUp.swift */; };
 		27984D8E5256CDD497E302CA /* DayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */; };
@@ -78,6 +79,7 @@
 		304E851724E25006163D4850 /* MomentMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */; };
 		307336BE9B12FD503EBF66EC /* PebbleRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE9BFF0980144C315646D9E5 /* PebbleRenderTests.swift */; };
 		322E6AB5DFDE530AF01F6D0C /* FirstPebbleModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F6FEDED27EB43CE95CB3F37 /* FirstPebbleModel.swift */; };
+		3237C54D496A68BA54C4770E /* lunar-days.json in Resources */ = {isa = PBXBuildFile; fileRef = 452858DEF9018E249641A3F3 /* lunar-days.json */; };
 		339A0AB92837E5DF5659F702 /* PlaceScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = C352BBCD93B748D40AD401EC /* PlaceScene.swift */; };
 		33F453AFE9E4B766D55AC703 /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
 		341D43357966166F08E749AD /* ColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */; };
@@ -289,6 +291,7 @@
 		E3EF71CF767FDFA4AA7CF55D /* HandfulCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DDE9973C653338A1C72CD /* HandfulCard.swift */; };
 		E696D23B528E77EDF8E78877 /* LockedPlaceNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */; };
 		E6B7D3BF033CC827B367D4F7 /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
+		E73A24FED80FF913687A9667 /* lunar-days.json in Resources */ = {isa = PBXBuildFile; fileRef = 452858DEF9018E249641A3F3 /* lunar-days.json */; };
 		E77F60F349090C621E218AEE /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		E7F3453CCDED443C24380E0B /* words.json in Resources */ = {isa = PBXBuildFile; fileRef = A0A48C2B255FB6B7DFA973C5 /* words.json */; };
 		E81987561A5FA9DCBC88B736 /* GowunDodum-Hangul.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B6B7DB6B065C94A4568E524 /* GowunDodum-Hangul.ttf */; };
@@ -427,6 +430,7 @@
 		3F9F715D0CEA993F93E4A7DC /* ISODate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ISODate.swift; sourceTree = "<group>"; };
 		41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorMomentsApp.swift; sourceTree = "<group>"; };
 		431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NanumMyeongjo-Subset.ttf"; sourceTree = "<group>"; };
+		452858DEF9018E249641A3F3 /* lunar-days.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "lunar-days.json"; sourceTree = "<group>"; };
 		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
 		464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedPlaceNote.swift; sourceTree = "<group>"; };
 		4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreRecoveryTests.swift; sourceTree = "<group>"; };
@@ -857,6 +861,7 @@
 			isa = PBXGroup;
 			children = (
 				74AEF9D194CA969FADAC66D1 /* Celestial.swift */,
+				452858DEF9018E249641A3F3 /* lunar-days.json */,
 				A36AAB9304A6FFD7612422D3 /* LunarDays.swift */,
 				E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */,
 				FFFAD57FEE541A2BCBE917E6 /* PhotoLabeler.swift */,
@@ -1107,6 +1112,7 @@
 				6A0302EC3828A968F6281D5E /* button-chars.txt in Resources */,
 				8A710B6C590510525CFFD18D /* gowun-ksx1001.txt in Resources */,
 				D151122EFFD53DFECF743789 /* gowun-mini-chars.txt in Resources */,
+				22D7F36103EA440247B6834D /* lunar-days.json in Resources */,
 				CF0F9BAAA1D2412A2B0E61E3 /* subset-chars.txt in Resources */,
 				48DC2D9847C7C2A96BE21B7C /* words.json in Resources */,
 			);
@@ -1128,6 +1134,7 @@
 				0CCEC60B5730FC6E280D0707 /* button-chars.txt in Resources */,
 				6CA39F2C860F5EE4C3DBBC9F /* gowun-ksx1001.txt in Resources */,
 				840FABD274915AE2D4C6F5A6 /* gowun-mini-chars.txt in Resources */,
+				E73A24FED80FF913687A9667 /* lunar-days.json in Resources */,
 				689F997E07A401BE5FFA343A /* subset-chars.txt in Resources */,
 				E7F3453CCDED443C24380E0B /* words.json in Resources */,
 			);
@@ -1155,6 +1162,7 @@
 				0DDB9BAD832D6C03DA0C2E81 /* button-chars.txt in Resources */,
 				2CCA67A120B811D482986FE1 /* gowun-ksx1001.txt in Resources */,
 				999603B577728CC6CC8BDA0C /* gowun-mini-chars.txt in Resources */,
+				3237C54D496A68BA54C4770E /* lunar-days.json in Resources */,
 				021C81F3EA6698F332E9DD69 /* subset-chars.txt in Resources */,
 				90B7A542F814159743E818D2 /* words.json in Resources */,
 			);

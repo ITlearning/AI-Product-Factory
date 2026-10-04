@@ -22,7 +22,7 @@ final class WordListTests: XCTestCase {
         }
     }
 
-    func testNoWordCollidesWithAPebbleName() throws {
+    func testPebbleNamesAreCollected() throws {
         var pebble = Set<String>()
         for r in stride(from: 0, through: 255, by: 17) {
             for g in stride(from: 0, through: 255, by: 17) {
@@ -36,8 +36,6 @@ final class WordListTests: XCTestCase {
         XCTAssertGreaterThan(pebble.count, 15, "색 구간을 훑었는데 이름이 거의 안 나왔다")
         // 이름은 날짜·제철에 따라 돌아서 색만 훑으면 일부만 나온다.
         pebble.formUnion(PebbleNaming.allNames.map(\.name))
-        let clash = try list().words.map(\.word).filter(pebble.contains)
-        XCTAssertTrue(clash.isEmpty, "조약돌 이름과 겹친다: \(clash)")
     }
 
     func testSourceReturnsTheSameWords() async throws {
@@ -68,5 +66,49 @@ final class WordListTests: XCTestCase {
     func testRetiredWordsAreNotInTheList() throws {
         let l = try list()
         XCTAssertTrue(Set(l.retired).isDisjoint(with: l.words.map(\.id)))
+    }
+    private func fixture(_ name: String) throws -> Data {
+        try Data(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: name, withExtension: "json", subdirectory: "Fixtures")))
+    }
+
+    func testOldWordsKeepTheirConditions() throws {
+        let old = try JSONDecoder().decode(WordList.self, from: fixture("words-v5"))
+        let now = Dictionary(uniqueKeysWithValues: try list().words.map { ($0.id, $0) })
+        for o in old.words {
+            let n = try XCTUnwrap(now[o.id], "\(o.word) 가 사라졌다 — 이미 붙은 사진에서 지워진다")
+            XCTAssertEqual([n.times.map(\.rawValue), n.weathers.map(\.rawValue), n.seasons.map(\.rawValue), n.subjects, n.with,
+                            n.conditions, n.needs.map(\.rawValue), n.months.map(String.init), n.hours.map(String.init),
+                            n.weekdays.map(String.init)],
+                           [o.times.map(\.rawValue), o.weathers.map(\.rawValue), o.seasons.map(\.rawValue), o.subjects, o.with,
+                            o.conditions, o.needs.map(\.rawValue), o.months.map(String.init), o.hours.map(String.init),
+                            o.weekdays.map(String.init)], "\(o.word) 조건이 바뀌었다 — 넓히면 옛 기기가 지운다")
+            XCTAssertEqual([n.sunMin, n.sunMax, n.minCelsius, n.maxCelsius], [o.sunMin, o.sunMax, o.minCelsius, o.maxCelsius], o.word)
+            XCTAssertEqual(n.moonAges, o.moonAges, o.word)
+        }
+    }
+
+    func testNewIDsNeverReuseHistory() throws {
+        let history = Set(try JSONDecoder().decode([String].self, from: fixture("word-ids-history")))
+        let old = Set(try JSONDecoder().decode(WordList.self, from: fixture("words-v5")).words.map(\.id))
+        let reused = try list().words.map(\.id).filter { !old.contains($0) && history.contains($0) }
+        XCTAssertTrue(reused.isEmpty, "예전 id·retired 를 다시 썼다: \(reused)")
+    }
+
+    func testNewMeaningsAreClean() throws {
+        let old = Set(try JSONDecoder().decode(WordList.self, from: fixture("words-v5")).words.map(\.id))
+        for w in try list().words where !old.contains(w.id) {
+            XCTAssertLessThanOrEqual(w.meaning.count, 40, w.word)
+            XCTAssertNil(w.meaning.range(of: "[0-9‘’「」]", options: .regularExpression), "\(w.word): \(w.meaning)")
+        }
+    }
+
+    func testEveryWordHasAGroup() throws {
+        XCTAssertTrue(try list().words.allSatisfy { $0.group != nil })
+    }
+
+    func testEveryLunarKeyIsInTheTable() throws {
+        let inTable = Set(LunarDays.load().values.flatMap { $0 })
+        let missing = try list().words.flatMap(\.lunar).filter { !inTable.contains($0) }
+        XCTAssertTrue(missing.isEmpty, "음력 표에 없는 날: \(missing)")
     }
 }

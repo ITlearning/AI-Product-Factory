@@ -20,7 +20,9 @@
 물음 만들기는 `prompts.py [--train]`.
 
 ## 단어 목록 다시 만들기
-`build_words.py` (Task 3에서 추가).
+`python build_words.py ../Shared/Word/words.json` — 기존 단어는 조건 그대로 두고 갈래(`old-groups.json`)·쉬게 하기만 더하고, 새 단어는 `words-expanded-v5.json`·`word-conditions.json` 에서 붙인다.
+뜻풀이는 `meanings-rewritten.json`·`meanings-rewrite-v6.json`(모두 `~/mongdol-word-lab`)이 먼저다. 40자 넘거나 숫자·따옴표가 남거나 다른 말을 가리키기만 하면 멈춘다.
+새 id 는 git 기록의 모든 id·`retired` 를 피한다. 만든 뒤 음력 표와 명조 서브셋(`Shared/Design/Fonts/README.md`)을 다시 만든다.
 
 ## 음력 표
 `python lunar_table.py <words.json> ../Shared/Word/lunar-days.json` — 단어들의 `lunar` 조건에 나온 날만 2000~2060년 범위로 뽑는다.

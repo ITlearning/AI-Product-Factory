@@ -32,7 +32,6 @@ public enum WordPicker {
         if !w.seasons.isEmpty, !w.seasons.contains(ctx.season) { return .no }
         if !w.months.isEmpty, !w.months.contains(ctx.month) { return .no }
         if !w.solar.isEmpty, !w.solar.contains(ctx.solarKey) { return .no }
-        if !w.lunar.isEmpty, LunarDays.keys(on: ctx.dateKey).isDisjoint(with: w.lunar) { return .no }
         if let min = w.sunMin, ctx.sunAltitude < min { return .no }
         if let max = w.sunMax, ctx.sunAltitude > max { return .no }
         if w.needs.contains(.sun), ctx.sunAltitude < 0 { return .no }
@@ -40,6 +39,11 @@ public enum WordPicker {
             return .no
         }
         var unknown = false
+        if !w.lunar.isEmpty {
+            // 표가 없으면(확장 등) 음력을 모른다 — no 로 두면 이미 붙은 음력 단어를 지운다.
+            if LunarDays.table.isEmpty { unknown = true }
+            else if LunarDays.keys(on: ctx.dateKey).isDisjoint(with: w.lunar) { return .no }
+        }
         if !w.weathers.isEmpty || w.needs.contains(.sun) {
             if let weather = ctx.weather {
                 if !w.weathers.isEmpty, !w.weathers.contains(weather) { return .no }

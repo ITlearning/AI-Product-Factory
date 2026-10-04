@@ -300,7 +300,8 @@ final class WordPickerTests: XCTestCase {
     /// Tabber: 「책상 위에 뭐가 있다고만 하면 다 손때, 말벗으로 퉁치던데 그게 너무 싫어서」(2026-10-03).
     func testDeskPhotosSayWhatIsOnTheDesk() async throws {
         let words = await BundledWordSource().words()
-        XCTAssertTrue(Set(words.map(\.word)).isDisjoint(with: ["손때", "말벗", "겨를"]))
+        let vague = words.filter { ["손때", "말벗", "겨를"].contains($0.word) }
+        XCTAssertTrue(vague.allSatisfy { $0.subjects.isEmpty && !$0.moment }, "v6 에서 새 id 로 돌아왔지만 사진 대상으로는 안 붙는다")
         func word(_ day: Int, _ hour: Int, _ labels: [String]) -> String? {
             WordPicker.photoWord(for: seoul(10, day, hour, weather: .clear, celsius: 20), labels: labels, in: words,
                                  excluding: [], seed: "desk")?.word
@@ -398,6 +399,16 @@ final class WordPickerTests: XCTestCase {
         XCTAssertEqual(WordPicker.judge(eve, seoul(2, 16, 20)), .yes)
         XCTAssertEqual(WordPicker.judge(eve, seoul(2, 15, 20)), .no)
         XCTAssertEqual(WordPicker.judge(newYear, seoul(2, 17, 9)), .yes)
+    }
+
+    func testLunarWordIsUnknownWithoutTheTable() {
+        defer { LunarDays.table = LunarDays.load() }
+        LunarDays.table = [:]
+        var eve = w("eve", subjects: []); eve.lunar = ["12-last"]
+        XCTAssertEqual(WordPicker.judge(eve, seoul(2, 16, 20)), .unknown)
+        XCTAssertFalse(WordPicker.contradicted(PhotoWord(eve), context: seoul(2, 16, 20), in: [eve], retired: []))
+        var morning = w("morning", times: [.morning], subjects: []); morning.lunar = ["12-last"]
+        XCTAssertEqual(WordPicker.judge(morning, seoul(2, 16, 20)), .no, "다른 조건이 어긋나면 여전히 아니다")
     }
 
     func testRestIsNotAContradiction() {
