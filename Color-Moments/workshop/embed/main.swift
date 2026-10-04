@@ -7,7 +7,7 @@ let (modelPath, name) = (CommandLine.arguments[1], CommandLine.arguments[2])
 let config = MLModelConfiguration(); config.computeUnits = .cpuAndNeuralEngine
 let model = try MLModel(contentsOf: MLModel.compileModel(at: URL(fileURLWithPath: modelPath)), configuration: config)
 var keys: [String] = [], xs: [[Float]] = []
-for dir in ["photos", "photos-train"] {
+for dir in ["photos", "photos-train", "photos-fresh"] where FileManager.default.fileExists(atPath: lab.appendingPathComponent(dir).path) {
     let files = try FileManager.default.contentsOfDirectory(at: lab.appendingPathComponent(dir), includingPropertiesForKeys: nil)
         .filter { $0.pathExtension == "jpg" }.sorted { $0.path < $1.path }
     for f in files {

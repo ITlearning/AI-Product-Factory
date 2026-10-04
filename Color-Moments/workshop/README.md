@@ -12,10 +12,10 @@
 
 ## 순서
 1. 사진 고르기 `pick_train.py`
-2. 추출 `extract/`
+2. 추출 `extract/` — `./build.sh && .build/extract eval v6 && .build/extract train v6 && .build/extract fresh v6` 이면 v6 판정 후보가 `v6/` 에, 처음 보는 사진(30·500장)이 `photos-fresh/` 에 생긴다. 사진 보관함을 읽으니 Tabber 터미널에서. 그다음 `embed/build.sh && embed/.build/embed ~/mongdol-word-lab/WordEncoder-8m.mlpackage 8m`
 3. 선생 `teacher_expanded.py [--train]`
-4. 학생 `student.py`
-5. 판정 `judge.py`
+4. 학생 `student.py --emb coreml-8m [--export 폴더]` — `v6/` 행·앱 v6 단어로 학습, 답은 `answers/.student-<emb>-v6/`
+5. 판정 `judge.py [--arms 폴더,…] [--sets mongdol,fresh30]` — v6 블라인드 판정(8766), `--report` 로 기준 표
 
 물음 만들기는 `prompts.py [--train]`.
 
