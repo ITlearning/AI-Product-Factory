@@ -283,3 +283,14 @@ v4 = v3 + 기존 말 109개 대상 힌트(선생 물음에만) + 이름표 64개
 - 후보에 없는 말 지어내기 4장(국물·적어두기·볼펜·주부리) — 쉬게 한 이름표 말 자리를 비슷한 말로 채운다. 앱에선 규칙 1순위로 넘어간다.
 - 학습 3,000장은 v4 로 Tabber 터미널에서 도는 중. 더 쉬게 할 말은 학생을 가르칠 때 그 말이 붙은 사진만 빼면 되니 다시 돌리지 않는다.
 - 2026-10-04 Tabber: 약한 10개도 쉬게 하기 — 짬·보금자리·꼬마·주전부리·새참·적바림·글월·모꼬지(기존), 몽돌·새살림(새 말). → `words-expanded-v5.json`(쉬게 75개). 학습 3,000장은 v4 로 계속 돌고, 학생을 가르칠 때 이 말이 붙은 사진만 뺀다.
+
+## 인계 (2026-10-04 밤) — 새 세션은 여기서
+
+- **구현 브랜치**: `feat/mongdol-word-model` (작업 폴더 `~/AIPF-word-model`, 푸시 전). PRD `docs/plans/2026-10-04-mongdol-word-model-prd.md`, 계획 `docs/plans/2026-10-04-mongdol-word-model-plan.md`, 리뷰 `docs/reviews/2026-10-04-mongdol-word-model/`.
+- **진행 기록(SDD ledger)**: `~/AIPF-word-model/.superpowers/sdd/2026-10-04-mongdol-word-model-plan/progress.md` — 끝난 Task, 판단(Ruling) 17개, 미룬 지적이 다 있다. git 에 안 들어가는 파일.
+- 끝남: Task 1~7, 9 + 최종 리뷰 수정(테스트 614 통과, Release 빌드 성공). 번들의 고르기 층은 **시험용**(`WordHead.json` `test: true`, 출시 빌드에선 안 씀).
+- 남음:
+  1. **Task 8** — Tabber 터미널의 선생 학습(`answers/qwen35-v4-train`, 3,000장)이 끝나면: v6 id 로 옮기고 쉬는 단어 정답 사진 빼기 → `workshop/embed` 로 Core ML 사진 값 → `student.py --emb coreml-8m --export` → 처음 보는 사진 30장·500장 뽑기 → Tabber 블라인드 판정(몽돌 47장·처음 30장, 맞음 ≥ 70%) → 모자라면 39M → 진짜 `WordHead.*`(test 표시 없이)로 교체하고 `testBundledHeadIsMarkedTestUntilTheRealOneShips` 지우기.
+  2. Tabber 가 PR 에서 볼 것: 새로 쓴 뜻풀이 75개(`~/mongdol-word-lab/meanings-rewrite-v6.json`)·기존 170개 갈래(`old-groups.json`), id `dalmati`, 라이선스 화면.
+  3. **Task 10** — TestFlight, iPhone 13 속도(≤ 0.2초)·맥/iPhone 학생 1등 일치율(≥ 95%, 미달이면 fp16), 처음 여는 사진 20장, 출시.
+  4. `fix/mongdol-dictionary-credit` 브랜치(~/AIPF-dict-credit)는 이 브랜치에 흡수됨 — 닫아도 된다.
