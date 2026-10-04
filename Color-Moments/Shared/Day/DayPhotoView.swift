@@ -357,22 +357,16 @@ struct DayPhotoView: View {
         store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: stale)
     }
 
-    /// 규칙 후보(+그 순간의 말) 안에서 고른다 — Apple Intelligence 가 되는 기기는 모델이, 아니면 규칙 1순위.
+    /// 규칙 후보(+그 순간의 말) 안에서 고른다 — 규칙 1순위, 없으면 그 순간의 말.
     private func pickWord(for m: Moment, labels: [String], banned: Set<String> = []) async -> (word: WordEntry, pool: [WordEntry])? {
         let words = await BundledWordSource().words()
-        let weather = current?.place?.weather
         let ctx = PhotoContext(current ?? m, labels: labels)
         let recent = store.recentWordIDs(excluding: m.id).union(rejections.avoided)
         let seed = m.id.uuidString
         let rule = WordPicker.candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
         let pool = WordPicker.choices(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
         guard let first = rule.first ?? pool.first else { return nil }
-        let input = WordChoice(candidates: pool.map { .init(id: $0.id, word: $0.word, meaning: $0.meaning) },
-                               labels: labels, date: m.capturedAt,
-                               weather: weather.flatMap { w in PhotoEnrichment.label(w.condition).map { "\($0) \(Int(w.celsius.rounded()))°" } },
-                               place: current?.place?.name, calendar: PhotoContext.calendar(for: current ?? m))
-        let chosen = await WordAssist.choose(input).flatMap { id in pool.first { $0.id == id } }
-        return (chosen ?? first, pool)
+        return (first, pool)
     }
 
     /// 단어와 ↻ — ↻는 사진마다 한 번 쓰면 사라진다.

@@ -138,8 +138,8 @@ public enum WordPicker {
         candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned).first.map(PhotoWord.init)
     }
 
-    /// 모델(Apple Intelligence)에 넘길 후보 — 규칙 후보에 그 순간의 말(틀릴 수 없는 단어)을 더한다.
-    /// 규칙 후보가 하나뿐이어도 모델이 고를 여지를 준다.
+    /// 고르기 후보 — 규칙 후보에 그 순간의 말(틀릴 수 없는 단어)을 더한다.
+    /// 규칙 후보가 하나뿐이어도 고를 여지를 준다.
     public static func choices(for ctx: PhotoContext, labels: [String], in words: [WordEntry],
                                excluding recent: Set<String>, seed: String, banned: Set<String> = []) -> [WordEntry] {
         let rule = candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
