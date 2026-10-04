@@ -234,6 +234,7 @@
 		B75D6C90A80171E5FF633B14 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
 		B7C3D5AD27CA0A7B12C6EC07 /* ColorMomentsControl.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 820CBC257650B8198BCC2B5E /* ColorMomentsControl.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B8632BE5E9E77D6DC909F70B /* WordPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4EE32C11490405892AA591 /* WordPicker.swift */; };
+		B8A1D0774F8ABAB00AB02037 /* WordRejectionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C2CDBEF8EB4E530339545C /* WordRejectionsTests.swift */; };
 		B97C1A8CD64C431D667BB646 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
 		BAE7838C1DA2D9D4797B4F79 /* CollectionSwipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAF34CDBFF121BBAE3831F91 /* CollectionSwipe.swift */; };
 		BB2A2EFB0C185E4CF5E6A42C /* ArrivalNoticeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */; };
@@ -539,6 +540,7 @@
 		DF4B0D5E183FDB75F36EEB80 /* SoftPebble.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = SoftPebble.metal; sourceTree = "<group>"; };
 		E016D510A0FA71B454E57DF6 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 		E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoContext.swift; sourceTree = "<group>"; };
+		E3C2CDBEF8EB4E530339545C /* WordRejectionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordRejectionsTests.swift; sourceTree = "<group>"; };
 		E46082B433DCE04145412FFA /* HomeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWidget.swift; sourceTree = "<group>"; };
 		E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPhotoView.swift; sourceTree = "<group>"; };
 		E79F2C0C75680FBE51A5A26C /* PebbleSilhouetteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleSilhouetteTests.swift; sourceTree = "<group>"; };
@@ -723,6 +725,7 @@
 				ACF0FEAA69BCAAE696688328 /* WidgetSnapshotTests.swift */,
 				C8272505EF16B075931B8224 /* WordListTests.swift */,
 				2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */,
+				E3C2CDBEF8EB4E530339545C /* WordRejectionsTests.swift */,
 				0E78484F4F224483F006BB04 /* ZoomLadderTests.swift */,
 			);
 			path = ColorMomentsTests;
@@ -1281,6 +1284,7 @@
 				2F32BACBD22DF83C086079D6 /* WidgetSnapshotTests.swift in Sources */,
 				8F8B15F8CCD32B424B99892B /* WordListTests.swift in Sources */,
 				7010D21E2960DAB1D241EA53 /* WordPickerTests.swift in Sources */,
+				B8A1D0774F8ABAB00AB02037 /* WordRejectionsTests.swift in Sources */,
 				46F452BB7C9ACBA82BC9709B /* ZoomLadderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
