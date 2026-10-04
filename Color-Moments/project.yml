@@ -20,6 +20,8 @@ targets:
       - ColorMoments
       - path: Shared
         excludes: ["Design/Fonts/GowunDodum-Mini.ttf"]
+      - path: NOTICE   # 설정의 출처 고지 — 앱 안에 함께 실어야 한다(MIT·CC BY-SA·OFL)
+        buildPhase: resources
     dependencies:
       - sdk: AVKit.framework
       - target: ColorMomentsCapture

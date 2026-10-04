@@ -21,6 +21,7 @@
 		07A482F08FD8ECF591D195E7 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6059A219A2BEA73B11E1619 /* OnboardingView.swift */; };
 		0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EDA0910CC8E79B482D32B2 /* CloudSync.swift */; };
 		089A04051E2709FEC115E965 /* ColorCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */; };
+		0A6BD6FDFEDAF4413D6C6289 /* LicensesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38DD8B2CAAA428DC07BEF7B0 /* LicensesTests.swift */; };
 		0ADBF08E5D7551A81295B7AF /* SoftPebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F9EAFA790F8D71D44DA12 /* SoftPebbleView.swift */; };
 		0CCEC60B5730FC6E280D0707 /* button-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2C7A8222A62B20B01D87BCE2 /* button-chars.txt */; };
 		0D06103B29180D9842F4455A /* PebbleNameLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD2B3D1ED631852A358A28E /* PebbleNameLog.swift */; };
@@ -211,6 +212,7 @@
 		9EB023C629B1882BE6E7995C /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		A03E0083AE26CB4CCB4A9434 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
 		A041753AF25EE0A48189568C /* NanumMyeongjo-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 431568FD8D1B61F5509D6867 /* NanumMyeongjo-Subset.ttf */; };
+		A04EF57D2A1465EF307A3BA8 /* NOTICE in Resources */ = {isa = PBXBuildFile; fileRef = 2530D46FFC334907DF61A0B0 /* NOTICE */; };
 		A056B4A2D1980E0BDDB58C53 /* PhotoEnrichmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6AB2D1361C3C488E0CDD56 /* PhotoEnrichmentTests.swift */; };
 		A0B8A4B8063C810E326C4D8C /* PhotoLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFAD57FEE541A2BCBE917E6 /* PhotoLabeler.swift */; };
 		A0E0199642CAE4229702C047 /* PebbleNameLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD2B3D1ED631852A358A28E /* PebbleNameLog.swift */; };
@@ -424,6 +426,7 @@
 		22E8B4A3D3D73280C35C4EB3 /* GowunDodum-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "GowunDodum-OFL.txt"; sourceTree = "<group>"; };
 		22EDA0910CC8E79B482D32B2 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
 		239333F689CA9C39141270F0 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		2530D46FFC334907DF61A0B0 /* NOTICE */ = {isa = PBXFileReference; path = NOTICE; sourceTree = "<group>"; };
 		281063CAE0EA0440EE2AA560 /* ZoomLadder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomLadder.swift; sourceTree = "<group>"; };
 		29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arrivals.swift; sourceTree = "<group>"; };
 		2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordPickerTests.swift; sourceTree = "<group>"; };
@@ -438,6 +441,7 @@
 		36163F479DA433C2CB8744EE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		375160E484DA6E545C79AB75 /* Memories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Memories.swift; sourceTree = "<group>"; };
 		38A1E3BB45B083CCB0E9847F /* TakeOutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TakeOutTests.swift; sourceTree = "<group>"; };
+		38DD8B2CAAA428DC07BEF7B0 /* LicensesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicensesTests.swift; sourceTree = "<group>"; };
 		393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayBadge.swift; sourceTree = "<group>"; };
 		3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactDayRow.swift; sourceTree = "<group>"; };
 		3C0C341B4E32F784A77CC08D /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -731,6 +735,7 @@
 				1D91C5926BF3700AE2D67318 /* KeepsakeTests.swift */,
 				1203C46F87D7D24186A7F3E6 /* LibraryLoadTests.swift */,
 				0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */,
+				38DD8B2CAAA428DC07BEF7B0 /* LicensesTests.swift */,
 				1A15FE60A1D19309F5650EF9 /* LunarDaysTests.swift */,
 				77CBA56139EDB549235ABCB2 /* MemoriesTests.swift */,
 				6CB97C7E8769569A500FCFF1 /* MomentMergeTests.swift */,
@@ -777,6 +782,7 @@
 		6B1123F879906576EAE48406 = {
 			isa = PBXGroup;
 			children = (
+				2530D46FFC334907DF61A0B0 /* NOTICE */,
 				E818217F7A94D7E924F2B2C8 /* ColorMoments */,
 				9B3551BB49B29ECE7378251F /* ColorMomentsCapture */,
 				D39F9F96770733D285D2467F /* ColorMomentsControl */,
@@ -1162,6 +1168,7 @@
 				DED65CAA379D66577F6413A0 /* GowunDodum-OFL.txt in Resources */,
 				BBA3C897A5072F8F6501382D /* IBMPlexSansKR-OFL.txt in Resources */,
 				7517B2B90478A7F2893B1D58 /* IBMPlexSansKR-SemiBold-Subset.ttf in Resources */,
+				A04EF57D2A1465EF307A3BA8 /* NOTICE in Resources */,
 				C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */,
 				304C4D029F8CB37B61C85F48 /* NanumMyeongjo-Subset.ttf in Resources */,
 				4458330F643CB5348A9E73A2 /* PrivacyInfo.xcprivacy in Resources */,
@@ -1307,6 +1314,7 @@
 				4C60C59259AB81C508BEA732 /* KeepsakeTests.swift in Sources */,
 				4B4B3039AE8FA18954753F80 /* LibraryLoadTests.swift in Sources */,
 				E0A11DC00DADAE32564950AC /* LibrarySectionsTests.swift in Sources */,
+				0A6BD6FDFEDAF4413D6C6289 /* LicensesTests.swift in Sources */,
 				2B8C878D8888272E9B5EEF0D /* LunarDaysTests.swift in Sources */,
 				109FF5C751CBDCD455979AD7 /* MemoriesTests.swift in Sources */,
 				A34E2A2A8AF2BCCDCCE21452 /* MomentMergeTests.swift in Sources */,

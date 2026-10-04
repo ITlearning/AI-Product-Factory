@@ -15,6 +15,7 @@ struct SettingsSheet: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(MomentReminder.key) private var reminder: MomentReminder.Frequency = .sometimes
     @State private var hasUpdate = false
+    @State private var showingLicenses = false
     var store: DayStore? = nil
 
     var body: some View {
@@ -137,12 +138,19 @@ struct SettingsSheet: View {
             Text("단어는 이 기기 안에서 사진을 보고 고릅니다")
                 .font(Face.caption).foregroundStyle(Tone.tertiary)
                 .padding(.top, 4)
-            Text("단어 뜻풀이 · 국립국어원 표준국어대사전 (CC BY-SA 2.0 KR) · 이미지 모델 TinyCLIP (MIT)")
-                .font(Face.caption).foregroundStyle(Tone.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 4)
-                .padding(.bottom, 8)
+            Button { showingLicenses = true } label: {
+                Text("단어 뜻풀이 · 국립국어원 표준국어대사전 (CC BY-SA 2.0 KR) · 이미지 모델 TinyCLIP (MIT)")
+                    .font(Face.caption).foregroundStyle(Tone.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, minHeight: Shape2.minTouch, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("출처와 라이선스 전문을 엽니다")
+            .padding(.bottom, 4)
         }
+        .sheet(isPresented: $showingLicenses) { LicensesSheet() }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Tone.base)
@@ -202,5 +210,46 @@ struct SettingsSheet: View {
         case .denied:
             if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
         }
+    }
+}
+
+/// 출처·라이선스 전문 — 저장소의 NOTICE 를 그대로 싣는다(project.yml 이 앱 번들에 넣는다).
+struct LicensesSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    static func text(in bundle: Bundle = .main) -> String? {
+        bundle.url(forResource: "NOTICE", withExtension: nil).flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("출처와 라이선스").font(Face.lineCeremony).foregroundStyle(Tone.primary)
+                Spacer()
+                Button { dismiss() } label: {
+                    Text("닫기")
+                        .font(Face.actionSecondary)
+                        .foregroundStyle(Tone.primary)
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: Shape2.minTouch)
+                        .background(.white.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+            ScrollView {
+                Text(Self.text() ?? "")
+                    .font(Face.caption).foregroundStyle(Tone.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+                    .padding(.bottom, 24)
+            }
+        }
+        .padding(.horizontal, 24)
+        .background(Tone.base.ignoresSafeArea())
+        .presentationDetents([.large])
+        .presentationBackground(Tone.base)
+        .preferredColorScheme(.dark)
     }
 }
