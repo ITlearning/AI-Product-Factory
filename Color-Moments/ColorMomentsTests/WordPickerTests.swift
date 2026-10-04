@@ -383,6 +383,41 @@ final class WordPickerTests: XCTestCase {
         let pw = try XCTUnwrap(WordPicker.photoWord(for: dusk, labels: ["sky"], in: [w("a")], excluding: [], seed: "s"))
         XCTAssertEqual(pw, PhotoWord(wordID: "a", word: "a", meaning: "뜻 a"))
     }
+    func testSolarWordOnlyOnItsDay() {
+        var w = w("kids", subjects: [])
+        w.solar = ["05-05"]
+        XCTAssertEqual(WordPicker.judge(w, seoul(5, 5, 12)), .yes)
+        XCTAssertEqual(WordPicker.judge(w, seoul(5, 6, 12)), .no)
+    }
+
+    func testLunarWordFollowsTheTable() {
+        defer { LunarDays.table = LunarDays.load() }
+        LunarDays.table = ["2026-02-16": ["12-29", "12-last"], "2026-02-17": ["01-01"]]
+        var eve = w("eve", subjects: []); eve.lunar = ["12-last"]
+        var newYear = w("newyear", subjects: []); newYear.lunar = ["01-01"]
+        XCTAssertEqual(WordPicker.judge(eve, seoul(2, 16, 20)), .yes)
+        XCTAssertEqual(WordPicker.judge(eve, seoul(2, 15, 20)), .no)
+        XCTAssertEqual(WordPicker.judge(newYear, seoul(2, 17, 9)), .yes)
+    }
+
+    func testRestIsNotAContradiction() {
+        var w = w("plain", subjects: ["food"]); w.rest = true
+        XCTAssertFalse(WordPicker.contradicted(PhotoWord(w), context: dusk, in: [w], retired: []))
+    }
+
+    func testUnknownIDIsNotContradicted() {
+        let future = PhotoWord(wordID: "byeotnwi", word: "볕뉘", meaning: "작은 틈으로 드는 햇볕")
+        XCTAssertFalse(WordPicker.contradicted(future, context: dusk, in: [w("sea")], retired: []))
+    }
+
+    func testNewFieldsDecode() throws {
+        let json = #"{"id":"seolnal","word":"설날","meaning":"음력 정월 초하루","times":[],"weathers":[],"seasons":[],"subjects":[],"rest":true,"lunar":["01-01"],"solar":["05-05"],"group":"때"}"#
+        let e = try JSONDecoder().decode(WordEntry.self, from: Data(json.utf8))
+        XCTAssertTrue(e.rest); XCTAssertEqual(e.lunar, ["01-01"]); XCTAssertEqual(e.solar, ["05-05"]); XCTAssertEqual(e.group, "때")
+        let old = #"{"id":"yunseul","word":"윤슬","meaning":"반짝이는 잔물결","times":[],"weathers":[],"seasons":[],"subjects":["water"]}"#
+        let o = try JSONDecoder().decode(WordEntry.self, from: Data(old.utf8))
+        XCTAssertFalse(o.rest); XCTAssertEqual(o.lunar, []); XCTAssertNil(o.group)
+    }
 }
 
 private extension WordEntry {

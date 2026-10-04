@@ -31,6 +31,8 @@ public enum WordPicker {
         if !w.weekdays.isEmpty, !w.weekdays.contains(ctx.weekday) { return .no }
         if !w.seasons.isEmpty, !w.seasons.contains(ctx.season) { return .no }
         if !w.months.isEmpty, !w.months.contains(ctx.month) { return .no }
+        if !w.solar.isEmpty, !w.solar.contains(ctx.solarKey) { return .no }
+        if !w.lunar.isEmpty, LunarDays.keys(on: ctx.dateKey).isDisjoint(with: w.lunar) { return .no }
         if let min = w.sunMin, ctx.sunAltitude < min { return .no }
         if let max = w.sunMax, ctx.sunAltitude > max { return .no }
         if w.needs.contains(.sun), ctx.sunAltitude < 0 { return .no }

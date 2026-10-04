@@ -12,14 +12,18 @@ public struct PhotoContext: Equatable, Sendable {
     public let celsius: Double?
     public let sunAltitude: Double
     public let moonAge: Double
+    public let dateKey: String
+    public let solarKey: String
 
     public init(date: Date, weather: Weather? = nil, celsius: Double? = nil, condition: String? = nil,
                 coordinate: (latitude: Double, longitude: Double)? = nil, calendar: Calendar = .current) {
-        let c = calendar.dateComponents([.hour, .month, .weekday], from: date)
+        let c = calendar.dateComponents([.year, .month, .day, .hour, .weekday], from: date)
         hour = c.hour ?? 12
         weekday = c.weekday ?? 1
         timeBand = Self.timeBand(hour: hour)
         month = c.month ?? 1
+        dateKey = String(format: "%04d-%02d-%02d", c.year ?? 2000, c.month ?? 1, c.day ?? 1)
+        solarKey = String(format: "%02d-%02d", c.month ?? 1, c.day ?? 1)
         season = Self.season(month: month)
         self.weather = weather
         self.condition = condition

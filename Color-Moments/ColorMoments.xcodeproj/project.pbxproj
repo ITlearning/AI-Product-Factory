@@ -65,6 +65,7 @@
 		298F907BF2D550B65240A63E /* HandfulView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98A134A4F6BE326D43F6C9AB /* HandfulView.swift */; };
 		2992E2534861C57FB2499B90 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
 		2B4617290F37676DF89566DF /* MomentMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */; };
+		2B8C878D8888272E9B5EEF0D /* LunarDaysTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A15FE60A1D19309F5650EF9 /* LunarDaysTests.swift */; };
 		2C3933EF51B4D3EC2FD3D7C7 /* SceneParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5258FDE46C2C5A5B132F12CE /* SceneParts.swift */; };
 		2C727EDB8CA45364E0477CA6 /* ColorCaptureControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71305FB203F40AC7A2172D6E /* ColorCaptureControl.swift */; };
 		2CA6C72D06C591D64413160C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C0C341B4E32F784A77CC08D /* WidgetKit.framework */; };
@@ -153,6 +154,7 @@
 		74FC07660001DF03C01D90C8 /* HandfulCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DDE9973C653338A1C72CD /* HandfulCard.swift */; };
 		7517B2B90478A7F2893B1D58 /* IBMPlexSansKR-SemiBold-Subset.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0486266FE8C9C58AE43DBBF9 /* IBMPlexSansKR-SemiBold-Subset.ttf */; };
 		7530F92A893A52BB75953371 /* DayPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */; };
+		766DD82652F73D67AD59E40F /* LunarDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36AAB9304A6FFD7612422D3 /* LunarDays.swift */; };
 		76AADA98FD5F2F767CDE36DA /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		783DF2F82233D24186514686 /* HandfulView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98A134A4F6BE326D43F6C9AB /* HandfulView.swift */; };
 		79D65BD202CFDFFD16EB6354 /* PebbleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39920A44AE81D3E3BD8864A /* PebbleCard.swift */; };
@@ -271,9 +273,11 @@
 		CF11D8850579771F69487B97 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
 		CF1B9077022792BE565162B8 /* ShotThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F941673D190732D3ADB0055C /* ShotThumbnail.swift */; };
 		CFA9FFD411FCDDDFF49BA042 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
+		D002F3C374A894D45ED1C188 /* LunarDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36AAB9304A6FFD7612422D3 /* LunarDays.swift */; };
 		D0232AF91965F3F9595ABB68 /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
 		D151122EFFD53DFECF743789 /* gowun-mini-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = FC37FA4015A2627C80032174 /* gowun-mini-chars.txt */; };
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
+		D5C93675F60081912DCFFA3D /* LunarDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36AAB9304A6FFD7612422D3 /* LunarDays.swift */; };
 		D5E1E5C4EBF105326E1862DF /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
 		D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA8FD60C992A92A01AA5BFF /* LibraryPickerView.swift */; };
 		D7F8ADB1DA0E943D1CEA6CAD /* AssetDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A571B3502388E791F90524 /* AssetDiagnostics.swift */; };
@@ -395,6 +399,7 @@
 		1742B64CFC5498D0537E50F4 /* UpdateCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCheckTests.swift; sourceTree = "<group>"; };
 		1782AA90AE018A879A1B0885 /* HomeNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigation.swift; sourceTree = "<group>"; };
 		19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySections.swift; sourceTree = "<group>"; };
+		1A15FE60A1D19309F5650EF9 /* LunarDaysTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LunarDaysTests.swift; sourceTree = "<group>"; };
 		1CEE6ECDE3B4A71986BA27EE /* AssetDiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDiagnosticsTests.swift; sourceTree = "<group>"; };
 		1D91C5926BF3700AE2D67318 /* KeepsakeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepsakeTests.swift; sourceTree = "<group>"; };
 		1FE6446ECFB36AA3C48DB549 /* IntroScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroScene.swift; sourceTree = "<group>"; };
@@ -494,6 +499,7 @@
 		9EA50197D6989835366943ED /* CelestialTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CelestialTests.swift; sourceTree = "<group>"; };
 		9F19654907C3A03D6D4487F6 /* KeepsakeShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepsakeShareSheet.swift; sourceTree = "<group>"; };
 		A0A48C2B255FB6B7DFA973C5 /* words.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = words.json; sourceTree = "<group>"; };
+		A36AAB9304A6FFD7612422D3 /* LunarDays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LunarDays.swift; sourceTree = "<group>"; };
 		A5A76D592E61169869C59A93 /* AssetAdopterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetAdopterTests.swift; sourceTree = "<group>"; };
 		A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreLoadTests.swift; sourceTree = "<group>"; };
 		AA584CF5AC77CB4D9554F70D /* OnboardingRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingRulesTests.swift; sourceTree = "<group>"; };
@@ -701,6 +707,7 @@
 				1D91C5926BF3700AE2D67318 /* KeepsakeTests.swift */,
 				1203C46F87D7D24186A7F3E6 /* LibraryLoadTests.swift */,
 				0D1CD8F86BB78B6B6EB90C04 /* LibrarySectionsTests.swift */,
+				1A15FE60A1D19309F5650EF9 /* LunarDaysTests.swift */,
 				77CBA56139EDB549235ABCB2 /* MemoriesTests.swift */,
 				6CB97C7E8769569A500FCFF1 /* MomentMergeTests.swift */,
 				B2DEC6F0BB0E2734B2EA292D /* OnboardingGiftTests.swift */,
@@ -856,6 +863,7 @@
 			isa = PBXGroup;
 			children = (
 				74AEF9D194CA969FADAC66D1 /* Celestial.swift */,
+				A36AAB9304A6FFD7612422D3 /* LunarDays.swift */,
 				E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */,
 				FFFAD57FEE541A2BCBE917E6 /* PhotoLabeler.swift */,
 				673250DAE498C7AE5BE3C6DD /* WordChoice.swift */,
@@ -1199,6 +1207,7 @@
 				48A9614795ADEF5BA9422B61 /* Keepsake.swift in Sources */,
 				F674BFD62113E54D6C123D7B /* LibrarySections.swift in Sources */,
 				E696D23B528E77EDF8E78877 /* LockedPlaceNote.swift in Sources */,
+				766DD82652F73D67AD59E40F /* LunarDays.swift in Sources */,
 				1193A257CEEFA474C1C26A51 /* Memories.swift in Sources */,
 				1CC5449DA7CB344D2AC45E80 /* Moment.swift in Sources */,
 				1EA8EE22FEEAA7E8B7FA0118 /* MomentMerge.swift in Sources */,
@@ -1260,6 +1269,7 @@
 				4C60C59259AB81C508BEA732 /* KeepsakeTests.swift in Sources */,
 				4B4B3039AE8FA18954753F80 /* LibraryLoadTests.swift in Sources */,
 				E0A11DC00DADAE32564950AC /* LibrarySectionsTests.swift in Sources */,
+				2B8C878D8888272E9B5EEF0D /* LunarDaysTests.swift in Sources */,
 				109FF5C751CBDCD455979AD7 /* MemoriesTests.swift in Sources */,
 				A34E2A2A8AF2BCCDCCE21452 /* MomentMergeTests.swift in Sources */,
 				8AFDFD1FC5C8C602F84B0EBB /* OnboardingGiftTests.swift in Sources */,
@@ -1348,6 +1358,7 @@
 				D60A60136470C9341FDD0A4A /* LibraryPickerView.swift in Sources */,
 				923895A999E487D30889239A /* LibrarySections.swift in Sources */,
 				404D4FA8C25DF1F932AF9FCA /* LockedPlaceNote.swift in Sources */,
+				D002F3C374A894D45ED1C188 /* LunarDays.swift in Sources */,
 				45E6E375DC196EFEE4545CEE /* Memories.swift in Sources */,
 				50D5A8ABE50CA0D82006F59A /* Moment.swift in Sources */,
 				2B4617290F37676DF89566DF /* MomentMerge.swift in Sources */,
@@ -1434,6 +1445,7 @@
 				9DA9DB9E6BBA273B5C90A00F /* LibrarySections.swift in Sources */,
 				FF489E1E1BA0E851CDFCEBFD /* LockedLocation.swift in Sources */,
 				726125550BEAC49849BA505C /* LockedPlaceNote.swift in Sources */,
+				D5C93675F60081912DCFFA3D /* LunarDays.swift in Sources */,
 				632171711E08FE8079B6FF40 /* Memories.swift in Sources */,
 				60F00B961E27FD6874408F2F /* Moment.swift in Sources */,
 				304E851724E25006163D4850 /* MomentMerge.swift in Sources */,
