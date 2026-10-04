@@ -5,10 +5,10 @@ import math
 import os
 from datetime import datetime, timedelta, timezone
 
-from korean_lunar_calendar import KoreanLunarCalendar
-
 LAB = os.path.expanduser("~/mongdol-word-lab")
 SEOUL = (37.5665, 126.978)
+_TABLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../Shared/Word/lunar-days.json")
+LUNAR = json.load(open(_TABLE))["days"] if os.path.exists(_TABLE) else {}
 WEATHER = {"맑음": "clear", "구름 조금": "clear", "흐림": "cloudy", "이슬비": "drizzle", "비": "rain", "눈": "snow",
            "안개": "fog", "바람": "wind", "뇌우": "rain"}
 
@@ -75,13 +75,7 @@ class Context:
         self.hour, self.month = local.hour, local.month
         self.band, self.season = time_band(local.hour), season(local.month)
         self.solar = local.strftime("%m-%d")
-        cal = KoreanLunarCalendar()
-        cal.setSolarDate(local.year, local.month, local.day)
-        self.lunar = cal.LunarIsoFormat()[5:10]
-        # 「12-last」 = 그해 음력 섣달의 마지막 날(29일 또는 30일) — 다음 날이 음력 1월 1일인지로 판단한다.
-        nxt = local + timedelta(days=1)
-        cal.setSolarDate(nxt.year, nxt.month, nxt.day)
-        self.lunar_last = cal.LunarIsoFormat()[5:10] == "01-01"
+        self.lunar_keys = set(LUNAR.get(local.strftime("%Y-%m-%d"), []))
         labels = set(row.get("labels") or [])
         self.weather = WEATHER.get(row.get("weather") or "") or (
             "snow" if "snow" in labels else "clear" if "blue_sky" in labels else "cloudy" if "cloudy" in labels else None)
@@ -109,7 +103,7 @@ def ok(c, x):
         return False
     if c.get("moonAges") and not any(a <= x.moon <= b for a, b in c["moonAges"]):
         return False
-    if c.get("lunar") and x.lunar not in c["lunar"] and not ("12-last" in c["lunar"] and x.lunar_last):
+    if c.get("lunar") and not (set(c["lunar"]) & x.lunar_keys):
         return False
     if c.get("solar") and x.solar not in c["solar"]:
         return False
