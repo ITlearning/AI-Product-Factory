@@ -9,6 +9,9 @@ LAB = os.path.expanduser("~/mongdol-word-lab")
 rows = json.load(open(f"{LAB}/eval.json"))
 words = {w["id"]: w for w in json.load(open(f"{LAB}/words.json"))}
 by_word = {w["word"]: w for w in words.values()}
+# 사전에서 더한 말(id 가 d- 로 시작) — judge 조건이 아직 없어 allowed 에 없다.
+if os.path.exists(f"{LAB}/words-expanded.json"):
+    words.update({w["id"]: w for w in json.load(open(f"{LAB}/words-expanded.json")) if w["new"]})
 VERDICTS = f"{LAB}/verdicts.json"
 verdicts = json.load(open(VERDICTS)) if os.path.exists(VERDICTS) else {}
 
@@ -23,7 +26,11 @@ def items():
         for arm in arms:
             p = f"{LAB}/answers/{arm}/{r['key']}.json"
             if os.path.exists(p):
-                w = by_word.get(json.load(open(p)).get("word", "").strip())
+                a = json.load(open(p))
+                if (a.get("id") or "").startswith("d-"):
+                    picks.setdefault(a["id"], []).append(arm)
+                    continue
+                w = by_word.get(a.get("word", "").strip())
                 if w and w["id"] in r["allowed"]:
                     picks.setdefault(w["id"], []).append(arm)
         ids = list(picks)
