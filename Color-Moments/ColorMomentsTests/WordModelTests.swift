@@ -2,9 +2,11 @@ import XCTest
 @testable import ColorMoments
 
 final class WordModelTests: XCTestCase {
-    private func head(ids: [String], bias: [Float]? = nil) -> (Data, Data) {
-        let json = try! JSONSerialization.data(withJSONObject: ["format": 1, "wordsVersion": 6, "dim": 2, "ids": ids,
-                                                                "mean": [0, 0], "std": [1, 1], "bias": bias ?? ids.map { _ in 0 }])
+    private func head(ids: [String], bias: [Float]? = nil, test: Bool? = nil) -> (Data, Data) {
+        var meta: [String: Any] = ["format": 1, "wordsVersion": 6, "dim": 2, "ids": ids,
+                                   "mean": [0, 0], "std": [1, 1], "bias": bias ?? ids.map { _ in 0 }]
+        if let test { meta["test"] = test }
+        let json = try! JSONSerialization.data(withJSONObject: meta)
         var w: [Float16] = []
         for i in ids.indices { w += [Float16(i == 0 ? 1 : 0), Float16(i == 0 ? 0 : 1)] }
         return (json, w.withUnsafeBufferPointer { Data(buffer: $0) })
@@ -65,6 +67,44 @@ final class WordModelTests: XCTestCase {
         XCTAssertEqual(Set(h.scores([0.2, 0.9]).keys), ["a"])
     }
 
+    func testTestHeadLoadsInDebugAndSaysSo() throws {
+        let (j, b) = head(ids: ["a", "b"], test: true)
+        XCTAssertTrue(WordModel.Head.isDebugBuild, "테스트는 DEBUG 빌드에서 돈다")
+        let h = try WordModel.Head.load(json: j, bin: b, expected: ["a", "b"])
+        XCTAssertTrue(h.isTest)
+        let (j2, b2) = head(ids: ["a", "b"])
+        XCTAssertFalse(try WordModel.Head.load(json: j2, bin: b2, expected: ["a", "b"]).isTest)
+    }
+
+    func testTestHeadIsUnusableInRelease() {
+        XCTAssertFalse(WordModel.Head.isUsable(isTestHead: true, isDebug: false))
+        XCTAssertTrue(WordModel.Head.isUsable(isTestHead: true, isDebug: true))
+        XCTAssertTrue(WordModel.Head.isUsable(isTestHead: false, isDebug: false))
+        XCTAssertTrue(WordModel.Head.isUsable(isTestHead: false, isDebug: true))
+    }
+
+    func testTestHeadFailsToLoadAsRelease() {
+        let (j, b) = head(ids: ["a", "b"], test: true)
+        XCTAssertThrowsError(try WordModel.Head.load(json: j, bin: b, expected: ["a", "b"], isDebug: false)) {
+            XCTAssertEqual($0 as? WordModel.LoadError, .testHead)
+        }
+    }
+
+    func testReleaseBuildWithTestHeadFallsToRule() async {
+        let (j, b) = head(ids: ["a", "b"], test: true)
+        let engine = WordModel.Engine {
+            _ = try WordModel.Head.load(json: j, bin: b, expected: ["a", "b"], isDebug: false)
+            throw WordModel.LoadError.badHead
+        }
+        do { _ = try await engine.load(); XCTFail("출시 빌드의 시험용 층은 broken") }
+        catch { XCTAssertEqual(error as? WordScorer.Failure, .broken) }
+    }
+
+    func testScorableIDsLeaveOutUnseenWords() throws {
+        let (j, b) = head(ids: ["a", "b", "c"], bias: [0, -10_000, 0.5])
+        XCTAssertEqual(try WordModel.Head.load(json: j, bin: b, expected: ["a", "b", "c"]).scorableIDs, ["a", "c"])
+    }
+
     func testHeadWithDifferentIDsIsRejected() {
         let (j, b) = head(ids: ["a", "b"])
         XCTAssertThrowsError(try WordModel.Head.load(json: j, bin: b, expected: ["a", "c"]))
@@ -80,6 +120,12 @@ final class WordModelTests: XCTestCase {
         let bin = try XCTUnwrap(Bundle.main.url(forResource: "WordHead", withExtension: "bin"))
         XCTAssertNoThrow(try WordModel.Head.load(json: Data(contentsOf: url), bin: Data(contentsOf: bin),
                                                 expected: BundledWordSource.cached.map(\.id)))
+    }
+
+    func testBundledHeadIsMarkedTestUntilTheRealOneShips() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "WordHead", withExtension: "json"))
+        let meta = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        XCTAssertEqual(meta["test"] as? Bool, true, "40단어 시험용 층 — 진짜 층으로 바꿀 때 이 테스트도 지운다")
     }
 
     func testBundledEncoderIsCompiled() {

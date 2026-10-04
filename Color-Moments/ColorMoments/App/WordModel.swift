@@ -4,21 +4,39 @@ import UIKit
 
 /// 학생 모델 = TinyCLIP 인코더(Core ML) + 고르기 층(행렬). 앱 타깃에만 — 확장이 부르면 메모리 한도에 걸린다.
 enum WordModel {
-    enum LoadError: Error { case badHead, idMismatch }
+    enum LoadError: Error { case badHead, idMismatch, testHead }
 
     struct Head: Sendable {
         let ids: [String], dim: Int, mean: [Float], std: [Float], bias: [Float], weights: [Float]
+        var isTest = false
 
-        static func load(json: Data, bin: Data, expected: [String]) throws -> Head {
-            struct Meta: Decodable { let dim: Int; let ids: [String]; let mean: [Float]; let std: [Float]; let bias: [Float] }
+        static var isDebugBuild: Bool {
+            #if DEBUG
+            true
+            #else
+            false
+            #endif
+        }
+
+        /// 시험용 층(test: true)은 출시 빌드에서 깨진 모델과 같다 — 규칙으로 간다.
+        static func isUsable(isTestHead: Bool, isDebug: Bool) -> Bool { !isTestHead || isDebug }
+
+        static func load(json: Data, bin: Data, expected: [String], isDebug: Bool = isDebugBuild) throws -> Head {
+            struct Meta: Decodable {
+                let dim: Int; let ids: [String]; let mean: [Float]; let std: [Float]; let bias: [Float]; let test: Bool?
+            }
             let m = try JSONDecoder().decode(Meta.self, from: json)
+            guard isUsable(isTestHead: m.test ?? false, isDebug: isDebug) else { throw LoadError.testHead }
             guard m.ids == expected else { throw LoadError.idMismatch }
             guard bin.count == m.ids.count * m.dim * MemoryLayout<Float16>.size, m.mean.count == m.dim,
                   m.std.count == m.dim, m.bias.count == m.ids.count else { throw LoadError.badHead }
             var half = [Float16](repeating: 0, count: m.ids.count * m.dim)
             _ = half.withUnsafeMutableBytes { bin.copyBytes(to: $0) }
-            return Head(ids: m.ids, dim: m.dim, mean: m.mean, std: m.std, bias: m.bias, weights: half.map(Float.init))
+            return Head(ids: m.ids, dim: m.dim, mean: m.mean, std: m.std, bias: m.bias, weights: half.map(Float.init),
+                        isTest: m.test ?? false)
         }
+
+        var scorableIDs: Set<String> { Set(ids.indices.filter { bias[$0] > -1e3 }.map { ids[$0] }) }
 
         /// 학습 때 한 번도 정답이 아니었던 단어(bias -1e4)는 아예 빼서 뽑히지 않게 한다.
         func scores(_ embedding: [Float]) -> [String: Float] {
@@ -93,7 +111,10 @@ enum WordModel {
             return try await scores(for: cg)
         }
         Task.detached(priority: .utility) {
-            do { _ = try await engine.load() } catch { WordScorer.score = nil }
+            do { WordScorer.scorableIDs = try await engine.load().1.scorableIDs } catch {
+                WordScorer.score = nil
+                WordScorer.scorableIDs = nil
+            }
         }
     }
 

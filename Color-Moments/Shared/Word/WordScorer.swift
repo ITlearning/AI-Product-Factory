@@ -6,6 +6,8 @@ public enum WordScorer {
     public enum Failure: Error { case unavailable, timedOut, broken }
 
     public nonisolated(unsafe) static var score: (@Sendable (Moment) async throws -> [String: Float])?
+    /// 모델이 점수를 낼 수 있는 id — nil 이면 모른다(모델 없음·아직 못 읽음·깨짐).
+    public nonisolated(unsafe) static var scorableIDs: Set<String>?
 
     public static func scores(for m: Moment, within seconds: Double = 2) async throws -> [String: Float] {
         guard let score else { throw Failure.unavailable }
