@@ -393,6 +393,10 @@ public final class DayStore {
 
     public func moment(_ id: Moment.ID) -> Moment? { moments.first { $0.id == id } }
 
+    public func pebbleName(on dayKey: String) -> String? {
+        PebbleNaming.name(for: moments.filter { $0.dayKey == dayKey })?.name
+    }
+
     public func recentWordIDs(excluding id: Moment.ID, limit: Int = 14) -> Set<String> {
         let others = moments.filter { $0.id != id && $0.word != nil }
         let ordered: [Moment]

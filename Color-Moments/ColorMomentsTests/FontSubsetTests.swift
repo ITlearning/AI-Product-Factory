@@ -59,8 +59,8 @@ final class FontSubsetTests: XCTestCase {
             ?? Bundle.main.url(forResource: "NanumMyeongjo-Subset", withExtension: "ttf"),
             "번들에서 서브셋 파일을 못 찾았다")
         let bytes = try Data(contentsOf: url).count
-        XCTAssertLessThan(bytes, 100_000,
-            "폰트가 \(bytes / 1024)KB — 전체 한글이 들어간 것 같다. 서브셋으로 되돌릴 것")
+        XCTAssertLessThan(bytes, 255_000,
+            "폰트가 \(bytes / 1024)KB — v6 단어 약 1,800개로 약 590자(208KB)인데 넘었다. 전체 한글이 들어간 것 같다. 서브셋으로 되돌릴 것")
     }
 
     // MARK: 고운돋움

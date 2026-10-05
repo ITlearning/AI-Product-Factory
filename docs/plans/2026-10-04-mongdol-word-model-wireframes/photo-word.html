@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>Wireframe — 사진 보기의 단어 (긴 뜻풀이 · ↻)</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f7;margin:0;padding:24px;color:#1d1d1f}
+.meta{max-width:760px;margin:0 auto 16px;padding:12px 16px;background:#fff;border:1px solid #d2d2d7;border-radius:8px;font-size:12px;line-height:1.6}
+.row{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.device{width:320px;background:#121214;color:#eee;border:2px solid #1d1d1f;border-radius:32px;overflow:hidden;min-height:600px;display:flex;flex-direction:column}
+.cap{font-size:11px;color:#6e6e73;text-align:center;margin-top:6px}
+.photo{height:330px;background:#3a3a40;display:flex;align-items:center;justify-content:center;color:#888;font-size:13px}
+.info{padding:18px 22px}
+.when{font-size:12px;color:#9a9aa0}
+.wordline{display:flex;align-items:center;gap:8px;margin-top:14px}
+.word{font-family:"Nanum Myeongjo",serif;font-size:30px;letter-spacing:1px}
+.rf{border:1px solid #555;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#bbb}
+.mean{font-size:13px;color:#b5b5ba;line-height:1.55;margin-top:6px;max-width:260px}
+.note{font-size:11px;color:#ff9f0a;margin-top:10px}
+.foot{margin-top:auto;padding:14px 22px;border-top:1px solid #2a2a2e;font-size:11px;color:#8a8a90;line-height:1.7}
+</style>
+</head>
+<body>
+<dl class="meta">
+<dt>화면</dt><dd>사진 보기(DayPhotoView) 아래 단어 줄 · 설정 맨 아래</dd>
+<dt>진입</dt><dd>하루 → 사진 탭</dd>
+<dt>핵심 액션</dt><dd>단어 읽기 · ↻ 한 번(1등과 같은 갈래는 건너뛴 다음 말)</dd>
+<dt>바뀌는 점</dt><dd>뜻풀이 최대 40자(두 줄) · 사전 번호·따옴표 없음 · 설정에 기기 안 고르기 한 줄 · 단어 모양·위치는 그대로</dd>
+</dl>
+<div class="row">
+<div>
+<div class="device">
+<div class="photo">사진</div>
+<div class="info">
+<div class="when">저녁 · 7:12 · 망원동 · 맑음 21°</div>
+<div class="wordline"><span class="word">볕뉘</span><span class="rf">↻</span></div>
+<div class="mean">작은 틈을 통하여 잠시 비치는 햇볕</div>
+<div class="note">한 줄 뜻풀이(대부분)</div>
+</div>
+</div>
+<div class="cap">① 짧은 뜻풀이</div>
+</div>
+<div>
+<div class="device">
+<div class="photo">사진</div>
+<div class="info">
+<div class="when">오후 · 3:40 · 성수동 · 흐림 14°</div>
+<div class="wordline"><span class="word">민들레</span></div>
+<div class="mean">봄 길가의 노란 꽃, 씨는 솜털로 날아간다</div>
+<div class="note">두 줄까지(40자 안쪽). 넘는 뜻은 새로 쓴 한 줄. ↻ 를 이미 썼으면 ↻ 없음</div>
+</div>
+<div class="foot">(설정 맨 아래)<br>몽돌 1.2.0 (12)<br>단어는 이 기기 안에서 사진을 보고 고릅니다<br>단어 뜻풀이 · 국립국어원 표준국어대사전 (CC BY-SA 2.0 KR) · 이미지 모델 TinyCLIP (MIT)</div>
+</div>
+<div class="cap">② 두 줄 뜻풀이 · 설정 문구</div>
+</div>
+</div>
+</body>
+</html>

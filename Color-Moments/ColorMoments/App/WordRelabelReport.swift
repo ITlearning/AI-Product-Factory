@@ -14,10 +14,8 @@ struct WordRelabelReport: View {
         let added: [String]
         let beforeFits: Bool
         let afterFits: Bool
-        /// 모델(Apple Intelligence) — 두 번 물어 같은 답이면 그 단어, 아니면 「불일치 a/b」, 못 쓰면 nil.
-        let model: String?
-        let modelDiffers: Bool
-        let reason: String
+        let rule: String
+        let student: String
     }
 
     @State private var rows: [Row] = []
@@ -30,21 +28,23 @@ struct WordRelabelReport: View {
                 LabeledContent("대상과 맞춘 단어 (전 → 후)",
                                value: "\(rows.filter(\.beforeFits).count) → \(rows.filter(\.afterFits).count)")
                 LabeledContent("단어가 바뀌는 사진", value: "\(rows.filter { $0.before != $0.after }.count)")
-                LabeledContent("모델이 규칙과 다르게 고른 사진", value: "\(rows.filter(\.modelDiffers).count)")
-                LabeledContent("모델 불일치·실패(규칙 그대로)", value: "\(rows.filter { $0.model?.hasPrefix("불일치") ?? false }.count)")
-                LabeledContent("모델", value: WordAssistant.status).font(.caption)
+                LabeledContent("규칙 ≠ 학생", value: "\(rows.filter { $0.rule != $0.student }.count)")
             } footer: {
-                Text("저장하지 않는다. 옆 장 합치기·최근 단어 피하기는 빼고 비교한다. 모델은 후보를 두 번(순서 뒤집어) 물어 같을 때만 따른다.")
+                Text("저장하지 않는다. 옆 장 합치기·최근 단어 피하기는 빼고 비교한다.")
+            }
+            Section("규칙 단어 / 학생 단어") {
+                ForEach(rows) { r in
+                    Text("\(r.when)  \(r.rule) / \(r.student)\(r.rule == r.student ? "" : "  ◀")")
+                        .font(.body.monospacedDigit())
+                        .textSelection(.enabled)
+                }
             }
             Section("바뀌는 사진") {
                 ForEach(changed) { r in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(r.when)  \(r.before) → \(r.after)" + (r.model.map { "  · 모델 \($0)" } ?? ""))
+                        Text("\(r.when)  \(r.before) → \(r.after)")
                         if !r.added.isEmpty {
                             Text("+ " + r.added.joined(separator: ", ")).font(.caption.monospaced()).foregroundStyle(.secondary)
-                        }
-                        if !r.reason.isEmpty {
-                            Text(r.reason).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                     .textSelection(.enabled)
@@ -55,7 +55,30 @@ struct WordRelabelReport: View {
         .task { await run() }
     }
 
-    private var changed: [Row] { rows.filter { $0.before != $0.after || $0.modelDiffers || ($0.model?.hasPrefix("불일치") ?? false) } }
+    private var changed: [Row] { rows.filter { $0.before != $0.after } }
+
+    /// 같은 사진에 WordChooser 를 두 번 — 지금 WordScorer 로(학생), 잠시 nil 로(규칙). 저장·기록은 하지 않는다.
+    private func compare(_ m: Moment, labels: [String], words: [WordEntry]) async -> (rule: String, student: String) {
+        let ctx = PhotoContext(m, labels: labels)
+        let recent = store.recentWordIDs(excluding: m.id)
+        let name = store.pebbleName(on: m.dayKey)
+        func choose() async -> String {
+            let suite = "relabel-report"
+            let defaults = UserDefaults(suiteName: suite)!
+            defaults.removePersistentDomain(forName: suite)
+            let outcome = await WordChooser.choose(moment: m, context: ctx, labels: labels, words: words, recent: recent,
+                                                   banned: [], pebbleName: name, skip: nil,
+                                                   attempts: WordAttempts(defaults: defaults))
+            if case .word(let w, _) = outcome { return w.word }
+            return outcome == nil ? "없음" : "미정"
+        }
+        let student = await choose()
+        let saved = WordScorer.score
+        WordScorer.score = nil
+        defer { WordScorer.score = saved }
+        let rule = await choose()
+        return (rule, student)
+    }
 
     private func run() async {
         let words = await BundledWordSource().words()
@@ -76,23 +99,10 @@ struct WordRelabelReport: View {
                 return (w.word, !Set(labels).isDisjoint(with: w.subjects))
             }
             let (wb, fb) = pick(before), (wa, fa) = pick(after)
-            var model: String?, reason = ""
-            if #available(iOS 26.0, *) {
-                let ctx = PhotoContext(m, labels: after)
-                let pool = WordPicker.choices(for: ctx, labels: after, in: words, excluding: [], seed: m.id.uuidString)
-                let weather = m.place?.weather.flatMap { w in PhotoEnrichment.label(w.condition).map { "\($0) \(Int(w.celsius.rounded()))°" } }
-                let input = WordChoice(candidates: pool.map { .init(id: $0.id, word: $0.word, meaning: $0.meaning) },
-                                       labels: after, date: m.capturedAt, weather: weather, place: m.place?.name,
-                                       calendar: PhotoContext.calendar(for: m))
-                if pool.count > 1, let v = await WordAssistant.verdict(input) {
-                    model = v.agreed ?? "불일치 \(v.forward ?? "실패")/\(v.reversed ?? "실패")"
-                    reason = v.reason
-                }
-            }
+            let (rule, student) = await compare(m, labels: after, words: words)
             rows.append(Row(id: m.id, when: format.string(from: m.capturedAt), before: wb, after: wa,
                             added: after.filter { !before.contains($0) }, beforeFits: fb, afterFits: fa,
-                            model: model, modelDiffers: model.map { !$0.hasPrefix("불일치") && $0 != wa } ?? false,
-                            reason: reason))
+                            rule: rule, student: student))
         }
     }
 }

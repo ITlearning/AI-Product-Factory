@@ -1,0 +1,224 @@
+// 버리는 실험 코드. 평가 사진 100장(몽돌 54 + 추가 46)마다
+// 지금 규칙의 단어, judge 가 허락하는 후보, Vision 값(라벨 확신도 전부·사진 지문)을 뽑고 선생에게 줄 사진을 저장한다.
+// 결과는 ~/mongdol-word-lab 에만 쓴다. 실행: ./build.sh && .build/extract [eval|train|fresh] [폴더]
+// train: train-ids.txt 의 사진 → train.json · train-features.json · photos-train/
+// fresh: 학습·평가·몽돌 어느 날과도 겹치지 않는 처음 보는 사진 — 판정용 30장(하루 1장)·다양성용 500장(하루 4장) → photos-fresh/, fresh-ids.txt
+// 폴더: 결과를 ~/mongdol-word-lab/<폴더>/<mode>.json · <mode>-features.json 에 쓰고 words.json 은 그대로, 이미 있는 사진은 다시 저장하지 않는다.
+import AppKit
+import Foundation
+import Photos
+import Vision
+
+let lab = URL(fileURLWithPath: NSString(string: "~/mongdol-word-lab").expandingTildeInPath)
+let daysURL = URL(fileURLWithPath: NSString(string: "~/Downloads/mongdol-backup-20261001/days.json").expandingTildeInPath)
+let wordsURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    .appendingPathComponent("../../Shared/Word/words.json").standardized
+let mode = CommandLine.arguments.dropFirst().first ?? "eval"
+let outName = CommandLine.arguments.dropFirst(2).first
+let outDir = outName.map { lab.appendingPathComponent($0) } ?? lab
+try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
+let photosDir = lab.appendingPathComponent(["train": "photos-train", "fresh": "photos-fresh"][mode] ?? "photos")
+try? FileManager.default.createDirectory(at: photosDir, withIntermediateDirectories: true)
+
+// 명령줄엔 앱 번들이 없어 LunarDays.load() 가 빈 표를 낸다 — 비면 음력 단어가 후보에서 빠진다.
+LunarDays.table = try JSONDecoder().decode(LunarDays.File.self, from: Data(contentsOf: wordsURL.deletingLastPathComponent()
+    .appendingPathComponent("lunar-days.json"))).days
+let list = try JSONDecoder().decode(WordList.self, from: Data(contentsOf: wordsURL))
+let words = list.words.filter { !Set(list.retired).contains($0.id) }
+let vocabulary = Set(words.flatMap(\.subjects))
+
+let iso = ISO8601DateFormatter()
+iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+let isoPlain = ISO8601DateFormatter()
+let decoder = JSONDecoder()
+decoder.dateDecodingStrategy = .custom {
+    let s = try $0.singleValueContainer().decode(String.self)
+    guard let d = iso.date(from: s) ?? isoPlain.date(from: s) else { throw CocoaError(.coderInvalidValue) }
+    return d
+}
+
+struct Item {
+    let key: String
+    let set: String
+    let bucket: String?
+    let moment: Moment
+    let phoneLabels: [String]?
+    let localID: String?
+}
+
+var items: [Item] = []
+
+func libraryItem(_ id: String, asset a: PHAsset, prefix: String, set: String, bucket: String?) -> Item? {
+    guard let date = a.creationDate else { return nil }
+    let place = a.location.map { Place(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude,
+                                       accuracy: $0.horizontalAccuracy) }
+    // 규칙의 동점 순서가 실행마다 같도록 사진 id 로 정한 UUID.
+    let h = String(format: "%016llx%016llx", WordPicker.fnv1a(id), WordPicker.fnv1a("uuid:" + id))
+    let uuid = UUID(uuidString: [h.prefix(8), h.dropFirst(8).prefix(4), h.dropFirst(12).prefix(4), h.dropFirst(16).prefix(4), h.dropFirst(20)]
+        .joined(separator: "-"))!
+    let m = Moment(id: uuid, capturedAt: date, colorHex: "", fileName: "", source: .library, assetID: id, place: place)
+    return Item(key: prefix + String(WordPicker.fnv1a(id), radix: 16).prefix(8), set: set,
+                bucket: bucket, moment: m, phoneLabels: nil, localID: id)
+}
+
+func assets(_ ids: [String]) -> [String: PHAsset] {
+    var byID: [String: PHAsset] = [:]
+    PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil).enumerateObjects { a, _, _ in byID[a.localIdentifier] = a }
+    return byID
+}
+
+func image(_ asset: PHAsset, maxPixel: CGFloat) -> CGImage? {
+    let o = PHImageRequestOptions()
+    o.isSynchronous = true
+    o.isNetworkAccessAllowed = true
+    o.deliveryMode = .highQualityFormat
+    o.resizeMode = .exact
+    var out: CGImage?
+    PHImageManager.default().requestImage(for: asset, targetSize: CGSize(width: maxPixel, height: maxPixel),
+                                          contentMode: .aspectFit, options: o) { img, _ in
+        out = img?.cgImage(forProposedRect: nil, context: nil, hints: nil)
+    }
+    return out
+}
+
+let days = try decoder.decode([Moment].self, from: Data(contentsOf: daysURL))
+let trainIDs = try String(contentsOf: lab.appendingPathComponent("train-ids.txt"), encoding: .utf8).split(separator: "\n").map(String.init)
+let extras = try JSONSerialization.jsonObject(with: Data(contentsOf: lab.appendingPathComponent("eval-extra.json"))) as! [[String: Any]]
+
+if mode == "train" {
+    let byID = assets(trainIDs)
+    items = trainIDs.compactMap { id in byID[id].flatMap { libraryItem(id, asset: $0, prefix: "t-", set: "train", bucket: nil) } }
+} else if mode == "fresh" {
+    // survey.swift·pick_train.py 와 같은 날 기준(맥 시간대)·같은 거르기(스크린숏·위치 없음·문서류 라벨).
+    let dayOf = DateFormatter()
+    dayOf.dateFormat = "yyyy-MM-dd"
+    var usedDays = Set(days.map { dayOf.string(from: $0.capturedAt) })
+    for a in assets(trainIDs + extras.map { $0["id"] as! String }).values {
+        if let d = a.creationDate { usedDays.insert(dayOf.string(from: d)) }
+    }
+    let o = PHFetchOptions()
+    o.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
+    var pool: [PHAsset] = []
+    PHAsset.fetchAssets(with: o).enumerateObjects { a, _, _ in
+        guard !a.mediaSubtypes.contains(.photoScreenshot), a.location != nil, let d = a.creationDate,
+              !usedDays.contains(dayOf.string(from: d)) else { return }
+        pool.append(a)
+    }
+    pool.sort { WordPicker.fnv1a("fresh:" + $0.localIdentifier) < WordPicker.fnv1a("fresh:" + $1.localIdentifier) }
+    FileHandle.standardError.write("쓴 날 \(usedDays.count)일, 남은 사진 \(pool.count)장\n".data(using: .utf8)!)
+    let skip: Set<String> = ["screenshot", "document", "printed_page", "receipt", "passport", "chart", "diagram"]
+    var taken = Set<String>()
+    var lines: [String] = []
+    for (set, n, perDay) in [("fresh30", 30, 1), ("fresh500", 500, 4)] {
+        var perDayCount: [String: Int] = [:]
+        for a in pool where perDayCount.values.reduce(0, +) < n && !taken.contains(a.localIdentifier) {
+            let day = dayOf.string(from: a.creationDate!)
+            guard perDayCount[day, default: 0] < perDay, let small = image(a, maxPixel: 512) else { continue }
+            let classify = VNClassifyImageRequest()
+            try? VNImageRequestHandler(cgImage: small).perform([classify])
+            guard (classify.results ?? []).filter({ $0.confidence > 0.3 && skip.contains($0.identifier) }).isEmpty else { continue }
+            perDayCount[day, default: 0] += 1
+            taken.insert(a.localIdentifier)
+            lines.append("\(set)\t\(a.localIdentifier)")
+            if let item = libraryItem(a.localIdentifier, asset: a, prefix: "n-", set: set, bucket: nil) { items.append(item) }
+        }
+        FileHandle.standardError.write("\(set): \(perDayCount.values.reduce(0, +))장, \(perDayCount.count)일\n".data(using: .utf8)!)
+    }
+    try (lines.joined(separator: "\n") + "\n").write(to: lab.appendingPathComponent("fresh-ids.txt"), atomically: true, encoding: .utf8)
+} else {
+let cloudIDs = days.compactMap { $0.cloudID.map(PHCloudIdentifier.init(stringValue:)) }
+let mapping = PHPhotoLibrary.shared().localIdentifierMappings(for: cloudIDs)
+for m in days {
+    // cloudID 가 안 풀리는 사진(맥이 아직 못 받은 iCloud 레코드 등)은 찍은 시각 ±2초로 찾는다.
+    let byTime: () -> String? = {
+        let o = PHFetchOptions()
+        o.predicate = NSPredicate(format: "creationDate >= %@ AND creationDate <= %@",
+                                  m.capturedAt.addingTimeInterval(-2) as NSDate, m.capturedAt.addingTimeInterval(2) as NSDate)
+        let found = PHAsset.fetchAssets(with: .image, options: o)
+        return found.count == 1 ? found.firstObject?.localIdentifier : nil
+    }
+    let local = m.cloudID.flatMap { id in try? mapping[PHCloudIdentifier(stringValue: id)]?.get() } ?? byTime()
+    items.append(Item(key: "m-" + m.id.uuidString.prefix(8), set: "mongdol", bucket: nil, moment: m,
+                      phoneLabels: m.labels, localID: local))
+}
+
+let byID = assets(extras.map { $0["id"] as! String })
+for e in extras {
+    let id = e["id"] as! String
+    if let a = byID[id], let item = libraryItem(id, asset: a, prefix: "x-", set: "extra", bucket: e["bucket"] as? String) {
+        items.append(item)
+    }
+}
+}
+
+
+func saveJPEG(_ cg: CGImage, to url: URL) {
+    let rep = NSBitmapImageRep(cgImage: cg)
+    try? rep.representation(using: .jpeg, properties: [.compressionFactor: 0.88])?.write(to: url)
+}
+
+var rows: [[String: Any]] = []
+var features: [String: Any] = [:]
+var classifyOrder: [String]?
+var missing: [String] = []
+
+for item in items {
+    guard let localID = item.localID, let asset = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil).firstObject,
+          let small = image(asset, maxPixel: 600), let large = image(asset, maxPixel: 1024) else {
+        missing.append(item.key); continue
+    }
+    if rows.count % 100 == 0 { FileHandle.standardError.write("\(rows.count)/\(items.count)\n".data(using: .utf8)!) }
+    let jpg = photosDir.appendingPathComponent(item.key + ".jpg")
+    if outName == nil || !FileManager.default.fileExists(atPath: jpg.path) { saveJPEG(large, to: jpg) }
+
+    let macLabels = PhotoLabeler.labels(for: small, vocabulary: vocabulary) ?? []
+    let labels = item.phoneLabels ?? macLabels
+    let ctx = PhotoContext(item.moment, labels: labels)
+    let seed = item.moment.id.uuidString
+    let rule = WordPicker.candidates(for: ctx, labels: labels, in: words, excluding: [], seed: seed)
+    let first = rule.first
+    let usedSubject = first.map { !$0.subjects.isEmpty && !Set(labels).isDisjoint(with: $0.subjects) } ?? false
+    let allowed = words.filter { WordPicker.judge($0, ctx) == .yes }
+
+    let classify = VNClassifyImageRequest()
+    let printRequest = VNGenerateImageFeaturePrintRequest()
+    try VNImageRequestHandler(cgImage: small, orientation: .up).perform([classify, printRequest])
+    let scores = (classify.results ?? []).sorted { $0.identifier < $1.identifier }
+    if classifyOrder == nil { classifyOrder = scores.map(\.identifier) }
+    var vector: [Float] = []
+    if let fp = printRequest.results?.first {
+        vector = fp.data.withUnsafeBytes { Array($0.bindMemory(to: Float.self)) }
+    }
+    features[item.key] = ["classify": scores.map(\.confidence), "print": vector]
+
+    let local = DateFormatter()
+    local.calendar = PhotoContext.calendar(for: item.moment)
+    local.timeZone = local.calendar.timeZone
+    local.dateFormat = "yyyy-MM-dd HH:mm"
+    rows.append([
+        "key": item.key, "set": item.set, "bucket": item.bucket as Any,
+        "local": local.string(from: item.moment.capturedAt),
+        "partOfDay": PhotoEnrichment.partOfDay(item.moment.capturedAt, calendar: local.calendar),
+        "season": ctx.season.rawValue,
+        "weather": item.moment.place?.weather.map { PhotoEnrichment.label($0.condition) ?? $0.condition } as Any,
+        "celsius": item.moment.place?.weather?.celsius as Any,
+        "place": item.moment.place?.name as Any,
+        "labels": labels, "macLabels": macLabels, "phoneLabels": item.phoneLabels as Any,
+        "appWord": item.moment.word?.wordID as Any,
+        "rule": first?.id as Any, "ruleBy": first == nil ? "none" : (usedSubject ? "subject" : "moment"),
+        "ruleTop": rule.prefix(8).map(\.id),
+        "allowed": allowed.map(\.id),
+    ])
+}
+
+let opts: JSONSerialization.WritingOptions = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+let rowsName = outName == nil ? (mode == "train" ? "train.json" : "eval.json") : "\(mode).json"
+let featuresName = outName == nil ? (mode == "train" ? "train-features.json" : "features.json") : "\(mode)-features.json"
+try JSONSerialization.data(withJSONObject: rows, options: opts).write(to: outDir.appendingPathComponent(rowsName))
+try JSONSerialization.data(withJSONObject: ["classifyLabels": classifyOrder ?? [], "photos": features])
+    .write(to: outDir.appendingPathComponent(featuresName))
+if outName == nil {
+    let words170 = list.words.map { ["id": $0.id, "word": $0.word, "meaning": $0.meaning, "moment": $0.moment, "fallback": $0.fallback] }
+    try JSONSerialization.data(withJSONObject: words170, options: opts).write(to: lab.appendingPathComponent("words.json"))
+}
+FileHandle.standardError.write("사진 \(rows.count)장, 못 찾음 \(missing.count): \(missing)\n".data(using: .utf8)!)

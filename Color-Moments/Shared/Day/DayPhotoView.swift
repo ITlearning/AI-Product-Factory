@@ -357,22 +357,16 @@ struct DayPhotoView: View {
         store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: stale)
     }
 
-    /// 규칙 후보(+그 순간의 말) 안에서 고른다 — Apple Intelligence 가 되는 기기는 모델이, 아니면 규칙 1순위.
-    private func pickWord(for m: Moment, labels: [String], banned: Set<String> = []) async -> (word: WordEntry, pool: [WordEntry])? {
+    private func pickWord(for m: Moment, labels: [String], banned: Set<String> = [], skip: WordEntry? = nil) async -> (word: WordEntry, pool: [WordEntry])? {
         let words = await BundledWordSource().words()
-        let weather = current?.place?.weather
         let ctx = PhotoContext(current ?? m, labels: labels)
         let recent = store.recentWordIDs(excluding: m.id).union(rejections.avoided)
-        let seed = m.id.uuidString
-        let rule = WordPicker.candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
-        let pool = WordPicker.choices(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
-        guard let first = rule.first ?? pool.first else { return nil }
-        let input = WordChoice(candidates: pool.map { .init(id: $0.id, word: $0.word, meaning: $0.meaning) },
-                               labels: labels, date: m.capturedAt,
-                               weather: weather.flatMap { w in PhotoEnrichment.label(w.condition).map { "\($0) \(Int(w.celsius.rounded()))°" } },
-                               place: current?.place?.name, calendar: PhotoContext.calendar(for: current ?? m))
-        let chosen = await WordAssist.choose(input).flatMap { id in pool.first { $0.id == id } }
-        return (chosen ?? first, pool)
+        switch await WordChooser.choose(moment: current ?? m, context: ctx, labels: labels, words: words, recent: recent,
+                                        banned: banned, pebbleName: store.pebbleName(on: m.dayKey), skip: skip,
+                                        attempts: .shared) {
+        case .word(let w, let pool): return (w, pool)
+        case .later, nil: return nil
+        }
     }
 
     /// 단어와 ↻ — ↻는 사진마다 한 번 쓰면 사라진다.
@@ -389,7 +383,12 @@ struct DayPhotoView: View {
     /// 바꿀 단어가 없으면 ↻ 를 두지 않는다 — 눌러도 아무 일이 없다(라벨 없는 사진 약 12%, 2026-10-03 교차 검증).
     private func hasAlternative(_ m: Moment, _ w: PhotoWord) -> Bool {
         let labels = m.labels ?? []
-        return !WordPicker.choices(for: PhotoContext(m, labels: labels), labels: labels, in: BundledWordSource.cached,
+        let ctx = PhotoContext(m, labels: labels)
+        if WordScorer.score != nil {
+            return WordPicker.hasModelAlternative(to: w, context: ctx, in: BundledWordSource.cached,
+                                                  scorable: WordScorer.scorableIDs, pebbleName: store.pebbleName(on: m.dayKey))
+        }
+        return !WordPicker.choices(for: ctx, labels: labels, in: BundledWordSource.cached,
                                    excluding: [], seed: m.id.uuidString, banned: [w.wordID]).isEmpty
     }
 
@@ -397,12 +396,13 @@ struct DayPhotoView: View {
     private func reject(_ m: Moment) async {
         guard let old = current?.standingWord(), !rejections.hasRejected(m.id) else { return }
         let labels = current?.labels ?? []
-        guard let pick = await pickWord(for: m, labels: labels, banned: [old.wordID]) else { return }
+        let oldEntry = BundledWordSource.cached.first { $0.id == old.wordID }
+        guard let pick = await pickWord(for: m, labels: labels, banned: [old.wordID], skip: oldEntry) else { return }
         // 고르는 사이 다른 기기의 단어가 왔으면 바꾸지 않았으니 ↻ 도 쓰지 않은 것으로 둔다.
         guard store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: old) else { return }
         let info = Bundle.main.infoDictionary
         rejections.record(.init(momentID: m.id, wordID: old.wordID, replacedBy: pick.word.id, labels: labels,
-                                candidates: pick.pool.map(\.id), partOfDay: PhotoEnrichment.partOfDay(m.capturedAt),
+                                candidates: pick.pool.prefix(20).map(\.id), partOfDay: PhotoEnrichment.partOfDay(m.capturedAt),
                                 weather: current?.place?.weather?.condition,
                                 appVersion: "\(info?["CFBundleShortVersionString"] ?? "?")(\(info?["CFBundleVersion"] ?? "?"))",
                                 at: Date()))

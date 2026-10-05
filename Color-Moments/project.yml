@@ -20,6 +20,8 @@ targets:
       - ColorMoments
       - path: Shared
         excludes: ["Design/Fonts/GowunDodum-Mini.ttf"]
+      - path: NOTICE   # 설정의 출처 고지 — 앱 안에 함께 실어야 한다(MIT·CC BY-SA·OFL)
+        buildPhase: resources
     dependencies:
       - sdk: AVKit.framework
       - target: ColorMomentsCapture
@@ -66,7 +68,7 @@ targets:
     sources:
       - ColorMomentsCapture
       - path: Shared
-        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf", "Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf"]  # 확장엔 쓰는 글자만 담은 Mini 판, 버튼 없어 세미볼드 제외
+        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf", "Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf", "Word/words.json", "Word/lunar-days.json"]  # 확장엔 쓰는 글자만 담은 Mini 판, 버튼 없어 세미볼드 제외
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.itlearning.colormoments.capture
@@ -92,7 +94,7 @@ targets:
     sources:
       - ColorMomentsControl
       - path: Shared
-        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf", "Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf"]  # 위젯엔 버튼 없어 세미볼드 제외
+        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf", "Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf", "Word/words.json", "Word/lunar-days.json"]  # 위젯엔 버튼 없어 세미볼드 제외
     dependencies:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework

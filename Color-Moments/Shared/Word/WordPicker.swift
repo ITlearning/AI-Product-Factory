@@ -31,6 +31,7 @@ public enum WordPicker {
         if !w.weekdays.isEmpty, !w.weekdays.contains(ctx.weekday) { return .no }
         if !w.seasons.isEmpty, !w.seasons.contains(ctx.season) { return .no }
         if !w.months.isEmpty, !w.months.contains(ctx.month) { return .no }
+        if !w.solar.isEmpty, !w.solar.contains(ctx.solarKey) { return .no }
         if let min = w.sunMin, ctx.sunAltitude < min { return .no }
         if let max = w.sunMax, ctx.sunAltitude > max { return .no }
         if w.needs.contains(.sun), ctx.sunAltitude < 0 { return .no }
@@ -38,6 +39,11 @@ public enum WordPicker {
             return .no
         }
         var unknown = false
+        if !w.lunar.isEmpty {
+            // 표가 없으면(확장 등) 음력을 모른다 — no 로 두면 이미 붙은 음력 단어를 지운다.
+            if LunarDays.table.isEmpty { unknown = true }
+            else if LunarDays.keys(on: ctx.dateKey).isDisjoint(with: w.lunar) { return .no }
+        }
         if !w.weathers.isEmpty || w.needs.contains(.sun) {
             if let weather = ctx.weather {
                 if !w.weathers.isEmpty, !w.weathers.contains(weather) { return .no }
@@ -136,8 +142,8 @@ public enum WordPicker {
         candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned).first.map(PhotoWord.init)
     }
 
-    /// 모델(Apple Intelligence)에 넘길 후보 — 규칙 후보에 그 순간의 말(틀릴 수 없는 단어)을 더한다.
-    /// 규칙 후보가 하나뿐이어도 모델이 고를 여지를 준다.
+    /// 고르기 후보 — 규칙 후보에 그 순간의 말(틀릴 수 없는 단어)을 더한다.
+    /// 규칙 후보가 하나뿐이어도 고를 여지를 준다.
     public static func choices(for ctx: PhotoContext, labels: [String], in words: [WordEntry],
                                excluding recent: Set<String>, seed: String, banned: Set<String> = []) -> [WordEntry] {
         let rule = candidates(for: ctx, labels: labels, in: words, excluding: recent, seed: seed, banned: banned)
@@ -152,6 +158,28 @@ public enum WordPicker {
         if retired.contains(word.wordID) { return true }
         guard let w = words.first(where: { $0.id == word.wordID }) else { return false }
         return judge(w, ctx) == .no
+    }
+
+    public static func modelCandidates(for ctx: PhotoContext, in words: [WordEntry], excluding recent: Set<String>,
+                                       banned: Set<String>, pebbleName: String?) -> [WordEntry] {
+        words.filter {
+            !$0.rest && !banned.contains($0.id) && !recent.contains($0.id) && $0.word != pebbleName && judge($0, ctx) == .yes
+        }
+    }
+
+    /// ↻ 를 둘 만한가 — 모델이 실제로 고를 수 있는 단어(scorable) 중 그날 조약돌 이름이 아니고 갈래가 다른 것이 있어야 한다.
+    public static func hasModelAlternative(to current: PhotoWord, context ctx: PhotoContext, in words: [WordEntry],
+                                           scorable: Set<String>?, pebbleName: String?) -> Bool {
+        let group = words.first { $0.id == current.wordID }?.group
+        return modelCandidates(for: ctx, in: words, excluding: [], banned: [current.wordID], pebbleName: pebbleName)
+            .contains { (scorable?.contains($0.id) ?? true) && $0.group != group }
+    }
+
+    public static func best(_ scores: [String: Float], among words: [WordEntry], seed: String,
+                            notInGroupOf skip: WordEntry?) -> WordEntry? {
+        words.filter { scores[$0.id]?.isFinite == true && (skip == nil || $0.group != skip?.group) }
+            .map { (w: $0, s: (scores[$0.id]! * 1000).rounded(), h: fnv1a(seed + ":" + $0.id)) }
+            .min { ($0.s, $1.h) > ($1.s, $0.h) }?.w
     }
 
     // Hasher 금지 — 프로세스마다 시드가 달라 같은 사진의 후보가 바뀐다.

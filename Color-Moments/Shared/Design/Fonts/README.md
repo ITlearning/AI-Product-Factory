@@ -7,8 +7,8 @@
 |---|---|
 | 원본 | Nanum Myeongjo Regular (Google Fonts) |
 | 라이선스 | SIL Open Font License 1.1 — [`NanumMyeongjo-OFL.txt`](NanumMyeongjo-OFL.txt) |
-| 서브셋 | 242자 (`subset-chars.txt`) |
-| 크기 | 2,987KB → **82.2KB** (상한 100KB, `FontSubsetTests.testSubsetStaysSmall`) |
+| 서브셋 | 590자 (`subset-chars.txt`, v6 단어 약 1,800개) |
+| 크기 | 2,987KB → **207.6KB** (상한 255KB, `FontSubsetTests.testSubsetStaysSmall`) |
 
 ## 다시 만들 때
 
@@ -34,7 +34,7 @@ pyftsubset /tmp/nm.ttf --text-file=Shared/Design/Fonts/subset-chars.txt \
   --name-IDs='0,1,2,3,4,5,6,13,14' --drop-tables+=DSIG
 ```
 
-**전체 한글(2MB+)을 넣지 말 것.** 명조로 찍히는 글자는 200자 미만이다.
+**전체 한글(2MB+)을 넣지 말 것.** 명조로 찍히는 글자는 600자 안쪽이다.
 
 ## 고운돋움 (본문)
 
