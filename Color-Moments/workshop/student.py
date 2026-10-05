@@ -1,7 +1,8 @@
 """2단계 학생 — 인코더 사진 값 위의 층 하나로 앱 v6 단어(words.json) 중 고르기.
 후보 = 행 allowed(앱 judge == .yes) 중 쉬지 않는 단어 — 앱 WordPicker.modelCandidates 와 같다. 학습·평가 모두 후보 밖은 가린다.
 선생(Qwen) 답은 단어 글자로 v6 id 를 찾고, 못 찾거나 후보 밖이면 버린다. 학습에서 정답으로 못 본 단어는 bias -1e4 — 고르지 않는다.
-실행: python student.py [선생 이름=qwen35-v4] --emb 인코더이름 [--export 폴더]
+실행: python student.py [선생 이름=qwen35-v4] --emb 인코더이름 [--prior τ] [--export 폴더]
+  --prior: 학습 정답 빈도만큼 bias 를 깎는다(bias -= τ·log 빈도). 선생의 쏠림(맛보기·한판 …)을 덜 따라가게 — 내보낸 bias 에 담겨 앱은 그대로.
   --emb: embed.py 가 뽑은 값. coreml-<이름> 이면 embed/ 가 앱과 같은 전처리·Core ML 로 뽑은 값(emb-<이름>.json).
   --export: 전체 학습 고르기 층을 WordHead.json/.bin 으로(앱 words.json 의 id 순서).
 자료: $MONGDOL_LAB(기본 ~/mongdol-word-lab)/v6/{train,eval,fresh}.json, answers/<선생>-train·<선생>/.
@@ -23,11 +24,12 @@ if "--emb" not in sys.argv:
     sys.exit("--emb 인코더이름 이 필요하다 (앱은 인코더 값만 쓴다)")
 EMB = sys.argv[sys.argv.index("--emb") + 1]
 EXPORT = sys.argv[sys.argv.index("--export") + 1] if "--export" in sys.argv else None
-for v in (EMB, EXPORT):
+PRIOR = sys.argv[sys.argv.index("--prior") + 1] if "--prior" in sys.argv else None
+for v in (EMB, EXPORT, PRIOR):
     if v in args:
         args.remove(v)
 TEACHER = args[0] if args else "qwen35-v4"
-TAG = f"{EMB}-v6"
+TAG = f"{EMB}-v6" + (f"-p{PRIOR}" if PRIOR else "")
 
 
 def load_emb(name):
@@ -130,6 +132,13 @@ for n in sorted({min(n, len(ytr)) for n in (1000, 2000)} | {len(ytr)}):
     pred = predict(model, Xev, Mev)
     by_set = " · ".join(f"{s} {(pred == yev)[sets_ev == s].mean():.0%}" for s in ("mongdol", "extra") if (sets_ev == s).any())
     print(f"[{n}장] 평가 {len(kev)}장에서 선생과 같은 답 {(pred == yev).mean():.0%} ({by_set})")
+
+if PRIOR:
+    with torch.no_grad():
+        for i, c in Counter(ytr[idx].tolist()).items():
+            model[0].bias[i] -= float(PRIOR) * np.log(c / len(idx))
+    pred = predict(model, Xev, Mev)
+    print(f"[--prior {PRIOR}] 평가 {len(kev)}장에서 선생과 같은 답 {(pred == yev).mean():.0%}")
 
 if os.path.exists(f"{LAB}/v6/fresh.json"):
     Xfr, Mfr, _, kfr, rows_fr = load("fresh", None, EMBS)
