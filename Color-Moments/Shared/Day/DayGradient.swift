@@ -11,6 +11,17 @@ public enum DayGradient {
         positions(for: moments).map { Stop(location: $0.location, hex: $0.moment.colorHex) }
     }
 
+    /// 조약돌용 — 시각 비례와 찍은 순서를 반반 섞는다. 시각만 쓰면 몇 분 사이 찍은 색이 칼선이 되고
+    /// 하루 끝 사진이 테두리 조각으로 몰린다. 타임라인은 시각이 정확해야 하니 stops 를 쓴다.
+    public static func pebbleStops(for moments: [Moment]) -> [Stop] {
+        let placed = positions(for: moments)
+        guard placed.count > 1 else { return stops(for: moments) }
+        let last = Double(placed.count - 1)
+        return placed.enumerated().map { i, p in
+            Stop(location: 0.5 * p.location + 0.5 * Double(i) / last, hex: p.moment.colorHex)
+        }
+    }
+
     public static func positions(for moments: [Moment]) -> [(moment: Moment, location: Double)] {
         let sorted = moments.sorted { $0.capturedAt < $1.capturedAt }
         guard let first = sorted.first, let last = sorted.last else { return [] }
