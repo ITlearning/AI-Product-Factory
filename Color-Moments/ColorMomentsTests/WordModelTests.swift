@@ -122,10 +122,10 @@ final class WordModelTests: XCTestCase {
                                                 expected: BundledWordSource.cached.map(\.id)))
     }
 
-    func testBundledHeadIsMarkedTestUntilTheRealOneShips() throws {
+    func testBundledHeadIsTheRealOne() throws {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "WordHead", withExtension: "json"))
         let meta = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
-        XCTAssertEqual(meta["test"] as? Bool, true, "40단어 시험용 층 — 진짜 층으로 바꿀 때 이 테스트도 지운다")
+        XCTAssertNil(meta["test"], "시험용 층이면 출시 빌드가 규칙 단어만 쓴다")
     }
 
     func testBundledEncoderIsCompiled() {
