@@ -7,9 +7,12 @@ let (modelPath, name) = (CommandLine.arguments[1], CommandLine.arguments[2])
 let config = MLModelConfiguration(); config.computeUnits = .cpuAndNeuralEngine
 let model = try MLModel(contentsOf: MLModel.compileModel(at: URL(fileURLWithPath: modelPath)), configuration: config)
 var keys: [String] = [], xs: [[Float]] = []
-for dir in ["photos", "photos-train", "photos-fresh"] where FileManager.default.fileExists(atPath: lab.appendingPathComponent(dir).path) {
-    let files = try FileManager.default.contentsOfDirectory(at: lab.appendingPathComponent(dir), includingPropertiesForKeys: nil)
-        .filter { $0.pathExtension == "jpg" }.sorted { $0.path < $1.path }
+// 세 번째 인자: 그 폴더만(기기가 보낸 224px 그림 — parity.py). 없으면 lab 의 사진 폴더 셋.
+let dirs = CommandLine.arguments.count > 3 ? [URL(fileURLWithPath: CommandLine.arguments[3])]
+    : ["photos", "photos-train", "photos-fresh"].map { lab.appendingPathComponent($0) }
+for dir in dirs where FileManager.default.fileExists(atPath: dir.path) {
+    let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+        .filter { ["jpg", "png"].contains($0.pathExtension) }.sorted { $0.path < $1.path }
     for f in files {
         guard let src = CGImageSourceCreateWithURL(f as CFURL, nil),
               let cg = CGImageSourceCreateImageAtIndex(src, 0, nil), let input = WordImage.input(from: cg) else { continue }

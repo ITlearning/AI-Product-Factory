@@ -38,6 +38,7 @@ struct SpikeView: View {
                 Section {
                     NavigationLink("조약돌 비교 (셰이더)") { PebbleLabView(store: store, gifts: gifts, closures: closures) }
                     NavigationLink("단어 다시 뽑아 보기 (저장 안 함)") { WordRelabelReport(store: store) }
+                    NavigationLink("학생 모델 재기 (시간·맥 일치)") { WordModelProbe(store: store) }
                     LabeledContent("잠금화면 위치",
                                    value: UserDefaults.standard.string(forKey: CaptureInbox.lockedPlaceProbeKey) ?? "아직 잠금화면 사진 없음")
                     LabeledContent("앱 위치 권한", value: PlaceFinder.shared.authorizationText)

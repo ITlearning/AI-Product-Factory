@@ -119,7 +119,7 @@ enum WordModel {
     }
 
     // 사진 앱에서 온 UIImage 는 방향을 픽셀이 아니라 imageOrientation 에 들고 올 수 있다 — .cgImage 는 그걸 버린다.
-    private static func upright(_ image: UIImage) -> CGImage? {
+    static func upright(_ image: UIImage) -> CGImage? {
         guard image.imageOrientation != .up else { return image.cgImage }
         let format = UIGraphicsImageRendererFormat(); format.scale = 1
         return UIGraphicsImageRenderer(size: image.size, format: format).image { _ in image.draw(at: .zero) }.cgImage
