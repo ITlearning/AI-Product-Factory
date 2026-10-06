@@ -82,11 +82,20 @@ final class DayGradientTests: XCTestCase {
 
     // 6시간 공백도 10분 공백의 전환보다 2배 넘게 길어지지 않는다 — 공백이 돌을 덮지 않게
     func testLongGapOnlyStretchesTheTransitionALittle() {
-        let stops = DayGradient.pebbleStops(for: [moment(0, "#E3B04B"), moment(10, "#6E9E5C"), moment(370, "#E07A5F")])
+        // 같은 색이라야 밝기 차이(전환을 짧게 함)가 끼지 않는다
+        let stops = DayGradient.pebbleStops(for: [moment(0, "#E07A5F"), moment(10, "#E07A5F"), moment(370, "#E07A5F")])
         let short = stops[3].location - stops[1].location
         let long = stops[6].location - stops[4].location
         XCTAssertGreaterThan(long, short)
         XCTAssertLessThan(long, short * 2)
+    }
+
+    // 검정→분홍은 짧게 넘어가 돌의 층으로, 비슷한 밝기끼리는 길게 번진다
+    func testDarkToLightTransitionIsSharperThanSameLightness() {
+        let dark = DayGradient.pebbleStops(for: [moment(0, "#2F2A2C"), moment(10, "#D08FA8")])
+        let even = DayGradient.pebbleStops(for: [moment(0, "#B08FA8"), moment(10, "#D08F88")])
+        let width = { (s: [DayGradient.Stop]) in s[3].location - s[1].location }
+        XCTAssertLessThan(width(dark), width(even) * 0.6)
     }
 
     func testPebbleStopsSingleMoment() {

@@ -13,12 +13,14 @@ public enum DayGradient {
 
     /// 조약돌용 색 자리. 사진마다 제 색 자리(무채색은 35%)와 사이 전환을 두고, 전환 가운데 색은 무채색 쪽으로 민다.
     /// 시각은 전환 길이에만(공백의 제곱근) 조금 반영한다 — 점심과 저녁 사이 긴 공백의 탁한 섞임이 돌을 덮지 않게.
+    /// 밝기 차이가 큰 전환은 짧게 — 어두운 색이 밝은 색으로 흐리게 번지면 곰팡이·얼룩처럼 읽힌다.
     /// 타임라인은 시각이 정확해야 하니 stops 를 쓴다.
     public static func pebbleStops(for moments: [Moment]) -> [Stop] {
         let sorted = moments.sorted { $0.capturedAt < $1.capturedAt }
         guard sorted.count > 1 else { return stops(for: moments) }
         let hexes = sorted.map(\.colorHex)
-        let weights = hexes.map { hex in rgb(hex).map { 0.35 + 0.65 * min(1, chroma($0) / 0.35) } ?? 1 }
+        let colors = hexes.map(rgb)
+        let weights = colors.map { c in c.map { 0.35 + 0.65 * min(1, chroma($0) / 0.35) } ?? 1 }
         let gaps = zip(sorted, sorted.dropFirst()).map { max($1.capturedAt.timeIntervalSince($0.capturedAt), 1).squareRoot() }
         let longest = gaps.max() ?? 1
 
@@ -29,7 +31,10 @@ public enum DayGradient {
             x += weights[i]
             placed.append((x, hexes[i]))
             guard i < gaps.count else { break }
-            let span = 1.6 * (0.6 + 0.4 * gaps[i] / longest)
+            var span = 1.6 * (0.6 + 0.4 * gaps[i] / longest)
+            if let a = colors[i], let b = colors[i + 1] {
+                span *= 1 - 0.75 * min(1, abs(luma(a) - luma(b)) / 0.35)
+            }
             let lean = weights[i] / (weights[i] + weights[i + 1])
             placed.append((x + span * lean, halfway(hexes[i], hexes[i + 1])))
             x += span
@@ -42,6 +47,8 @@ public enum DayGradient {
         guard digits.count == 6, let v = UInt32(digits, radix: 16) else { return nil }
         return [Double((v >> 16) & 0xFF), Double((v >> 8) & 0xFF), Double(v & 0xFF)] / 255
     }
+
+    private static func luma(_ c: SIMD3<Double>) -> Double { 0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z }
 
     private static func chroma(_ c: SIMD3<Double>) -> Double { c.max() - c.min() }
 
