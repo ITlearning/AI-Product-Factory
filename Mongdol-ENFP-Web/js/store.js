@@ -115,6 +115,14 @@ class Store extends EventTarget {
     });
   }
 
+  /** DayStore.recentWordIDs — 이 사진과 찍은 시각이 가까운 순으로 14장의 단어. 같은 말이 줄줄이 붙지 않게. */
+  recentWordIDs(excludingID, limit = 14) {
+    const at = this.all.get(excludingID)?.capturedAt;
+    const others = [...this.all.values()].filter((m) => m.id !== excludingID && m.word?.wordID);
+    others.sort(at == null ? (a, b) => b.capturedAt - a.capturedAt : (a, b) => Math.abs(a.capturedAt - at) - Math.abs(b.capturedAt - at));
+    return new Set(others.slice(0, limit).map((m) => m.word.wordID));
+  }
+
   /** 같은 파일(이름·크기·수정 시각 또는 내용 해시)을 이미 담았는지 — 원본 DayStore 의 fileName/originalName 중복 가드 자리. */
   hasFileSig(sig) {
     if (!sig) return false;

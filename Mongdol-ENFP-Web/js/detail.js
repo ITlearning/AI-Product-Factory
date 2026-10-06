@@ -10,7 +10,8 @@ import { T } from './copy.js';
 import { bloomAround } from './flowers.js';
 import { cheerPebble } from './home.js';
 import { animateSpring } from './motion.js';
-import { wordFor } from './words.js';
+import { loadWords, contextFor, fits, choose, toPhotoWord, rejectedFor, hasRejected, avoided, recordReject } from './words.js';
+import { meta } from './db.js';
 
 const PHOTO = { w: 190, h: 127 };
 const LABEL_W = 36, BAND_X = 44, PHOTO_X = 66, SHIFT = 28, MAX_SHIFT = 3, TICK = 13;
@@ -142,16 +143,60 @@ export function openPhoto(moment, locked) {
     locked ? null : h('span', { class: 'photo-dot', style: { background: moment.colorHex } }),
     D.timeText(moment.capturedAt));
   words.append(meta);
-  (moment.word ? Promise.resolve(moment.word) : wordFor(moment).then((w) => {
-    if (w) { moment.word = w; store.updateMoment(moment); }
-    return w;
-  })).then((w) => {
-    if (!w || !view.isConnected) return;
-    words.prepend(
-      h('p', { class: 'photo-tag' }, '이 시간에 어울리는 우리말!'),
-      h('p', { class: 'photo-word' }, w.word),
-      h('p', { class: 'photo-meaning' }, w.meaning));
-  });
+  showWord(moment, words, view);
   layerRoot().append(view);
   requestAnimationFrame(() => view.classList.add('in'));
+}
+
+/**
+ * 사진 한 단어(DayPhotoView.words) — 붙은 단어가 아직 맞으면 그대로, 아는 사실이 뒤집었거나
+ * 예전 목록의 단어(wordID 없음)면 새로 골라 붙인다. ↻ 는 사진마다 한 번, 다른 갈래 단어로.
+ */
+async function showWord(moment, box, view) {
+  const list = await loadWords();
+  if (!list.length || !view.isConnected) return;
+  const byID = new Map(list.map((w) => [w.id, w]));
+  const ctx = contextFor(moment.capturedAt);
+  const pebbleName = nameFor(store.momentsOn(moment.dayKey))?.name;
+  const pick = (banned, skipGroup) => choose(ctx, list, {
+    recent: new Set([...store.recentWordIDs(moment.id), ...avoided()]), banned, seed: moment.id, pebbleName, skipGroup,
+  });
+  const stamp = (w) => { moment.word = w; store.updateMoment(moment); };
+
+  let current = moment.word;
+  const entry = current?.wordID && byID.get(current.wordID);
+  if (!entry || !fits(entry, ctx)) {
+    const w = pick(rejectedFor(moment.id));
+    if (!w) return;
+    current = toPhotoWord(w);
+    stamp(current);
+  }
+
+  const word = h('span', { class: 'photo-word' }, current.word);
+  const meaning = h('p', { class: 'photo-meaning' }, current.meaning);
+  const line = h('div', { class: 'photo-word-line' }, word);
+  box.prepend(h('p', { class: 'photo-tag' }, '이 순간에 어울리는 우리말!'), line, meaning);
+
+  const old = byID.get(current.wordID);
+  const alt = !hasRejected(moment.id) && pick(new Set([current.wordID]), old?.group);
+  if (!alt) return;
+  const learned = meta.get('didLearnWordReject', false);
+  const reroll = h('button', { class: `word-reroll${learned ? '' : ' open'}`, 'aria-label': '이 단어는 아니에요' },
+    h('span', { class: 'word-reroll-icon', 'aria-hidden': 'true' }, '↻'),
+    h('span', { class: 'word-reroll-text' }, '이 단어는 아니에요'));
+  if (!learned) setTimeout(() => { reroll.classList.remove('open'); meta.set('didLearnWordReject', true); }, 2600);
+  reroll.addEventListener('click', () => {
+    const next = toPhotoWord(alt);
+    recordReject({ momentID: moment.id, wordID: current.wordID, replacedBy: alt.id, partOfDay: ctx.timeBand });
+    stamp(next);
+    reroll.remove();
+    for (const [el, text] of [[word, next.word], [meaning, next.meaning]]) {
+      el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], { duration: 160, easing: 'ease-in' })
+        .onfinish = () => {
+          el.textContent = text;
+          el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.3,1.3,.5,1)' });
+        };
+    }
+  });
+  line.append(reroll);
 }
