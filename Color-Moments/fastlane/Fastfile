@@ -75,13 +75,25 @@ platform :ios do
     UI.success("마지막 TestFlight 빌드: #{n} → 다음 beta 는 #{n + 1}")
   end
 
-  desc "TestFlight에 새 베타 빌드 업로드 (빌드 번호 = TestFlight 마지막 + 1)"
+  # Info.plist 는 $(MARKETING_VERSION) 이라 get_version_number 가 못 푼다 — project.yml 이 정본.
+  def marketing_version
+    File.read(File.join(ROOT, "project.yml"))[/MARKETING_VERSION:\s*"([^"]+)"/, 1] ||
+      UI.user_error!("project.yml 에서 MARKETING_VERSION 을 못 찾았습니다.")
+  end
+
+  # 테스터 메모(「테스트할 항목」)는 fastlane/notes/<버전>-<빌드>.txt — 사람이 읽는 말로 쓰고 저장소에 남긴다.
+  def notes_for(version, build)
+    path = File.join(__dir__, "notes", "#{version}-#{build}.txt")
+    UI.user_error!("테스터 메모가 없습니다: fastlane/notes/#{version}-#{build}.txt 를 먼저 써 주세요.") unless File.exist?(path)
+    File.read(path).strip
+  end
+
+  desc "TestFlight에 새 베타 빌드 업로드 (빌드 번호 = TestFlight 마지막 + 1, 메모 = fastlane/notes/<버전>-<빌드>.txt)"
   lane :beta do
     api_key = asc_api_key
-    archive(latest_build(api_key) + 1)
-
-    # 모노레포라 저장소 전체 로그가 아니라 몽돌 디렉터리 커밋만 테스터 메모로.
-    changelog = sh("git", "-C", ROOT, "log", "-10", "--no-merges", "--pretty=- %s", "--", ".", log: false).strip
+    build = latest_build(api_key) + 1
+    changelog = notes_for(marketing_version, build)
+    archive(build)
 
     upload_to_testflight(
       api_key: api_key,
@@ -90,6 +102,22 @@ platform :ios do
     )
 
     UI.success("✅ TestFlight 업로드 완료. App Store Connect에서 처리 상태 확인 후 테스터에 배포하세요.")
+  end
+
+  desc "이미 올라간 빌드에 테스터 메모만 붙이기 — fastlane notes build:3 (버전은 project.yml 값)"
+  lane :notes do |options|
+    build = options[:build] || UI.user_error!("build:번호 를 주세요. 예) fastlane notes build:3")
+    version = options[:version] || marketing_version
+    upload_to_testflight(
+      api_key: asc_api_key,
+      app_identifier: APP_ID,
+      app_platform: "ios",
+      app_version: version,
+      build_number: build.to_s,
+      distribute_only: true,
+      changelog: notes_for(version, build),
+    )
+    UI.success("✅ #{version} (#{build}) 테스터 메모를 붙였습니다.")
   end
 
   desc "로컬에서 release 아카이브·ipa 검증만 (업로드 X, 빌드 번호는 TestFlight 마지막 + 1)"
