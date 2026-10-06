@@ -235,6 +235,7 @@ p, h1, h2, h3 { margin: 0; }
 
 /* ── 버튼·알약 ── */
 .btn {
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   display: flex; align-items: center; justify-content: center;
   width: 100%; min-height: 52px; padding: 0 28px;
   border: none; border-radius: 100px;
@@ -441,7 +442,8 @@ p, h1, h2, h3 { margin: 0; }
 .cer-text { display: flex; flex-direction: column; gap: 5px; align-items: center; }
 .cer-name { font-family: var(--serif); font-weight: 800; font-size: 32px; letter-spacing: -0.4px; margin-bottom: 2px; }
 .cer-line { font-size: 17.5px; color: var(--ink2); margin-bottom: 6px; }
-.cer-close { position: absolute; left: 50%; bottom: calc(var(--safe-b) + 30px); transform: translateX(-50%); width: auto; z-index: 4; padding: 0 34px; }
+/* 가운데 맞춤을 transform 으로 하면 :active 의 scale 이 덮어써서 누르는 순간 버튼이 오른쪽으로 빠진다. */
+.cer-close { position: absolute; left: 0; right: 0; margin: 0 auto; bottom: calc(var(--safe-b) + 30px); width: fit-content; min-width: 160px; z-index: 4; padding: 0 34px; }
 
 .petal { position: absolute; top: -24px; line-height: 0; animation: fall var(--dur, 12s) linear var(--delay, 0s) infinite; }
 @keyframes fall {

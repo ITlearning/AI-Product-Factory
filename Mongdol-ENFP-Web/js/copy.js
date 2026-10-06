@@ -45,7 +45,7 @@ export const T = {
   cameraBack: '쓸면 돌아가기',
   cameraShy: '카메라가 부끄럼을 타나 봐요',
   cameraShyHint: '아래 셔터로 찍거나, 앨범에서 골라도 똑같이 담겨요!',
-  ceremonyClose: '와, 고마워!',
+  ceremonyClose: '고마워!',
   close: '닫기',
   detailHint: '사진을 누르면 크게 볼 수 있어요',
   openTodayHint: '색은 아직 비밀! 하루가 닫히면 여기 조약돌이 와요',
