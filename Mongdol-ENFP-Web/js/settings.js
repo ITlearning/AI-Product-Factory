@@ -1,9 +1,10 @@
-// 설정 — 견본 하루 · 친구에게도 해보기(도구 공유) · 전부 지우기. 결과 자랑용 공유는 없다.
+// 설정 — 견본 하루 · 홈 화면에 추가하기 · 친구에게도 해보기(도구 공유) · 전부 지우기. 결과 자랑용 공유는 없다.
 import { h, layers, layerRoot, closePill, confirmDialog, toast } from './dom.js';
 import { rendererInfo } from './pebble-gl.js';
 import { persistent } from './db.js';
+import { canOfferInstall } from './install.js';
 
-export async function openSettings({ onSample, onClear }) {
+export async function openSettings({ onSample, onClear, onInstall }) {
   if (layers.has('settings')) return;
   layers.add('settings');
   const saved = await persistent();
@@ -25,6 +26,8 @@ export async function openSettings({ onSample, onClear }) {
     h('h2', { class: 'mini-title' }, '몽돌 서랍'),
     h('button', { class: 'row-btn', onClick: () => { close(); onSample(); } },
       h('span', { class: 'row-main' }, '견본 하루 채우기'), h('span', { class: 'row-sub' }, '그림 사진으로 지난 하루들을 채워서 바로 둘러봐요')),
+    canOfferInstall() ? h('button', { class: 'row-btn', onClick: () => { close(); onInstall(); } },
+      h('span', { class: 'row-main' }, '홈 화면에 추가하기'), h('span', { class: 'row-sub' }, '아이콘 한 번에 앱처럼 톡 열려요')) : null,
     h('button', { class: 'row-btn', onClick: share },
       h('span', { class: 'row-main' }, '친구에게도 해보라고 하기'), h('span', { class: 'row-sub' }, '내 조약돌 말고, 몽돌을 건네요')),
     h('button', { class: 'row-btn danger', onClick: async () => {
