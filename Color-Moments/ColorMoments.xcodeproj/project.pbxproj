@@ -59,6 +59,7 @@
 		20BA6C3D955339FFEE5D1C78 /* ShotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0455554135392A7015D4068F /* ShotStore.swift */; };
 		2106F212ED450D8F5C0130AB /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
 		222B37199099F7A940817E14 /* ShotImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B75104310693B48F8D9DE /* ShotImage.swift */; };
+		239531A8F1D5C0D859A2D439 /* CloudEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8505A9793A4282B96D3713D4 /* CloudEnvironmentTests.swift */; };
 		270CAD891873FBDB57862C11 /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		27449945FB60B65311B85964 /* WordHead.json in Resources */ = {isa = PBXBuildFile; fileRef = ECECFC21ACEC9955D6F94C62 /* WordHead.json */; };
 		2776BED233E8B1FDCD4FBC6D /* CatchUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F205E2DDC888B76CB362D3 /* CatchUp.swift */; };
@@ -337,6 +338,7 @@
 		F90A1D050D2691DE5F06B74D /* TakeOutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38A1E3BB45B083CCB0E9847F /* TakeOutTests.swift */; };
 		FA03B8088C8852CA421B25A3 /* SoftPebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F9EAFA790F8D71D44DA12 /* SoftPebbleView.swift */; };
 		FA88E2179DF699A37AE7FDA4 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
+		FB936ED4E0115F95594BF41F /* CloudEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAE45231E1CFDF89BECAFD8 /* CloudEnvironment.swift */; };
 		FBC024F294753C132ABCD31B /* SystemFieldsCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FCB350488EA3C0C8613C63F /* SystemFieldsCache.swift */; };
 		FC46BEA6E0E7103FDFAD4E28 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
 		FC86F8437A8019E414B3F717 /* ColorMomentsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */; };
@@ -455,6 +457,7 @@
 		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
 		464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedPlaceNote.swift; sourceTree = "<group>"; };
 		4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreRecoveryTests.swift; sourceTree = "<group>"; };
+		4CAE45231E1CFDF89BECAFD8 /* CloudEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudEnvironment.swift; sourceTree = "<group>"; };
 		503FB3A2F6076A7563C32074 /* ColorMomentsControl.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ColorMomentsControl.entitlements; sourceTree = "<group>"; };
 		5175844256F2AE80471F6EE6 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "IBMPlexSansKR-OFL.txt"; sourceTree = "<group>"; };
@@ -496,6 +499,7 @@
 		820CBC257650B8198BCC2B5E /* ColorMomentsControl.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ColorMomentsControl.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		82F60EEB50F9C859D02CDD75 /* WordChooserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordChooserTests.swift; sourceTree = "<group>"; };
 		83EA018D5B032948CABE3843 /* CollectionSwipeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionSwipeTests.swift; sourceTree = "<group>"; };
+		8505A9793A4282B96D3713D4 /* CloudEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudEnvironmentTests.swift; sourceTree = "<group>"; };
 		85E74F70575B7C32C600F8C6 /* GowunDodum-Mini.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GowunDodum-Mini.ttf"; sourceTree = "<group>"; };
 		8747F82BBC5889D32A11161B /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8989FC64793F88406CDE1522 /* ArrivalScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrivalScene.swift; sourceTree = "<group>"; };
@@ -718,6 +722,7 @@
 				968F502570F6DB221F4BBB06 /* CatchUpTests.swift */,
 				9EA50197D6989835366943ED /* CelestialTests.swift */,
 				547A7E4D2CDA31CFFB9F1A84 /* ChunkedApplyTests.swift */,
+				8505A9793A4282B96D3713D4 /* CloudEnvironmentTests.swift */,
 				8DF99FB450EAE23B687B3D6F /* CoalescingWriterTests.swift */,
 				83EA018D5B032948CABE3843 /* CollectionSwipeTests.swift */,
 				B3676D77CA8F72C6175CC066 /* ColorExtractorTests.swift */,
@@ -840,6 +845,7 @@
 		9C03CCFAB58103589012E7FB /* Sync */ = {
 			isa = PBXGroup;
 			children = (
+				4CAE45231E1CFDF89BECAFD8 /* CloudEnvironment.swift */,
 				FD91667DFE3E8160A212B1DA /* CloudIDMapper.swift */,
 				22EDA0910CC8E79B482D32B2 /* CloudSync.swift */,
 				20A09F696F5607382E065E46 /* SyncRecords.swift */,
@@ -1299,6 +1305,7 @@
 				5614CA587EEB5764D1EFBFF2 /* CatchUpTests.swift in Sources */,
 				A4F682345EB435EF44BF164D /* CelestialTests.swift in Sources */,
 				C880AD6491173648CF11DAE3 /* ChunkedApplyTests.swift in Sources */,
+				239531A8F1D5C0D859A2D439 /* CloudEnvironmentTests.swift in Sources */,
 				EB1E620E065C68D6A4D9F88C /* CoalescingWriterTests.swift in Sources */,
 				D979524191335EE906635F53 /* CollectionSwipeTests.swift in Sources */,
 				A6B7C20174D02F20249A5B7F /* ColorExtractorTests.swift in Sources */,
@@ -1370,6 +1377,7 @@
 				12DA912B4DD7AFA0F13B59FF /* CardExporter.swift in Sources */,
 				2776BED233E8B1FDCD4FBC6D /* CatchUp.swift in Sources */,
 				A75E6739681B8CF4F600A77E /* Celestial.swift in Sources */,
+				FB936ED4E0115F95594BF41F /* CloudEnvironment.swift in Sources */,
 				DE9A46A0F358B2CDCB9B89F9 /* CloudIDMapper.swift in Sources */,
 				623BB2FDE9843D953D36B2B9 /* CloudScene.swift in Sources */,
 				0834B0372CB67CC3C1C487E0 /* CloudSync.swift in Sources */,
