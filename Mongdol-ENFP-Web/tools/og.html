@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>몽돌 og.png 원판</title>
+<!-- og.png 원판(1200×630) — 정적 서버로 띄워 1200×630 으로 찍는다(WebGL 켠 chromium). 돌 표면 잡티 때문에 그대로면 400KB 넘는다 — 채널 7비트로 줄여 저장. tools/ 는 배포에서 빠진다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Myeongjo:wght@700;800&family=Nanum+Pen+Script&display=swap">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { margin: 0; background: #FFF4EC; }
+  #og { position: relative; width: 1200px; height: 630px; overflow: hidden;
+    background:
+      radial-gradient(420px 320px at 86% 18%, #FFD9E6cc, #FFD9E600),
+      radial-gradient(460px 340px at 72% 88%, #FFE3B8cc, #FFE3B800),
+      radial-gradient(380px 300px at 8% 92%, #DCEBFFcc, #DCEBFF00),
+      radial-gradient(360px 260px at 4% 6%, #E7F6EAcc, #E7F6EA00),
+      linear-gradient(160deg, #FFF1EA, #FFF6EC 55%, #FFF0F4); }
+  .words { position: absolute; left: 96px; top: 150px; width: 560px; }
+  .mark { font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 132px; letter-spacing: -3px; color: #3A2830; line-height: 1; display: flex; align-items: center; gap: 18px; }
+  .tag { font-family: 'Nanum Pen Script', cursive; font-size: 46px; color: #B8386A; margin-top: 30px; line-height: 1.15; }
+  .sub { font-family: 'Gowun Dodum', sans-serif; font-size: 27px; color: #5E4652; margin-top: 18px; line-height: 1.5; }
+  .stones { position: absolute; left: 640px; top: 0; width: 560px; height: 630px; }
+  .stones .pebble { position: absolute; transform: translate(-50%, -50%); }
+  .stones .pebble .pebble-canvas { opacity: 1; }
+  .f { position: absolute; transform: translate(-50%, -50%); line-height: 0; }
+</style>
+</head>
+<body>
+<div id="og">
+  <div class="words">
+    <div class="mark">몽돌</div>
+    <p class="tag">하루가 닫히면, 그날 색 조약돌이 짠!</p>
+    <p class="sub">찍을 땐 색을 숨겨 뒀다가<br>그날 색으로 빚은 조약돌을 받아요</p>
+  </div>
+  <div class="stones" id="stones"></div>
+</div>
+<script type="module">
+  import { pebbleNode } from '../js/pebble-gl.js';
+  import { flowerSVG } from '../js/flowers.js';
+
+  const day = (key, hexes) => hexes.map((colorHex, i) => ({ id: `${key}-${i}`, dayKey: key, colorHex, capturedAt: Date.parse(`${key}T09:00:00`) + i * 3 * 3600e3 }));
+  const stones = [
+    { key: '2026-09-23', hexes: ['#F6C28B', '#F29B7F', '#E0707A', '#9E5A8A'], x: 250, y: 300, h: 250 },
+    { key: '2026-09-18', hexes: ['#A9D4F5', '#8CC3EE', '#6FA8DC'], x: 440, y: 190, h: 160 },
+    { key: '2026-09-12', hexes: ['#C4E39A', '#8CC57A', '#6FAF73'], x: 420, y: 470, h: 150 },
+    { key: '2026-09-07', hexes: ['#FFC4D6', '#F79CC0', '#E779A8'], x: 100, y: 500, h: 120 },
+    { key: '2026-09-02', hexes: ['#FFE08A', '#F8D25F', '#F2C250'], x: 120, y: 130, h: 110 },
+    { key: '2026-08-28', hexes: ['#CBB8F0', '#A996E0', '#8A7BC8'], x: 520, y: 330, h: 96 },
+  ];
+  const host = document.getElementById('stones');
+  for (const s of stones) {
+    const el = pebbleNode({ moments: day(s.key, s.hexes), dayKey: s.key, height: s.h, glow: 'grid', lazy: false });
+    el.style.left = `${s.x}px`; el.style.top = `${s.y}px`;
+    host.append(el);
+  }
+  const flowers = [
+    [205, 120, 40, 'five', '#FF8FB1', 10], [350, 545, 34, 'daisy', '#FFF4D6', 0], [535, 470, 22, 'spark', '#FFD84D', 0],
+    [30, 300, 26, 'five', '#B9A6FF', 30], [330, 70, 18, 'spark', '#FFD84D', 15], [520, 90, 28, 'five', '#FFB38A', 40],
+    [-560, 560, 30, 'five', '#8FD9B6', 20], [-90, 80, 24, 'daisy', '#FF9EC7', 10], [-600, 70, 18, 'spark', '#FFD84D', 0],
+  ];
+  for (const [x, y, size, kind, color, rot] of flowers) {
+    const f = document.createElement('span');
+    f.className = 'f';
+    f.style.left = `${x}px`; f.style.top = `${y}px`;
+    f.innerHTML = flowerSVG({ size, kind, color, rot });
+    host.append(f);
+  }
+  await document.fonts.ready;
+  document.documentElement.dataset.ready = '1';
+</script>
+</body>
+</html>
