@@ -96,12 +96,11 @@ async function run(engine, name) {
   await A.page.waitForTimeout(500);
   if (!tag) await A.page.screenshot({ path: SHOTS + '50-transfer-settings.jpg', quality: 80 });
   await A.page.click('.row-btn:has-text("홈 화면에 추가하기")');
-  await A.page.waitForSelector('.inst-sheet .xfer-step-btn');
+  await A.page.waitForSelector('.inst-sheet .xfer-card .xfer-go');
   await A.page.waitForTimeout(500);
-  check(`[${name}] iOS 안내 맨 앞이 「코드 받기」`, (await A.page.textContent('.inst-steps li:first-child')).includes('기록 옮길 코드 받기'));
+  check(`[${name}] 안내 위에 「기록 옮길 코드 만들기」 카드`, (await A.page.textContent('.inst-sheet .xfer-card')).includes('기록 옮길 코드 만들기'));
+  check(`[${name}] 홈 화면 단계는 1~3 그대로`, (await A.page.textContent('.inst-steps li:first-child')).includes('공유 버튼'));
   if (!tag) await A.page.screenshot({ path: SHOTS + '51-transfer-install-step.jpg', quality: 80 });
-  await A.page.click('.xfer-step-btn');
-  await A.page.waitForSelector('.xfer-go');
   await A.page.evaluate(() => {
     window.__progress = [];
     new MutationObserver(() => {
@@ -109,15 +108,21 @@ async function run(engine, name) {
       if (s && window.__progress.at(-1) !== s) window.__progress.push(s);
     }).observe(document.getElementById('layers'), { subtree: true, childList: true, characterData: true });
   });
-  await A.page.click('.xfer-go');
-  await A.page.waitForSelector('.xfer-code', { timeout: 60000 });
+  await A.page.click('.inst-sheet .xfer-card .xfer-go');
+  await A.page.waitForSelector('.inst-sheet .xfer-card .xfer-code', { timeout: 60000 });
   const progress = await A.page.evaluate(() => window.__progress);
   const shown = (await A.page.textContent('.xfer-code')).trim();
   const code = shown.replace(/\D/g, '');
-  check(`[${name}] 코드가 4+4 로 보인다`, /^\d{4} \d{4}$/.test(shown), shown);
-  check(`[${name}] 진행률 표시`, progress.some((s) => /옮길 준비 중 \d+\/\d+/.test(s)), progress.slice(-2).join(' · '));
-  check(`[${name}] 10분 안내·남은 시간`, (await A.page.textContent('.xfer-sheet')).includes('10분 안에 홈 화면 몽돌에서 입력해 주세요') && /\d:\d\d 남았어요/.test(await A.page.textContent('.xfer-left')));
+  check(`[${name}] 코드가 안내 안에서 4+4 로 보인다(덮개 창 없음)`, /^\d{4} \d{4}$/.test(shown) && !(await A.page.$('.xfer-sheet')), shown);
+  check(`[${name}] 진행률 표시`, progress.some((s) => /코드 만드는 중 \d+\/\d+/.test(s)), progress.slice(-2).join(' · '));
+  check(`[${name}] 홈 화면 단계가 코드와 같이 보인다·남은 시간`, (await A.page.textContent('.inst-sheet')).includes('공유 버튼') && /\d:\d\d 남았어요/.test(await A.page.textContent('.xfer-left')));
   if (!tag) await A.page.screenshot({ path: SHOTS + '52-transfer-code.jpg', quality: 80 });
+  // 안내를 닫았다 다시 열어도 같은 코드
+  await A.page.click('.inst-sheet .pill-close');
+  await A.page.waitForTimeout(450);
+  await A.page.evaluate(async () => { const { openInstallSheet } = await import('./js/install.js'); const { carryCard } = await import('./js/transfer.js'); const { store } = await import('./js/store.js'); openInstallSheet({ hasRecords: true, carry: () => carryCard(store) }); });
+  await A.page.waitForSelector('.inst-sheet .xfer-code');
+  check(`[${name}] 다시 열어도 같은 코드`, (await A.page.textContent('.inst-sheet .xfer-code')).trim() === shown);
   const stored = redis.keys();
   check(`[${name}] 서버엔 mongdol:xfer: 키만`, stored.every((k) => k.startsWith('mongdol:xfer:')), `${stored.length}개`);
   const a = await snapshot(A.page);

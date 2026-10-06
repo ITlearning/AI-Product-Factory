@@ -11,7 +11,7 @@ import { showOnboarding } from './onboarding.js';
 import { openSettings } from './settings.js';
 import { openInstallSheet } from './install.js';
 import { startPushSync } from './push.js';
-import { openTransferSheet } from './transfer.js';
+import { openTransferSheet, carryCard } from './transfer.js';
 import { fillSample } from './sample.js';
 import { warmUp } from './pebble-gl.js';
 import { layers, toast, confirmDialog } from './dom.js';
@@ -106,10 +106,10 @@ async function boot() {
   });
   tabs.watch(document.getElementById('home'));
   tabs.watch(document.getElementById('collection'));
-  const sendRecords = () => openTransferSheet({ store, mode: 'send' });
+  const carry = () => carryCard(store);
   document.getElementById('settings-btn').addEventListener('click', () => openSettings({
     onSample: runSample, onClear: clearAll,
-    onInstall: () => openInstallSheet({ hasRecords: !store.isEmpty, onTransfer: sendRecords }),
+    onInstall: () => openInstallSheet({ hasRecords: !store.isEmpty, carry }),
     onTransfer: () => openTransferSheet({ store, mode: 'choose', onReceived: () => home.scrollToTop() }),
   }));
 
@@ -126,7 +126,7 @@ async function boot() {
       onStart: () => meta.set('onboarded', true),
       onSample: () => { meta.set('onboarded', true); runSample(); },
       onReceive: (done) => openTransferSheet({ store, mode: 'receive', onReceived: done }),
-      onTransfer: sendRecords,
+      carry,
       hasRecords: !store.isEmpty,
     });
   } else {
