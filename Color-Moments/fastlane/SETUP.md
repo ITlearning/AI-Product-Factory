@@ -32,8 +32,22 @@ bundle exec fastlane latest       # 마지막 TestFlight 빌드 번호만 본다
 bundle exec fastlane beta         # 마지막 + 1 로 아카이브 → TestFlight 업로드
 ```
 
-- 테스터 메모는 몽돌 디렉터리의 최근 커밋 10개 제목(머지 제외)이다.
+- 테스터 메모(「테스트할 항목」)는 `fastlane/notes/<버전>-<빌드>.txt` 이다. **올리기 전에 먼저 쓴다** — 없으면 `beta` 가 멈춘다.
+  빌드 번호는 `fastlane latest` 가 알려 주는 다음 번호. 사람이 읽는 말로, 바뀐 것과 확인할 것을 적는다.
+- 이미 올라간 빌드에 메모만 붙이거나 고칠 때: `bundle exec fastlane notes build:3` (버전은 `project.yml` 값, 다르면 `version:1.1.0`).
 - 업로드 뒤 App Store Connect 처리에 5~15분 걸린다.
+
+### 맥스튜디오에서 돌릴 때
+
+맥스튜디오는 `/usr/bin/ruby`(2.6, bundler 1.17)와 Homebrew ruby 3.4 가 섞여 `bundle exec` 가 gem 을 못 찾는다.
+Homebrew ruby 와 bundler 2.6 으로 맞춰 돌린다. `Gemfile.lock` 의 `BUNDLED WITH` 가 바뀌면 되돌린다(다른 맥은 1.17).
+
+```bash
+export PATH=/opt/homebrew/opt/ruby/bin:$PATH BUNDLER_VERSION=2.6.2 BUNDLE_PATH=vendor/bundle
+bundle install && bundle exec fastlane latest; git checkout Gemfile.lock
+```
+
+API 키는 맥마다 따로다 — 맥스튜디오는 `~/.appstoreconnect/private_keys/AuthKey_A8H33DUY68.p8` (`.env` 의 `ASC_KEY_PATH`).
 
 ## 빌드만 검증 (업로드 X)
 
