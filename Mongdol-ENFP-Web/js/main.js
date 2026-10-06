@@ -11,6 +11,7 @@ import { showOnboarding } from './onboarding.js';
 import { openSettings } from './settings.js';
 import { openInstallSheet } from './install.js';
 import { startPushSync } from './push.js';
+import { openTransferSheet } from './transfer.js';
 import { fillSample } from './sample.js';
 import { warmUp } from './pebble-gl.js';
 import { layers, toast, confirmDialog } from './dom.js';
@@ -105,8 +106,11 @@ async function boot() {
   });
   tabs.watch(document.getElementById('home'));
   tabs.watch(document.getElementById('collection'));
+  const sendRecords = () => openTransferSheet({ store, mode: 'send' });
   document.getElementById('settings-btn').addEventListener('click', () => openSettings({
-    onSample: runSample, onClear: clearAll, onInstall: () => openInstallSheet({ hasRecords: !store.isEmpty }),
+    onSample: runSample, onClear: clearAll,
+    onInstall: () => openInstallSheet({ hasRecords: !store.isEmpty, onTransfer: sendRecords }),
+    onTransfer: () => openTransferSheet({ store, mode: 'choose', onReceived: () => home.scrollToTop() }),
   }));
 
   store.addEventListener('change', () => { queueRender(); setTimeout(maybeCeremony, 0); });
@@ -121,6 +125,8 @@ async function boot() {
     showOnboarding({
       onStart: () => meta.set('onboarded', true),
       onSample: () => { meta.set('onboarded', true); runSample(); },
+      onReceive: (done) => openTransferSheet({ store, mode: 'receive', onReceived: done }),
+      onTransfer: sendRecords,
       hasRecords: !store.isEmpty,
     });
   } else {

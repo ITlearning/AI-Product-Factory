@@ -74,6 +74,7 @@ const ICON = {
   done: '<span class="inst-key">추가</span>',
   more: '<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g fill="currentColor"><circle cx="13" cy="6.5" r="2.1"/><circle cx="13" cy="13" r="2.1"/><circle cx="13" cy="19.5" r="2.1"/></g></svg>',
   copy: '<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="8.5" y="8.5" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M5.5 16.5V7A2.5 2.5 0 0 1 8 4.5h7.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  code: '<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="3.5" y="7" width="19" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.9"/><g fill="currentColor"><circle cx="8.5" cy="13" r="1.4"/><circle cx="13" cy="13" r="1.4"/><circle cx="17.5" cy="13" r="1.4"/></g></svg>',
   dots: '<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g fill="currentColor"><circle cx="6.5" cy="13" r="2.1"/><circle cx="13" cy="13" r="2.1"/><circle cx="19.5" cy="13" r="2.1"/></g></svg>',
 };
 
@@ -82,26 +83,39 @@ const step = (n, icon, text, sub) => h('li', { class: 'inst-step' },
   h('span', { class: 'inst-icon', html: icon }),
   h('span', { class: 'inst-text' }, text, sub ? h('small', null, sub) : null));
 
+// 기록이 있는 브라우저에서만 맨 앞에 — 홈 화면 몽돌은 저장소가 따로라 코드로 기록을 데려간다(transfer.js).
+const transferStep = (n, onTransfer) => h('li', { class: 'inst-step xfer-step' },
+  h('button', { class: 'xfer-step-btn', onClick: onTransfer },
+    h('span', { class: 'inst-num num' }, n),
+    h('span', { class: 'inst-icon', html: ICON.code }),
+    h('span', { class: 'inst-text' }, '지금까지 담은 기록 옮길 코드 받기', h('small', null, '홈 화면 몽돌을 처음 열 때 이 코드를 넣으면 기록이 따라와요'))));
+
 const appIcon = () => h('img', { class: 'inst-app', src: './icons/icon-180.png', alt: '', width: 72, height: 72 });
 
 /**
  * 환경에 맞는 안내 한 벌 — 온보딩 한 장과 설정 시트가 같이 쓴다.
  * hasRecords: 이 브라우저에 기록이 있는지(iPhone 은 홈 화면 앱과 저장소가 따로라 미리 알린다).
+ * onTransfer: 있으면 기록이 있을 때 「① 기록 옮길 코드 받기」를 맨 앞에 둔다.
  */
-export function installGuide({ hasRecords = false } = {}) {
+export function installGuide({ hasRecords = false, onTransfer = null } = {}) {
   const env = installEnv();
   const title = '홈 화면에 몽돌을 두면 앱처럼 톡 열려요!';
   let scene, detail, note = null, actions = null;
 
   if (env === 'ios') {
     detail = '주소창 없이 화면 가득, 아이콘 한 번이면 바로 몽돌이에요. 조약돌 도착 알림도 홈 화면 몽돌에서 받을 수 있어요. Safari 에서 세 번만 톡톡톡!';
+    const carry = hasRecords && onTransfer;
+    const o = carry ? 1 : 0;
     scene = h('ol', { class: 'inst-steps' },
-      step(1, ICON.share, '아래(또는 위) 공유 버튼을 눌러요', '주소창 옆 「…」 메뉴 안에 있을 수도 있어요'),
-      step(2, ICON.add, '「홈 화면에 추가」를 골라요', '안 보이면 목록을 살짝 내려 봐요'),
-      step(3, ICON.done, '오른쪽 위 「추가」를 누르면 끝!'));
-    note = hasRecords
-      ? '잠깐! iPhone 은 홈 화면에서 열면 몽돌이 새로 시작해요. 지금까지 담은 건 이 Safari 에 그대로 남아 있어요.'
-      : 'iPhone 은 홈 화면 몽돌과 Safari 몽돌이 기록을 따로 담아요. 한쪽에서만 써 주세요!';
+      carry ? transferStep(1, onTransfer) : null,
+      step(1 + o, ICON.share, '아래(또는 위) 공유 버튼을 눌러요', '주소창 옆 「…」 메뉴 안에 있을 수도 있어요'),
+      step(2 + o, ICON.add, '「홈 화면에 추가」를 골라요', '안 보이면 목록을 살짝 내려 봐요'),
+      step(3 + o, ICON.done, '오른쪽 위 「추가」를 누르면 끝!'));
+    note = carry
+      ? '잠깐! iPhone 은 홈 화면 몽돌이 새로 시작해요. ①에서 받은 코드를 홈 화면 몽돌 첫 화면 「Safari에서 쓰던 기록 가져오기」에 넣으면 지금까지 담은 기록이 따라와요.'
+      : hasRecords
+        ? '잠깐! iPhone 은 홈 화면에서 열면 몽돌이 새로 시작해요. 지금까지 담은 건 이 Safari 에 그대로 남아 있어요.'
+        : 'iPhone 은 홈 화면 몽돌과 Safari 몽돌이 기록을 따로 담아요. 한쪽에서만 써 주세요!';
   } else if (env === 'ios-inapp' || env === 'android-inapp') {
     const browser = env === 'ios-inapp' ? 'Safari' : 'Chrome';
     detail = `지금은 앱 속 브라우저라 바로는 못 둬요. ${browser}로 열어야 홈 화면에 추가할 수 있어요!`;
@@ -134,10 +148,10 @@ export function installGuide({ hasRecords = false } = {}) {
 }
 
 /** 설정에서 여는 안내 시트 */
-export function openInstallSheet({ hasRecords = false } = {}) {
+export function openInstallSheet({ hasRecords = false, onTransfer = null } = {}) {
   if (layers.has('install')) return;
   layers.add('install');
-  const g = installGuide({ hasRecords });
+  const g = installGuide({ hasRecords, onTransfer });
   const close = () => {
     wrap.classList.remove('in');
     setTimeout(() => { wrap.remove(); layers.remove('install'); }, 300);

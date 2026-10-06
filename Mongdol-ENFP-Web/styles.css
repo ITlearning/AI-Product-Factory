@@ -605,3 +605,25 @@ p, h1, h2, h3 { margin: 0; }
 .ob-note-card b { display: block; font-family: var(--btn); font-size: 13px; font-weight: 600; color: var(--ink1); }
 .ob-note-card span { display: block; font-size: 13.5px; line-height: 1.4; color: var(--ink2); }
 .ob-note-card time { margin-left: auto; align-self: flex-start; white-space: nowrap; font-size: 11px; color: var(--ink3); }
+
+/* ── 기록 옮기기(설정 · 홈 화면 안내 · 온보딩 첫 장 위에 뜬다) ── */
+.sheet-wrap.xfer-wrap { z-index: 95; }
+.xfer-body { display: flex; flex-direction: column; gap: 10px; }
+.xfer-body .row-btn { margin-top: 0; }
+.xfer-go, .xfer-ok { margin-top: 6px; }
+.xfer-go:disabled { opacity: 0.45; }
+.xfer-code { margin: 6px 0 0; text-align: center; font-family: var(--btn); font-size: 44px; letter-spacing: 0.08em; color: var(--ink1); font-variant-numeric: tabular-nums; user-select: all; -webkit-user-select: all; }
+.xfer-center { text-align: center; }
+.xfer-left { margin: 0; text-align: center; font-size: 14px; color: var(--pink-ink); font-variant-numeric: tabular-nums; min-height: 20px; }
+.xfer-input { width: 100%; min-height: 64px; border: 2px solid var(--hair); border-radius: 20px; background: #fff; text-align: center; font-family: var(--btn); font-size: 32px; letter-spacing: 0.1em; color: var(--ink1); font-variant-numeric: tabular-nums; outline: none; }
+.xfer-input:focus { border-color: #F07BA3; }
+.xfer-input::placeholder { color: rgba(58, 40, 48, 0.25); }
+.xfer-error { margin: 0 4px; min-height: 1em; font-size: 14px; line-height: 1.5; color: #A8324F; }
+.xfer-error:empty { display: none; }
+.xfer-wait { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
+.xfer-bar { height: 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.9); overflow: hidden; box-shadow: inset 0 0 0 1px var(--hair); }
+.xfer-fill { display: block; height: 100%; width: 0; border-radius: 10px; background: linear-gradient(90deg, #FFE066, #FFB0A0); transition: width 0.25s ease-out; }
+.xfer-progress { margin: 0; text-align: center; font-size: 14px; color: var(--ink2); font-variant-numeric: tabular-nums; }
+.xfer-done { margin: 10px 0 2px; text-align: center; font-family: var(--serif); font-weight: 700; font-size: 21px; line-height: 1.5; color: var(--ink1); }
+.xfer-step { padding: 0; }
+.xfer-step-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 2px solid #FFC1D6; border-radius: 18px; background: #FFF7FA; text-align: left; font: inherit; color: inherit; }

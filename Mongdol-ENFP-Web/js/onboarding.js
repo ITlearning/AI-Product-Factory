@@ -1,6 +1,7 @@
 // 온보딩 — 원본 여섯 장(OnboardingSteps.swift) 가운데 웹에서 뜻이 있는 셋만: 소개 → 찍는 법 → 시작.
 // 웹에만 있는 한 장: 소개 다음 「홈 화면에 추가」(홈 화면 앱으로 열었거나 데스크톱이면 건너뜀).
 // 홈 화면 앱(standalone)이고 웹 푸시가 되면 iOS 처럼 「도착 소식」(권한 미정일 때만) · 「사진이 없는 날」 두 장이 찍는 법 앞에 낀다.
+// 첫 장의 「쓰던 기록 가져오기」 — 홈 화면 몽돌은 Safari 와 저장소가 따로라, 코드로 기록을 받으면 온보딩을 바로 마친다.
 // 한 번만 뜬다(다시 부르는 「도움말」 없음 — 원본 §1.5). 확인용으로만 ?onboarding 을 붙이면 다시 뜬다.
 import { h, layers, layerRoot } from './dom.js';
 import { pebbleNode, dashedPebbleNode } from './pebble-gl.js';
@@ -99,8 +100,8 @@ function reminderPage(followsArrival) {
   };
 }
 
-function installPage(hasRecords) {
-  const g = installGuide({ hasRecords });
+function installPage(hasRecords, onTransfer) {
+  const g = installGuide({ hasRecords, onTransfer });
   return {
     scene: () => h('div', { class: 'ob-scene inst' }, g.scene),
     title: g.title,
@@ -109,13 +110,15 @@ function installPage(hasRecords) {
   };
 }
 
-export function showOnboarding({ onStart, onSample, hasRecords = false }) {
+export function showOnboarding({ onStart, onSample, onReceive, onTransfer, hasRecords = false }) {
   layers.add('onboarding');
   const pages = [
     {
       scene: introScene,
       title: '찍을 땐 색을 꼭꼭 숨겨 뒀다가, 하루가 닫히면 그날 색으로 빚은 조약돌이 짠! 하고 도착해요.',
       detail: '안녕하세요, 몽돌이에요! 지나가다 눈에 걸린 색 한 점이면 충분해요.',
+      secondary: onReceive ? (isStandalone() ? 'Safari에서 쓰던 기록 가져오기' : '쓰던 기록 가져오기') : null,
+      onSecondary: () => onReceive(() => finish(false)),
     },
     {
       scene: howScene,
@@ -128,7 +131,7 @@ export function showOnboarding({ onStart, onSample, hasRecords = false }) {
       detail: '오늘 담은 건 자정(새벽 4시)에 조약돌로 변신해요. 마음이 급하면 「오늘 마무리하고 조약돌 받기」로 먼저 받아도 돼요.',
     },
   ];
-  if (canOfferInstall()) pages.splice(1, 0, installPage(hasRecords));
+  if (canOfferInstall()) pages.splice(1, 0, installPage(hasRecords, onTransfer));
   if (isStandalone() && pushSupported()) {
     const asks = Notification.permission === 'default';
     pages.splice(1, 0, ...(asks ? [arrivalPage()] : []), reminderPage(asks));
