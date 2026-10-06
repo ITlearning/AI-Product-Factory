@@ -7,6 +7,7 @@ import { T } from './copy.js';
 import { flowerEl, PETAL_COLORS, petalRain } from './flowers.js';
 import { cheerPebble } from './home.js';
 import { animateSpring } from './motion.js';
+import { openHandfulKeepsake, shareIcon } from './keepsake.js';
 
 // 돌마다 제 색으로 은은하게 — 여러 색을 한 원에 섞으면 가운데가 잿빛이 된다.
 function glowOf(groups, placements, side, w, hh) {
@@ -35,6 +36,7 @@ export function openHandful(month) {
     petals,
     hand,
     h('div', { class: 'handful-top' }, closePill(() => close())),
+    groups.length ? h('button', { class: 'share-btn handful-share', 'aria-label': '한 줌 카드 건네기', onClick: () => openHandfulKeepsake(month) }, shareIcon(), '건네기') : null,
     h('div', { class: 'handful-words' },
       h('p', { class: 'handful-title' }, D.handfulTitle(month, today)),
       h('p', { class: 'handful-line' }, T.handfulOpen)));

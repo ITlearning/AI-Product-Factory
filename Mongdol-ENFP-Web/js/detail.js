@@ -12,6 +12,7 @@ import { cheerPebble } from './home.js';
 import { animateSpring } from './motion.js';
 import { loadWords, contextFor, fits, choose, toPhotoWord, rejectedFor, hasRejected, avoided, recordReject } from './words.js';
 import { meta } from './db.js';
+import { openDayKeepsake, shareIcon } from './keepsake.js';
 
 const PHOTO = { w: 190, h: 127 };
 const LABEL_W = 36, BAND_X = 44, PHOTO_X = 66, SHIFT = 28, MAX_SHIFT = 3, TICK = 13;
@@ -70,7 +71,11 @@ export function openDay(key, { onFinish } = {}) {
     wrap.classList.remove('in');
     setTimeout(() => { wrap.remove(); layers.remove(name); }, 330);
   };
-  scroll.append(h('div', { class: 'topbar' }, closePill(close)));
+  // 건네기는 받은 하루에서 사용자가 누를 때만 — 권유하지 않는다.
+  let viewing = null;
+  const canGive = !locked && store.isGifted(key) && pebbleMoments.length > 0;
+  scroll.append(h('div', { class: 'topbar' }, closePill(close),
+    canGive ? h('button', { class: 'share-btn', 'aria-label': '조약돌 카드 건네기', onClick: () => openDayKeepsake(key, viewing) }, shareIcon(), '건네기') : null));
 
   const width = Math.min(430, layerRoot().clientWidth) - 56;
   if (locked) {
@@ -92,7 +97,7 @@ export function openDay(key, { onFinish } = {}) {
         h('p', { class: 'caption num' }, caption(key, moments)))));
   }
   scroll.append(h('div', { style: { height: '30px' } }));
-  scroll.append(timeline(moments, width, locked, (m) => openPhoto(m, locked)));
+  scroll.append(timeline(moments, width, locked, (m) => { viewing = m.id; openPhoto(m, locked); }));
   scroll.append(h('p', { class: 'guide center' }, T.detailHint));
   if (store.canClose(key)) {
     scroll.append(h('button', { class: 'btn primary finish', onClick: async () => { if (await onFinish?.(key)) close(); } }, T.finishToday));
