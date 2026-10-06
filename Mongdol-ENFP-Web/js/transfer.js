@@ -1,6 +1,6 @@
 // 기록 옮기기 — iPhone 은 Safari 탭과 홈 화면 몽돌의 저장소가 따로라, 8자리 코드로 기록을 넘긴다(기기를 바꿀 때도).
 // 폰에서 묶고 잠근 암호문만 10분 동안 서버(api/transfer)를 거친다. 묶기·잠그기는 transfer-core.js.
-import { h, layers, layerRoot, closePill } from './dom.js';
+import { h, layers, layerRoot, closePill, toast } from './dom.js';
 import * as db from './db.js';
 import {
   CHUNK, MAX_SIZE, TransferError, makeCode, cleanCode, formatCode, isCode, idFor, deriveKey,
@@ -152,7 +152,30 @@ const bar = () => {
   } };
 };
 
+// 클립보드는 탭 안에서 바로 써야 한다. 막히면(오래된 Safari·앱 속 브라우저) 숨긴 글상자로 한 번 더.
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const t = h('textarea', { readonly: true, style: { position: 'fixed', top: '0', left: '0', opacity: '0' } });
+    t.value = text;
+    document.body.append(t);
+    t.select();
+    t.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { /* 무시 */ }
+    t.remove();
+    return ok;
+  }
+}
+
+const copyCode = async (c) => {
+  toast(await copyText(c) ? '복사됐어요!' : '복사가 막혔어요. 코드를 꾹 눌러 복사해 주세요');
+};
+
 // 만든 코드는 10분 동안 기억한다 — 안내를 닫았다 다시 열어도 같은 코드가 보여야 홈 화면에 추가하는 동안 잃지 않는다.
+const COPY_ICON = '<svg width="20" height="20" viewBox="0 0 26 26"><rect x="8.5" y="8.5" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5.5 16.5V7A2.5 2.5 0 0 1 8 4.5h7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const ACTIVE = 'mongdol.xferActive';
 const activeCode = () => {
   try {
@@ -205,7 +228,9 @@ export function carryCard(store) {
     };
     show(
       h('p', { class: 'xfer-card-title' }, `기록 ${moments}개를 옮길 코드예요`),
-      h('p', { class: 'xfer-code num', 'aria-label': c.split('').join(' ') }, formatCode(c)),
+      h('button', { class: 'xfer-code num', 'aria-label': `코드 ${c.split('').join(' ')}, 누르면 복사`, onClick: () => copyCode(c) }, formatCode(c)),
+      h('button', { class: 'btn xfer-copy', onClick: () => copyCode(c) },
+        h('span', { class: 'xfer-copy-icon', 'aria-hidden': 'true', html: COPY_ICON }), '코드 복사하기'),
       h('p', { class: 'xfer-card-sub xfer-center' }, '아래대로 홈 화면에 추가한 뒤, 홈 화면 몽돌 첫 화면에서 이 코드를 넣어요. ', left),
       h('p', { class: 'fine xfer-center' }, `한 번만 쓸 수 있어요. ${PRIVACY}`));
     tick();

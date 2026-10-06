@@ -117,6 +117,16 @@ async function run(engine, name) {
   check(`[${name}] 진행률 표시`, progress.some((s) => /코드 만드는 중 \d+\/\d+/.test(s)), progress.slice(-2).join(' · '));
   check(`[${name}] 홈 화면 단계가 코드와 같이 보인다·남은 시간`, (await A.page.textContent('.inst-sheet')).includes('공유 버튼') && /\d:\d\d 남았어요/.test(await A.page.textContent('.xfer-left')));
   if (!tag) await A.page.screenshot({ path: SHOTS + '52-transfer-code.jpg', quality: 80 });
+  await A.page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = async (t) => { window.__copied = t; }; });
+  await A.page.click('.inst-sheet .xfer-copy');
+  await A.page.waitForTimeout(250);
+  const toastText = await A.page.textContent('#toast');
+  check(`[${name}] 「코드 복사하기」 → 클립보드에 숫자 8자리 · 토스트`, (await A.page.evaluate(() => window.__copied)) === code && toastText.includes('복사됐어요!'), toastText);
+  if (!tag) await A.page.screenshot({ path: SHOTS + '59-transfer-copied.jpg', quality: 80 });
+  await A.page.evaluate(() => { window.__copied = null; });
+  await A.page.click('.inst-sheet button.xfer-code');
+  await A.page.waitForTimeout(150);
+  check(`[${name}] 코드 숫자를 눌러도 복사`, (await A.page.evaluate(() => window.__copied)) === code);
   // 안내를 닫았다 다시 열어도 같은 코드
   await A.page.click('.inst-sheet .pill-close');
   await A.page.waitForTimeout(450);

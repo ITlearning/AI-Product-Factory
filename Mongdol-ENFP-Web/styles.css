@@ -629,5 +629,9 @@ p, h1, h2, h3 { margin: 0; }
 .xfer-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 2px solid #FFC1D6; border-radius: 20px; background: #FFF7FA; }
 .xfer-card-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink1); line-height: 1.45; }
 .xfer-card-sub { margin: 0; font-size: 14px; color: var(--ink2); line-height: 1.55; }
-.xfer-card .xfer-code { margin: 2px 0; }
+.xfer-card .xfer-code { margin: 2px 0; border: none; background: none; padding: 0; width: 100%; cursor: pointer; touch-action: manipulation; }
+.xfer-card .xfer-code:active { transform: scale(0.97); }
+.xfer-copy { gap: 8px; min-height: 48px; background: #fff; color: var(--pink-ink); box-shadow: 0 4px 12px rgba(180, 100, 130, 0.12); touch-action: manipulation; }
+.xfer-copy:active { transform: scale(0.97); }
+.xfer-copy-icon { display: inline-flex; line-height: 0; }
 .xfer-card .xfer-left { display: inline; }
