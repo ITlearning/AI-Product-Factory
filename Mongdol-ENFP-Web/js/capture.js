@@ -1,146 +1,18 @@
-// 담기 — CaptureScreen. 탭바 왼쪽 카메라 버튼으로 연다. 홈에 셔터는 없다(앱은 「보러」 오는 곳).
-// 가장자리 쓸기는 쓰지 않는다 — iOS Safari 의 「뒤로 가기」 몸짓과 겹친다.
-// 찍는 순간 색을 보여 주지 않는다. 확인 문구와 사진 더미만.
-import { h, layers, toast, uuid, stage } from './dom.js';
+// 담기 — 탭바 왼쪽 카메라 버튼을 누르면 iOS 선택 메뉴(「사진 찍기 / 사진 보관함」)가 뜬다.
+// 웹판은 자체 카메라 화면을 두지 않는다 — Safari 는 들어올 때마다 카메라 권한을 묻고,
+// 백그라운드에 다녀오면 멈춘·까만 프레임이 찍혔다. 시스템 카메라가 가볍고 확실하다.
+// 찍는 순간 색을 보여 주지 않는다. 확인 문구만.
+import { h, toast, uuid } from './dom.js';
 import { store } from './store.js';
-import { prepare, prepareCanvas, exifDate } from './images.js';
+import { prepare, exifDate } from './images.js';
 import { T } from './copy.js';
-import { flowerSVG, burst } from './flowers.js';
+import { burst } from './flowers.js';
 import { now } from './clock.js';
 
 export function createCapture() {
-  const homeWrap = document.getElementById('home-wrap');
-  const cam = document.getElementById('camera');
-  let progress = 0;
-  let stream = null;
-  let session = [];
+  const input = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'sr-only', 'aria-hidden': 'true', tabindex: '-1' });
+  document.getElementById('stage').append(input);
   let busy = false;
-
-  const video = h('video', { class: 'cam-video', playsinline: true, muted: true, autoplay: true });
-  video.muted = true;
-  const shy = h('div', { class: 'cam-shy' },
-    h('span', { class: 'cam-shy-flower', html: flowerSVG({ size: 54, kind: 'daisy', color: '#FFD6E4', center: '#FFD84D' }) }),
-    h('p', { class: 'cam-shy-title' }, T.cameraShy),
-    h('p', { class: 'cam-shy-hint' }, T.cameraShyHint));
-  const confirmEl = h('div', { class: 'cam-confirm', role: 'status', 'aria-live': 'polite' });
-  const flash = h('div', { class: 'cam-flash' });
-  const closeBtn = h('button', { class: 'pill-close cam-close', onClick: () => close() }, T.close);
-  const windowEl = h('div', { class: 'cam-window' }, video, shy, flash, confirmEl, closeBtn);
-
-  const shootInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'sr-only', 'aria-hidden': 'true', tabindex: '-1' });
-  const pickInput = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'sr-only', 'aria-hidden': 'true', tabindex: '-1' });
-  const libraryBtn = h('button', { class: 'cam-side-btn', 'aria-label': '앨범에서 골라 담기', onClick: () => pickInput.click() },
-    h('span', { class: 'cam-lib-icon' }), h('span', null, '앨범'));
-  const shutter = h('button', { class: 'cam-shutter', 'aria-label': '찰칵 담기', html: `<span class="cam-shutter-core">${flowerSVG({ size: 40, kind: 'five', color: '#FFFFFF', center: '#FFD84D' })}</span>` });
-  const pile = h('button', { class: 'cam-pile', 'aria-label': '이번에 담은 사진' });
-  const controls = h('div', { class: 'cam-controls' }, libraryBtn, shutter, pile);
-  cam.replaceChildren(windowEl, controls, shootInput, pickInput);
-
-  pile.addEventListener('click', () => toast(T.viewerLocked));
-
-  // 창은 「폭 − 20 · 비율 560:370」, 높이가 모자라면 창이 줄고 컨트롤 자리는 그대로(원본 DESIGN §4.5).
-  const layoutWindow = () => {
-    const W = stage().clientWidth, H = stage().clientHeight;
-    let w = W - 20, hh = (w * 560) / 370;
-    const maxH = H - 18 - 190;
-    if (hh > maxH) { hh = Math.max(200, maxH); w = (hh * 370) / 560; }
-    cam.style.setProperty('--cam-w', `${w}px`);
-    cam.style.setProperty('--cam-h', `${hh}px`);
-  };
-
-  const apply = (p, animate) => {
-    progress = p;
-    layoutWindow();
-    const w = stage().clientWidth;
-    const tr = animate ? 'transform .42s cubic-bezier(.2,1.1,.3,1)' : 'none';
-    homeWrap.style.transition = tr;
-    cam.style.transition = tr;
-    homeWrap.style.transform = `translateX(${p * w}px)`;
-    cam.style.transform = `translateX(${(p - 1) * w}px)`;
-    cam.classList.toggle('live', p > 0.001);
-  };
-
-  let shyTimer = 0;
-  let starting = null;
-  let closeTimer = 0;
-  async function startCamera() {
-    if (stream || starting) return;
-    if (!navigator.mediaDevices?.getUserMedia) { cam.classList.add('no-camera'); return; }
-    // 권한 창을 기다리는 동안 까만 창만 보이지 않게 — 조금 지나도 안 켜지면 「앨범·셔터로도 담겨요」 안내.
-    clearTimeout(shyTimer);
-    shyTimer = setTimeout(() => { if (!stream) cam.classList.add('no-camera'); }, 1800);
-    starting = navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false });
-    try {
-      const got = await starting;
-      // 권한 창을 기다리는 사이 카메라를 닫았으면 받은 스트림을 바로 끈다.
-      if (progress < 0.001) { got.getTracks().forEach((t) => t.stop()); return; }
-      stream = got;
-      // iOS 는 백그라운드에 다녀오면 트랙을 끝내 버린다 — 끝난 스트림을 붙들고 있으면 멈춘·까만 프레임이 찍힌다.
-      for (const t of got.getVideoTracks()) t.addEventListener('ended', () => { if (stream === got) stopCamera(); });
-      video.srcObject = stream;
-      await video.play().catch(() => {});
-      cam.classList.remove('no-camera');
-    } catch {
-      stream = null;
-      cam.classList.add('no-camera');
-    } finally {
-      starting = null;
-    }
-  }
-
-  function stopCamera() {
-    if (stream) stream.getTracks().forEach((t) => t.stop());
-    stream = null;
-    video.srcObject = null;
-  }
-
-  const live = () => !!stream && stream.getVideoTracks().some((t) => t.readyState === 'live') && video.videoWidth > 0;
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopCamera();
-    else if (layers.has('camera') && progress > 0.001) startCamera();
-  });
-
-  function open() {
-    // 닫히는 중(0.44초)에 다시 열면 닫기를 취소하고 그대로 연다.
-    if (closeTimer) { clearTimeout(closeTimer); closeTimer = 0; }
-    if (!layers.has('camera')) { layers.add('camera'); resetSession(); }
-    apply(1, true);
-    startCamera();
-  }
-
-  function close() {
-    apply(0, true);
-    clearTimeout(closeTimer);
-    closeTimer = setTimeout(() => {
-      closeTimer = 0;
-      if (progress === 0) { stopCamera(); layers.remove('camera'); resetSession(); }
-    }, 440);
-  }
-
-  function confirm(text) {
-    confirmEl.textContent = text;
-    confirmEl.classList.remove('show');
-    void confirmEl.offsetWidth;
-    confirmEl.classList.add('show');
-  }
-
-  function resetSession() {
-    for (const u of session) URL.revokeObjectURL(u);
-    session = [];
-    renderPile();
-  }
-
-  function renderPile() {
-    pile.replaceChildren();
-    const shown = session.slice(-4);
-    shown.forEach((u, i) => {
-      const card = h('span', { class: 'pile-card', style: { transform: `rotate(${(i - shown.length + 1) * 5 + 3}deg)` } }, h('img', { src: u, alt: '' }));
-      pile.append(card);
-    });
-    if (session.length) pile.append(h('span', { class: 'pile-count num' }, String(session.length)));
-    pile.classList.toggle('empty', !session.length);
-  }
 
   const fileSig = (f) => `${f.name}|${f.size}|${f.lastModified}`;
   // iOS 사진 선택기는 고를 때마다 lastModified 를 새로 줄 수 있어서 내용으로도 한 번 더 본다.
@@ -152,36 +24,32 @@ export function createCapture() {
   };
 
   /** 한 장씩 담는다 — 한 장이 실패해도(HEIC 디코드 등) 나머지는 담고, 실패·중복 개수를 돌려준다. */
-  async function addShots(items, source) {
-    const batchID = source === 'library' ? uuid() : null;
+  async function addShots(files) {
+    const batchID = uuid();
     const entries = [];
     const seen = new Set();
     let failed = 0, dupes = 0;
-    for (const it of items) {
-      const sig = it.file ? fileSig(it.file) : null;
-      const csig = it.file ? await contentSig(it.file) : null;
+    for (const file of files) {
+      const sig = fileSig(file);
+      const csig = await contentSig(file);
       const sigs = [sig, csig].filter(Boolean);
       if (sigs.some((x) => seen.has(x) || store.hasFileSig(x))) { dupes++; continue; }
       sigs.forEach((x) => seen.add(x));
       try {
-        const prepared = it.canvas ? await prepareCanvas(it.canvas) : await prepare(it.file);
+        const prepared = await prepare(file);
         const t = now();
-        let capturedAt = t;
-        if (source === 'library') {
-          const shotAt = await exifDate(it.file);
-          const lm = it.file.lastModified;
-          capturedAt = shotAt ?? (lm > 0 && lm <= t ? lm : t);
-        }
+        // 방금 찍은 사진도 EXIF 촬영 시각이 지금이라 같은 길로 간다.
+        const shotAt = await exifDate(file);
+        const lm = file.lastModified;
         entries.push({
           moment: {
             id: uuid(),
-            // 카메라로 찍은 건 지금 시각. 파일로 들어온 건 전부 addedAt 을 채운다 —
+            capturedAt: shotAt ?? (lm > 0 && lm <= t ? lm : t),
             // 마무리한 뒤 넣은 사진이 이미 열린 조약돌 색을 바꾸지 않게(pebbleMoments 가 addedAt 으로 가른다).
-            capturedAt,
-            addedAt: it.file ? t : null,
+            addedAt: t,
             batchID,
             colorHex: prepared.colorHex,
-            source,
+            source: 'library',
             fileSig: sig,
             contentSig: csig,
           },
@@ -197,65 +65,43 @@ export function createCapture() {
       await store.add(entries);
     } catch (err) {
       console.warn('[몽돌] 저장 실패', err);
-      return { added: 0, failed: failed + entries.length, dupes, storage: true };
+      return { added: 0, failed: failed + entries.length, dupes, error: err || new Error('unknown') };
     }
-    for (const e of entries) session.push(URL.createObjectURL(e.thumb));
-    renderPile();
-    const last = pile.lastElementChild?.previousElementSibling || pile.lastElementChild;
-    if (entries.length) {
-      last?.animate([{ transform: 'translate(-90px, 10px) scale(.5)', opacity: 0 }, { transform: last.style.transform, opacity: 1 }],
-        { duration: 420, easing: 'cubic-bezier(.3,1.4,.5,1)' });
-    }
-    return { added: entries.length, failed, dupes, storage: false };
+    return { added: entries.length, failed, dupes, error: null };
   }
 
   function report(r) {
-    if (r.added) confirm(r.added > 1 ? T.capturedMany(r.added) : T.captured);
-    else confirmEl.classList.remove('show');
-    if (r.storage) toast('앗, 저장 공간이 모자라서 못 담았어요');
-    else if (r.failed && r.dupes) toast(`${r.failed}장은 못 읽었고, ${r.dupes}장은 이미 담긴 사진이에요`);
-    else if (r.failed) toast(`${r.failed}장은 못 읽었어요. 나머지는 잘 담았어요!`);
+    if (r.error) {
+      // 「공간 부족」은 진짜 그럴 때만 — 아니면 오류 이름을 같이 보여 줘야 고칠 수 있다.
+      toast(r.error.name === 'QuotaExceededError'
+        ? '앗, 저장 공간이 모자라서 못 담았어요'
+        : `앗, 사진을 저장하지 못했어요 (${r.error.name || '알 수 없는 오류'})`, 4000);
+      return;
+    }
+    if (r.failed && r.dupes) toast(`${r.failed}장은 못 읽었고, ${r.dupes}장은 이미 담긴 사진이에요`);
+    else if (r.failed) toast(r.added ? `${r.failed}장은 못 읽었어요. 나머지는 잘 담았어요!` : '앗, 이 사진은 못 읽었어요');
     else if (r.dupes) toast(r.added ? `${r.dupes}장은 이미 담긴 사진이라 건너뛰었어요` : '이미 담긴 사진이에요!');
+    else if (r.added) toast(r.added > 1 ? T.capturedMany(r.added) : T.captured);
+    if (r.added) {
+      const btn = document.getElementById('tab-camera');
+      if (btn && btn.offsetParent) burst(btn, btn.clientWidth / 2, btn.clientHeight / 2, { count: 7, distance: 46 });
+    }
   }
 
-  shutter.addEventListener('click', async () => {
-    if (busy) return;
-    if (!live()) { stopCamera(); shootInput.click(); return; }
+  input.addEventListener('change', async () => {
+    const files = [...input.files];
+    input.value = '';
+    if (!files.length || busy) return;
     busy = true;
-    const c = document.createElement('canvas');
-    const vw = video.videoWidth, vh = video.videoHeight;
-    const k = Math.min(1, 1600 / Math.max(vw, vh));
-    c.width = Math.round(vw * k); c.height = Math.round(vh * k);
-    c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-    flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
-    burst(controls, controls.clientWidth / 2, 37, { count: 7, distance: 60 });
+    toast('담는 중…', 60000);
     try {
-      report(await addShots([{ canvas: c }], 'app'));
+      report(await addShots(files));
     } catch (err) {
       console.warn(err);
       toast('앗, 이번 건 못 담았어요. 한 번만 더!');
     } finally { busy = false; }
   });
 
-  const fromInput = (input, source) => async () => {
-    const files = [...input.files];
-    input.value = '';
-    if (!files.length || busy) return;
-    busy = true;
-    if (source === 'app') { flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go'); }
-    confirm('담는 중…');
-    try {
-      report(await addShots(files.map((file) => ({ file })), source));
-    } catch (err) {
-      console.warn(err);
-      confirmEl.classList.remove('show');
-      toast('앗, 이번 건 못 담았어요. 한 번만 더!');
-    } finally { busy = false; }
-  };
-  shootInput.addEventListener('change', fromInput(shootInput, 'app'));
-  pickInput.addEventListener('change', fromInput(pickInput, 'library'));
-
-  apply(0, false);
-  window.addEventListener('resize', () => apply(progress, false));
-  return { open, close, isOpen: () => progress > 0.5 };
+  // 파일 선택 창은 사용자의 탭 안에서 바로 열어야 한다(비동기 뒤엔 Safari 가 막는다).
+  return { open: () => { if (!busy) input.click(); } };
 }
