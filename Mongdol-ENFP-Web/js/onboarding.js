@@ -46,10 +46,10 @@ function howScene() {
   return h('div', { class: 'ob-scene how' },
     h('div', { class: 'ob-phone' },
       h('div', { class: 'ob-phone-screen' },
-        h('span', { class: 'ob-swipe-bar' }),
-        h('span', { class: 'ob-swipe-hand', html: flowerSVG({ size: 30, kind: 'five', color: '#FF8FB1', center: '#FFD84D' }) }),
+        h('span', { class: 'ob-mini-tab' }),
+        h('span', { class: 'ob-tap-hand', html: flowerSVG({ size: 30, kind: 'five', color: '#FF8FB1', center: '#FFD84D' }) }),
         h('div', { class: 'ob-mini-cam' }, h('span', { class: 'ob-mini-shutter' })))),
-    h('div', { class: 'ob-how-note' }, '쓱 →'));
+    h('div', { class: 'ob-how-note' }, '톡!'));
 }
 
 function startScene() {
@@ -69,7 +69,7 @@ export function showOnboarding({ onStart, onSample }) {
     {
       scene: howScene,
       title: '마음에 콕 박히는 순간이 오면 찰칵! 한 장이면 충분해요.',
-      detail: '홈 왼쪽 가장자리를 오른쪽으로 쓱 밀면 카메라가 열려요. 매일 안 와도 괜찮아요. 담고 싶은 날에만 담아도 조약돌은 차곡차곡 모여요.',
+      detail: '홈 아래 왼쪽 동그란 카메라 버튼을 톡 누르면 카메라가 열려요. 받은 조약돌은 「모은 조약돌」 탭에 모여요. 매일 안 와도 괜찮아요. 담고 싶은 날에만 담아도 조약돌은 차곡차곡 모여요.',
     },
     {
       scene: startScene,

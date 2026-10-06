@@ -2,6 +2,8 @@
 import { store } from './store.js';
 import { createHome } from './home.js';
 import { createCapture } from './capture.js';
+import { createCollection } from './collection.js';
+import { createTabs } from './tabs.js';
 import { openDay } from './detail.js';
 import { showCeremony } from './ceremony.js';
 import { openHandful } from './handful.js';
@@ -13,10 +15,10 @@ import { layers, toast, confirmDialog } from './dom.js';
 import { meta } from './db.js';
 import { forgetURLs } from './images.js';
 import { T } from './copy.js';
-import { sprinkle, flowerSVG } from './flowers.js';
+import { sprinkle } from './flowers.js';
 import { now, isShifted, isDebug } from './clock.js';
 
-let home, capture;
+let home, capture, collection, tabs;
 let sampling = false;
 
 async function finishToday(key) {
@@ -80,28 +82,34 @@ let renderQueued = false;
 function queueRender() {
   if (renderQueued) return;
   renderQueued = true;
-  requestAnimationFrame(() => { renderQueued = false; home.render(); });
+  requestAnimationFrame(() => { renderQueued = false; renderAll(); });
 }
 
-function updateSwipeHint() {
-  document.getElementById('swipe-hint').hidden = meta.get('swiped', false) || !store.loaded;
+function renderAll() {
+  home.render();
+  collection.render();
 }
 
 async function boot() {
   sprinkle(document.getElementById('bg-flowers'), 'home-bg', 18);
-  document.querySelector('#swipe-hint .hint-flower').innerHTML = flowerSVG({ size: 16, kind: 'five', color: '#FF8FB1', center: '#FFD84D' });
   warmUp();
   home = createHome(app);
-  capture = createCapture({ onSwiped: updateSwipeHint });
+  collection = createCollection(app);
+  capture = createCapture();
+  // 이미 보던 탭을 또 누르면 맨 위로(PebbleCollectionView.scrollToTop).
+  tabs = createTabs({
+    onCamera: () => capture.open(),
+    onReselect: (name) => (name === 'home' ? home : collection).scrollToTop(),
+  });
+  tabs.watch(document.getElementById('home'));
+  tabs.watch(document.getElementById('collection'));
   document.getElementById('settings-btn').addEventListener('click', () => openSettings({ onSample: runSample, onClear: clearAll }));
-  document.getElementById('swipe-hint').addEventListener('click', () => capture.open());
 
   store.addEventListener('change', () => { queueRender(); setTimeout(maybeCeremony, 0); });
   layers.onClose(() => setTimeout(maybeCeremony, 0));
 
   await store.load();
-  updateSwipeHint();
-  home.render();
+  renderAll();
 
   const forceOnboarding = new URLSearchParams(location.search).has('onboarding');
   if (forceOnboarding || (!meta.get('onboarded', false) && store.isEmpty)) {
@@ -116,9 +124,9 @@ async function boot() {
   // 새벽 4시를 넘기면 오늘이 바뀐다 — 켜 둔 채로 넘겨도 홈과 증정이 따라온다.
   let lastToday = store.todayKey;
   setInterval(() => {
-    if (store.todayKey !== lastToday) { lastToday = store.todayKey; home.render(); maybeCeremony(); }
+    if (store.todayKey !== lastToday) { lastToday = store.todayKey; renderAll(); maybeCeremony(); }
   }, 20000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { home.render(); maybeCeremony(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderAll(); maybeCeremony(); } });
   let lastW = innerWidth;
   addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) > 30) { lastW = innerWidth; queueRender(); } });
 

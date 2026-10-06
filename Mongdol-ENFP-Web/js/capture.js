@@ -1,4 +1,5 @@
-// 담기 — HomeShell 의 좌→우 스와이프 + CaptureScreen. 홈에 셔터는 없다(앱은 「보러」 오는 곳).
+// 담기 — CaptureScreen. 탭바 왼쪽 카메라 버튼으로 연다. 홈에 셔터는 없다(앱은 「보러」 오는 곳).
+// 가장자리 쓸기는 쓰지 않는다 — iOS Safari 의 「뒤로 가기」 몸짓과 겹친다.
 // 찍는 순간 색을 보여 주지 않는다. 확인 문구와 사진 더미만.
 import { h, layers, toast, uuid, stage } from './dom.js';
 import { store } from './store.js';
@@ -6,12 +7,8 @@ import { prepare, prepareCanvas, exifDate } from './images.js';
 import { T } from './copy.js';
 import { flowerSVG, burst } from './flowers.js';
 import { now } from './clock.js';
-import { meta } from './db.js';
 
-const COMMIT_DISTANCE = 0.42;
-const COMMIT_VELOCITY = 420;
-
-export function createCapture({ onSwiped } = {}) {
+export function createCapture() {
   const homeWrap = document.getElementById('home-wrap');
   const cam = document.getElementById('camera');
   let progress = 0;
@@ -37,8 +34,7 @@ export function createCapture({ onSwiped } = {}) {
   const shutter = h('button', { class: 'cam-shutter', 'aria-label': '찰칵 담기', html: `<span class="cam-shutter-core">${flowerSVG({ size: 40, kind: 'five', color: '#FFFFFF', center: '#FFD84D' })}</span>` });
   const pile = h('button', { class: 'cam-pile', 'aria-label': '이번에 담은 사진' });
   const controls = h('div', { class: 'cam-controls' }, libraryBtn, shutter, pile);
-  const backHint = h('div', { class: 'cam-back-hint', 'aria-hidden': 'true' }, `← ${T.cameraBack}`);
-  cam.replaceChildren(windowEl, controls, backHint, shootInput, pickInput);
+  cam.replaceChildren(windowEl, controls, shootInput, pickInput);
 
   pile.addEventListener('click', () => toast(T.viewerLocked));
 
@@ -111,7 +107,6 @@ export function createCapture({ onSwiped } = {}) {
     if (!layers.has('camera')) { layers.add('camera'); resetSession(); }
     apply(1, true);
     startCamera();
-    if (!meta.get('swiped', false)) { meta.set('swiped', true); onSwiped?.(); }
   }
 
   function close() {
@@ -122,59 +117,6 @@ export function createCapture({ onSwiped } = {}) {
       if (progress === 0) { stopCamera(); layers.remove('camera'); resetSession(); }
     }, 440);
   }
-
-  // 왼쪽 가장자리에서 오른쪽으로 쓸면 카메라가 따라 들어온다. 카메라에선 반대로.
-  let drag = null;
-  stage().addEventListener('pointerdown', (e) => {
-    const r = stage().getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const onCam = layers.has('camera');
-    if (!onCam && (x > 26 || layers.blocking)) return;
-    if (onCam && (e.target.closest('.cam-controls') || e.target.closest('button'))) return;
-    drag = { x0: e.clientX, y0: e.clientY, id: e.pointerId, from: onCam ? 1 : 0, axis: null, lastX: e.clientX, lastT: performance.now(), v: 0 };
-  });
-  stage().addEventListener('pointermove', (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-    if (!drag.axis) {
-      if (Math.hypot(dx, dy) < 12) return;
-      drag.axis = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'x' : 'y';
-      if (drag.axis === 'y') { drag = null; return; }
-      if (drag.from === 0) {
-        if (closeTimer) { clearTimeout(closeTimer); closeTimer = 0; }
-        if (!layers.has('camera')) { layers.add('camera'); resetSession(); }
-        startCamera();
-      }
-      try { stage().setPointerCapture(e.pointerId); } catch { /* 무시 */ }
-    }
-    const w = stage().clientWidth;
-    const t = performance.now();
-    drag.v = ((e.clientX - drag.lastX) / Math.max(1, t - drag.lastT)) * 1000;
-    drag.lastX = e.clientX; drag.lastT = t;
-    apply(Math.min(1, Math.max(0, drag.from + dx / w)), false);
-  });
-  const end = (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const d = drag;
-    drag = null;
-    if (d.axis !== 'x') return;
-    const opening = d.from === 0;
-    const commit = opening
-      ? progress > COMMIT_DISTANCE || d.v > COMMIT_VELOCITY
-      : progress < 1 - COMMIT_DISTANCE || d.v < -COMMIT_VELOCITY;
-    if (opening && commit) {
-      apply(1, true);
-      if (!meta.get('swiped', false)) { meta.set('swiped', true); onSwiped?.(); }
-    } else if (opening) {
-      close();
-    } else if (commit) {
-      close();
-    } else {
-      apply(1, true);
-    }
-  };
-  stage().addEventListener('pointerup', end);
-  stage().addEventListener('pointercancel', end);
 
   function confirm(text) {
     confirmEl.textContent = text;

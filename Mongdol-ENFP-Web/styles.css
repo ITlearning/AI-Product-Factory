@@ -81,7 +81,12 @@ p, h1, h2, h3 { margin: 0; }
 @keyframes twinkle { from { transform: scale(0.8); opacity: 0.18; } to { transform: scale(1.1); opacity: 0.45; } }
 
 /* ── 홈 ── */
-#home-wrap { position: absolute; inset: 0; z-index: 1; will-change: transform; }
+#home-wrap { position: absolute; inset: 0; z-index: 1; will-change: transform; overflow: hidden; }
+/* 홈 · 모은 조약돌은 나란히 — 탭을 누르면 스와이프처럼 옆으로 밀려 넘어간다(HomeShell progress). */
+.pane { position: absolute; inset: 0; transition: transform 0.42s cubic-bezier(.2, 1, .3, 1); }
+#pane-collection { transform: translateX(100%); }
+#home-wrap.on-collection #pane-home { transform: translateX(-100%); }
+#home-wrap.on-collection #pane-collection { transform: none; }
 #backdrop { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .bd { position: absolute; inset: -12%; filter: blur(60px); opacity: 0; transition: opacity 0.45s ease-in-out; }
 .bd.on { opacity: 0.22; }
@@ -214,17 +219,6 @@ p, h1, h2, h3 { margin: 0; }
   pointer-events: none;
 }
 #month-pill.show { opacity: 1; transform: none; }
-#swipe-hint {
-  position: absolute; left: 0; top: 50%; z-index: 4;
-  transform: translateY(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  width: 30px; padding: 10px 0; min-height: 44px;
-  background: none; border: none;
-}
-.hint-bar { width: 4px; height: 34px; border-radius: 3px; background: linear-gradient(#FFB2CB, #FF8FB1); animation: nudge 2.4s ease-in-out infinite; }
-.hint-flower { line-height: 0; }
-.hint-text { writing-mode: vertical-rl; font-size: 13px; color: var(--ink3); letter-spacing: 1px; }
-@keyframes nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
 #settings-btn {
   position: absolute; right: 10px; top: calc(var(--safe-t) + 14px); z-index: 4;
   width: 44px; height: 44px; border: none; border-radius: 50%;
@@ -232,6 +226,71 @@ p, h1, h2, h3 { margin: 0; }
   color: #FFB0C8; display: grid; place-items: center;
   box-shadow: 0 4px 12px rgba(200, 120, 150, 0.15);
 }
+
+/* ── 아래 탭바(PageTabBar) — 왼쪽 동그란 카메라 + 캡슐(홈 · 모은 조약돌) ── */
+#tabbar {
+  position: absolute; left: 0; right: 0; bottom: calc(var(--safe-b) + 14px); z-index: 5;
+  display: flex; justify-content: center; align-items: center; gap: 10px;
+  pointer-events: none;
+  transition: gap 0.3s var(--spring);
+}
+#tabbar > * { pointer-events: auto; }
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
+  box-shadow: 0 8px 24px rgba(160, 80, 110, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.9);
+}
+#tab-camera {
+  width: 54px; height: 54px; border: none; border-radius: 50%; padding: 0;
+  display: grid; place-items: center; color: var(--pink);
+  touch-action: manipulation;
+  transition: width 0.3s var(--spring), height 0.3s var(--spring), transform 0.15s;
+}
+#tab-camera:active { transform: scale(0.92); }
+.tab-capsule { position: relative; display: flex; gap: 2px; padding: 4px; border-radius: 100px; }
+.tab-pill {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 5px);
+  border-radius: 100px; background: rgba(255, 143, 177, 0.16);
+  transition: transform 0.35s var(--spring);
+}
+#home-wrap.on-collection .tab-pill { transform: translateX(calc(100% + 2px)); }
+.tab {
+  position: relative; z-index: 1;
+  width: 96px; height: 50px; border: none; background: none; padding: 0; border-radius: 100px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  color: var(--ink3); touch-action: manipulation;
+  transition: width 0.3s var(--spring), height 0.3s var(--spring), color 0.2s;
+}
+.tab[aria-selected="true"] { color: var(--pink-ink); }
+.tab svg { display: block; }
+.tab .tab-fill { fill: none; transition: fill 0.2s; }
+.tab[aria-selected="true"] .tab-fill { fill: rgba(255, 143, 177, 0.35); }
+.tab-label { font-family: var(--btn); font-size: 11px; white-space: nowrap; line-height: 1; transition: opacity 0.22s ease-out 0.1s, transform 0.22s ease-out 0.1s; }
+/* 아래로 스크롤하면 문구만 거두고 조금 작아진다 — 두 칸과 카메라는 그대로(인스타그램 탭바처럼). */
+#tabbar.folded { gap: 8px; }
+#tabbar.folded #tab-camera { width: 46px; height: 46px; }
+#tabbar.folded .tab { width: 64px; height: 44px; gap: 0; }
+#tabbar.folded .tab-label { opacity: 0; transform: scale(0.8); height: 0; transition: opacity 0.12s ease-out, transform 0.12s ease-out; }
+
+/* ── 모은 조약돌 ── */
+#collection {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; touch-action: pan-y;
+  padding: 0 20px; scrollbar-width: none; overscroll-behavior: contain;
+}
+#collection::-webkit-scrollbar { display: none; }
+.coll-col { padding: max(58px, calc(var(--safe-t) + 28px)) 0 calc(var(--safe-b) + 130px); }
+.coll-title { font-family: var(--serif); font-weight: 800; font-size: 24px; color: var(--ink1); text-align: center; }
+.coll-month { margin-top: 30px; }
+.coll-month-title { font-size: 16px; font-weight: normal; color: var(--ink2); margin-bottom: 14px; }
+.coll-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; }
+.coll-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; min-height: 44px; touch-action: manipulation; }
+.coll-pebble { height: 96px; display: grid; place-items: center; transition: transform 0.15s; }
+.coll-cell:active .coll-pebble { transform: scale(0.94); }
+.coll-date { font-size: 12px; color: var(--ink3); }
+.coll-empty { margin-top: 30vh; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.coll-empty-title { font-size: 16px; color: var(--ink2); }
 
 /* ── 버튼·알약 ── */
 .btn {
@@ -340,7 +399,7 @@ p, h1, h2, h3 { margin: 0; }
 .dialog .btn + .btn { margin-top: 4px; }
 
 #toast {
-  position: absolute; left: 50%; bottom: calc(var(--safe-b) + 44px); z-index: 200;
+  position: absolute; left: 50%; bottom: calc(var(--safe-b) + 100px); z-index: 200;
   transform: translate(-50%, 16px); opacity: 0;
   max-width: calc(100% - 40px); width: max-content; text-align: center;
   background: var(--ink1); color: #FFF4EC;
@@ -416,7 +475,6 @@ p, h1, h2, h3 { margin: 0; }
 .pile-card { position: absolute; inset: 0; border: 3px solid #fff; border-radius: 12px; overflow: hidden; background: #FFE6DC; box-shadow: 0 4px 10px rgba(140, 60, 90, 0.2); }
 .pile-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pile-count { position: absolute; top: -8px; right: -8px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--lemon); color: var(--ink1); font-family: var(--btn); font-size: 13px; line-height: 24px; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
-.cam-back-hint { position: absolute; left: 0; right: 0; top: calc(var(--safe-t) + 18px + var(--cam-h, 70%) + 16px); text-align: center; font-size: 13px; color: var(--ink3); }
 
 /* ── 증정 ── */
 .ceremony {
@@ -490,12 +548,13 @@ p, h1, h2, h3 { margin: 0; }
 .ob-dots span.on { width: 20px; background: #F07BA3; }
 .ob-phone { width: 128px; height: 256px; border-radius: 28px; border: 2px solid var(--hair); background: rgba(255, 255, 255, 0.8); padding: 7px; box-shadow: 0 16px 36px rgba(160, 80, 110, 0.18); }
 .ob-phone-screen { position: relative; width: 100%; height: 100%; border-radius: 21px; overflow: hidden; background: linear-gradient(170deg, #FFF4EC, #FFE6EE); }
-.ob-swipe-bar { position: absolute; left: 4px; top: 42%; width: 4px; height: 30px; border-radius: 3px; background: #FF8FB1; }
-.ob-swipe-hand { position: absolute; left: 4px; top: 48%; line-height: 0; animation: swipe 2.6s ease-in-out infinite; }
+.ob-mini-tab { position: absolute; left: 12px; bottom: 12px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px #FF8FB1; animation: tapBtn 2.6s ease-in-out infinite; }
+.ob-tap-hand { position: absolute; left: 18px; bottom: 2px; line-height: 0; animation: tapHand 2.6s ease-in-out infinite; }
 .ob-mini-cam { position: absolute; inset: 0; background: linear-gradient(170deg, #FFE3EC, #FFD9C4); transform: translateX(-100%); animation: camIn 2.6s ease-in-out infinite; display: grid; align-items: end; justify-items: center; padding-bottom: 20px; }
 .ob-mini-shutter { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; background: #FF8FB1; }
 .ob-how-note { position: absolute; bottom: 18px; font-family: var(--hand); font-size: 28px; color: var(--pink-ink); }
-@keyframes swipe { 0%, 15% { transform: translateX(0); opacity: 1; } 55% { transform: translateX(80px); opacity: 1; } 70%, 100% { transform: translateX(80px); opacity: 0; } }
+@keyframes tapHand { 0% { transform: translate(14px, 14px); opacity: 0; } 10% { opacity: 1; } 18% { transform: translate(0, 0) scale(1); } 22% { transform: translate(0, 0) scale(0.85); } 28%, 45% { transform: translate(0, 0) scale(1); opacity: 1; } 55%, 100% { opacity: 0; } }
+@keyframes tapBtn { 0%, 19% { transform: scale(1); } 22% { transform: scale(0.85); } 28%, 100% { transform: scale(1); } }
 @keyframes camIn { 0%, 20% { transform: translateX(-100%); } 55%, 85% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 .ob-breathe { animation: breathe 4.8s ease-in-out infinite; }
 @keyframes breathe { 0%, 100% { transform: scale(0.98) translateY(3px); } 50% { transform: scale(1.02) translateY(-3px); } }
@@ -507,7 +566,7 @@ p, h1, h2, h3 { margin: 0; }
 #boot-fail code { font-size: 13px; background: #fff; padding: 2px 6px; border-radius: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .sprinkle, .petal, .wordmark-flower, .hint-bar, .dashed-spark, .empty-flower, .ob-breathe, .ob-swipe-hand, .ob-mini-cam, .cam-shy-flower { animation: none !important; }
+  .sprinkle, .petal, .wordmark-flower, .dashed-spark, .empty-flower, .ob-breathe, .ob-tap-hand, .ob-mini-tab, .ob-mini-cam, .cam-shy-flower { animation: none !important; }
   .bloom svg, .sway svg, .wreath svg { animation: none !important; }
   .bloom { animation-duration: 0.01s !important; }
   .ob-mini-cam { transform: none; }

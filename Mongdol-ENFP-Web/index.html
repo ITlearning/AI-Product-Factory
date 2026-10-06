@@ -17,16 +17,34 @@
   <div id="bg" aria-hidden="true"><div id="bg-flowers"></div></div>
 
   <div id="home-wrap">
-    <div id="backdrop" aria-hidden="true"><div id="bd-a" class="bd"></div><div id="bd-b" class="bd"></div></div>
-    <main id="home" aria-label="몽돌 홈"></main>
+    <div id="pane-home" class="pane">
+      <div id="backdrop" aria-hidden="true"><div id="bd-a" class="bd"></div><div id="bd-b" class="bd"></div></div>
+      <main id="home" aria-label="몽돌 홈"></main>
+      <div id="month-pill" class="num" aria-hidden="true"></div>
+      <button id="settings-btn" aria-label="설정">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><g fill="currentColor"><circle cx="11" cy="4.6" r="3"/><circle cx="17.1" cy="9" r="3"/><circle cx="14.8" cy="16.2" r="3"/><circle cx="7.2" cy="16.2" r="3"/><circle cx="4.9" cy="9" r="3"/></g><circle cx="11" cy="11" r="3.2" fill="#FFD84D"/></svg>
+      </button>
+    </div>
+    <div id="pane-collection" class="pane" inert>
+      <main id="collection" aria-label="모은 조약돌"></main>
+    </div>
     <div class="bottom-fade" aria-hidden="true"></div>
-    <div id="month-pill" class="num" aria-hidden="true"></div>
-    <button id="swipe-hint" hidden aria-label="카메라 열기 — 왼쪽 가장자리를 오른쪽으로 쓸어도 돼요">
-      <span class="hint-bar"></span><span class="hint-flower"></span><span class="hint-text">쓱 밀면 찰칵</span>
-    </button>
-    <button id="settings-btn" aria-label="설정">
-      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><g fill="currentColor"><circle cx="11" cy="4.6" r="3"/><circle cx="17.1" cy="9" r="3"/><circle cx="14.8" cy="16.2" r="3"/><circle cx="7.2" cy="16.2" r="3"/><circle cx="4.9" cy="9" r="3"/></g><circle cx="11" cy="11" r="3.2" fill="#FFD84D"/></svg>
-    </button>
+    <nav id="tabbar" aria-label="화면 고르기">
+      <button id="tab-camera" class="glass" aria-label="카메라">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.2 3.5h5.6c.6 0 1.1.3 1.4.8l1 1.7h2.3A2.5 2.5 0 0 1 22 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-9A2.5 2.5 0 0 1 4.5 6h2.3l1-1.7c.3-.5.8-.8 1.4-.8Z"/><circle cx="12" cy="12.8" r="4" fill="#FFF4EC"/><circle cx="12" cy="12.8" r="2.4" fill="#FFD84D"/></svg>
+      </button>
+      <div class="tab-capsule glass" role="tablist">
+        <span class="tab-pill" aria-hidden="true"></span>
+        <button class="tab" data-tab="home" role="tab" aria-selected="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path class="tab-fill" d="M4 10.4 12 4l8 6.4V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.2h-6v5.2H5.5A1.5 1.5 0 0 1 4 19v-8.6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span class="tab-label">홈</span>
+        </button>
+        <button class="tab" data-tab="collection" role="tab" aria-selected="false">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><g class="tab-fill" stroke="currentColor" stroke-width="1.8"><ellipse cx="7.5" cy="7.8" rx="3.6" ry="3.2"/><ellipse cx="16.5" cy="7.8" rx="3.6" ry="3.2"/><ellipse cx="7.5" cy="16.4" rx="3.6" ry="3.2"/><ellipse cx="16.5" cy="16.4" rx="3.6" ry="3.2"/></g></svg>
+          <span class="tab-label">모은 조약돌</span>
+        </button>
+      </div>
+    </nav>
   </div>
 
   <section id="camera" aria-label="담기"></section>
