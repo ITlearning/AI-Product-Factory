@@ -25,7 +25,7 @@ python3 -m http.server 8000
 - `sw.js` — 같은 출처 요청은 **네트워크 먼저, 안 되면 캐시**(캐시 이름 `mongdol-v1`). 새로 배포하면 다음에 열 때 바로 새 판이 뜬다. 페이지는 쿼리(`?now=`·`?debug`)를 떼고 한 칸에 담아 오프라인에서도 뜬다. Google Fonts 같은 바깥 요청은 건드리지 않는다. 한 번 열어 SW 가 붙은 뒤 받은 파일만 오프라인에서 쓸 수 있다.
 - `js/install.js` — 환경별 안내. 홈 화면 앱(`display-mode: standalone`·`navigator.standalone`)이면 안 띄움 · iOS 앱 속 브라우저(카카오톡·인스타·페이스북·라인·네이버 등)는 「Safari로 열기」 + 주소 복사 · iOS Safari 는 공유 → 홈 화면에 추가 → 추가 3단계 · Android 는 `beforeinstallprompt` 로 「홈 화면에 추가」 버튼(안 오면 ⋮ 메뉴 안내) · 데스크톱은 안내 안 함.
 - 보이는 곳: 온보딩 소개 다음 한 장(홈 화면 앱·데스크톱이면 건너뜀), 설정 「몽돌 서랍」의 「홈 화면에 추가하기」(홈 화면 앱이면 숨김).
-- **iPhone 은 Safari 탭과 홈 화면 앱의 저장소(IndexedDB)가 따로다.** 안내에 늘 적고, 이 Safari 에 기록이 있으면 「홈 화면에서 열면 새로 시작해요. 지금까지 담은 건 이 Safari 에 그대로 남아요」로 바꿔 말한다.
+- **iPhone 은 Safari 탭과 홈 화면 앱의 저장소(IndexedDB)가 따로다.** 안내에 늘 적고, 이 Safari 에 기록이 있으면 iOS 안내 맨 앞에 「① 지금까지 담은 기록 옮길 코드 받기」를 둔다(아래 「기록 옮기기」).
 - 배포 폴더에 `manifest.webmanifest`·`sw.js`·`icons/` 가 같이 올라가야 한다(지금 캐시 이름 `mongdol-v2`, `/api/` 요청은 SW 가 건드리지 않는다). 캐시 구조를 바꿀 땐 `sw.js` 의 `CACHE` 버전을 올린다.
 
 ### 웹 푸시(알림) — iOS 앱과 같은 정책
@@ -62,7 +62,20 @@ python3 -m http.server 8000
 
 알림은 10분 간격으로 돌아서 정해진 시각보다 최대 10분쯤 늦게 올 수 있다.
 
-**시험** — `npm install && npm test`(서울 시각으로 돈다): 일정 계산(iOS `ArrivalNoticeTests` 같은 사례 + Swift 원본 함수로 뽑은 2026~2027 하루마다 가끔·노을 값 `tests/ios-reminder-parity.json`, `tools/ios_reminder_parity.swift`), 서버(메모리 가짜 Redis·web-push), `sw.js` push 처리(vm). 브라우저 확인은 `tests/push-e2e.mjs`.
+### 기록 옮기기 — 8자리 코드(2026-10-06 Tabber 결정: B 코드로 옮기기)
+
+Safari 에서 쓰던 기록을 홈 화면 몽돌로(또는 새 기기로) 옮긴다. **이 기능을 쓸 때만, 폰에서 암호화한 기록이 10분 동안 서버를 거친다.**
+
+- 보내는 쪽: iOS 홈 화면 안내(설정 시트·온보딩 설치 장)의 「① 지금까지 담은 기록 옮길 코드 받기」, 또는 설정 「기록 옮기기 → 코드 받기」. 묶고 → 잠그고 → 조각으로 올린 뒤 `1234 5678` 과 남은 시간을 보여 준다.
+- 받는 쪽: 온보딩 첫 장 「Safari에서 쓰던 기록 가져오기」(홈 화면 앱이 아니면 「쓰던 기록 가져오기」), 또는 설정 「기록 옮기기 → 코드 입력하기」. 기존 기록과 **합친다**(같은 id 는 건너뜀). 온보딩에서 받으면 견본 제안 없이 바로 홈으로.
+- 묶음: 기록(moments) 전부 + 사진(full·thumb 바이트) + localStorage 표시값 `closures`·`gifted`·`wordRejects`·`didLearnWordReject`·`reminderFrequency`. 안 옮기는 것: `onboarded`(받는 쪽이 정한다), `push.*`(기기마다 다른 구독), `preview.*`(미리 보기).
+  닫은 날·받은 날은 이 기기 값이 먼저, 받은 날·단어 거절은 합친다, 빈도는 이 기기에 값이 없을 때만.
+- 암호화(`js/transfer-core.js`): 코드 8자리(`crypto.getRandomValues`) → key = PBKDF2(코드, 무작위 salt 16바이트, SHA-256, 200,000번) → AES-GCM 256. 묶음을 512KB 씩 잘라 조각마다 잠근다(iv 12바이트, AAD = 조각 번호·개수). 서버 조회 id = hex(PBKDF2(코드, 고정 salt `mongdol-transfer-id-v1`, 200,000번)) — 해시 한 번이면 Redis 를 읽는 사람이 코드를 거꾸로 찾는다. salt 는 서버에 평문으로 둔다.
+- 서버(`api/transfer.js` · `api/_lib/transfer.js`, `POST {action}`): `start`(id·크기·조각 수·salt, 100MB 넘으면 413(Upstash 무료 256MB 에서 둘이 동시에 옮겨도 되게), 같은 id 가 살아 있으면 409) → `chunk` × N(올리는 표 `token` 필요, 조각 번호 범위·조각 크기를 정확히 검사) → `finish`(조각이 다 있어야 함, 이때부터 10분) → 받는 쪽 `info`(처음 한 번만 받는 표 `claim` 을 준다 — 두 번째는 410) → `get` × N(**마지막 조각을 주면 전부 지운다**) → `done`(남은 게 있으면 지움).
+  레이트리밋: 틀린 코드(없는 id·표 틀림·이미 받아 감) IP 당 10분에 10번 · 보내기 시작 IP 당 시간당 10번 · 전체 IP 당 분당 300. Redis 키는 모두 `mongdol:xfer:`.
+- 한계: 코드가 8자리라 서버 Redis 를 읽을 수 있는 사람은 id 에서 코드를 거꾸로 찾을 수 있다(SHA-256 1억 번). 그래서 서버에 오래 두지 않는다(10분, 받으면 바로 지움). Upstash 무료 요금제는 저장 256MB 라 큰 묶음 여럿이 겹치면 못 올릴 수 있다 — 그땐 「다시 해 볼게요」.
+
+**시험** — `npm install && npm test`(서울 시각으로 돈다): 일정 계산(iOS `ArrivalNoticeTests` 같은 사례 + Swift 원본 함수로 뽑은 2026~2027 하루마다 가끔·노을 값 `tests/ios-reminder-parity.json`, `tools/ios_reminder_parity.swift`), 서버(메모리 가짜 Redis·web-push), `sw.js` push 처리(vm), 기록 옮기기 서버(시계 달린 가짜 Redis — TTL·한 번 받기·레이트리밋)와 묶기·암호화 왕복(node webcrypto). 브라우저 확인은 `tests/push-e2e.mjs`, `tests/transfer-e2e.mjs`(chromium·webkit).
 
 ### 확인용 주소 인자
 
@@ -91,7 +104,7 @@ index.html        화면 뼈대(홈·모은 조약돌·탭바·겹) + 링크 미
 og.png            링크 미리보기 이미지 1200×630(tools/og.html 을 찍어 만든다)
 manifest.webmanifest  홈 화면에 추가(이름·아이콘·standalone)
 sw.js             서비스 워커(네트워크 먼저, 오프라인이면 캐시 · 푸시 알림 띄우기)
-api/              Vercel 서버리스 — push-schedule(일정 받기) · push-send(크론이 보내기) · _lib/push.js
+api/              Vercel 서버리스 — push-schedule(일정 받기) · push-send(크론이 보내기) · transfer(기록 옮기기) · _lib/
 package.json      서버 의존성(web-push · @upstash/redis · @upstash/ratelimit · zod) · npm test
 icons/            앱 아이콘 180·192·512 · maskable 512
 styles.css        토큰·전 화면 스타일
@@ -122,7 +135,9 @@ js/
   install.js      홈 화면에 추가 안내(환경 판별 · 설치 창 · 안내 시트)
   notice.js       알림 일정 계산(ArrivalNotice · MomentReminder 포팅)
   push.js         웹 푸시 구독 · 일정 동기화
-  settings.js     설정(알림 · 견본 · 홈 화면에 추가하기 · 친구에게도 해보라고 하기 · 전부 지우기)
+  transfer.js     기록 옮기기(코드 받기·넣기 시트, 묶어 올리기·받아 합치기)
+  transfer-core.js  기록 옮기기 순수 부분(코드·묶음 포맷·PBKDF2+AES-GCM 조각)
+  settings.js     설정(알림 · 견본 · 홈 화면에 추가하기 · 기록 옮기기 · 친구에게도 해보라고 하기 · 전부 지우기)
   flowers.js      SVG 꽃 · 꽃잎 · 반짝이 · 컨페티
   motion.js       SwiftUI 스프링을 Web Animations 키프레임으로
   sample.js       견본 하루(캔버스 풍경 + 실제 색 추출)
@@ -204,7 +219,7 @@ screenshots/             확인 스크린샷
   - 공유 문구가 몽돌 주소를 겸한다(「노을을 건네요! 나도 몽돌 받아 보기 → 주소」). 파일 공유가 안 되는 브라우저는 카드를 크게 띄워 길게 눌러 저장·저장 버튼·문구 복사로 대신한다.
 - **색 고르기 없음.** 기각된 기능이라 넣지 않았다.
 - **격자·가로 스크롤 없음.** 한 줌도 격자가 아니다.
-- **사진·색·기록은 밖으로 안 나간다.** 이 브라우저의 IndexedDB·localStorage에만 있다. 분석·로그 수집 코드는 없다. 밖으로 나가는 건 Google Fonts 글꼴 파일, 그리고 알림을 켰을 때 알림 시각·종류 일정(`/api/push-schedule`)뿐이다.
+- **사진·색·기록은 밖으로 안 나간다.** 이 브라우저의 IndexedDB·localStorage에만 있다. 분석·로그 수집 코드는 없다. 밖으로 나가는 건 Google Fonts 글꼴 파일, 알림을 켰을 때 알림 시각·종류 일정(`/api/push-schedule`), 그리고 기록 옮기기를 쓸 때만 폰에서 암호화한 기록(`/api/transfer`, 10분 뒤 또는 받아 가면 바로 지움)뿐이다.
 
 ## 확인한 것
 

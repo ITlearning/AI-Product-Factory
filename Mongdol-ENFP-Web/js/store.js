@@ -157,6 +157,15 @@ class Store extends EventTarget {
     this.emit();
   }
 
+  /** 기록 옮기기로 받은 닫은 날·받은 날을 합친다 — 이 기기에 이미 있는 값이 먼저다. */
+  absorb({ closures = {}, gifted = [] }) {
+    this.closures = { ...closures, ...this.closures };
+    for (const k of gifted) this.gifted.add(k);
+    db.meta.set('closures', this.closures);
+    db.meta.set('gifted', [...this.gifted]);
+    this.emit();
+  }
+
   /** 견본 채우기처럼 받은 날을 한꺼번에 표시 — 알리지 않는다. */
   setGiftedFloor(key) {
     this.gifted.add(key);

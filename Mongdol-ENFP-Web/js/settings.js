@@ -1,4 +1,4 @@
-// 설정 — 알림(도착 소식 · 사진이 없는 날) · 견본 하루 · 홈 화면에 추가하기 · 친구에게도 해보기(도구 공유) · 전부 지우기. 결과 자랑용 공유는 없다.
+// 설정 — 알림(도착 소식 · 사진이 없는 날) · 견본 하루 · 홈 화면에 추가하기 · 기록 옮기기 · 친구에게도 해보기(도구 공유) · 전부 지우기. 결과 자랑용 공유는 없다.
 import { h, layers, layerRoot, closePill, confirmDialog, toast } from './dom.js';
 import { rendererInfo } from './pebble-gl.js';
 import { persistent } from './db.js';
@@ -53,7 +53,7 @@ function noticeRow(onInstall, close) {
   return slot;
 }
 
-export async function openSettings({ onSample, onClear, onInstall }) {
+export async function openSettings({ onSample, onClear, onInstall, onTransfer }) {
   if (layers.has('settings')) return;
   layers.add('settings');
   const saved = await persistent();
@@ -83,6 +83,8 @@ export async function openSettings({ onSample, onClear, onInstall }) {
       h('span', { class: 'row-main' }, '견본 하루 채우기'), h('span', { class: 'row-sub' }, '그림 사진으로 지난 하루들을 채워서 바로 둘러봐요')),
     canOfferInstall() ? h('button', { class: 'row-btn', onClick: () => { close(); onInstall(); } },
       h('span', { class: 'row-main' }, '홈 화면에 추가하기'), h('span', { class: 'row-sub' }, '아이콘 한 번에 앱처럼 톡 열려요')) : null,
+    h('button', { class: 'row-btn', onClick: () => { close(); onTransfer(); } },
+      h('span', { class: 'row-main' }, '기록 옮기기'), h('span', { class: 'row-sub' }, '코드 하나로 홈 화면 몽돌이나 새 기기에 기록을 옮겨요')),
     h('button', { class: 'row-btn', onClick: share },
       h('span', { class: 'row-main' }, '친구에게도 해보라고 하기'), h('span', { class: 'row-sub' }, '내 조약돌 말고, 몽돌을 건네요')),
     h('button', { class: 'row-btn danger', onClick: async () => {
@@ -90,7 +92,7 @@ export async function openSettings({ onSample, onClear, onInstall }) {
       if (ok) { close(); onClear(); }
     } }, h('span', { class: 'row-main' }, '기록 전부 지우기')),
     h('p', { class: 'fine' }, saved
-      ? '사진·색·기록은 이 기기 브라우저 안(IndexedDB)에만 있어요. 알림을 켜면 알림 시각만 서버로 가요.'
+      ? '사진·색·기록은 이 기기 브라우저 안(IndexedDB)에만 있어요. 알림을 켜면 알림 시각만 서버로 가요. 기록 옮기기를 쓸 때만, 폰에서 암호화한 기록이 10분 동안 서버를 거쳐요.'
       : '이 환경에선 기기 저장소를 못 열어서, 창을 닫으면 기록이 사라져요. 정적 서버(http://)로 열어 주세요.'),
     h('p', { class: 'fine num' }, `조약돌 렌더러 · ${rendererInfo()}`));
   const wrap = h('div', { class: 'sheet-wrap' }, sheet);
