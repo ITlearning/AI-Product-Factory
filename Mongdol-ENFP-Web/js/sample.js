@@ -82,6 +82,7 @@ function scene(hex, rand, kind) {
 
 /** onProgress(done, total) */
 export async function fillSample(store, onProgress = () => {}) {
+  const gen = store.generation;
   const t = now();
   const today = dayKey(t);
   const total = DAYS.reduce((n, d) => n + d.hexes.length, 0);
@@ -99,7 +100,8 @@ export async function fillSample(store, onProgress = () => {}) {
     let times = hours.map((h) => new Date(new Date(start).setHours(Math.floor(h), Math.round((h % 1) * 60), 0, 0)).getTime());
     if (day.ago === 0) {
       // 오늘은 지금보다 앞선 시각만 — 하루가 방금 시작됐으면 조금씩 앞으로 당긴다.
-      const room = Math.max(10 * 60e3, t - start - 5 * 60e3);
+      const since = Math.max(0, t - start);
+      const room = since > 15 * 60e3 ? since - 5 * 60e3 : since * 0.8;
       times = day.hexes.map((_, i) => start + room * ((i + 1) / (day.hexes.length + 0.5)));
     }
     for (let i = 0; i < day.hexes.length; i++) {
@@ -121,6 +123,7 @@ export async function fillSample(store, onProgress = () => {}) {
       onProgress(done, total);
     }
   }
+  if (store.generation !== gen) return false;
   await store.add(entries);
   // 그저께까지는 이미 받은 하루로 — 어제만 남겨 두면 홈에 들어서자마자 증정이 뜬다.
   store.setGiftedFloor(shiftKey(today, -2));

@@ -10,6 +10,7 @@ class Store extends EventTarget {
     this.byDay = new Map();
     this.keys = [];
     this.loaded = false;
+    this.generation = 0; // 전부 지우기마다 하나씩 — 그 전에 시작한 견본 채우기가 지운 뒤에 되살아나지 않게
     this.closures = db.meta.get('closures', {});
     this.gifted = new Set(db.meta.get('gifted', []));
   }
@@ -114,10 +115,10 @@ class Store extends EventTarget {
     });
   }
 
-  /** 같은 파일(이름·크기·수정 시각)을 이미 담았는지 — 원본 DayStore 의 fileName/originalName 중복 가드 자리. */
+  /** 같은 파일(이름·크기·수정 시각 또는 내용 해시)을 이미 담았는지 — 원본 DayStore 의 fileName/originalName 중복 가드 자리. */
   hasFileSig(sig) {
     if (!sig) return false;
-    for (const m of this.all.values()) if (m.fileSig === sig) return true;
+    for (const m of this.all.values()) if (m.fileSig === sig || m.contentSig === sig) return true;
     return false;
   }
 
@@ -137,6 +138,7 @@ class Store extends EventTarget {
   }
 
   async clear() {
+    this.generation++;
     await db.clearAll();
     this.all.clear();
     this.closures = {};

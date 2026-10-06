@@ -79,6 +79,8 @@ export function createCapture({ onSwiped } = {}) {
       // 권한 창을 기다리는 사이 카메라를 닫았으면 받은 스트림을 바로 끈다.
       if (progress < 0.001) { got.getTracks().forEach((t) => t.stop()); return; }
       stream = got;
+      // iOS 는 백그라운드에 다녀오면 트랙을 끝내 버린다 — 끝난 스트림을 붙들고 있으면 멈춘·까만 프레임이 찍힌다.
+      for (const t of got.getVideoTracks()) t.addEventListener('ended', () => { if (stream === got) stopCamera(); });
       video.srcObject = stream;
       await video.play().catch(() => {});
       cam.classList.remove('no-camera');
@@ -96,10 +98,17 @@ export function createCapture({ onSwiped } = {}) {
     video.srcObject = null;
   }
 
+  const live = () => !!stream && stream.getVideoTracks().some((t) => t.readyState === 'live') && video.videoWidth > 0;
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopCamera();
+    else if (layers.has('camera') && progress > 0.001) startCamera();
+  });
+
   function open() {
     // 닫히는 중(0.44초)에 다시 열면 닫기를 취소하고 그대로 연다.
     if (closeTimer) { clearTimeout(closeTimer); closeTimer = 0; }
-    if (!layers.has('camera')) { layers.add('camera'); session = []; renderPile(); }
+    if (!layers.has('camera')) { layers.add('camera'); resetSession(); }
     apply(1, true);
     startCamera();
     if (!meta.get('swiped', false)) { meta.set('swiped', true); onSwiped?.(); }
@@ -110,7 +119,7 @@ export function createCapture({ onSwiped } = {}) {
     clearTimeout(closeTimer);
     closeTimer = setTimeout(() => {
       closeTimer = 0;
-      if (progress === 0) { stopCamera(); layers.remove('camera'); }
+      if (progress === 0) { stopCamera(); layers.remove('camera'); resetSession(); }
     }, 440);
   }
 
@@ -133,7 +142,7 @@ export function createCapture({ onSwiped } = {}) {
       if (drag.axis === 'y') { drag = null; return; }
       if (drag.from === 0) {
         if (closeTimer) { clearTimeout(closeTimer); closeTimer = 0; }
-        if (!layers.has('camera')) { layers.add('camera'); session = []; renderPile(); }
+        if (!layers.has('camera')) { layers.add('camera'); resetSession(); }
         startCamera();
       }
       try { stage().setPointerCapture(e.pointerId); } catch { /* 무시 */ }
@@ -174,6 +183,12 @@ export function createCapture({ onSwiped } = {}) {
     confirmEl.classList.add('show');
   }
 
+  function resetSession() {
+    for (const u of session) URL.revokeObjectURL(u);
+    session = [];
+    renderPile();
+  }
+
   function renderPile() {
     pile.replaceChildren();
     const shown = session.slice(-4);
@@ -186,6 +201,13 @@ export function createCapture({ onSwiped } = {}) {
   }
 
   const fileSig = (f) => `${f.name}|${f.size}|${f.lastModified}`;
+  // iOS 사진 선택기는 고를 때마다 lastModified 를 새로 줄 수 있어서 내용으로도 한 번 더 본다.
+  const contentSig = async (f) => {
+    try {
+      const d = await crypto.subtle.digest('SHA-256', await f.arrayBuffer());
+      return 'sha256:' + [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    } catch { return null; }
+  };
 
   /** 한 장씩 담는다 — 한 장이 실패해도(HEIC 디코드 등) 나머지는 담고, 실패·중복 개수를 돌려준다. */
   async function addShots(items, source) {
@@ -195,8 +217,10 @@ export function createCapture({ onSwiped } = {}) {
     let failed = 0, dupes = 0;
     for (const it of items) {
       const sig = it.file ? fileSig(it.file) : null;
-      if (sig && (seen.has(sig) || store.hasFileSig(sig))) { dupes++; continue; }
-      if (sig) seen.add(sig);
+      const csig = it.file ? await contentSig(it.file) : null;
+      const sigs = [sig, csig].filter(Boolean);
+      if (sigs.some((x) => seen.has(x) || store.hasFileSig(x))) { dupes++; continue; }
+      sigs.forEach((x) => seen.add(x));
       try {
         const prepared = it.canvas ? await prepareCanvas(it.canvas) : await prepare(it.file);
         const t = now();
@@ -217,6 +241,7 @@ export function createCapture({ onSwiped } = {}) {
             colorHex: prepared.colorHex,
             source,
             fileSig: sig,
+            contentSig: csig,
           },
           full: prepared.full,
           thumb: prepared.thumb,
@@ -253,7 +278,7 @@ export function createCapture({ onSwiped } = {}) {
 
   shutter.addEventListener('click', async () => {
     if (busy) return;
-    if (!stream || !video.videoWidth) { shootInput.click(); return; }
+    if (!live()) { stopCamera(); shootInput.click(); return; }
     busy = true;
     const c = document.createElement('canvas');
     const vw = video.videoWidth, vh = video.videoHeight;

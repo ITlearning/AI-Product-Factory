@@ -12,7 +12,7 @@ let memory = null; // IndexedDB 를 못 쓰는 환경(일부 file://)에서의 �
 
 function open() {
   if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve) => {
+  const mine = new Promise((resolve) => {
     let req;
     try { req = indexedDB.open(DB_NAME, DB_VERSION); } catch { resolve(null); return; }
     req.onupgradeneeded = () => {
@@ -20,29 +20,52 @@ function open() {
       if (!db.objectStoreNames.contains('moments')) db.createObjectStore('moments', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id' });
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      const db = req.result;
+      // iOS 는 오래 백그라운드에 두면 연결을 끊는다(「Connection to Indexed Database server lost」).
+      // 끊긴 연결을 계속 붙들면 저장이 전부 실패하니, 끊기면 다음 요청 때 새로 연다.
+      const drop = () => { if (dbPromise === mine) dbPromise = null; };
+      db.onclose = drop;
+      db.onversionchange = () => { db.close(); drop(); };
+      resolve(db);
+    };
     req.onerror = () => resolve(null);
     req.onblocked = () => resolve(null);
   }).then((db) => {
-    if (!db) memory = { moments: new Map(), photos: new Map() };
+    if (!db && !memory) memory = { moments: new Map(), photos: new Map() };
     return db;
   });
-  return dbPromise;
+  dbPromise = mine;
+  return mine;
 }
 
 export async function persistent() {
   return !!(await open());
 }
 
-function tx(db, stores, mode, fn) {
+function txOnce(db, stores, mode, fn) {
   return new Promise((resolve, reject) => {
     const t = db.transaction(stores, mode);
     let out;
     t.oncomplete = () => resolve(out);
     t.onerror = () => reject(t.error);
     t.onabort = () => reject(t.error);
-    out = fn(t);
+    // fn 안에서 put 이 바로 던지면 앞서 넣은 것만 커밋되는 반쪽 저장이 된다 — 통째로 되돌린다.
+    try { out = fn(t); } catch (e) { try { t.abort(); } catch { /* 이미 끝남 */ } reject(e); }
   });
+}
+
+async function tx(db, stores, mode, fn) {
+  try {
+    return await txOnce(db, stores, mode, fn);
+  } catch (e) {
+    if (e?.name !== 'InvalidStateError') throw e;
+    // 연결이 끊긴 채 남아 있던 경우 — 한 번만 새로 열어 다시 한다.
+    if (dbPromise) dbPromise = null;
+    const fresh = await open();
+    if (!fresh) throw e;
+    return txOnce(fresh, stores, mode, fn);
+  }
 }
 
 const reqValue = (req) => new Promise((resolve, reject) => {

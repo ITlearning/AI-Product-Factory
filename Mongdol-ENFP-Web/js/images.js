@@ -31,7 +31,8 @@ function scaled(src, max, quality) {
   const ctx = c.getContext('2d');
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(src, 0, 0, c.width, c.height);
-  return new Promise((res) => c.toBlob((b) => res(b), 'image/jpeg', quality));
+  // 메모리가 모자라면 iOS 가 null 을 준다 — 저장하기 전에 실패로 세야 「못 담았어요」와 실제가 어긋나지 않는다.
+  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('toBlob null'))), 'image/jpeg', quality));
 }
 
 /** 파일·캡처 한 장 → { full, thumb, colorHex } — 색은 원본 크기에서 뽑는다(찍을 때는 안 보여 준다). */

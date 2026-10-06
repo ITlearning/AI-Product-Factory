@@ -34,7 +34,8 @@ async function runSample() {
   sampling = true;
   toast('견본 하루를 그리는 중이에요…', 60000);
   try {
-    await fillSample(store, (done, total) => toast(`견본 하루를 그리는 중이에요… ${done}/${total}`, 60000));
+    const filled = await fillSample(store, (done, total) => toast(`견본 하루를 그리는 중이에요… ${done}/${total}`, 60000));
+    if (filled === false) { toast('견본은 그리다 말았어요'); return; }
     meta.set('onboarded', true);
     toast('짠! 견본 하루가 채워졌어요');
     home.scrollToTop();

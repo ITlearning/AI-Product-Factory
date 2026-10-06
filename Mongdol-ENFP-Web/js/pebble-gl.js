@@ -234,10 +234,18 @@ class Renderer {
 
 let renderer = null;
 let rendererFailed = false;
+let failedAt = 0;
+const RETRY_MS = 5000; // 컨텍스트를 잃은 직후엔 새로 못 만들 수 있다 — 영원히 2D 로 두지 말고 잠시 뒤 다시 본다.
 export function getRenderer() {
   if (renderer && !renderer.lost) return renderer;
-  if (rendererFailed) return null;
-  try { renderer = new Renderer(); } catch (e) { console.warn('[몽돌] WebGL 조약돌을 못 켜서 2D 로 그려요:', e.message); rendererFailed = true; renderer = null; }
+  if (rendererFailed && performance.now() - failedAt < RETRY_MS) return null;
+  try {
+    renderer = new Renderer();
+    rendererFailed = false;
+  } catch (e) {
+    if (!rendererFailed) console.warn('[몽돌] WebGL 조약돌을 못 켜서 2D 로 그려요:', e.message);
+    rendererFailed = true; failedAt = performance.now(); renderer = null;
+  }
   return renderer;
 }
 export const rendererInfo = () => (renderer ? `webgl${renderer.version}` : rendererFailed ? '2d-fallback' : 'not-started');

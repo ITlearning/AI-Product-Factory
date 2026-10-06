@@ -10,10 +10,13 @@ async function load() {
   if (words) return words;
   try {
     const r = await fetch('./data/words.json');
+    if (!r.ok) throw new Error(`words.json ${r.status}`);
     const j = await r.json();
     words = j.words.filter((w) => w.times.length && !w.weathers.length && !SKIP.has(w.id));
-  } catch {
-    words = [];
+  } catch (e) {
+    // 실패를 기억해 두면 그 세션 내내 단어가 빈다 — 다음에 다시 불러 본다.
+    console.warn('[몽돌] 단어 목록을 못 불러왔어요', e);
+    return [];
   }
   return words;
 }
