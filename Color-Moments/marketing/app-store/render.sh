@@ -1,6 +1,7 @@
 #!/bin/bash
 # 몽돌 App Store 미리보기 6장을 output/ 에 굽는다.
 #   ./render.sh                  6.9인치 6장(1320×2868, 알파 없는 PNG) mongdol-N.png + 이어 붙인 panorama.png
+#                                + 6.1인치 6장(1206×2622) medium-N.png — App Store Connect 필수 칸(Dynamic Island 중형)
 #   ./render.sh preview          panorama-preview.png 한 장만 (빠른 확인용)
 #   ./render.sh notch            6.5인치 노치 판 6장(1284×2778) notch-N.png + notch-panorama.png
 #   ./render.sh notch preview    notch-panorama-preview.png 한 장만
@@ -42,6 +43,14 @@ for n in 1 2 3 4 5 6; do
   rm "output/raw-$n.png"
 done
 
+# 6.1인치(Dynamic Island 중형)는 6.9인치와 비율이 같다(0.4603 대 0.4600) — 줄이기만 한다.
+# 이 칸이 비면 스토어가 6.5인치 노치 판을 줄여 보여 준다.
+if [ "$NAME" = mongdol ]; then
+  for n in 1 2 3 4 5 6; do
+    ffmpeg -loglevel error -y -i "output/mongdol-$n.png" -vf "scale=1206:2622:flags=lanczos" -pix_fmt rgb24 "output/medium-$n.png"
+  done
+fi
+
 # 스토어처럼 장 사이 간격을 두고 이어 붙인 확인용 한 장
 O="output/$NAME"
 ffmpeg -loglevel error -y -i "$O-1.png" -i "$O-2.png" -i "$O-3.png" -i "$O-4.png" -i "$O-5.png" -i "$O-6.png" \
@@ -49,3 +58,4 @@ ffmpeg -loglevel error -y -i "$O-1.png" -i "$O-2.png" -i "$O-3.png" -i "$O-4.png
   -filter_complex "[6]split=5[g1][g2][g3][g4][g5];[0][g1][1][g2][2][g3][3][g4][4][g5][5]hstack=inputs=11,scale=iw/2:-1" \
   -frames:v 1 "output/$PANO"
 ls -1 "$O"-[1-6].png "output/$PANO"
+[ "$NAME" = mongdol ] && ls -1 output/medium-[1-6].png
