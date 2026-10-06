@@ -301,3 +301,45 @@ extension PebbleRenderTests {
         }
     }
 }
+
+// MARK: - 몇 분 사이로 찍어 색이 몰린 하루 — 칼선·테두리 조각 회귀
+
+extension PebbleRenderTests {
+    /// 2026-10-02 실기기 하루: 08:32 하늘, 09:44 무렵 회색·하늘·회색, 16:27 창가, 16:31 하늘
+    private var clusteredDay: [Moment] {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let base = cal.date(from: DateComponents(year: 2026, month: 10, day: 2))!
+        let shots: [(Int, String)] = [(512, "#86AEDF"), (584, "#9C978F"), (585, "#86AEDF"),
+                                      (587, "#9C978F"), (987, "#A8A9A6"), (991, "#86AEDF")]
+        return shots.map { m, hex in
+            Moment(capturedAt: base.addingTimeInterval(Double(m) * 60), colorHex: hex,
+                   fileName: "c\(m).jpg", source: .app)
+        }
+    }
+
+    func testBandTableHasNoHardEdgeForClusteredDay() {
+        let stops = SoftPebbleView.floats(DayGradient.pebbleStops(for: clusteredDay))
+        let table = SoftPebbleUniforms.table(stops)
+        let n = SoftPebbleUniforms.lutSize
+        var worst: Float = 0
+        for i in 1..<n {
+            for c in 0..<3 { worst = max(worst, abs(table[i * 3 + c] - table[(i - 1) * 3 + c])) }
+        }
+        // 하늘(0x86)↔회색(0x9C) 차이가 큰 채널(파랑 ≈ 0.31)이 한 칸에 몰리지 않는다
+        XCTAssertLessThan(worst, 0.03)
+    }
+
+    func testDumpClusteredDayWhenAsked() throws {
+        guard let dir = ProcessInfo.processInfo.environment["PEBBLE_DUMP"] else {
+            throw XCTSkip("PEBBLE_DUMP 미지정")
+        }
+        let r = ImageRenderer(content: HStack(spacing: 24) {
+            LegacyPebbleView(moments: clusteredDay, height: 180)
+            SoftPebbleView(moments: clusteredDay, height: 180 * Shape2.softDiameter, glow: .hero)
+        }
+        .padding(26).background(Tone.base).environment(\.displayScale, 3))
+        r.scale = 3
+        try XCTUnwrap(r.uiImage?.pngData())
+            .write(to: URL(fileURLWithPath: dir).appendingPathComponent("pebble-clustered.png"))
+    }
+}

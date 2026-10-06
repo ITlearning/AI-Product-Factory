@@ -111,7 +111,7 @@ struct SoftPebbleUniforms {
         table = Self.table(stops)
     }
 
-    /// 3줄 × lutSize × RGB — 0 띠 색, 1 후광 색(넓게 흐리고 10% 밝게), 2 테두리 빛 색(35% 밝게)
+    /// 3줄 × lutSize × RGB — 0 띠 색(살짝 번지게), 1 후광 색(넓게 흐리고 10% 밝게), 2 테두리 빛 색(35% 밝게)
     static func table(_ stops: [Float]) -> [Float] {
         let n = lutSize
         var out = [Float](repeating: 0, count: 3 * n * 3)
@@ -122,18 +122,26 @@ struct SoftPebbleUniforms {
         func lighten(_ c: SIMD3<Float>, _ k: Float) -> SIMD3<Float> { c + (SIMD3(repeating: 1) - c) * k }
         for i in 0..<n {
             let t = Float(i) / Float(n - 1)
-            var acc = SIMD3<Float>(repeating: 0), wsum: Float = 0
-            for j in -3...3 {
-                let o = Float(j) * 0.1
-                let w = exp(-(o * o) / (2 * 0.2 * 0.2))
-                acc += ramp(stops, t + o) * w
-                wsum += w
-            }
-            put(0, i, ramp(stops, t))
-            put(1, i, lighten(acc / wsum, 0.10))
-            put(2, i, lighten(ramp(stops, t), 0.35))
+            let band = blurred(stops, t, sigma: 0.06)
+            put(0, i, band)
+            put(1, i, lighten(blurred(stops, t, sigma: 0.2, step: 0.1, reach: 3), 0.10))
+            put(2, i, lighten(band, 0.35))
         }
         return out
+    }
+
+    /// 가까이 붙은 정지점이 칼선이 되지 않게 가우시안으로 섞는다. 기본은 σ/5 간격으로 ±2.5σ — 간격이 넓으면 칼선 대신 계단이 생긴다.
+    static func blurred(_ stops: [Float], _ t: Float, sigma: Float, step: Float? = nil, reach: Int? = nil) -> SIMD3<Float> {
+        let dt = step ?? sigma / 5
+        let reach = reach ?? Int((2.5 * sigma / dt).rounded())
+        var acc = SIMD3<Float>(repeating: 0), wsum: Float = 0
+        for j in -reach...reach {
+            let o = Float(j) * dt
+            let w = exp(-(o * o) / (2 * sigma * sigma))
+            acc += ramp(stops, t + o) * w
+            wsum += w
+        }
+        return acc / wsum
     }
 
     /// stops: [위치, r, g, b] × n. 정지점 사이는 smoothstep 으로 섞는다(레퍼런스와 같게).
@@ -199,7 +207,7 @@ public struct SoftPebbleView: View {
 
     public init(moments: [Moment], height: CGFloat, glow: Glow = .grid, sheen: Double = 0) {
         let key = moments.first.map(\.dayKey) ?? Moment.dayKey(for: Date())
-        self.init(stops: Self.floats(DayGradient.stops(for: moments)), height: height, glow: glow,
+        self.init(stops: Self.floats(DayGradient.pebbleStops(for: moments)), height: height, glow: glow,
                   shape: SoftPebbleShape(dayKey: key), sheen: sheen)
     }
 

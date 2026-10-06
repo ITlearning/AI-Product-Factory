@@ -24,6 +24,19 @@ def ramp(stops, t):
     return out
 
 
+def blurred(stops, t, sigma=0.06):
+    # SoftPebbleUniforms.blurred 와 같게 — σ/5 간격 ±2.5σ. 붙은 정지점이 칼선이 되지 않게.
+    dt = sigma / 5
+    reach = int(round(2.5 * sigma / dt))
+    acc, wsum = 0, 0
+    for j in range(-reach, reach + 1):
+        o = j * dt
+        w = np.exp(-(o * o) / (2 * sigma * sigma))
+        acc = acc + ramp(stops, t + o) * w
+        wsum += w
+    return acc / wsum
+
+
 def lighten(c, k):
     return c + (1 - c) * k
 
@@ -75,14 +88,14 @@ def render(stops, *, tilt_deg=32, egg=0.22, wobble=(0.3, 0.6, 0.4), size=0.54,
     b = np.deg2rad(band_deg)
     along = X * np.sin(b) + Y * np.cos(b)
     t = along * 0.50 + 0.50 + sag * (z - 0.7)
-    base = ramp(stops, t)
+    base = blurred(stops, t)
 
     shade = 0.70 + 0.38 * wrap
     ao = 1 - 0.20 * np.clip((Y - 0.1) / 0.9, 0, 1) ** 2
     col = base * (shade * ao)[..., None]
 
     # 테두리: 어둡게가 아니라 주변 빛(후광 색)이 감싸며 밝아진다
-    env = lighten(ramp(stops, np.clip(Y * 0.45 + 0.5, 0, 1)), 0.35)
+    env = lighten(blurred(stops, np.clip(Y * 0.45 + 0.5, 0, 1)), 0.35)
     fres = (1 - nz) ** 2.5
     col = col + env * (fres * np.clip(wrap * 1.4 - 0.2, 0, 1) * 0.26)[..., None]
 

@@ -137,7 +137,7 @@ public struct LegacyPebbleView: View {
     }
 
     private var dayGradient: some View {
-        let stops = DayGradient.stops(for: moments)
+        let stops = DayGradient.pebbleStops(for: moments)
 
         let tilt = 0.035
         return Group {

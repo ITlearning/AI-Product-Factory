@@ -56,4 +56,23 @@ final class DayGradientTests: XCTestCase {
         XCTAssertEqual(span?.from, moment(0, "#222222").capturedAt)
         XCTAssertEqual(span?.to, moment(30, "#111111").capturedAt)
     }
+
+    // 몇 분 사이로 찍은 사진도 조약돌에선 자리를 갖는다 — 시각만 쓰면 0.150·0.152 처럼 붙어 칼선이 된다.
+    func testPebbleStopsBlendTimeAndOrder() {
+        let moments = [moment(0, "#111111"), moment(72, "#222222"), moment(73, "#333333"), moment(480, "#444444")]
+        let time = DayGradient.stops(for: moments).map(\.location)
+        let pebble = DayGradient.pebbleStops(for: moments).map(\.location)
+        for (i, (t, p)) in zip(time, pebble).enumerated() {
+            XCTAssertEqual(p, 0.5 * t + 0.5 * Double(i) / 3, accuracy: 0.0001)
+        }
+        XCTAssertEqual(pebble.first, 0)
+        XCTAssertEqual(pebble.last ?? 0, 1, accuracy: 0.0001)
+        XCTAssertGreaterThan(pebble[2] - pebble[1], 0.15)
+        XCTAssertEqual(DayGradient.pebbleStops(for: moments).map(\.hex), DayGradient.stops(for: moments).map(\.hex))
+    }
+
+    func testPebbleStopsSingleMoment() {
+        XCTAssertEqual(DayGradient.pebbleStops(for: [moment(0, "#AABBCC")]).map(\.location), [0])
+        XCTAssertTrue(DayGradient.pebbleStops(for: []).isEmpty)
+    }
 }
