@@ -13,6 +13,8 @@ final class CloudSync: CKSyncEngineDelegate {
     static let containerID = "iCloud.com.itlearning.colormoments"
     private let stateURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("sync-state.json")
+    private let environmentURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("sync-environment")
     private let systemFields = SystemFieldsCache(fileURL: FileManager.default
         .urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("sync-records.json"))
 
@@ -24,6 +26,7 @@ final class CloudSync: CKSyncEngineDelegate {
 
     func start() {
         guard engine == nil else { return }
+        matchEnvironment()
         let state = (try? Data(contentsOf: stateURL))
             .flatMap { try? JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: $0) }
         let db = CKContainer(identifier: Self.containerID).privateCloudDatabase
@@ -189,16 +192,38 @@ final class CloudSync: CKSyncEngineDelegate {
         return abs(a.timeIntervalSince(b)) < 0.001
     }
 
-    private func resetForAccountChange() {
-        // 로컬 기록은 절대 지우지 않는다 — 동기화 상태만 버리고 다음 계정에 다시 올린다.
+    /// 로컬 기록은 절대 지우지 않는다 — 동기화 상태만 버린다. 다음 start() 가 상태 없이 시작해 전부 다시 올린다.
+    private func discardSyncState() {
         // 밀린 상태 쓰기가 지운 뒤에 옛 토큰을 되살리지 않게 — 기록 큐 → 시스템 필드 큐 순으로 비운 뒤 지운다.
         store.flush()
         systemFields.removeAll()
         persistSystemFields()
         systemFields.flush()
         try? FileManager.default.removeItem(at: stateURL)
+    }
+
+    private func resetForAccountChange() {
+        discardSyncState()
         engine = nil
         start()
+    }
+
+    /// Development 로 쓰던 설치에 TestFlight 를 덮어 깔면 남은 상태 탓에 Production 에 아무것도 안 올라가고,
+    /// 옛 시스템 필드로 고친 기록은 unknownItem 으로 돌아와 로컬에서 지워진다 — 환경이 바뀌면 상태를 버린다.
+    private func matchEnvironment() {
+        let current = CloudEnvironment.current
+        let saved = (try? String(contentsOf: environmentURL, encoding: .utf8)).flatMap(CloudEnvironment.init(rawValue:))
+        let hasState = FileManager.default.fileExists(atPath: stateURL.path)
+        switch CloudEnvironment.decide(saved: saved, current: current, hasState: hasState) {
+        case .keep:
+            return
+        case .reset:
+            log.notice("environment \(saved?.rawValue ?? "unknown", privacy: .public) → \(current.rawValue, privacy: .public): discarding sync state, re-uploading all")
+            discardSyncState()
+        case .record:
+            break
+        }
+        try? Data(current.rawValue.utf8).write(to: environmentURL, options: .atomic)
     }
 
     // MARK: CKSyncEngineDelegate
