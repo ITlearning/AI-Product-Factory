@@ -1,11 +1,15 @@
 // 온보딩 — 원본 여섯 장(OnboardingSteps.swift) 가운데 웹에서 뜻이 있는 셋만: 소개 → 찍는 법 → 시작.
 // 웹에만 있는 한 장: 소개 다음 「홈 화면에 추가」(홈 화면 앱으로 열었거나 데스크톱이면 건너뜀).
+// 홈 화면 앱(standalone)이고 웹 푸시가 되면 iOS 처럼 「도착 소식」(권한 미정일 때만) · 「사진이 없는 날」 두 장이 찍는 법 앞에 낀다.
 // 한 번만 뜬다(다시 부르는 「도움말」 없음 — 원본 §1.5). 확인용으로만 ?onboarding 을 붙이면 다시 뜬다.
 import { h, layers, layerRoot } from './dom.js';
 import { pebbleNode, dashedPebbleNode } from './pebble-gl.js';
 import { flowerEl, flowerSVG, PETAL_COLORS, reduceMotion, sprinkle } from './flowers.js';
 import { animateSpring } from './motion.js';
-import { canOfferInstall, installGuide } from './install.js';
+import { canOfferInstall, installGuide, isStandalone } from './install.js';
+import { pushSupported, enableNotices, getFrequency } from './push.js';
+import { frequencyChips } from './settings.js';
+import { BODY } from './notice.js';
 
 const SAMPLE = (() => {
   const base = 1758000000000;
@@ -60,6 +64,41 @@ function startScene() {
   return s;
 }
 
+const noteCard = (body, time) => h('div', { class: 'ob-note-card' },
+  h('img', { src: './icons/icon-180.png', alt: '' }),
+  h('div', null, h('b', null, '몽돌'), h('span', null, body)),
+  h('time', null, time));
+
+function arrivalPage() {
+  return {
+    scene: () => h('div', { class: 'ob-scene notice' },
+      h('div', { class: 'ob-breathe' }, pebbleNode({ moments: SAMPLE, dayKey: '2025-09-16', height: 110, glow: 'hero', lazy: false })),
+      noteCard(BODY.arrival, '오전 8:00')),
+    title: '사진을 담은 다음 날 아침, 조약돌이 도착하면 톡! 하고 한 번 알려 드려요.',
+    detail: '알림을 켜면 알림 시각만 서버로 가요. 사진·색·기록은 이 기기에만 있어요.',
+    primary: '알려 주세요!',
+    // 권한 창은 클릭 안에서 바로 띄운다 — 기다리지 않고 다음 장으로 넘어간다.
+    onPrimary: (next) => { enableNotices(); next(); },
+    secondary: '괜찮아요',
+    onSecondary: (next) => next(),
+  };
+}
+
+function reminderPage(followsArrival) {
+  return {
+    scene: () => h('div', { class: 'ob-scene notice' },
+      noteCard(BODY.morning, '오전 9:00'),
+      noteCard(BODY.evening, '노을 무렵')),
+    title: `${followsArrival ? '그리고 사진이 없는 날엔' : '사진이 없는 날엔'} 아침이랑 노을 무렵에 살짝 알려 드릴게요!`,
+    detail: '한 장이라도 담은 날은 안 와요. 설정에서 언제든 바꿀 수 있어요.',
+    extra: () => [frequencyChips()],
+    onPrimary: (next) => {
+      if (getFrequency() !== 'off' && Notification.permission === 'default') enableNotices();
+      next();
+    },
+  };
+}
+
 function installPage(hasRecords) {
   const g = installGuide({ hasRecords });
   return {
@@ -90,6 +129,10 @@ export function showOnboarding({ onStart, onSample, hasRecords = false }) {
     },
   ];
   if (canOfferInstall()) pages.splice(1, 0, installPage(hasRecords));
+  if (isStandalone() && pushSupported()) {
+    const asks = Notification.permission === 'default';
+    pages.splice(1, 0, ...(asks ? [arrivalPage()] : []), reminderPage(asks));
+  }
   let index = 0;
   const track = h('div', { class: 'ob-track' });
   const dots = h('div', { class: 'ob-dots', 'aria-hidden': 'true' }, ...pages.map(() => h('span')));
@@ -121,9 +164,10 @@ export function showOnboarding({ onStart, onSample, hasRecords = false }) {
     [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
     back.style.visibility = i > 0 ? 'visible' : 'hidden';
     const last = i === pages.length - 1;
-    primary.textContent = last ? '시작하기' : '다음';
-    secondary.textContent = last ? '견본 하루 채우고 둘러보기' : '';
-    secondary.style.display = last ? '' : 'none';
+    const p = pages[i];
+    primary.textContent = p.primary || (last ? '시작하기' : '다음');
+    secondary.textContent = p.secondary || (last ? '견본 하루 채우고 둘러보기' : '');
+    secondary.style.display = last || p.secondary ? '' : 'none';
   };
 
   const finish = (withSample) => {
@@ -134,8 +178,14 @@ export function showOnboarding({ onStart, onSample, hasRecords = false }) {
       (withSample ? onSample : onStart)?.();
     }, 520);
   };
-  primary.addEventListener('click', () => (index < pages.length - 1 ? go(index + 1) : finish(false)));
-  secondary.addEventListener('click', () => finish(true));
+  const next = () => go(index + 1);
+  primary.addEventListener('click', () => {
+    const p = pages[index];
+    if (p.onPrimary) p.onPrimary(next);
+    else if (index < pages.length - 1) next();
+    else finish(false);
+  });
+  secondary.addEventListener('click', () => (pages[index].onSecondary ? pages[index].onSecondary(next) : finish(true)));
   back.addEventListener('click', () => index > 0 && go(index - 1));
 
   layerRoot().append(root);

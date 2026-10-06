@@ -1,5 +1,5 @@
 // 홈 화면에 추가 안내 — 환경마다 다른 길(iPhone Safari · 앱 안 브라우저 · Android · 데스크톱)을 고른다.
-// 푸시는 아직 없다. 알림을 약속하는 말은 쓰지 않는다.
+// iOS 웹 푸시는 홈 화면 앱에서만 된다 — 설정의 「도착 소식 받기」가 이 시트로 이어진다.
 import { h, layers, layerRoot, closePill, toast } from './dom.js';
 
 const UA = navigator.userAgent || '';
@@ -94,7 +94,7 @@ export function installGuide({ hasRecords = false } = {}) {
   let scene, detail, note = null, actions = null;
 
   if (env === 'ios') {
-    detail = '주소창 없이 화면 가득, 아이콘 한 번이면 바로 몽돌이에요. Safari 에서 세 번만 톡톡톡!';
+    detail = '주소창 없이 화면 가득, 아이콘 한 번이면 바로 몽돌이에요. 조약돌 도착 알림도 홈 화면 몽돌에서 받을 수 있어요. Safari 에서 세 번만 톡톡톡!';
     scene = h('ol', { class: 'inst-steps' },
       step(1, ICON.share, '아래(또는 위) 공유 버튼을 눌러요', '주소창 옆 「…」 메뉴 안에 있을 수도 있어요'),
       step(2, ICON.add, '「홈 화면에 추가」를 골라요', '안 보이면 목록을 살짝 내려 봐요'),

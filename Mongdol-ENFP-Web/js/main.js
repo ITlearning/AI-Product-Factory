@@ -10,6 +10,7 @@ import { openHandful } from './handful.js';
 import { showOnboarding } from './onboarding.js';
 import { openSettings } from './settings.js';
 import { openInstallSheet } from './install.js';
+import { startPushSync } from './push.js';
 import { fillSample } from './sample.js';
 import { warmUp } from './pebble-gl.js';
 import { layers, toast, confirmDialog } from './dom.js';
@@ -113,6 +114,7 @@ async function boot() {
 
   await store.load();
   renderAll();
+  startPushSync(store);
 
   const forceOnboarding = new URLSearchParams(location.search).has('onboarding');
   if (forceOnboarding || (!meta.get('onboarded', false) && store.isEmpty)) {

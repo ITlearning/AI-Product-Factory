@@ -19,14 +19,50 @@ python3 -m http.server 8000
 
 ### 홈 화면에 추가(PWA)
 
-나중에 웹 푸시를 붙일 밑작업이다(iOS 웹 푸시는 홈 화면에 둔 앱에서만 된다). 푸시 코드는 아직 없다.
+웹 푸시(아래)의 밑작업이다 — iOS 웹 푸시는 홈 화면에 둔 앱에서만 된다.
 
 - `manifest.webmanifest` + `icons/`(원본 앱 아이콘 icon-1024 를 `sips` 로 180·192·512, maskable 512 는 420 으로 줄여 아이콘 테두리 색 `#0D0D12` 로 여백).
 - `sw.js` — 같은 출처 요청은 **네트워크 먼저, 안 되면 캐시**(캐시 이름 `mongdol-v1`). 새로 배포하면 다음에 열 때 바로 새 판이 뜬다. 페이지는 쿼리(`?now=`·`?debug`)를 떼고 한 칸에 담아 오프라인에서도 뜬다. Google Fonts 같은 바깥 요청은 건드리지 않는다. 한 번 열어 SW 가 붙은 뒤 받은 파일만 오프라인에서 쓸 수 있다.
 - `js/install.js` — 환경별 안내. 홈 화면 앱(`display-mode: standalone`·`navigator.standalone`)이면 안 띄움 · iOS 앱 속 브라우저(카카오톡·인스타·페이스북·라인·네이버 등)는 「Safari로 열기」 + 주소 복사 · iOS Safari 는 공유 → 홈 화면에 추가 → 추가 3단계 · Android 는 `beforeinstallprompt` 로 「홈 화면에 추가」 버튼(안 오면 ⋮ 메뉴 안내) · 데스크톱은 안내 안 함.
 - 보이는 곳: 온보딩 소개 다음 한 장(홈 화면 앱·데스크톱이면 건너뜀), 설정 「몽돌 서랍」의 「홈 화면에 추가하기」(홈 화면 앱이면 숨김).
 - **iPhone 은 Safari 탭과 홈 화면 앱의 저장소(IndexedDB)가 따로다.** 안내에 늘 적고, 이 Safari 에 기록이 있으면 「홈 화면에서 열면 새로 시작해요. 지금까지 담은 건 이 Safari 에 그대로 남아요」로 바꿔 말한다.
-- 배포 폴더에 `manifest.webmanifest`·`sw.js`·`icons/` 가 같이 올라가야 한다. 캐시 구조를 바꿀 땐 `sw.js` 의 `CACHE` 버전을 올린다.
+- 배포 폴더에 `manifest.webmanifest`·`sw.js`·`icons/` 가 같이 올라가야 한다(지금 캐시 이름 `mongdol-v2`, `/api/` 요청은 SW 가 건드리지 않는다). 캐시 구조를 바꿀 땐 `sw.js` 의 `CACHE` 버전을 올린다.
+
+### 웹 푸시(알림) — iOS 앱과 같은 정책
+
+**서버엔 알림 「시각·종류」 일정만 올라간다(2026-10-06 Tabber).** 사진·색·기록·조약돌 이름은 기기 밖으로 나가지 않는다. 서버가 아는 건 푸시 구독(endpoint·키), 시간대 이름, `{at, kind, key(dayKey)}` 목록뿐이다.
+
+| 종류 | 조건 | 시각 | 문구(iOS 그대로) |
+|---|---|---|---|
+| 도착 소식 `arrival-<dayKey>` | 그날 사진 있음 · 일찍 닫지 않음 · 아직 증정 안 받음 | dayKey 다음 날 08:00 | 어제의 조약돌이 도착했어요. |
+| 사진 없는 날 아침 `reminder-<key>-morning` | 빈도상 대상 · 그날 사진 0 · 그날 도착 소식 없음 | 09:00 | 오늘은 어떤 색을 만나게 될까요. |
+| 사진 없는 날 노을 `reminder-<key>-evening` | 위와 같음 | 서울 월별 일몰(15일 값 보간) − 20분 | 노을 지는 시간이에요. 순간을 남겨 보는 건 어때요? |
+
+- 빈도(설정 「사진이 없는 날 알림」): 자주 / **가끔(기본, 달력 한 주에 이틀 — 주 번호 FNV 해시로 요일)** / 받지 않기. 받지 않기여도 도착 소식은 따로 온다(iOS 처럼 권한만 본다). 앞으로 7일치. 제목 「몽돌」, 배지 없음.
+- `js/notice.js` — `App/ArrivalNotice.swift` 의 `ArrivalNotice`·`MomentReminder` 를 그대로 옮긴 순수 계산. 판정 재료는 `store.js`(일찍 닫기·받은 날 floor·새벽 4시 dayKey). 새벽 0~4시엔 iOS 처럼 key 는 어제, 발화 날짜는 오늘 달력이다(원본 그대로 둔 동작).
+- `js/push.js` — 지원 판별(`PushManager`·`serviceWorker`·`Notification`, iOS 는 홈 화면 앱일 때만 — 아니면 설정에서 「홈 화면에 추가하면 알림을 받을 수 있어요」 → 안내 시트), 권한은 버튼 클릭 안에서 바로 `Notification.requestPermission()` → `pushManager.subscribe`. 부팅·저장소 바뀜(2초 모아서)·다시 보일 때·빈도 바꿈·증정 뒤 일정을 다시 계산해 `POST /api/push-schedule`. 같은 내용이면 하루에 한 번만 다시 보낸다(localStorage `mongdol.push.last` 해시). 알림 끄기·권한 철회 → `DELETE`. 받은 날의 도착 소식이 알림 센터에 남아 있으면 걷는다.
+- `sw.js` — `push` 는 무슨 일이 있어도 알림 하나를 띄운다(iOS 는 안 띄우면 구독을 끊는다). 페이로드가 깨져도 기본 문구로. `notificationclick` 은 열린 창을 앞으로, 없으면 새 창.
+- 온보딩: 홈 화면 앱으로 처음 열면(iPhone 은 저장소가 새라 온보딩이 다시 뜬다) 소개 다음에 「도착 소식」(권한 미정일 때만, 「알려 주세요!」/「괜찮아요」) · 「사진이 없는 날」(빈도 칩, 「다음」에서 받지 않기가 아니고 권한 미정이면 권한 요청) 두 장. 홈 화면 앱이 아니거나 푸시 미지원이면 건너뛴다.
+
+**서버(Vercel 서버리스, `api/`)** — `package.json` 의 `web-push`·`@upstash/redis`·`@upstash/ratelimit`·`zod`.
+
+- `api/push-schedule.js` — `POST {subscription, items(≤30), tz}` / `DELETE {endpoint}`. zod 검증, endpoint 는 https + 알려진 푸시 호스트(web.push.apple.com · fcm.googleapis.com · updates.push.services.mozilla.com · *.notify.windows.com)만. 본문 16KB, IP 당 분당 30. 지금~8일 밖의 항목은 조용히 뺀다.
+- `api/push-send.js` — `Authorization: Bearer $CRON_SECRET` 아니면 401. `mongdol:due` 에서 기한 된 것 최대 500개를 꺼내 Declarative Web Push(`{"web_push":8030,"notification":{title,body,navigate,silent:false,tag,lang}}`, TTL 3600)로 보낸다. 45분 넘게 늦은 건 버린다. 404/410 이면 그 구독을 통째로 지우고, 5xx 등은 다음 번에 다시.
+- Redis 키(모두 `mongdol:`): `mongdol:sub:<sha256(endpoint) 앞 32자>`(구독, TTL 30일·동기화마다 연장) · `mongdol:items:<id>`(SET) · `mongdol:due`(ZSET, score=보낼 시각 ms, member=`<id>|<kind>|<dayKey>`) · `mongdol:rl:*`(레이트리밋).
+- 환경변수: `KV_REST_API_URL`·`KV_REST_API_TOKEN`(또는 `UPSTASH_REDIS_REST_*`) · `VAPID_PUBLIC_KEY`·`VAPID_PRIVATE_KEY` · `CRON_SECRET`. 클라이언트의 공개키는 `js/push.js` 의 `VAPID_PUBLIC` 과 같아야 한다.
+- **배포 때 지우면 안 되는 것: `api/`, `package.json`, `package-lock.json`.** (`screenshots/ tests/ tools/ lab.html lab-icon.png README.md` 는 지워도 된다. `node_modules/` 는 올리지 않는다 — Vercel 이 설치한다.)
+
+**크론 = Upstash QStash 스케줄(Tabber 가 콘솔에서 한 번 만든다).** Vercel Hobby 크론은 하루 1번이라 안 쓴다.
+
+1. https://console.upstash.com → QStash → Schedules → Create Schedule
+2. Destination: `https://mongdol-enfp.vercel.app/api/push-send` (Method `POST` 또는 `GET`)
+3. Cron: `*/10 * * * *` (10분마다)
+4. Headers: `Upstash-Forward-Authorization: Bearer <Vercel 의 CRON_SECRET 값>` — QStash 가 `Authorization` 헤더로 넘겨 준다.
+5. Retries 0~1 로 충분(늦은 건 서버가 버린다). 만든 뒤 「Run」 한 번 → 응답이 `{"ok":true,"due":0,...}` 이면 된 것, 401 이면 시크릿이 틀린 것.
+
+알림은 10분 간격으로 돌아서 정해진 시각보다 최대 10분쯤 늦게 올 수 있다.
+
+**시험** — `npm install && npm test`(서울 시각으로 돈다): 일정 계산(iOS `ArrivalNoticeTests` 같은 사례 + Swift 원본 함수로 뽑은 2026~2027 하루마다 가끔·노을 값 `tests/ios-reminder-parity.json`, `tools/ios_reminder_parity.swift`), 서버(메모리 가짜 Redis·web-push), `sw.js` push 처리(vm). 브라우저 확인은 `tests/push-e2e.mjs`.
 
 ### 확인용 주소 인자
 
@@ -54,7 +90,9 @@ python3 -m http.server 8000
 index.html        화면 뼈대(홈·모은 조약돌·탭바·겹) + 링크 미리보기(og:*)
 og.png            링크 미리보기 이미지 1200×630(tools/og.html 을 찍어 만든다)
 manifest.webmanifest  홈 화면에 추가(이름·아이콘·standalone)
-sw.js             서비스 워커(네트워크 먼저, 오프라인이면 캐시)
+sw.js             서비스 워커(네트워크 먼저, 오프라인이면 캐시 · 푸시 알림 띄우기)
+api/              Vercel 서버리스 — push-schedule(일정 받기) · push-send(크론이 보내기) · _lib/push.js
+package.json      서버 의존성(web-push · @upstash/redis · @upstash/ratelimit · zod) · npm test
 icons/            앱 아이콘 180·192·512 · maskable 512
 styles.css        토큰·전 화면 스타일
 data/words.json   사진 한 단어 사전 — 원본 v6 에서 날짜·시각만으로 참인 말 100개(tools/build_words.py 로 다시 뽑는다)
@@ -82,7 +120,9 @@ js/
   keepsake.js     건네기 시트(사진 넘겨 고르기 · Web Share 파일 · 안 되면 저장·문구 복사)
   onboarding.js   온보딩 세 장(+ 휴대폰이면 홈 화면에 추가 한 장)
   install.js      홈 화면에 추가 안내(환경 판별 · 설치 창 · 안내 시트)
-  settings.js     설정(견본 · 홈 화면에 추가하기 · 친구에게도 해보라고 하기 · 전부 지우기)
+  notice.js       알림 일정 계산(ArrivalNotice · MomentReminder 포팅)
+  push.js         웹 푸시 구독 · 일정 동기화
+  settings.js     설정(알림 · 견본 · 홈 화면에 추가하기 · 친구에게도 해보라고 하기 · 전부 지우기)
   flowers.js      SVG 꽃 · 꽃잎 · 반짝이 · 컨페티
   motion.js       SwiftUI 스프링을 Web Animations 키프레임으로
   sample.js       견본 하루(캔버스 풍경 + 실제 색 추출)
@@ -154,7 +194,7 @@ screenshots/             확인 스크린샷
 ## 지킨 원칙 (원본 SPEC §2)
 
 - **찍을 때 색을 안 보여 준다.** 담기 화면엔 확인 문구와 사진 더미뿐. 진행 중인 오늘은 홈 배경을 물들이지 않고, 점선 돌만 두며, 상세의 시간축 띠·눈금·색 점, 사진 크게 보기의 색 점도 숨긴다.
-- **스트릭·연속일수·배지·재촉 없음.** 오히려 「매일 안 와도 괜찮아요」, 「아무것도 안 담은 날도 완전 괜찮아요」를 말한다. 알림도 없다.
+- **스트릭·연속일수·배지·재촉 없음.** 오히려 「매일 안 와도 괜찮아요」, 「아무것도 안 담은 날도 완전 괜찮아요」를 말한다. 재촉 알림도 없다 — 알림은 iOS 와 같은 도착 소식과 고를 수 있는 「사진이 없는 날」 한 줄뿐(받지 않기 가능).
 - **공유는 도구 공유가 기본.** 설정의 「친구에게도 해보라고 하기」가 앱 주소를 건넨다(Web Share, 없으면 주소 복사).
 - **조약돌 카드 「건네기」는 예외로 넣었다(2026-10-06 Tabber 결정 — iOS 카드와 같게, 사진 포함).** 하루 상세·한 줌의 「건네기」 버튼에서 1080×1920 카드(`js/card.js`, 시트는 `js/keepsake.js`)를 만들어 건넨다. 예외의 조건:
   - 사용자가 직접 누를 때만 연다. 홈·증정 직후엔 권유하지 않는다.
@@ -164,7 +204,7 @@ screenshots/             확인 스크린샷
   - 공유 문구가 몽돌 주소를 겸한다(「노을을 건네요! 나도 몽돌 받아 보기 → 주소」). 파일 공유가 안 되는 브라우저는 카드를 크게 띄워 길게 눌러 저장·저장 버튼·문구 복사로 대신한다.
 - **색 고르기 없음.** 기각된 기능이라 넣지 않았다.
 - **격자·가로 스크롤 없음.** 한 줌도 격자가 아니다.
-- **외부 전송 없음.** 사진과 기록은 이 브라우저의 IndexedDB·localStorage에만 있다. 분석·로그 수집 코드는 없다. 밖으로 나가는 요청은 Google Fonts 글꼴 파일뿐이다.
+- **사진·색·기록은 밖으로 안 나간다.** 이 브라우저의 IndexedDB·localStorage에만 있다. 분석·로그 수집 코드는 없다. 밖으로 나가는 건 Google Fonts 글꼴 파일, 그리고 알림을 켰을 때 알림 시각·종류 일정(`/api/push-schedule`)뿐이다.
 
 ## 확인한 것
 
@@ -215,7 +255,7 @@ gstack 헤드리스 Chromium(WebGL2 켬), 390×844 @2x에서 확인했다. 스�
 - **실기기(iPhone Safari·WKWebView)에서 돌려 보지 않았다.** 스크롤 매끄러움, 스와이프 손맛, 스프링 모션, 카메라는 실기기에서만 판정된다. 헤드리스엔 카메라가 없어 getUserMedia 경로는 「카메라가 부끄럼을 타나 봐요」 대체 화면까지만 봤다.
 - WKWebView에서 `file://` ES 모듈 로딩은 요확인(위 참고).
 - 사진 한 단어: 원본은 기기 안 모델(TinyCLIP)이 사진을 보고 1,792개 중에서 고른다. 웹엔 모델이 없어서 사진에 뭐가 찍혔든 참인 말만 쓴다 — 원본 규칙 경로의 「때」 단어 28개 + 날짜 사실 단어 73개(명절·음력·철, 2026-10-06 Tabber 확정). 판정(시각·해 높이·달 나이·음력·양력)은 원본 `WordPicker.judge` 그대로이고 해·달 계산은 Swift 와 소수 여섯째 자리까지 같다. 날씨·기온 말은 웹이 날씨를 몰라 뺐다. 최근 14장의 단어와 그날 조약돌 이름은 피하고, ↻ 는 사진마다 한 번 다른 갈래로 바꾼다. 쉬게 한 말(rest)은 맞는 말이 없을 때만 쓴다.
-- 원본에 있는 것 중 안 옮긴 것: 잠금화면 카메라 컨트롤·위젯·아침 도착 알림·iCloud 이어 보기(웹에 없는 자리), 추천 사진으로 첫 조약돌 받기(Vision 점수), 핀치 줌·배율 알약, 알약을 잡고 끌어 달 단위로 훑기(알약은 보이기만 한다), 둥근 돌/반듯한 돌 고르기(예전 모양은 2D 대체로만 남았다).
+- 원본에 있는 것 중 안 옮긴 것: 잠금화면 카메라 컨트롤·위젯·iCloud 이어 보기(웹에 없는 자리), 추천 사진으로 첫 조약돌 받기(Vision 점수), 핀치 줌·배율 알약, 알약을 잡고 끌어 달 단위로 훑기(알약은 보이기만 한다), 둥근 돌/반듯한 돌 고르기(예전 모양은 2D 대체로만 남았다).
 - 사진은 긴 변 1280px로 줄여 저장한다(원본은 원본 해상도). 브라우저 저장소를 지우면 기록도 사라진다.
 - **Safari는 오래(약 7일) 열지 않은 사이트의 저장소를 지울 수 있다.** 첫 기록을 남길 때 `navigator.storage.persist()`로 「지우지 말아 달라」고 청하지만, 받아 줄지는 브라우저가 정한다. 홈 화면에 추가한 웹앱이나 WKWebView 앱 안에서는 이 규칙이 다르게 적용된다(요확인). 기록을 오래 지키려면 앱 쪽 저장소로 옮겨야 한다.
 - 같은 사진 두 번 담기는 파일 이름·크기·수정 시각이 같을 때만 거른다. 같은 사진을 다른 이름으로 저장해 다시 고르면 두 번 들어간다.
