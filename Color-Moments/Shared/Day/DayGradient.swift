@@ -11,15 +11,44 @@ public enum DayGradient {
         positions(for: moments).map { Stop(location: $0.location, hex: $0.moment.colorHex) }
     }
 
-    /// 조약돌용 — 시각 비례와 찍은 순서를 반반 섞는다. 시각만 쓰면 몇 분 사이 찍은 색이 칼선이 되고
-    /// 하루 끝 사진이 테두리 조각으로 몰린다. 타임라인은 시각이 정확해야 하니 stops 를 쓴다.
+    /// 조약돌용 색 자리. 사진마다 제 색 자리(무채색은 35%)와 사이 전환을 두고, 전환 가운데 색은 무채색 쪽으로 민다.
+    /// 시각은 전환 길이에만(공백의 제곱근) 조금 반영한다 — 점심과 저녁 사이 긴 공백의 탁한 섞임이 돌을 덮지 않게.
+    /// 타임라인은 시각이 정확해야 하니 stops 를 쓴다.
     public static func pebbleStops(for moments: [Moment]) -> [Stop] {
-        let placed = positions(for: moments)
-        guard placed.count > 1 else { return stops(for: moments) }
-        let last = Double(placed.count - 1)
-        return placed.enumerated().map { i, p in
-            Stop(location: 0.5 * p.location + 0.5 * Double(i) / last, hex: p.moment.colorHex)
+        let sorted = moments.sorted { $0.capturedAt < $1.capturedAt }
+        guard sorted.count > 1 else { return stops(for: moments) }
+        let hexes = sorted.map(\.colorHex)
+        let weights = hexes.map { hex in rgb(hex).map { 0.35 + 0.65 * min(1, chroma($0) / 0.35) } ?? 1 }
+        let gaps = zip(sorted, sorted.dropFirst()).map { max($1.capturedAt.timeIntervalSince($0.capturedAt), 1).squareRoot() }
+        let longest = gaps.max() ?? 1
+
+        var placed: [(location: Double, hex: String)] = []
+        var x = 0.0
+        for i in hexes.indices {
+            placed.append((x, hexes[i]))
+            x += weights[i]
+            placed.append((x, hexes[i]))
+            guard i < gaps.count else { break }
+            let span = 1.6 * (0.6 + 0.4 * gaps[i] / longest)
+            let lean = weights[i] / (weights[i] + weights[i + 1])
+            placed.append((x + span * lean, halfway(hexes[i], hexes[i + 1])))
+            x += span
         }
+        return placed.map { Stop(location: $0.location / x, hex: $0.hex) }
+    }
+
+    private static func rgb(_ hex: String) -> SIMD3<Double>? {
+        let digits = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+        guard digits.count == 6, let v = UInt32(digits, radix: 16) else { return nil }
+        return [Double((v >> 16) & 0xFF), Double((v >> 8) & 0xFF), Double(v & 0xFF)] / 255
+    }
+
+    private static func chroma(_ c: SIMD3<Double>) -> Double { c.max() - c.min() }
+
+    private static func halfway(_ a: String, _ b: String) -> String {
+        guard let ca = rgb(a), let cb = rgb(b) else { return a }
+        let m = ((ca + cb) * 127.5).rounded(.toNearestOrAwayFromZero)
+        return String(format: "#%02X%02X%02X", Int(m.x), Int(m.y), Int(m.z))
     }
 
     public static func positions(for moments: [Moment]) -> [(moment: Moment, location: Double)] {

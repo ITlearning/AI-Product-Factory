@@ -57,18 +57,36 @@ final class DayGradientTests: XCTestCase {
         XCTAssertEqual(span?.to, moment(30, "#111111").capturedAt)
     }
 
-    // 몇 분 사이로 찍은 사진도 조약돌에선 자리를 갖는다 — 시각만 쓰면 0.150·0.152 처럼 붙어 칼선이 된다.
-    func testPebbleStopsBlendTimeAndOrder() {
-        let moments = [moment(0, "#111111"), moment(72, "#222222"), moment(73, "#333333"), moment(480, "#444444")]
-        let time = DayGradient.stops(for: moments).map(\.location)
-        let pebble = DayGradient.pebbleStops(for: moments).map(\.location)
-        for (i, (t, p)) in zip(time, pebble).enumerated() {
-            XCTAssertEqual(p, 0.5 * t + 0.5 * Double(i) / 3, accuracy: 0.0001)
-        }
-        XCTAssertEqual(pebble.first, 0)
-        XCTAssertEqual(pebble.last ?? 0, 1, accuracy: 0.0001)
-        XCTAssertGreaterThan(pebble[2] - pebble[1], 0.15)
-        XCTAssertEqual(DayGradient.pebbleStops(for: moments).map(\.hex), DayGradient.stops(for: moments).map(\.hex))
+    private func territory(_ stops: [DayGradient.Stop], of index: Int) -> Double {
+        stops[index * 3 + 1].location - stops[index * 3].location
+    }
+
+    // 사진마다 [자리 시작, 자리 끝] + 사이 전환 가운데 한 점 — n장이면 3n-1개
+    func testPebbleStopsGiveEachPhotoACoreAndOneMidpoint() {
+        let stops = DayGradient.pebbleStops(for: [moment(0, "#E3B04B"), moment(10, "#6E9E5C"), moment(400, "#E07A5F")])
+        XCTAssertEqual(stops.count, 8)
+        XCTAssertEqual(stops.first?.location, 0)
+        XCTAssertEqual(stops.last?.location ?? 0, 1, accuracy: 0.0001)
+        XCTAssertEqual(stops.map(\.location), stops.map(\.location).sorted())
+        XCTAssertEqual([0, 1, 3, 4, 6, 7].map { stops[$0].hex },
+                       ["#E3B04B", "#E3B04B", "#6E9E5C", "#6E9E5C", "#E07A5F", "#E07A5F"])
+    }
+
+    // 점심 짙은 회색 → 저녁 노을: 회색은 자리가 작고, 섞인 가운데 색은 회색 쪽에 붙는다
+    func testNeutralPhotoGetsLessRoomThanVividOne() {
+        let stops = DayGradient.pebbleStops(for: [moment(0, "#4A4A4E"), moment(400, "#E07A5F")])
+        XCTAssertLessThan(territory(stops, of: 0), territory(stops, of: 1) * 0.5)
+        let mid = stops[2].location
+        XCTAssertLessThan(mid - stops[1].location, stops[3].location - mid)
+    }
+
+    // 6시간 공백도 10분 공백의 전환보다 2배 넘게 길어지지 않는다 — 공백이 돌을 덮지 않게
+    func testLongGapOnlyStretchesTheTransitionALittle() {
+        let stops = DayGradient.pebbleStops(for: [moment(0, "#E3B04B"), moment(10, "#6E9E5C"), moment(370, "#E07A5F")])
+        let short = stops[3].location - stops[1].location
+        let long = stops[6].location - stops[4].location
+        XCTAssertGreaterThan(long, short)
+        XCTAssertLessThan(long, short * 2)
     }
 
     func testPebbleStopsSingleMoment() {

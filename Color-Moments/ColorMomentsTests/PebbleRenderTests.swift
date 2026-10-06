@@ -317,6 +317,18 @@ extension PebbleRenderTests {
         }
     }
 
+    /// 점심 노랑·초록·짙은 회색 → 6시간 공백 → 저녁 노을·남색
+    private var lunchDinnerDay: [Moment] {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let base = cal.date(from: DateComponents(year: 2026, month: 10, day: 3))!
+        let shots: [(Int, String)] = [(720, "#E3B04B"), (728, "#6E9E5C"), (736, "#4A4A4E"),
+                                      (1140, "#E07A5F"), (1146, "#4F63A8")]
+        return shots.map { m, hex in
+            Moment(capturedAt: base.addingTimeInterval(Double(m) * 60), colorHex: hex,
+                   fileName: "l\(m).jpg", source: .app)
+        }
+    }
+
     func testBandTableHasNoHardEdgeForClusteredDay() {
         let stops = SoftPebbleView.floats(DayGradient.pebbleStops(for: clusteredDay))
         let table = SoftPebbleUniforms.table(stops)
@@ -333,9 +345,13 @@ extension PebbleRenderTests {
         guard let dir = ProcessInfo.processInfo.environment["PEBBLE_DUMP"] else {
             throw XCTSkip("PEBBLE_DUMP 미지정")
         }
-        let r = ImageRenderer(content: HStack(spacing: 24) {
-            LegacyPebbleView(moments: clusteredDay, height: 180)
-            SoftPebbleView(moments: clusteredDay, height: 180 * Shape2.softDiameter, glow: .hero)
+        let r = ImageRenderer(content: VStack(spacing: 24) {
+            ForEach([clusteredDay, lunchDinnerDay], id: \.first!.fileName) { day in
+                HStack(spacing: 24) {
+                    LegacyPebbleView(moments: day, height: 180)
+                    SoftPebbleView(moments: day, height: 180 * Shape2.softDiameter, glow: .hero)
+                }
+            }
         }
         .padding(26).background(Tone.base).environment(\.displayScale, 3))
         r.scale = 3
