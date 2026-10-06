@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>몽돌 조약돌 실험실</title>
+<style>
+  body { margin: 0; background: #fff8f0; font: 13px system-ui, sans-serif; color: #3a2830; }
+  h2 { font-size: 13px; margin: 16px 16px 6px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; align-items: center; }
+  .dark { background: #0a0b10; }
+  canvas { display: block; }
+  img { width: 256px; height: 256px; display: block; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+</style>
+</head>
+<body>
+<h2>원본 비교 — 왼쪽 아이콘(icon-1024), 오른쪽 셰이더(어두운 배경·원본 더하는 빛 합성)</h2>
+<div class="row dark" id="compare"></div>
+<h2>밝은 배경 합성 — hero / grid / photo</h2>
+<div class="row" id="light"></div>
+<h2>날짜별 모양 — 같은 색, 다른 날</h2>
+<div class="row" id="shapes"></div>
+<pre id="info" style="padding:0 16px"></pre>
+<script type="module">
+import { getRenderer, specFor, bakedPebble, rendererInfo, pebbleNode } from './js/pebble-gl.js';
+import { PLACEHOLDER } from './js/shape.js';
+
+const GEMINI = [[0.00, '#8e9ab0'], [0.22, '#8fa9c2'], [0.40, '#a9c6d8'], [0.48, '#bcd0dc'],
+  [0.55, '#f2e6d2'], [0.60, '#f0d6bb'], [0.66, '#efc0a2'], [0.80, '#eea08c'], [1.00, '#b86a6c']];
+const t0 = Date.UTC(2026, 8, 20, 6);
+const asMoments = (st, key) => st.map(([loc, hex], i) => ({ id: 'x' + i, capturedAt: t0 + loc * 36e5 * 10, colorHex: hex, dayKey: key }));
+
+const cmp = document.getElementById('compare');
+const icon = new Image(); icon.src = "lab-icon.png"; icon.style.width = icon.style.height = "256px"; icon.onerror = () => icon.remove();
+cmp.append(icon);
+// 아이콘과 같은 구도: 1024 캔버스에 돌 지름 0.54
+const r = getRenderer();
+const spec = specFor({ moments: asMoments(GEMINI, 'k'), dayKey: 'k', height: 256 * 0.54 / 0.76, glow: 'hero' });
+spec.shape = PLACEHOLDER;
+const d = r ? r.draw({ ...spec, bg: { mode: 0, contact: 1, glowGain: 1 } }) : null;
+const out = document.createElement('canvas');
+out.width = d ? d.w : 10; out.height = out.width;
+out.style.width = out.style.height = (d ? d.side : 10) + 'px';
+const ctx = out.getContext('2d');
+ctx.fillStyle = '#0a0b10'; ctx.fillRect(0, 0, out.width, out.height);
+if (d) ctx.drawImage(d.src, d.sx, d.sy, d.w, d.h, 0, 0, out.width, out.height);
+cmp.append(out);
+
+const days = [
+  ['2026-09-21', [[0, '#2B3550'], [0.25, '#33509B'], [0.5, '#6A4A7A'], [0.75, '#A6404A'], [1, '#B12E12']]],
+  ['2026-09-19', [[0, '#7FB0DC'], [0.33, '#8CB8DE'], [0.66, '#6795BC'], [1, '#3C6A9B']]],
+  ['2026-09-17', [[0, '#5B7F5B'], [0.5, '#8FA36B'], [1, '#A79C87']]],
+  ['2026-09-12', GEMINI],
+];
+const light = document.getElementById('light');
+for (const glow of ['hero', 'grid', 'photo']) {
+  for (const [key, st] of days) {
+    const cell = document.createElement('div'); cell.className = 'cell';
+    cell.append(pebbleNode({ moments: asMoments(st, key), dayKey: key, height: glow === 'hero' ? 130 : 84, glow, lazy: false }));
+    cell.append(glow + ' ' + key);
+    light.append(cell);
+  }
+}
+const shapes = document.getElementById('shapes');
+for (let i = 1; i <= 12; i++) {
+  const key = `2026-09-${String(i).padStart(2, '0')}`;
+  shapes.append(pebbleNode({ moments: asMoments(GEMINI, key), dayKey: key, height: 70, glow: 'grid', lazy: false }));
+}
+document.getElementById('info').textContent = 'renderer=' + rendererInfo() + ' dpr=' + devicePixelRatio;
+window.__labDone = true;
+</script>
+<style>
+  .pebble { position: relative; flex: none; }
+  .pebble-canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+</style>
+</body>
+</html>
