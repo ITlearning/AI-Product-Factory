@@ -48,7 +48,8 @@ function txOnce(db, stores, mode, fn) {
     const t = db.transaction(stores, mode);
     let out;
     t.oncomplete = () => resolve(out);
-    t.onerror = () => reject(t.error);
+    // 요청 오류가 올라오는 순간엔 t.error 가 아직 null 이다 — 요청 쪽 오류를 집는다.
+    t.onerror = (ev) => reject(ev.target?.error || t.error);
     t.onabort = () => reject(t.error);
     // fn 안에서 put 이 바로 던지면 앞서 넣은 것만 커밋되는 반쪽 저장이 된다 — 통째로 되돌린다.
     try { out = fn(t); } catch (e) { try { t.abort(); } catch { /* 이미 끝남 */ } reject(e); }
@@ -79,6 +80,13 @@ export async function loadMoments() {
   return tx(db, ['moments'], 'readonly', (t) => reqValue(t.objectStore('moments').getAll())).then((p) => p);
 }
 
+// Safari(WebKit)는 개인정보 보호 브라우징 등에서 Blob 을 담으면
+// 「UnknownError: Error preparing Blob/File data to be stored in object store」로 통째로 실패한다.
+// 그래서 사진은 바이트(ArrayBuffer)로 담고, 꺼낼 때 Blob 으로 되돌린다. 예전에 Blob 으로 담긴 것도 그대로 읽힌다.
+// 필드 이름을 bytes 로 두면 안 된다 — Blob 에 bytes() 메서드가 있어 예전 Blob 을 바이트로 오인한다.
+const toBytes = async (blob) => (blob ? { buf: await blob.arrayBuffer(), type: blob.type } : null);
+const toBlob = (v) => (v instanceof Blob || !(v?.buf instanceof ArrayBuffer) ? v : new Blob([v.buf], { type: v.type }));
+
 /** 순간 기록 + 사진(원본 축소본·썸네일)을 한 번에. */
 export async function saveMoments(entries) {
   const db = await open();
@@ -89,10 +97,14 @@ export async function saveMoments(entries) {
     }
     return;
   }
+  // 트랜잭션 안에서 기다리면 저절로 커밋돼 버리니 바이트로 바꾸기는 먼저 끝낸다.
+  const rows = await Promise.all(entries.map(async ({ moment, full, thumb }) => ({
+    moment, photo: full || thumb ? { id: moment.id, full: await toBytes(full), thumb: await toBytes(thumb) } : null,
+  })));
   await tx(db, ['moments', 'photos'], 'readwrite', (t) => {
-    for (const { moment, full, thumb } of entries) {
+    for (const { moment, photo } of rows) {
       t.objectStore('moments').put(moment);
-      if (full || thumb) t.objectStore('photos').put({ id: moment.id, full, thumb });
+      if (photo) t.objectStore('photos').put(photo);
     }
   });
 }
@@ -107,7 +119,8 @@ export async function loadPhoto(id) {
   const db = await open();
   if (!db) return memory.photos.get(id) || null;
   const p = await tx(db, ['photos'], 'readonly', (t) => reqValue(t.objectStore('photos').get(id)));
-  return (await p) || null;
+  const rec = await p;
+  return rec ? { ...rec, full: toBlob(rec.full), thumb: toBlob(rec.thumb) } : null;
 }
 
 export async function clearAll() {

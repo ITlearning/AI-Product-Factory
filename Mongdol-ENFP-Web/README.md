@@ -14,7 +14,7 @@ python3 -m http.server 8000
 
 - 처음 열면 온보딩 세 장이 나온다. 마지막 장의 「견본 하루 채우고 둘러보기」를 누르면 지난 하루 16개(오늘 진행 중 포함)가 그림 사진으로 채워진다. 어제 하루는 일부러 안 받은 채로 남겨 둬서 바로 증정 세리머니가 뜬다.
 - 나중에 채우려면 오른쪽 위 꽃 버튼(설정) → 「견본 하루 채우기」.
-- 아래 떠 있는 탭바로 움직인다. 왼쪽 동그란 카메라 버튼이 담기, 캡슐은 「홈 · 모은 조약돌」이다. 원본의 가장자리 쓸기는 쓰지 않는다. iOS Safari의 「뒤로 가기」 몸짓과 겹치기 때문이다.
+- 아래 떠 있는 탭바로 움직인다. 왼쪽 동그란 카메라 버튼을 누르면 iOS 선택 메뉴(사진 찍기 / 사진 보관함)가 뜬다. 자체 카메라 화면은 두지 않는다(Safari 가 들어올 때마다 권한을 묻고, 백그라운드 복귀 때 멈춘 프레임이 찍혔다). 캡슐은 「홈 · 모은 조약돌」이다. 원본의 가장자리 쓸기는 쓰지 않는다. iOS Safari의 「뒤로 가기」 몸짓과 겹치기 때문이다.
 - ES 모듈이라 `index.html`을 더블클릭해서 `file://`로 열면 Chrome 같은 브라우저는 모듈을 막는다. 그럴 땐 3초 뒤에 「정적 서버로 열어 주세요」 안내가 뜬다. 정적 서버로 띄우는 게 기본이다.
 
 ### 확인용 주소 인자
@@ -33,14 +33,14 @@ python3 -m http.server 8000
 ### WKWebView에 띄울 때
 
 - `viewport-fit=cover`와 `env(safe-area-inset-*)`는 이미 들어 있다. 세로 전용 앱에 맞춰 폭 390~430 기준으로 짰다.
-- 카메라(getUserMedia)를 쓰려면 앱 Info.plist에 `NSCameraUsageDescription`이 있어야 하고, `WKWebViewConfiguration.allowsInlineMediaPlayback = true`가 필요하다. 카메라가 안 켜지면 셔터가 파일 입력(`capture`)으로 바뀐다.
+- 담기는 파일 입력(`<input type=file accept=image/*>`)이라 WKWebView에선 `NSCameraUsageDescription`·`NSPhotoLibraryUsageDescription`이 있어야 선택 메뉴의 「사진 찍기」가 뜬다.
 - `file://`에서 ES 모듈이 뜨는지는 **요확인**이다. 확실한 길은 둘 중 하나다: `WKURLSchemeHandler`로 커스텀 스킴(`mongdol://`)에서 서빙하기, 또는 앱 안 로컬 서버.
 - 글꼴은 Google Fonts에서 받는다. 오프라인이면 시스템 글꼴로 떨어진다(글꼴 파일을 번들하려면 `index.html`의 Google Fonts `<link>`를 빼고 `styles.css`에 `@font-face`를 두면 된다).
 
 ## 파일
 
 ```
-index.html        화면 뼈대(홈·카메라·겹)
+index.html        화면 뼈대(홈·모은 조약돌·탭바·겹)
 styles.css        토큰·전 화면 스타일
 data/words.json   사진 한 단어 사전(원본 Shared/Word/words.json 복사본)
 js/
@@ -50,7 +50,7 @@ js/
   hash.js         원본 UInt64 해시(BigInt) — 날짜별 모양·기울기·한 줌 배치
   day.js          dayKey(04시 경계) · DayGradient · DayTimeline · Memories · GiftSchedule
   store.js        DayStore · DayClosures · GiftLog 판정
-  db.js           IndexedDB(기록·사진) + localStorage(닫은 날·받은 날·온보딩)
+  db.js           IndexedDB(기록·사진 — 사진은 ArrayBuffer 로, Safari 가 Blob 저장을 거절할 때가 있다) + localStorage(닫은 날·받은 날·온보딩)
   color.js        ColorExtractor 포팅(어둠컷 + 채도 가중 히스토그램)
   images.js       사진 줄이기(긴 변 1280 / 썸네일 560) · EXIF 촬영 시각 · 주소 캐시
   naming.js       조약돌 이름(규칙 원본 그대로) + ENFP 한 줄
@@ -58,7 +58,7 @@ js/
   home.js         홈 · 하루 블록 · 한 줄 행 · 빈 첫날 · 조약돌 톡
   detail.js       하루 상세(시간축) · 사진 크게 보기
   ceremony.js     증정 세리머니
-  capture.js      담기(카메라 · 앨범 · 파일 입력)
+  capture.js      담기(시스템 선택 메뉴 → 파일 입력, 중복 막기, 결과 토스트)
   tabs.js         아래 탭바(카메라 버튼 · 홈 · 모은 조약돌, 스크롤하면 접힘)
   collection.js   모은 조약돌(받은 것만, 달별 4열, 날짜만)
   handful.js      한 달 한 줌
@@ -83,7 +83,7 @@ screenshots/             확인 스크린샷
 | 홈 세로 반복 · 오늘 진행 중 블록(점선 돌, 색 숨김) · 지난 하루 블록 · 30일 지난 하루 한 줄 · 달 머리글 「N월의 한 줌」 · 작년 이맘때 · 스크롤 중 연월 알약 · 희미하게(0.5 / 0.96) | `App/HomeView.swift` · `Design/DayBlock.swift` · `CompactDayRow.swift` · `HomeSummary.swift` · `HomeNavigation.swift` |
 | 사진 더미(3장, 날짜 해시 기울기) · 앞장 왼쪽으로 튕겨 넘기기 | DayBlock slotLayout · finishFlick |
 | 탭바 카메라 버튼 · 홈 ↔ 모은 조약돌 옆으로 넘김(가장자리 쓸기는 웹에서 뺌) | `App/PageTabBar.swift`, `App/PebbleCollectionView.swift` |
-| 담기 화면(둥근 창 폭−20·560:370, 셔터, 앨범, 사진 더미+개수, 확인 문구, 색 안 보임) | `Capture/CaptureScreen.swift` · DESIGN §3.5 · §4.5 |
+| 담기 — 웹은 자체 카메라 화면 대신 시스템 선택 메뉴(찍기·보관함), 담은 뒤 「찰칵! 담았어요」 토스트, 색 안 보임 | `Capture/CaptureScreen.swift` · DESIGN §3.5 · §4.5 |
 | 앨범에서 담기(EXIF 날짜의 하루로, addedAt·batchID) | 사진첩에서 담기(§3.5b) · DayStore.pebbleMoments |
 | 오늘 마무리하고 조약돌 받기(확인창 → 일찍 닫기) | DayMomentsView finishButton · DayClosures |
 | 증정 세리머니(0.15 떠오름 스프링 0.80/0.90 + 투명도 easeOut 0.80 따로, 0.95 안착·빛 띠 0.95s, 1.30 이름, 1.90~ 9초 숨쉬기) | `Day/BadgeCeremony.swift` · SPEC §6 |
