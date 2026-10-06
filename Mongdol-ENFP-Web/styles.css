@@ -625,5 +625,9 @@ p, h1, h2, h3 { margin: 0; }
 .xfer-fill { display: block; height: 100%; width: 0; border-radius: 10px; background: linear-gradient(90deg, #FFE066, #FFB0A0); transition: width 0.25s ease-out; }
 .xfer-progress { margin: 0; text-align: center; font-size: 14px; color: var(--ink2); font-variant-numeric: tabular-nums; }
 .xfer-done { margin: 10px 0 2px; text-align: center; font-family: var(--serif); font-weight: 700; font-size: 21px; line-height: 1.5; color: var(--ink1); }
-.xfer-step { padding: 0; }
-.xfer-step-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 2px solid #FFC1D6; border-radius: 18px; background: #FFF7FA; text-align: left; font: inherit; color: inherit; }
+.inst-ios { display: flex; flex-direction: column; gap: 14px; }
+.xfer-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 2px solid #FFC1D6; border-radius: 20px; background: #FFF7FA; }
+.xfer-card-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink1); line-height: 1.45; }
+.xfer-card-sub { margin: 0; font-size: 14px; color: var(--ink2); line-height: 1.55; }
+.xfer-card .xfer-code { margin: 2px 0; }
+.xfer-card .xfer-left { display: inline; }

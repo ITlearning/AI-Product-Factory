@@ -152,6 +152,71 @@ const bar = () => {
   } };
 };
 
+// 만든 코드는 10분 동안 기억한다 — 안내를 닫았다 다시 열어도 같은 코드가 보여야 홈 화면에 추가하는 동안 잃지 않는다.
+const ACTIVE = 'mongdol.xferActive';
+const activeCode = () => {
+  try {
+    const a = JSON.parse(sessionStorage.getItem(ACTIVE) || 'null');
+    return a && a.until > Date.now() ? a : null;
+  } catch { return null; }
+};
+const rememberCode = (a) => { try { sessionStorage.setItem(ACTIVE, JSON.stringify(a)); } catch { /* 이번 화면만 */ } };
+
+/**
+ * 「기록 옮길 코드」 카드 — 안내 안에 그대로 붙어 있고, 누르면 그 자리에서 코드로 바뀐다(덮개 창 없음).
+ * 코드는 누를 때만 만든다: 안내만 연 사람의 사진까지 서버로 올리지 않게.
+ */
+export function carryCard(store) {
+  const card = h('div', { class: 'xfer-card' });
+  let timer = 0;
+  const show = (...kids) => { clearInterval(timer); card.replaceChildren(...kids.filter(Boolean)); };
+
+  const idle = () => show(
+    h('p', { class: 'xfer-card-title' }, '지금까지 담은 기록도 같이 데려가요'),
+    h('p', { class: 'xfer-card-sub' }, `홈 화면 몽돌은 새로 시작해요. 코드를 만들어 두고 홈 화면 몽돌을 처음 열 때 넣으면 기록 ${store.all.size}개가 따라와요.`),
+    h('button', { class: 'btn primary xfer-go', onClick: make }, '기록 옮길 코드 만들기'));
+
+  async function make() {
+    const b = bar();
+    show(h('p', { class: 'xfer-card-title' }, `기록 ${store.all.size}개를 꼭꼭 싸는 중이에요`), b.el);
+    b.set('코드 만드는 중…', 0, 1);
+    try {
+      const out = await sendRecords((done, total) => b.set(`코드 만드는 중 ${done}/${total}`, done, total));
+      const a = { code: out.code, until: Date.now() + out.ttl * 1000, moments: out.moments };
+      rememberCode(a);
+      code(a);
+    } catch (e) {
+      if (e?.kind !== 'too-big' && e?.kind !== 'limited') console.warn('transfer send', e);
+      show(h('p', { class: 'xfer-error' }, errText(e, SEND_ERR)),
+        e?.kind === 'too-big' ? null : h('button', { class: 'btn primary xfer-go', onClick: make }, '다시 만들기'));
+    }
+  }
+
+  function code({ code: c, until, moments }) {
+    const left = h('span', { class: 'xfer-left num' });
+    const tick = () => {
+      const s = Math.max(0, Math.round((until - Date.now()) / 1000));
+      left.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} 남았어요`;
+      if (s === 0) {
+        try { sessionStorage.removeItem(ACTIVE); } catch { /* 무시 */ }
+        show(h('p', { class: 'xfer-card-title' }, '코드 시간이 다 됐어요'),
+          h('button', { class: 'btn primary xfer-go', onClick: make }, '코드 새로 만들기'));
+      }
+    };
+    show(
+      h('p', { class: 'xfer-card-title' }, `기록 ${moments}개를 옮길 코드예요`),
+      h('p', { class: 'xfer-code num', 'aria-label': c.split('').join(' ') }, formatCode(c)),
+      h('p', { class: 'xfer-card-sub xfer-center' }, '아래대로 홈 화면에 추가한 뒤, 홈 화면 몽돌 첫 화면에서 이 코드를 넣어요. ', left),
+      h('p', { class: 'fine xfer-center' }, `한 번만 쓸 수 있어요. ${PRIVACY}`));
+    tick();
+    timer = setInterval(tick, 1000);
+  }
+
+  const a = activeCode();
+  if (a) code(a); else idle();
+  return card;
+}
+
 /**
  * mode: 'choose'(설정 — 받기·넣기 둘 다) | 'send' | 'receive'
  * onReceived({added, skipped}): 받기를 마치고 「좋아요」를 누른 뒤
@@ -183,50 +248,7 @@ export function openTransferSheet({ store, mode = 'choose', onReceived }) {
       show(h('p', { class: 'inst-detail' }, '아직 옮길 기록이 없어요. 한 장 담고 나서 다시 와 주세요!'));
       return;
     }
-    const n = store.all.size;
-    const go = async () => {
-      const b = bar();
-      show(h('p', { class: 'inst-lead' }, `기록 ${n}개를 꼭꼭 싸는 중이에요`), b.el, h('p', { class: 'fine' }, PRIVACY));
-      b.set('옮길 준비 중…', 0, 1);
-      busy = true;
-      try {
-        const out = await sendRecords((done, total) => b.set(`옮길 준비 중 ${done}/${total}`, done, total));
-        busy = false;
-        codeView(out);
-      } catch (e) {
-        busy = false;
-        if (e?.kind !== 'too-big' && e?.kind !== 'limited') console.warn('transfer send', e);
-        show(h('p', { class: 'xfer-error' }, errText(e, SEND_ERR)),
-          e?.kind === 'too-big' ? null : h('button', { class: 'btn primary', onClick: go }, '다시 해 볼게요'));
-      }
-    };
-    show(
-      h('p', { class: 'inst-lead' }, `지금까지 담은 기록 ${n}개를 옮길 코드를 만들어요!`),
-      h('p', { class: 'inst-detail' }, '코드를 받으면 10분 안에 홈 화면 몽돌(또는 새 기기)에서 넣어 주세요. 사진도 같이 가요.'),
-      h('button', { class: 'btn primary xfer-go', onClick: go }, '코드 받기'),
-      h('p', { class: 'fine' }, PRIVACY));
-  }
-
-  function codeView({ code, ttl, moments }) {
-    const until = Date.now() + ttl * 1000;
-    const left = h('p', { class: 'xfer-left num' });
-    const tick = () => {
-      const s = Math.max(0, Math.round((until - Date.now()) / 1000));
-      left.textContent = s > 0 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} 남았어요` : '';
-      if (s === 0) {
-        clearInterval(timer);
-        show(h('p', { class: 'inst-lead' }, '시간이 다 됐어요. 코드를 다시 받아 주세요!'), h('button', { class: 'btn primary', onClick: send }, '코드 다시 받기'));
-      }
-    };
-    show(
-      h('p', { class: 'inst-detail' }, `짠! 기록 ${moments}개를 꾸렸어요. 이 코드를 넣어 주세요`),
-      h('p', { class: 'xfer-code num', 'aria-label': code.split('').join(' ') }, formatCode(code)),
-      h('p', { class: 'inst-lead xfer-center' }, '10분 안에 홈 화면 몽돌에서 입력해 주세요'),
-      left,
-      h('p', { class: 'fine' }, `코드는 한 번만 쓸 수 있어요. 받아 가면 서버에서 바로 지워요. ${PRIVACY}`),
-      h('button', { class: 'btn ghost', onClick: close }, '다 넣었어요'));
-    tick();
-    timer = setInterval(tick, 1000);
+    show(carryCard(store));
   }
 
   function receive() {

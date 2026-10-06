@@ -100,8 +100,8 @@ function reminderPage(followsArrival) {
   };
 }
 
-function installPage(hasRecords, onTransfer) {
-  const g = installGuide({ hasRecords, onTransfer });
+function installPage(hasRecords, carry) {
+  const g = installGuide({ hasRecords, carry });
   return {
     scene: () => h('div', { class: 'ob-scene inst' }, g.scene),
     title: g.title,
@@ -110,7 +110,7 @@ function installPage(hasRecords, onTransfer) {
   };
 }
 
-export function showOnboarding({ onStart, onSample, onReceive, onTransfer, hasRecords = false }) {
+export function showOnboarding({ onStart, onSample, onReceive, carry, hasRecords = false }) {
   layers.add('onboarding');
   const pages = [
     {
@@ -131,7 +131,7 @@ export function showOnboarding({ onStart, onSample, onReceive, onTransfer, hasRe
       detail: '오늘 담은 건 자정(새벽 4시)에 조약돌로 변신해요. 마음이 급하면 「오늘 마무리하고 조약돌 받기」로 먼저 받아도 돼요.',
     },
   ];
-  if (canOfferInstall()) pages.splice(1, 0, installPage(hasRecords, onTransfer));
+  if (canOfferInstall()) pages.splice(1, 0, installPage(hasRecords, carry));
   if (isStandalone() && pushSupported()) {
     const asks = Notification.permission === 'default';
     pages.splice(1, 0, ...(asks ? [arrivalPage()] : []), reminderPage(asks));
