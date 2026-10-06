@@ -42,7 +42,8 @@ python3 -m http.server 8000
 ```
 index.html        화면 뼈대(홈·모은 조약돌·탭바·겹)
 styles.css        토큰·전 화면 스타일
-data/words.json   사진 한 단어 사전(원본 Shared/Word/words.json 복사본)
+data/words.json   사진 한 단어 사전 — 원본 v6 에서 날짜·시각만으로 참인 말 100개(tools/build_words.py 로 다시 뽑는다)
+data/lunar-days.json  한국 음력 표(원본 lunar-days.json 에서 쓰는 날만)
 js/
   main.js         진입 — HomeShell 역할(홈·카메라·증정 잇기, 새벽 4시 넘김 감시)
   pebble-gl.js    조약돌 렌더러 — SoftPebble.metal 포팅(WebGL2/1), 굽고 캐시, 2D 대체
@@ -67,7 +68,7 @@ js/
   flowers.js      SVG 꽃 · 꽃잎 · 반짝이 · 컨페티
   motion.js       SwiftUI 스프링을 Web Animations 키프레임으로
   sample.js       견본 하루(캔버스 풍경 + 실제 색 추출)
-  words.js        사진 한 단어 고르기
+  words.js        사진 한 단어 고르기(WordPicker 규칙 경로 · 해 높이·달 나이 · 음력 · ↻ 기록)
   clock.js        지금 시각(?now= 확인용)
 lab.html, lab-icon.png   셰이더 실험실(아이콘은 원본 icon-1024 축소 복사본)
 tests/extractor.html     색 추출 회귀
@@ -89,7 +90,7 @@ screenshots/             확인 스크린샷
 | 증정 세리머니(0.15 떠오름 스프링 0.80/0.90 + 투명도 easeOut 0.80 따로, 0.95 안착·빛 띠 0.95s, 1.30 이름, 1.90~ 9초 숨쉬기) | `Day/BadgeCeremony.swift` · SPEC §6 |
 | 증정 순서(자연히 끝난 가장 최근 하루 → 마무리한 오늘, 받은 날 floor 규칙, 가려진 게 있으면 미룸) | `Day/GiftSchedule.swift` · `Day/DayGift.swift` |
 | 하루 상세(조약돌 130 hero · 이름 · 한 줄 · 시간축: 첫~마지막 촬영 0~1 정규화, 겹치면 28씩 밀고 4칸에서 되감기) | `Day/DayMomentsView.swift` · `Day/DayTimeline.swift` |
-| 사진 크게 보기(사진 · 우리말 한 단어 · 시각) | `Day/DayPhotoView.swift` |
+| 사진 크게 보기(사진 · 우리말 한 단어 · ↻ 「이 단어는 아니에요」 · 시각) | `Day/DayPhotoView.swift` · `Word/WordPicker.swift` · `Word/WordChooser.swift` |
 | 한 달 한 줌(골든 앵글 배치, 받은 하루만) | `Keepsake/HandfulView.swift` · `Memories.handfulLayout` |
 | 조약돌 이름(채도 가장 높은 색 → 우리말 이름 19개) | `Day/PebbleName.swift` |
 | 조약돌 렌더링 | `Design/SoftPebble.metal` · `SoftPebbleView.swift` — 아래 따로 |
@@ -187,7 +188,7 @@ gstack 헤드리스 Chromium(WebGL2 켬), 390×844 @2x에서 확인했다. 스�
 
 - **실기기(iPhone Safari·WKWebView)에서 돌려 보지 않았다.** 스크롤 매끄러움, 스와이프 손맛, 스프링 모션, 카메라는 실기기에서만 판정된다. 헤드리스엔 카메라가 없어 getUserMedia 경로는 「카메라가 부끄럼을 타나 봐요」 대체 화면까지만 봤다.
 - WKWebView에서 `file://` ES 모듈 로딩은 요확인(위 참고).
-- 사진 한 단어: 원본은 기기 안 Vision으로 사진에 찍힌 것을 보고 고르는데, 웹엔 그게 없어서 시간대·계절에 묶인 말만 쓴다. 그래서 문구도 「이 시간에 어울리는 우리말!」이다.
+- 사진 한 단어: 원본은 기기 안 모델(TinyCLIP)이 사진을 보고 1,792개 중에서 고른다. 웹엔 모델이 없어서 사진에 뭐가 찍혔든 참인 말만 쓴다 — 원본 규칙 경로의 「때」 단어 28개 + 날짜 사실 단어 73개(명절·음력·철, 2026-10-06 Tabber 확정). 판정(시각·해 높이·달 나이·음력·양력)은 원본 `WordPicker.judge` 그대로이고 해·달 계산은 Swift 와 소수 여섯째 자리까지 같다. 날씨·기온 말은 웹이 날씨를 몰라 뺐다. 최근 14장의 단어와 그날 조약돌 이름은 피하고, ↻ 는 사진마다 한 번 다른 갈래로 바꾼다. 쉬게 한 말(rest)은 맞는 말이 없을 때만 쓴다.
 - 원본에 있는 것 중 안 옮긴 것: 잠금화면 카메라 컨트롤·위젯·아침 도착 알림·iCloud 이어 보기(웹에 없는 자리), 추천 사진으로 첫 조약돌 받기(Vision 점수), 조약돌 카드 만들기(결과 이미지 공유라 뺐다), 핀치 줌·배율 알약, 알약을 잡고 끌어 달 단위로 훑기(알약은 보이기만 한다), 둥근 돌/반듯한 돌 고르기(예전 모양은 2D 대체로만 남았다).
 - 사진은 긴 변 1280px로 줄여 저장한다(원본은 원본 해상도). 브라우저 저장소를 지우면 기록도 사라진다.
 - **Safari는 오래(약 7일) 열지 않은 사이트의 저장소를 지울 수 있다.** 첫 기록을 남길 때 `navigator.storage.persist()`로 「지우지 말아 달라」고 청하지만, 받아 줄지는 브라우저가 정한다. 홈 화면에 추가한 웹앱이나 WKWebView 앱 안에서는 이 규칙이 다르게 적용된다(요확인). 기록을 오래 지키려면 앱 쪽 저장소로 옮겨야 한다.
