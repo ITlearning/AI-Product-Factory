@@ -70,8 +70,8 @@ Safari 에서 쓰던 기록을 홈 화면 몽돌로(또는 새 기기로) 옮긴
 - 받는 쪽: 온보딩 첫 장 「Safari에서 쓰던 기록 가져오기」(홈 화면 앱이 아니면 「쓰던 기록 가져오기」), 또는 설정 「기록 옮기기 → 코드 입력하기」. 기존 기록과 **합친다**(같은 id 는 건너뜀). 온보딩에서 받으면 견본 제안 없이 바로 홈으로.
 - 묶음: 기록(moments) 전부 + 사진(full·thumb 바이트) + localStorage 표시값 `closures`·`gifted`·`wordRejects`·`didLearnWordReject`·`reminderFrequency`. 안 옮기는 것: `onboarded`(받는 쪽이 정한다), `push.*`(기기마다 다른 구독), `preview.*`(미리 보기).
   닫은 날·받은 날은 이 기기 값이 먼저, 받은 날·단어 거절은 합친다, 빈도는 이 기기에 값이 없을 때만.
-- 암호화(`js/transfer-core.js`): 코드 8자리(`crypto.getRandomValues`) → key = PBKDF2(코드, 무작위 salt 16바이트, SHA-256, 200,000번) → AES-GCM 256. 묶음을 512KB 씩 잘라 조각마다 잠근다(iv 12바이트, AAD = 조각 번호·개수). 서버 조회 id = hex(SHA-256(`"mongdol-transfer-id:"` + 코드)). salt 는 서버에 평문으로 둔다.
-- 서버(`api/transfer.js` · `api/_lib/transfer.js`, `POST {action}`): `start`(id·크기·조각 수·salt, 200MB 넘으면 413, 같은 id 가 살아 있으면 409) → `chunk` × N(올리는 표 `token` 필요, 조각 번호 범위·조각 크기를 정확히 검사) → `finish`(조각이 다 있어야 함, 이때부터 10분) → 받는 쪽 `info`(처음 한 번만 받는 표 `claim` 을 준다 — 두 번째는 410) → `get` × N(**마지막 조각을 주면 전부 지운다**) → `done`(남은 게 있으면 지움).
+- 암호화(`js/transfer-core.js`): 코드 8자리(`crypto.getRandomValues`) → key = PBKDF2(코드, 무작위 salt 16바이트, SHA-256, 200,000번) → AES-GCM 256. 묶음을 512KB 씩 잘라 조각마다 잠근다(iv 12바이트, AAD = 조각 번호·개수). 서버 조회 id = hex(PBKDF2(코드, 고정 salt `mongdol-transfer-id-v1`, 200,000번)) — 해시 한 번이면 Redis 를 읽는 사람이 코드를 거꾸로 찾는다. salt 는 서버에 평문으로 둔다.
+- 서버(`api/transfer.js` · `api/_lib/transfer.js`, `POST {action}`): `start`(id·크기·조각 수·salt, 100MB 넘으면 413(Upstash 무료 256MB 에서 둘이 동시에 옮겨도 되게), 같은 id 가 살아 있으면 409) → `chunk` × N(올리는 표 `token` 필요, 조각 번호 범위·조각 크기를 정확히 검사) → `finish`(조각이 다 있어야 함, 이때부터 10분) → 받는 쪽 `info`(처음 한 번만 받는 표 `claim` 을 준다 — 두 번째는 410) → `get` × N(**마지막 조각을 주면 전부 지운다**) → `done`(남은 게 있으면 지움).
   레이트리밋: 틀린 코드(없는 id·표 틀림·이미 받아 감) IP 당 10분에 10번 · 보내기 시작 IP 당 시간당 10번 · 전체 IP 당 분당 300. Redis 키는 모두 `mongdol:xfer:`.
 - 한계: 코드가 8자리라 서버 Redis 를 읽을 수 있는 사람은 id 에서 코드를 거꾸로 찾을 수 있다(SHA-256 1억 번). 그래서 서버에 오래 두지 않는다(10분, 받으면 바로 지움). Upstash 무료 요금제는 저장 256MB 라 큰 묶음 여럿이 겹치면 못 올릴 수 있다 — 그땐 「다시 해 볼게요」.
 

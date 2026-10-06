@@ -132,7 +132,7 @@ export async function receiveRecords(store, code, onProgress = () => {}) {
 // ── 화면 ──
 
 const SEND_ERR = {
-  'too-big': '기록이 너무 많아서(200MB 넘게) 한 번에 못 옮겨요. 미안해요!',
+  'too-big': '기록이 너무 많아서(100MB 넘게) 한 번에 못 옮겨요. 미안해요!',
   limited: '코드를 너무 여러 번 받았어요. 조금 쉬었다가 다시 해 주세요.',
 };
 const RECV_ERR = {

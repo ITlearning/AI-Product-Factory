@@ -13,7 +13,7 @@ import { z } from "zod";
 
 export const CHUNK = 512 * 1024;
 export const SEAL = 28;
-export const MAX_SIZE = 200 * 1024 * 1024;
+export const MAX_SIZE = 100 * 1024 * 1024;
 export const MAX_COUNT = Math.ceil(MAX_SIZE / CHUNK);
 export const TTL = 600;
 export const FAIL_LIMIT = 10;

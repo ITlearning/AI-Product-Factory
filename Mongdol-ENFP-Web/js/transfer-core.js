@@ -4,11 +4,12 @@
 //   머리 = { v:1, moments:[…], meta:{…}, photos:[{ id, full:{type, off, len}|null, thumb:… }] } — off 는 머리 뒤부터 센다.
 // 암호화: key = PBKDF2(코드, 무작위 salt 16바이트, SHA-256, 200,000번) → AES-GCM 256.
 //   묶음을 512KB 씩 잘라 조각마다 따로 잠근다(iv 12바이트 + 암호문·태그). AAD 에 조각 번호·개수를 넣어 순서를 못 바꾸게.
-// 서버 조회 id = hex(SHA-256("mongdol-transfer-id:" + 코드)) — 키와 다른 길로 만든다.
+// 서버 조회 id = hex(PBKDF2(코드, 고정 salt "mongdol-transfer-id-v1", 200,000번)) — 키와 다른 길로.
+// 해시 한 번이면 Redis 를 읽는 사람이 8자리 코드를 몇 초 만에 거꾸로 찾는다. 무겁게 만들어 그 길을 막는다.
 
 export const CHUNK = 512 * 1024;
 export const SEAL = 28;
-export const MAX_SIZE = 200 * 1024 * 1024;
+export const MAX_SIZE = 100 * 1024 * 1024;
 export const ITERATIONS = 200_000;
 export const CODE_LENGTH = 8;
 
@@ -37,7 +38,10 @@ export const isCode = (s) => /^\d{8}$/.test(s);
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 
 export async function idFor(code) {
-  return hex(await subtle().digest('SHA-256', enc.encode(`mongdol-transfer-id:${code}`)));
+  const base = await subtle().importKey('raw', enc.encode(code), 'PBKDF2', false, ['deriveBits']);
+  const bits = await subtle().deriveBits(
+    { name: 'PBKDF2', salt: enc.encode('mongdol-transfer-id-v1'), iterations: ITERATIONS, hash: 'SHA-256' }, base, 256);
+  return hex(bits);
 }
 
 export async function deriveKey(code, salt) {

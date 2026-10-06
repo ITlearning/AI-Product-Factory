@@ -54,8 +54,8 @@ test('id 는 코드마다 다르고 64자 hex, 키 파생과 다른 문자열에
   assert.match(a, /^[0-9a-f]{64}$/);
   assert.equal(a, await idFor('12345678'));
   assert.notEqual(a, await idFor('12345679'));
-  const { createHash } = await import('node:crypto');
-  assert.equal(a, createHash('sha256').update('mongdol-transfer-id:12345678').digest('hex'));
+  const { pbkdf2Sync } = await import('node:crypto');
+  assert.equal(a, pbkdf2Sync('12345678', 'mongdol-transfer-id-v1', 200_000, 32, 'sha256').toString('hex'));
 });
 
 test('묶기 → 잠그기 → 풀기: 기록·표시값·사진 바이트가 그대로 돌아온다', async () => {
