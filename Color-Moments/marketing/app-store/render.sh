@@ -9,8 +9,9 @@ cd "$(dirname "$0")"
 
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 FONT=fonts/NanumMyeongjo-Bold.ttf
-[ -f "$FONT" ] || curl -sfL -o "$FONT" https://github.com/google/fonts/raw/main/ofl/nanummyeongjo/NanumMyeongjo-Bold.ttf
-mkdir -p output
+mkdir -p fonts output
+[ -f "$FONT" ] || curl -fL -o "$FONT" https://github.com/google/fonts/raw/main/ofl/nanummyeongjo/NanumMyeongjo-Bold.ttf
+[ -d input ] || { echo "input/ 이 없어요 — 스크린샷·사진 원본(커밋 안 함)을 여기에 두세요. 목록은 docs/designs/mongdol-appstore-screens.md" >&2; exit 1; }
 
 shoot() { # url width height out
   "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
