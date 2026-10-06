@@ -1,0 +1,18 @@
+{
+  "name": "몽돌",
+  "short_name": "몽돌",
+  "description": "찍을 땐 색을 숨겨 뒀다가, 하루가 닫히면 그날 색으로 빚은 조약돌이 도착해요.",
+  "lang": "ko",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF4EC",
+  "theme_color": "#FFF4EC",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

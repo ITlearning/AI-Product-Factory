@@ -1,9 +1,11 @@
 // 온보딩 — 원본 여섯 장(OnboardingSteps.swift) 가운데 웹에서 뜻이 있는 셋만: 소개 → 찍는 법 → 시작.
+// 웹에만 있는 한 장: 소개 다음 「홈 화면에 추가」(홈 화면 앱으로 열었거나 데스크톱이면 건너뜀).
 // 한 번만 뜬다(다시 부르는 「도움말」 없음 — 원본 §1.5). 확인용으로만 ?onboarding 을 붙이면 다시 뜬다.
 import { h, layers, layerRoot } from './dom.js';
 import { pebbleNode, dashedPebbleNode } from './pebble-gl.js';
 import { flowerEl, flowerSVG, PETAL_COLORS, reduceMotion, sprinkle } from './flowers.js';
 import { animateSpring } from './motion.js';
+import { canOfferInstall, installGuide } from './install.js';
 
 const SAMPLE = (() => {
   const base = 1758000000000;
@@ -58,7 +60,17 @@ function startScene() {
   return s;
 }
 
-export function showOnboarding({ onStart, onSample }) {
+function installPage(hasRecords) {
+  const g = installGuide({ hasRecords });
+  return {
+    scene: () => h('div', { class: 'ob-scene inst' }, g.scene),
+    title: g.title,
+    detail: g.detail,
+    extra: () => [g.actions, g.note ? h('p', { class: 'inst-note' }, g.note) : null],
+  };
+}
+
+export function showOnboarding({ onStart, onSample, hasRecords = false }) {
   layers.add('onboarding');
   const pages = [
     {
@@ -77,6 +89,7 @@ export function showOnboarding({ onStart, onSample }) {
       detail: '오늘 담은 건 자정(새벽 4시)에 조약돌로 변신해요. 마음이 급하면 「오늘 마무리하고 조약돌 받기」로 먼저 받아도 돼요.',
     },
   ];
+  if (canOfferInstall()) pages.splice(1, 0, installPage(hasRecords));
   let index = 0;
   const track = h('div', { class: 'ob-track' });
   const dots = h('div', { class: 'ob-dots', 'aria-hidden': 'true' }, ...pages.map(() => h('span')));
@@ -96,7 +109,7 @@ export function showOnboarding({ onStart, onSample }) {
     const el = h('div', { class: 'ob-page' },
       i === 0 ? h('h1', { class: 'wordmark ob-mark' }, '몽돌', h('span', { class: 'wordmark-flower', html: flowerSVG({ size: 26, kind: 'five', color: '#FF8FB1', center: '#FFD84D', rot: 12 }) })) : null,
       p.scene(),
-      h('div', { class: 'ob-words' }, h('p', { class: 'ob-title' }, p.title), h('p', { class: 'ob-detail' }, p.detail)));
+      h('div', { class: 'ob-words' }, h('p', { class: 'ob-title' }, p.title), h('p', { class: 'ob-detail' }, p.detail), p.extra?.()));
     built[i] = el;
     return el;
   };

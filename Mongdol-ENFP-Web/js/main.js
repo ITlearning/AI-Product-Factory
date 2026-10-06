@@ -9,6 +9,7 @@ import { showCeremony } from './ceremony.js';
 import { openHandful } from './handful.js';
 import { showOnboarding } from './onboarding.js';
 import { openSettings } from './settings.js';
+import { openInstallSheet } from './install.js';
 import { fillSample } from './sample.js';
 import { warmUp } from './pebble-gl.js';
 import { layers, toast, confirmDialog } from './dom.js';
@@ -103,7 +104,9 @@ async function boot() {
   });
   tabs.watch(document.getElementById('home'));
   tabs.watch(document.getElementById('collection'));
-  document.getElementById('settings-btn').addEventListener('click', () => openSettings({ onSample: runSample, onClear: clearAll }));
+  document.getElementById('settings-btn').addEventListener('click', () => openSettings({
+    onSample: runSample, onClear: clearAll, onInstall: () => openInstallSheet({ hasRecords: !store.isEmpty }),
+  }));
 
   store.addEventListener('change', () => { queueRender(); setTimeout(maybeCeremony, 0); });
   layers.onClose(() => setTimeout(maybeCeremony, 0));
@@ -116,6 +119,7 @@ async function boot() {
     showOnboarding({
       onStart: () => meta.set('onboarded', true),
       onSample: () => { meta.set('onboarded', true); runSample(); },
+      hasRecords: !store.isEmpty,
     });
   } else {
     maybeCeremony();
@@ -138,6 +142,8 @@ async function boot() {
     }));
   }
   document.documentElement.classList.add('booted');
+  // 홈 화면 추가·오프라인 대비. 못 붙어도 앱은 그대로 돈다.
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
 boot().catch((e) => {
