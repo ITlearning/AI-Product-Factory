@@ -22,7 +22,11 @@ struct SettingsSheet: View {
 
     var body: some View {
         ScrollView {
-            content.padding(.horizontal, 24)
+            VStack(alignment: .leading, spacing: 0) {
+                content
+                links
+            }
+            .padding(.horizontal, 24)
         }
         .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) { footer }
@@ -118,6 +122,21 @@ struct SettingsSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var links: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            linkRow("리뷰 남기기", hint: "App Store 리뷰 쓰기 화면을 엽니다") {
+                UIApplication.shared.open(UpdateCheck.reviewURL)
+            }
+            if SuggestionForm.url != nil {
+                linkRow("건의하기", hint: "건의 페이지를 엽니다") { showingSuggestion = true }
+            }
+        }
+        .padding(.bottom, 16)
+        .sheet(isPresented: $showingSuggestion) {
+            if let url = SuggestionForm.url { SafariSheet(url: url).ignoresSafeArea() }
+        }
+    }
+
     /// 맨 아래 고정 — 작은 화면에선 위 내용만 스크롤된다.
     private var footer: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -134,12 +153,6 @@ struct SettingsSheet: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("새 버전이 있어요. 업데이트")
-            }
-            linkRow("리뷰 남기기", hint: "App Store 리뷰 쓰기 화면을 엽니다") {
-                UIApplication.shared.open(UpdateCheck.reviewURL)
-            }
-            if SuggestionForm.url != nil {
-                linkRow("건의하기", hint: "건의 설문을 엽니다") { showingSuggestion = true }
             }
             Text(AppVersion.current.line)
                 .font(Face.caption).foregroundStyle(Tone.tertiary)
@@ -159,9 +172,6 @@ struct SettingsSheet: View {
             .padding(.bottom, 4)
         }
         .sheet(isPresented: $showingLicenses) { LicensesSheet() }
-        .sheet(isPresented: $showingSuggestion) {
-            if let url = SuggestionForm.url { SafariSheet(url: url).ignoresSafeArea() }
-        }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Tone.base)
