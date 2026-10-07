@@ -435,64 +435,28 @@ private struct ThumbnailCell: View {
 
     private func loadImage() async {
         let options = PHImageRequestOptions()
-        options.deliveryMode = .fastFormat // fastFormat 은 콜백 1회 — opportunistic 이면 두 번 불려 continuation 이 죽는다
+        options.deliveryMode = .highQualityFormat
         options.resizeMode = .fast
         options.isNetworkAccessAllowed = true
         let targetSize = CGSize(width: side * displayScale, height: side * displayScale)
-        let request = ThumbnailRequest(manager: manager)
-        let result: UIImage? = await withTaskCancellationHandler {
-            await withCheckedContinuation { continuation in
-                request.start(continuation) {
-                    manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill,
-                                         options: options) { img, _ in request.finish(img) }
+        let result = await ImageRequestBridge.run(
+            start: { deliver in
+                manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill,
+                                     options: options) { result, info in
+                    let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                    let cancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+                    let failed = info?[PHImageErrorKey] != nil
+                    if degraded && !cancelled && !failed, let result {
+                        // 고화질이 iCloud 에서 오는 동안 빈칸 대신 저화질을 먼저 — continuation 은 마지막 콜백만 푼다.
+                        DispatchQueue.main.async { if image == nil { image = result } }
+                        return
+                    }
+                    deliver(cancelled ? nil : result)
                 }
-            }
-        } onCancel: {
-            // 화면 밖으로 스크롤된 칸은 디코딩을 멈춘다 — 보이는 칸만 부른다.
-            request.cancel()
-        }
+            },
+            cancel: { manager.cancelImageRequest($0) }
+        )
         guard !Task.isCancelled else { return }
         if let result { image = result }
-    }
-}
-
-/// 썸네일 요청 한 건 — 콜백이 두 번 와도, 취소가 먼저 와도 continuation 은 한 번만 푼다.
-private final class ThumbnailRequest: @unchecked Sendable {
-    private let lock = NSLock()
-    private let manager: PHImageManager
-    private var continuation: CheckedContinuation<UIImage?, Never>?
-    private var id: PHImageRequestID?
-    private var cancelled = false
-
-    init(manager: PHImageManager) { self.manager = manager }
-
-    func start(_ c: CheckedContinuation<UIImage?, Never>, request: () -> PHImageRequestID) {
-        lock.lock()
-        guard !cancelled else { lock.unlock(); c.resume(returning: nil); return }
-        continuation = c
-        lock.unlock()
-        let requestID = request()
-        lock.lock()
-        id = requestID
-        let lateCancel = cancelled
-        lock.unlock()
-        if lateCancel { manager.cancelImageRequest(requestID) }
-    }
-
-    func finish(_ image: UIImage?) {
-        lock.lock()
-        let c = continuation
-        continuation = nil
-        lock.unlock()
-        c?.resume(returning: image)
-    }
-
-    func cancel() {
-        lock.lock()
-        cancelled = true
-        let requestID = id
-        lock.unlock()
-        if let requestID { manager.cancelImageRequest(requestID) }
-        finish(nil)
     }
 }
