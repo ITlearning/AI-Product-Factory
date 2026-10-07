@@ -157,6 +157,7 @@ struct HomeShell: View {
             // 시트 뒤에서 열면 카메라가 안 보인다 — 증정은 받은 걸로 치지 않고 카메라를 닫은 뒤 다시 뜬다.
             pickerDismissedForCamera = pickingLibrary || libraryCoverUp || pickingToday != nil
             PresentedScreens.dismissAll()
+            Telemetry.send(.cameraOpened(.control))
             makeCamera()
             progress = 1
         }
@@ -255,6 +256,7 @@ struct HomeShell: View {
     }
 
     private func finishOnboarding(_ exit: OnboardingExit) {
+        Telemetry.send(.onboardingFinished(Telemetry.Exit(exit)))
         didFinishOnboarding = true
         // 첫 화면에서 고른 모양 — 고르는 순간 바꾸면 iOS 알림이 온보딩 위에 뜬다.
         AppIconStyle.apply(PebbleStyle.current)
@@ -368,12 +370,14 @@ struct HomeShell: View {
 
                 if open != (dragStart > 0.5) { Haptics.snapped() }
                 if open { didSwipe = true }
+                if open && wasHome { Telemetry.send(.cameraOpened(.swipe)) }
             }
     }
 
     private func openCamera() {
         guard !dragging, !collectionDragging else { return }
         Haptics.snapped()
+        Telemetry.send(.cameraOpened(.button))
         makeCamera()
         progress = 1
     }
@@ -453,7 +457,7 @@ struct HomeShell: View {
                                onRecorded: { shot in
             var m = shot
             if m.place == nil { m.place = PlaceFinder.shared.recentPlace(near: m.capturedAt) }
-            store.add(m)
+            if store.add(m) { Telemetry.photosAdded(.app, count: 1, total: store.moments.count) }
             Task {
                 // 처음 찍을 때만 묻는다 — 이미 물어봤으면 상태가 notDetermined 가 아니다.
                 if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined {
@@ -475,6 +479,7 @@ struct HomeShell: View {
     // 4~8시 사이에 앱을 열어 그 자리에서 받았으면 아침 알림이 뒤늦게 오지 않게 그 날짜만 지운다.
     // 아침 소식은 온보딩(기존 사용자는 한 장)에서 이미 묻는다 — 증정 뒤엔 묻지 않는다.
     private func handleCeremonyFinished(_ dayKey: String) {
+        Telemetry.pebbleReceived(.home)
         if dayKey == onboardingGiftDay { onboardingGiftDay = nil }
         Task { await ArrivalNotice.clear(dayKey: dayKey) }
         HomeWidget.refresh(store: store, gifts: gifts)

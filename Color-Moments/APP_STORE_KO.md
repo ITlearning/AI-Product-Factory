@@ -104,7 +104,7 @@ Apple 표준 사용권 계약 그대로.
 · 색으로 그날의 기분을 판단하지 않아요.
 
 ■ 내 사진은 내 곁에
-· 계정이 없어요. 광고도, 추적도 없어요. 몽돌에는 서버가 없어요.
+· 계정이 없어요. 광고도, 추적도 없어요. 어디서 멈추는지 익명 사용 기록만 받고, 설정에서 끌 수 있어요.
 · 몽돌로 찍은 사진은 사진 앱에 저장되고, 기록은 내 iCloud로만 기기 사이에 이어져요.
 · 사진에서 한 단어를 고르는 일은 모두 기기 안에서 해요.
 
@@ -173,7 +173,7 @@ Permissions:
 - Notifications (optional): a morning notice when yesterday's pebble arrives, and occasional reminders on days without photos (Settings: often / sometimes / off).
 
 Weather data is provided by Apple Weather (WeatherKit); attribution is shown in the photo viewer.
-Records sync through the user's own iCloud (CloudKit private database). The app has no server, no analytics and no ads.
+Records sync through the user's own iCloud (CloudKit private database). The app has no server of its own and no ads. Since 1.1.1 it sends anonymous usage signals (onboarding steps, permission answers, capture path) to PostHog (EU Cloud) — no photos, words, colors, locations or dates, and no session replay or screen capture; users can turn this off in Settings > 사용 기록.
 ```
 
 ---
@@ -188,20 +188,35 @@ https://github.com/ITlearning/AI-Product-Factory/blob/main/Color-Moments/PRIVACY
 
 이 브랜치가 main 에 머지돼야 열린다 — **제출 전에 머지 확인**.
 
-### 데이터 수집 — 「아니요, 이 앱에서 데이터를 수집하지 않습니다」
+### 데이터 수집 — 「예, 이 앱에서 데이터를 수집합니다」 (1.1.1~)
 
-Apple 기준의 「수집」은 기기 밖으로 보내 개발자(또는 제3자)가 실시간 처리 이상으로 접근할 수 있게 하는 것이다. 몽돌은:
+1.0~1.1.0 은 「아니요」였다. 1.1.1 부터 PostHog 익명 사용 기록을 보내므로 아래처럼 바꾼다.
+
+| 유형 | 항목 | 용도 | 사용자에게 연결 | 추적 |
+|---|---|---|---|---|
+| 사용 데이터 | **제품 상호작용** | 분석 | 아니요 | 아니요 |
+| 사용 데이터 | **기타 사용 데이터** | 분석 | 아니요 | 아니요 |
+| 식별자 | **기기 ID** | 분석 | 아니요 | 아니요 |
+
+- 제품 상호작용: 정해진 이벤트 10개 + 앱 설치·업데이트·열기·닫기.
+- 기타 사용 데이터: SDK 가 붙이는 세션 정보(세션 ID·길이). PostHog SDK 3.90.2 자체 privacy manifest 가 「제품 상호작용」과 「기타 사용 데이터」 두 가지를 연결 안 됨·추적 아님·분석으로 선언하고 있어 같게 맞췄다.
+- 기기 ID: SDK 가 설치 때 기기에서 무작위 UUID(v7)를 만들어 모든 이벤트에 붙인다(`identifierForVendor`·광고 ID 는 쓰지 않는다 — SDK 소스에서 확인). 계정·`identify` 가 없어 사람과 이어지지 않지만, 설치를 계속 가리키는 기기 수준 ID 라 보수적으로 표시한다.
+- 넣지 않는 것: 위치(GeoIP 끔 — `disableGeoIp`), 충돌 데이터·진단(오류 자동 수집 끔 — SDK 에 PLCrashReporter 가 함께 들어오고 그 manifest 는 충돌 데이터를 선언하지만 몽돌은 켜지 않는다), 사진·화면(세션 리플레이·화면 자동 수집 끔).
+
+나머지는 여전히 수집이 아니다:
 
 | 데이터 | 어디로 | 수집인가 |
 |---|---|---|
+| 익명 사용 기록 (1.1.1~) | PostHog EU Cloud(프랑크푸르트) — 정해진 이벤트 10개, 앱 설치·업데이트·열기·닫기, SDK 기본 정보(앱·OS 버전, 기종, 언어·시간대, 화면 크기, 망 종류, 세션) | **예** — 위 표 |
 | 사진 기록(시각·대표 색·한 단어·장소 이름·좌표·날씨) | 사용자 본인 iCloud(CloudKit **개인** 데이터베이스) | 아니다 — 개발자가 열람할 수 없다 |
 | 사진 자체 | 기기 사진 앱 (iCloud 사진은 사용자가 켠 Apple 서비스) | 아니다 — 몽돌이 보내지 않는다 |
 | 위치 | 장소 이름·날씨를 찾을 때 Apple(지오코딩·WeatherKit)이 그 자리에서 처리 | 아니다 — 개발자 서버 없음 |
 | 사진 분석(한 단어·추천) | 기기 안 Vision | 아니다 |
 | 알림 | 기기 안 로컬 예약 | 아니다 |
 | 새 버전 확인 (1.1~) | 설정을 열 때 하루 한 번 Apple 조회 API(`itunes.apple.com/lookup`)에 몽돌의 bundleId·country 만 | 아니다 — 사용자·기기 정보를 보내지 않는다 |
+| 건의하기 (1.1.1~) | 앱 안 Safari 로 여는 몽돌 건의 페이지(mongdol-desk.vercel.app) — 사용자가 적은 내용·종류·선택 연락처 + 앱 버전·빌드·기종 | 사용자가 직접 적어 보낼 때만. 연락처는 적은 경우만 — Apple 기준 「연락처 정보」는 앱이 자동으로 모으지 않으므로 사용자가 선택적으로 제출하는 고객 지원 내용으로 본다(확인 필요) |
 
-코드 근거: 1.0.0 은 앱·확장 어디에도 `URLSession`·외부 주소가 없다(2026-10-03 확인). 1.1 부터 앱 본체 `UpdateCheck` 하나만 위 조회 API 를 부른다 — ephemeral 세션, 주소의 bundleId·country 말고 보내는 값 없음, 확장에는 없다. `PrivacyInfo.xcprivacy` 도 수집 데이터 없음 · 추적 없음(조회 결과 캐시는 이미 적어 둔 UserDefaults `CA92.1` 안).
+코드 근거: 1.0.0 은 앱·확장 어디에도 `URLSession`·외부 주소가 없다(2026-10-03 확인). 1.1 부터 앱 본체 `UpdateCheck` 가 위 조회 API 를 부른다. 1.1.1 부터 앱 본체에 PostHog iOS SDK 3.90.2(SPM, 앱 타깃만 — 확장 둘에는 링크되지 않음, Release 빌드 nm·strings 로 확인)가 들어가고, 보내는 이벤트는 `ColorMoments/App/Telemetry.swift` 한 파일에 모두 있다(속성은 고정 문자열 enum 과 `Photo.added` 의 정수 `count` 뿐). 세션 리플레이·화면/요소 자동 수집·설문·피처 플래그 미리 불러오기·푸시 토큰·오류 자동 수집·GeoIP 는 `Telemetry.makeConfig` 에서 끈다(스위즐링 자체를 끔). `Telemetry.apiKey` 가 비었거나 설정 「사용 기록 보내기」가 꺼진 채 시작하면 SDK 를 세우지 않고, 켠 뒤 끄면 `optOut()`. 앱 `PrivacyInfo.xcprivacy` 에 제품 상호작용·기타 사용 데이터·기기 ID(연결 안 됨, 추적 아님, 분석)를 적었고, 확장 둘의 manifest 는 그대로 수집 없음.
 
 ---
 
@@ -238,5 +253,9 @@ Apple 기준의 「수집」은 기기 밖으로 보내 개발자(또는 제3자
 - [ ] 빌드 선택 — 크래시 수정이 들어간 빌드(2 이상)
 - [ ] 6.9인치 스크린샷 6장 (6.5인치는 「6.9 사용」 또는 노치 판)
 - [ ] CloudKit Production 스키마 — 최근 필드까지 배포됨(2026-10-01 완료)
-- [ ] 연령 등급 설문 · 개인정보(수집 안 함) · 카테고리 · 콘텐츠 권한 저장
+- [ ] 연령 등급 설문 · 카테고리 · 콘텐츠 권한 저장
+- [ ] 앱 개인정보 (1.1.1~): 「데이터 수집 — 예」, 사용 데이터 › 제품 상호작용 + 기타 사용 데이터, 식별자 › 기기 ID — 셋 다 분석 · 사용자에게 연결 안 됨 · 추적 아님
+- [ ] `Telemetry.apiKey` 에 PostHog Project API Key(`phc_…`)를 넣은 빌드인지 (비어 있으면 아무것도 안 보낸다)
+- [ ] PostHog 프로젝트가 EU Cloud(`eu.posthog.com`)이고, Settings › Project › Privacy 의 「Discard client IP data」가 켜져 있는지
+- [ ] PRIVACY.md 시행일을 1.1.1 출시일로
 - [ ] 심사 메모 · 연락처

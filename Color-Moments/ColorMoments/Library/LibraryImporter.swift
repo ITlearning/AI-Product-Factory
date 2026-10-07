@@ -27,7 +27,9 @@ final class LibraryImporter {
 
     /// 앱 안의 사진 권한 요청은 모두 여기로 — 받은 뒤 사진 변경 감시를 켜야 한다(`.photoAccessRequested`).
     static func requestAccess() async -> PHAuthorizationStatus {
+        let asks = PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined
         let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        if asks { Telemetry.send(.photoAccess(Telemetry.Answer(status))) }
         NotificationCenter.default.post(name: .photoAccessRequested, object: nil)
         return status
     }
@@ -49,11 +51,14 @@ final class LibraryImporter {
         onProgress?(progress)
         var dayKeys: Set<String> = []
         var buffer: [Moment] = []
+        var addedCount = 0
         func flush() async {
             // 위 await 들 사이 상태가 바뀌었을 수 있어 넣기 직전 다시 확인한다. add 는 파일 이름 중복도 조용히 거른다.
             let fresh = buffer.filter { !store.containsAsset($0.assetID ?? "") }
             buffer = []
-            for m in store.add(contentsOf: fresh) { dayKeys.insert(m.dayKey) }
+            let added = store.add(contentsOf: fresh)
+            for m in added { dayKeys.insert(m.dayKey) }
+            addedCount += added.count
             await FramePause.next()
         }
         for asset in assets {
@@ -77,6 +82,7 @@ final class LibraryImporter {
             if buffer.count >= Self.addChunk { await flush() }
         }
         if !buffer.isEmpty { await flush() }
+        Telemetry.photosAdded(.library, count: addedCount, total: store.moments.count)
         await CloudIDMapper.assignMissing(store: store)
         return dayKeys
     }
