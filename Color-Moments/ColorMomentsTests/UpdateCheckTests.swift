@@ -176,6 +176,24 @@ final class UpdateCheckTests: XCTestCase {
         XCTAssertEqual(UpdateCheck.storeURL.absoluteString, "itms-apps://apps.apple.com/app/id6817888379")
     }
 
+    func testReviewLinkOpensWriteReview() {
+        XCTAssertEqual(UpdateCheck.reviewURL.absoluteString,
+                       "itms-apps://apps.apple.com/app/id6817888379?action=write-review")
+    }
+
+    func testSuggestionFormHiddenUntilAddressIsSet() {
+        XCTAssertNil(SuggestionForm.link(nil))
+        XCTAssertNil(SuggestionForm.link(""))
+        XCTAssertNil(SuggestionForm.link("  "))
+        XCTAssertNil(SuggestionForm.link("http://forms.gle/abc"))
+        XCTAssertEqual(SuggestionForm.link("https://forms.gle/abc")?.absoluteString, "https://forms.gle/abc")
+        let v = AppVersion(info: ["CFBundleShortVersionString": "1.1.1", "CFBundleVersion": "4"])
+        XCTAssertEqual(SuggestionForm.link("https://mongdol-desk.vercel.app/feedback", version: v, device: "iPhone17,1")?.absoluteString,
+                       "https://mongdol-desk.vercel.app/feedback?app=1&v=1.1.1&b=4&d=iPhone17,1")
+        XCTAssertEqual(SuggestionForm.url?.host, "mongdol-desk.vercel.app")
+        XCTAssertFalse(SuggestionForm.deviceModel.isEmpty)
+    }
+
     func testVersionLineUsesBundleValues() {
         let v = AppVersion(info: ["CFBundleShortVersionString": "1.0.0", "CFBundleVersion": "2"])
         XCTAssertEqual(v.line, "버전 1.0.0 (2)")

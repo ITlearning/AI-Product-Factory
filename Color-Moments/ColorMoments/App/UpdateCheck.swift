@@ -6,6 +6,7 @@ import OSLog
 struct UpdateCheck {
     static let lookupURL = URL(string: "https://itunes.apple.com/lookup?bundleId=com.itlearning.colormoments&country=kr")!
     static let storeURL = URL(string: "itms-apps://apps.apple.com/app/id6817888379")!
+    static let reviewURL = URL(string: "itms-apps://apps.apple.com/app/id6817888379?action=write-review")!
     static let interval: TimeInterval = 24 * 3600
 
     static let checkedAtKey = "storeVersionCheckedAt"

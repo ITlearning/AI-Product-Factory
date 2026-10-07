@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import WebKit
 
 /// 홈 오른쪽 위 설정 — 조약돌 모양(고르면 그 자리에서 바뀐다)과 사진 앱 ♥ 담기.
 struct SettingsSheet: View {
@@ -17,14 +18,19 @@ struct SettingsSheet: View {
     @AppStorage(Telemetry.enabledKey) private var sendsTelemetry = true
     @State private var hasUpdate = false
     @State private var showingLicenses = false
+    @State private var showingSuggestion = false
     var store: DayStore? = nil
 
     var body: some View {
         ScrollView {
-            content.padding(.horizontal, 24)
+            VStack(alignment: .leading, spacing: 0) {
+                content
+                links
+                about
+            }
+            .padding(.horizontal, 24)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .safeAreaInset(edge: .bottom, spacing: 0) { footer }
         .background(Tone.base.ignoresSafeArea())
         .presentationDetents([.large])
         .presentationBackground(Tone.base)
@@ -131,23 +137,29 @@ struct SettingsSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 맨 아래 고정 — 작은 화면에선 위 내용만 스크롤된다.
-    private var footer: some View {
+    private var links: some View {
         VStack(alignment: .leading, spacing: 0) {
+            Text("몽돌").font(Face.caption).foregroundStyle(Tone.tertiary)
             if hasUpdate {
-                Button { UIApplication.shared.open(UpdateCheck.storeURL) } label: {
-                    HStack(spacing: 6) {
-                        Text("새 버전이 있어요").foregroundStyle(Tone.secondary)
-                        Text("·").foregroundStyle(Tone.tertiary)
-                        Text("업데이트").foregroundStyle(Tone.primary)
-                    }
-                    .font(Face.guide)
-                    .frame(maxWidth: .infinity, minHeight: Shape2.minTouch, alignment: .leading)
-                    .contentShape(Rectangle())
+                linkRow("새 버전이 있어요", detail: "App Store 에서 업데이트할 수 있어요", hint: "App Store 업데이트 화면을 엽니다") {
+                    UIApplication.shared.open(UpdateCheck.storeURL)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("새 버전이 있어요. 업데이트")
             }
+            linkRow("리뷰 남기기", detail: "몽돌이 마음에 들었다면 한 줄 남겨 주세요", hint: "App Store 리뷰 쓰기 화면을 엽니다") {
+                UIApplication.shared.open(UpdateCheck.reviewURL)
+            }
+            if SuggestionForm.url != nil {
+                linkRow("건의하기", detail: "불편한 점이나 바라는 것을 들려주세요", hint: "건의 페이지를 엽니다") { showingSuggestion = true }
+            }
+        }
+        .padding(.bottom, 28)
+        .sheet(isPresented: $showingSuggestion) {
+            if let url = SuggestionForm.url { SuggestionSheet(url: url) }
+        }
+    }
+
+    private var about: some View {
+        VStack(alignment: .leading, spacing: 0) {
             Text(AppVersion.current.line)
                 .font(Face.caption).foregroundStyle(Tone.tertiary)
             Text("단어는 이 기기 안에서 사진을 보고 고릅니다")
@@ -163,12 +175,28 @@ struct SettingsSheet: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("출처와 라이선스 전문을 엽니다")
-            .padding(.bottom, 4)
         }
+        .padding(.bottom, 24)
         .sheet(isPresented: $showingLicenses) { LicensesSheet() }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tone.base)
+    }
+
+    private func linkRow(_ title: String, detail: String, hint: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(Face.line).foregroundStyle(Tone.primary)
+                    Text(detail).font(Face.caption).foregroundStyle(Tone.tertiary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Tone.tertiary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(hint)
     }
 
     private func option(_ s: PebbleStyle, _ title: String) -> some View {
@@ -266,5 +294,117 @@ struct LicensesSheet: View {
         .presentationDetents([.large])
         .presentationBackground(Tone.base)
         .preferredColorScheme(.dark)
+    }
+}
+
+/// 설정의 「건의하기」 — 몽돌 데스크(Mongdol-Desk) 건의 페이지. 버전·빌드·기종을 쿼리로 넘겨 미리 채운다.
+enum SuggestionForm {
+    static let address: String? = "https://mongdol-desk.vercel.app/feedback"
+    static var url: URL? { link(address, version: .current, device: deviceModel) }
+
+    static func link(_ address: String?, version: AppVersion? = nil, device: String = "") -> URL? {
+        guard let address, var parts = URLComponents(string: address.trimmingCharacters(in: .whitespaces)),
+              parts.scheme == "https", parts.host != nil else { return nil }
+        if let version {
+            parts.queryItems = [URLQueryItem(name: "app", value: "1"),
+                                URLQueryItem(name: "v", value: version.short),
+                                URLQueryItem(name: "b", value: version.build),
+                                URLQueryItem(name: "d", value: device)]
+        }
+        return parts.url
+    }
+
+    static var deviceModel: String {
+        var info = utsname()
+        uname(&info)
+        return withUnsafeBytes(of: &info.machine) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+    }
+}
+
+/// 건의 페이지 — Safari 창은 주소창을 늘 보여 줘서 앱 안 웹 화면으로 띄운다. 페이지는 app=1 이면 자기 머리를 숨긴다.
+struct SuggestionSheet: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+    @State private var progress: Double = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("건의하기").font(Face.lineCeremony).foregroundStyle(Tone.primary)
+                Spacer()
+                Button { dismiss() } label: {
+                    Text("닫기")
+                        .font(Face.actionSecondary)
+                        .foregroundStyle(Tone.primary)
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: Shape2.minTouch)
+                        .background(.white.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 12)
+            ZStack(alignment: .leading) {
+                Rectangle().fill(.white.opacity(0.08))
+                Rectangle().fill(.white.opacity(0.6))
+                    .scaleEffect(x: progress, anchor: .leading)
+                    .opacity(progress < 1 ? 1 : 0)
+            }
+            .frame(height: 1)
+            .animation(.easeOut(duration: 0.25), value: progress)
+            SuggestionWebView(url: url, progress: $progress)
+                .ignoresSafeArea(edges: .bottom)
+        }
+        .background(Tone.base.ignoresSafeArea())
+        .presentationBackground(Tone.base)
+        .preferredColorScheme(.dark)
+    }
+}
+
+struct SuggestionWebView: UIViewRepresentable {
+    let url: URL
+    @Binding var progress: Double
+
+    func makeCoordinator() -> Coordinator { Coordinator(home: url, progress: $progress) }
+
+    func makeUIView(context: Context) -> WKWebView {
+        let web = WKWebView()
+        web.isOpaque = false
+        web.backgroundColor = .clear
+        web.scrollView.backgroundColor = .clear
+        web.navigationDelegate = context.coordinator
+        context.coordinator.watch(web)
+        web.load(URLRequest(url: url))
+        return web
+    }
+
+    func updateUIView(_ web: WKWebView, context: Context) {}
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        let home: URL
+        let progress: Binding<Double>
+        private var observation: NSKeyValueObservation?
+
+        init(home: URL, progress: Binding<Double>) {
+            self.home = home
+            self.progress = progress
+        }
+
+        func watch(_ web: WKWebView) {
+            observation = web.observe(\.estimatedProgress, options: [.new]) { [weak self] web, _ in
+                let value = web.estimatedProgress
+                DispatchQueue.main.async { self?.progress.wrappedValue = value }
+            }
+        }
+
+        func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
+                     decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
+            guard let target = action.request.url, target.host != home.host, action.targetFrame?.isMainFrame != false else {
+                decisionHandler(.allow); return
+            }
+            UIApplication.shared.open(target)
+            decisionHandler(.cancel)
+        }
     }
 }
