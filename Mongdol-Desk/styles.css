@@ -1,0 +1,160 @@
+/* 몽돌 데스크(건의하기 · 관리) — 앱(iOS 몽돌) 설정에서 여는 페이지라 ENFP 웹판의 크림빛이 아니라 앱의 어둠 톤을 쓴다.
+   토큰은 Color-Moments/DESIGN.md §2 그대로: 배경 #06070A, 흰색 네 단계(92/64/48/24 — 24 는 글자에 쓰지 말 것),
+   글꼴은 ENFP 웹판과 같은 Google Fonts 세 벌(명조는 「몽돌」에만, 버튼만 IBM Plex Sans KR). */
+:root {
+  --base: #06070A;
+  --primary: rgba(255, 255, 255, 0.92);
+  --secondary: rgba(255, 255, 255, 0.64);
+  --tertiary: rgba(255, 255, 255, 0.48);
+  --hairline: rgba(255, 255, 255, 0.24);
+  --fill: rgba(255, 255, 255, 0.06);
+  --fill-2: rgba(255, 255, 255, 0.1);
+  --warn: #FFB4A2;
+  --serif: 'Nanum Myeongjo', 'AppleMyungjo', 'Batang', serif;
+  --sans: 'Gowun Dodum', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+  --btn: 'IBM Plex Sans KR', 'Gowun Dodum', -apple-system, 'Apple SD Gothic Neo', sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { background: var(--base); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--base);
+  color: var(--primary);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+/* 첫날 화면처럼 아직 색이 없는 중성 번짐 하나 — 글 읽는 데 방해되지 않게 위쪽만. */
+body::before {
+  content: ""; position: fixed; inset: -20% -30% auto; height: 60vh; z-index: 0; pointer-events: none;
+  background: radial-gradient(50% 50% at 50% 40%, rgba(214, 196, 186, 0.3), transparent 70%);
+  filter: blur(90px); opacity: 0.5;
+}
+p, h1, h2 { margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--secondary); outline-offset: 3px; }
+[hidden] { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+
+.page {
+  position: relative; z-index: 1;
+  width: min(100%, 430px);
+  margin: 0 auto;
+  padding: max(28px, calc(var(--safe-t) + 20px)) 24px max(32px, calc(var(--safe-b) + 24px));
+}
+.wordmark { font-family: var(--serif); font-weight: 800; font-size: 30px; letter-spacing: -0.5px; line-height: 1.2; }
+.lede { margin-top: 10px; font-size: 17.5px; line-height: 1.55; color: var(--secondary); }
+
+.field { margin-top: 30px; border: 0; padding: 0; min-width: 0; }
+.field + .field { margin-top: 26px; }
+.label { display: block; padding: 0; margin-bottom: 10px; font-size: 14px; color: var(--tertiary); }
+.optional { color: var(--tertiary); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.chip span {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px;
+  border-radius: 100px; border: 1px solid var(--hairline); background: var(--fill);
+  font-size: 15px; color: var(--secondary);
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  user-select: none; -webkit-user-select: none; cursor: pointer;
+}
+.chip input:checked + span { background: var(--primary); border-color: transparent; color: var(--base); }
+.chip input:focus-visible + span { outline: 2px solid var(--secondary); outline-offset: 3px; }
+
+.box {
+  display: block; width: 100%;
+  border: 1px solid var(--hairline); border-radius: 18px;
+  background: var(--fill);
+  padding: 14px 16px;
+  font-size: 16px; /* 16 아래면 iOS 가 입력할 때 화면을 확대한다 */
+  line-height: 1.6;
+  color: var(--primary);
+  transition: border-color 0.18s ease, background 0.18s ease;
+  -webkit-appearance: none; appearance: none;
+}
+.box::placeholder { color: var(--tertiary); }
+.box:focus { border-color: var(--tertiary); background: var(--fill-2); outline: none; }
+textarea.box { min-height: 188px; resize: vertical; }
+input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
+.under { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 13px; color: var(--tertiary); }
+.count { margin-left: auto; flex: none; }
+.count.near { color: var(--secondary); }
+
+.hp { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+.meta { margin-top: 26px; font-size: 13px; line-height: 1.5; color: var(--tertiary); }
+.primary-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; min-height: 54px; margin-top: 14px;
+  border: 0; border-radius: 100px;
+  background: var(--primary); color: var(--base);
+  font-family: var(--btn); font-weight: 600; font-size: 17px;
+  transition: opacity 0.2s ease, transform 0.12s ease;
+}
+.primary-btn:active:not(:disabled) { transform: scale(0.98); }
+.primary-btn:disabled { opacity: 0.35; cursor: default; }
+.primary-btn[aria-busy="true"] { opacity: 0.6; }
+.error { margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--warn); text-align: center; }
+.privacy { margin-top: 18px; font-size: 13px; line-height: 1.6; color: var(--tertiary); text-align: center; }
+
+/* 보낸 뒤 */
+.done {
+  min-height: calc(100dvh - 120px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  padding-bottom: 40px;
+}
+.done-pebble { width: 92px; height: 70px; margin-bottom: 28px; animation: roll-in 0.9s cubic-bezier(.2, 1.1, .3, 1) both; }
+.done-title { font-size: 24px; line-height: 1.4; }
+.done-sub { margin-top: 10px; font-size: 15px; line-height: 1.6; color: var(--secondary); }
+.done-close { margin-top: 26px; font-size: 13px; color: var(--tertiary); }
+@keyframes roll-in { from { opacity: 0; transform: translateX(-36px) rotate(-40deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .done-pebble { animation: fade 0.4s ease both; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+}
+
+/* ── 관리(/admin) ── */
+.admin .page { width: min(100%, 720px); }
+.admin-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.admin-head .wordmark { font-size: 24px; margin-right: auto; }
+.ghost-btn {
+  min-height: 40px; padding: 0 16px; border-radius: 100px;
+  border: 1px solid var(--hairline); background: var(--fill);
+  font-family: var(--btn); font-weight: 600; font-size: 14px; color: var(--secondary);
+}
+.ghost-btn:disabled { opacity: 0.4; }
+.ghost-btn.danger { color: var(--warn); }
+.sections { display: flex; gap: 6px; margin-top: 18px; border-bottom: 1px solid var(--hairline); }
+.sections a { padding: 10px 4px; margin-bottom: -1px; font-size: 15px; color: var(--tertiary); text-decoration: none; border-bottom: 2px solid transparent; }
+.sections a[aria-current="page"] { color: var(--primary); border-bottom-color: var(--primary); }
+.section-head { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+.summary { margin-right: auto; font-size: 14px; color: var(--tertiary); }
+.filters { margin-top: 18px; }
+.filters .chip span { min-height: 38px; padding: 0 14px; font-size: 14px; }
+.list { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 12px; }
+.item { border: 1px solid var(--hairline); border-radius: 18px; background: var(--fill); padding: 16px 18px; }
+.item.read { opacity: 0.62; }
+.item-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--tertiary); }
+.kind { padding: 3px 10px; border-radius: 100px; background: var(--fill-2); color: var(--primary); font-size: 12px; }
+.kind.bug { background: rgba(255, 180, 162, 0.18); }
+.kind.wish { background: rgba(160, 205, 255, 0.18); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+.item-text { margin-top: 10px; font-size: 15px; line-height: 1.65; white-space: pre-wrap; user-select: text; -webkit-user-select: text; }
+.item-contact { margin-top: 10px; font-size: 14px; color: var(--secondary); user-select: all; -webkit-user-select: all; }
+.item-meta { margin-top: 6px; font-size: 13px; color: var(--tertiary); }
+.item-actions { display: flex; gap: 8px; margin-top: 14px; }
+.empty { margin-top: 40px; text-align: center; font-size: 15px; color: var(--tertiary); }
+.more { margin: 18px auto 0; display: block; }
+.login { max-width: 360px; margin: 18vh auto 0; }
+.login .lede { font-size: 15px; }
