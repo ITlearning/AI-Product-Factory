@@ -158,3 +158,31 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .more { margin: 18px auto 0; display: block; }
 .login { max-width: 360px; margin: 18vh auto 0; }
 .login .lede { font-size: 15px; }
+
+/* ── 개인정보 처리방침(/privacy · tools/build-privacy.mjs 가 만든다) ── */
+.doc-head { margin-bottom: 6px; }
+.doc-title { margin-top: 6px; font-size: 20px; font-weight: 400; line-height: 1.4; color: var(--secondary); }
+.doc { font-size: 16px; line-height: 1.8; color: var(--primary); }
+.doc p, .doc ul, .doc .table-wrap { margin: 14px 0 0; }
+.doc > p:first-child { margin-top: 18px; font-size: 14px; color: var(--tertiary); }
+.doc h2 { margin: 38px 0 0; font-size: 18px; font-weight: 400; line-height: 1.45; }
+.doc h3 { margin: 26px 0 0; font-size: 16px; font-weight: 400; color: var(--secondary); }
+.doc ul { padding-left: 1.1em; }
+.doc li + li { margin-top: 8px; }
+.doc li::marker { color: var(--tertiary); }
+.doc strong { font-weight: 700; color: var(--primary); }
+.doc a { color: var(--primary); text-decoration: underline; text-decoration-color: var(--tertiary); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.doc code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.88em; padding: 1px 6px; border-radius: 6px; background: var(--fill-2); }
+/* 표는 폭 390 에서 줄이 넘치면 페이지가 아니라 표만 가로로 민다. */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--hairline); border-radius: 14px; background: var(--fill); }
+.doc table { width: 100%; min-width: 340px; border-collapse: collapse; font-size: 14.5px; line-height: 1.6; }
+.doc th, .doc td { padding: 10px 14px; text-align: left; vertical-align: top; }
+.doc th { font-weight: 400; font-size: 13px; color: var(--tertiary); border-bottom: 1px solid var(--hairline); }
+.doc td:first-child { white-space: nowrap; color: var(--secondary); }
+.doc tbody tr + tr td { border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.doc-foot { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--hairline); text-align: center; }
+.doc-foot a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 100px;
+  border: 1px solid var(--hairline); background: var(--fill);
+  font-size: 15px; color: var(--secondary); text-decoration: none;
+}

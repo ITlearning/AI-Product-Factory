@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "TZ=Asia/Seoul node --test --test-timeout=60000 tests/*.test.mjs",
-    "verify": "node --check js/feedback.js && node --check js/admin.js && npm test"
+    "verify": "node --check js/feedback.js && node --check js/admin.js && npm test",
+    "build:privacy": "node tools/build-privacy.mjs"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.5",

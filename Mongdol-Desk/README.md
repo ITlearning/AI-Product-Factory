@@ -1,6 +1,6 @@
 # 몽돌 데스크
 
-iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 **건의 페이지**와, 받은 건의를 읽는 **관리 페이지**.
+iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 **건의 페이지**와, 받은 건의를 읽는 **관리 페이지**, 그리고 App Store 에 거는 **개인정보 처리방침**.
 원래 구글 설문이었는데 앱 디자인에 맞춰 따로 배포한다(2026-10-08 Tabber). 몽돌 ENFP 웹(`../Mongdol-ENFP-Web`)과는 **다른 Vercel 프로젝트**다 — 관례(정적 HTML + `api/` 서버리스 + Upstash)만 본떴고 파일은 나눠 쓰지 않는다.
 나중에 다른 관리 기능이 붙을 수 있게 `/admin` 은 칸(섹션) 구조로 두었다. 지금 칸은 「건의함」 하나.
 
@@ -10,6 +10,7 @@ iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 
 |---|---|
 | `/` | `/feedback` 으로 넘긴다(307, 쿼리 그대로) |
 | `/feedback?v=<앱 버전>&b=<빌드>&d=<기종 식별자>` | 건의 쓰기. 앱이 SFSafariViewController 로 연다. 예: `/feedback?v=1.1.1&b=4&d=iPhone17,1` |
+| `/privacy` | 개인정보 처리방침(`Color-Moments/PRIVACY.md` 의 사본, 캐시 5분) |
 | `/admin` | 관리(토큰으로 연다) — 건의함 |
 | `POST /api/feedback` | 건의 받기 |
 | `GET·PATCH·DELETE /api/admin/feedback` | 건의 목록·읽음 표시·지우기(관리 토큰) |
@@ -27,6 +28,14 @@ iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 
 - 입력란 글자 16px — 그 아래면 iOS 가 입력할 때 화면을 확대한다.
 - 보내기: 누르면 바로 잠기고(두 번 눌러도 한 번), 글마다 무작위 `cid` 를 같이 보내 응답만 못 받고 다시 눌러도 서버가 한 번만 저장한다. 성공하면 「잘 받았어요. 고마워요.」 화면, 실패하면 버튼 아래 다시 시도 안내(429 는 「한 시간에 다섯 번까지」).
 - 허니팟: 화면 밖 `website` 입력. 차 있으면 서버가 성공처럼 답하고 저장하지 않는다.
+
+## 개인정보 처리방침(`privacy.html` · `tools/build-privacy.mjs`)
+
+- **원본은 앱의 `Color-Moments/PRIVACY.md` 하나다.** `privacy.html` 은 거기서 만든 사본이라 손으로 고치지 않는다. 그래도 커밋은 한다 — 배포는 이 폴더만 올라가서 그때는 원본 md 가 없다.
+- **앱 PRIVACY.md 가 바뀌면:** `npm run build:privacy` → `privacy.html` 커밋 → 배포. 다시 안 만들면 `npm run verify` 의 `tests/privacy.test.mjs` 가 실패한다(원본으로 새로 만든 결과와 커밋된 파일을 글자 하나까지 비교).
+- 변환기는 의존성 없는 작은 것이라 그 md 에 쓰인 문법만 안다: `#`·`##`·`###` 제목, 문단, `- ` 목록, 표, `**굵게**`, `[글](주소)`, `` `코드` ``, 맨 주소(링크로). 다른 문법을 md 에 쓰면 글자 그대로 나오니 변환기부터 늘린다. 맨 처음 `#` 제목은 페이지 머리(「몽돌 / 개인정보 처리방침」)가 대신한다.
+- 링크: GitHub 의 자기 자신(`…/Color-Moments/PRIVACY.md`)은 `/privacy` 로, 상대 링크는 저장소 `blob/main/Color-Moments/` 주소로 바꾸고, `http(s)`·`mailto`·`#` 밖의 스킴은 링크 없이 글자만 둔다.
+- **App Store Connect 의 개인정보 처리방침 URL 을 `https://mongdol-desk.vercel.app/privacy` 로 바꾼다**(지금은 GitHub `…/main/Color-Moments/PRIVACY.md`). 첫 배포 뒤 주소가 열리는지 확인하고 바꿀 것.
 
 ## 관리 페이지(`admin.html` · `js/admin.js`)
 
@@ -71,17 +80,19 @@ npx vercel --prod
 
 - 루트 디렉터리는 `Mongdol-Desk`(이 폴더에서 CLI 로 올린다). Git 연결은 하지 않는다(계정 하루 배포 한도 — ENFP 웹과 같은 방식).
 - Upstash 를 Vercel 「Storage → Connect」로 이 프로젝트에도 붙이면 `KV_REST_API_*` 가 자동으로 들어간다. 직접 넣을 땐 `UPSTASH_REDIS_REST_URL`·`UPSTASH_REDIS_REST_TOKEN` 이름도 받는다.
-- **배포 때 지우면 안 되는 것:** `api/`, `package.json`, `package-lock.json`, `vercel.json`, `feedback.html`, `admin.html`, `styles.css`, `js/`. (`tests/`, `README.md` 는 지워도 된다. `node_modules/` 는 올리지 않는다.)
+- **배포 때 지우면 안 되는 것:** `api/`, `package.json`, `package-lock.json`, `vercel.json`, `feedback.html`, `admin.html`, `privacy.html`, `styles.css`, `js/`. (`tests/`, `tools/`, `README.md` 는 지워도 된다. `node_modules/` 는 올리지 않는다.)
 - 확인: `/feedback` 이 뜨는지, `/admin` 에서 토큰으로 열리는지, `curl -s -o /dev/null -w '%{http_code}' https://<주소>/api/admin/feedback` 가 `401`(환경변수가 없으면 `503`)인지.
 
 ## 시험
 
 ```bash
 npm ci && npm run verify     # 문법 확인 + node --test (메모리 가짜 Redis — 실제 Redis 는 안 쓴다)
+npm run build:privacy        # 앱 PRIVACY.md 가 바뀌었을 때 privacy.html 다시 만들기
 TZ=Asia/Seoul node tests/e2e.mjs <스크린샷 폴더> [webkit|chromium]   # 브라우저로 쓰기→보내기→관리(로그인·읽음·지우기), 390×844
 ```
 
 - `tests/feedback-server.test.mjs` — 저장 형태(IP 없음) · 쿼리 없음 · 검증 실패 · 허니팟 · cid 중복 · 레이트리밋(IP 해시) · 5,000개 상한 · 관리 인증(환경변수 없음 503 / 없음·틀림 401 / 맞음 200) · 틀린 횟수 429 · 목록·쪽 나누기·읽음·지우기 · 색인만 남은 id 걷기.
-- `tests/pages.test.mjs` — 두 페이지 noindex · 참조 파일이 이 폴더 안 · `vercel.json`.
+- `tests/pages.test.mjs` — 세 페이지 noindex · 참조 파일이 이 폴더 안 · `vercel.json`(처리방침 캐시 포함).
+- `tests/privacy.test.mjs` — `privacy.html` 이 지금 `PRIVACY.md` 와 맞는지 · 변환기(이스케이프·링크·목록·표).
 - `tests/clock-redis.mjs` — ENFP 웹의 시계 달린 가짜 Redis 에 정렬 집합·mget 을 더한 것.
 - `tests/e2e.mjs` 는 gstack 에 깔린 playwright 를 빌려 쓴다(의존성에 넣지 않았다).

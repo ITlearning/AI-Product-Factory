@@ -5,8 +5,8 @@ import { readFileSync, existsSync } from 'node:fs';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
-test('두 페이지 모두 noindex, 참조하는 파일이 이 폴더 안에 있다', () => {
-  for (const page of ['feedback.html', 'admin.html']) {
+test('세 페이지 모두 noindex, 참조하는 파일이 이 폴더 안에 있다', () => {
+  for (const page of ['feedback.html', 'admin.html', 'privacy.html']) {
     const html = read(page);
     assert.match(html, /<meta name="robots" content="noindex, nofollow">/, page);
     for (const [, ref] of html.matchAll(/(?:src|href)="\.\/([^"]+)"/g)) assert.ok(existsSync(new URL(`../${ref}`, import.meta.url)), `${page} → ${ref}`);
@@ -20,6 +20,8 @@ test('vercel.json — 확장자 없는 주소, / 는 /feedback 으로, 전부 no
   assert.deepEqual(v.redirects, [{ source: '/', destination: '/feedback', permanent: false }]);
   const all = v.headers.find((h) => h.source === '/(.*)');
   assert.ok(all.headers.some((h) => h.key === 'X-Robots-Tag' && /noindex/.test(h.value)));
+  const privacy = v.headers.find((h) => h.source === '/privacy');
+  assert.ok(privacy.headers.some((h) => h.key === 'Cache-Control' && /max-age=300/.test(h.value)), '처리방침은 짧게 캐시');
 });
 
 test('브라우저 쪽 쿼리 모양이 서버 zod 와 같다', async () => {
