@@ -189,7 +189,7 @@ final class UpdateCheckTests: XCTestCase {
         XCTAssertEqual(SuggestionForm.link("https://forms.gle/abc")?.absoluteString, "https://forms.gle/abc")
         let v = AppVersion(info: ["CFBundleShortVersionString": "1.1.1", "CFBundleVersion": "4"])
         XCTAssertEqual(SuggestionForm.link("https://mongdol-desk.vercel.app/feedback", version: v, device: "iPhone17,1")?.absoluteString,
-                       "https://mongdol-desk.vercel.app/feedback?v=1.1.1&b=4&d=iPhone17,1")
+                       "https://mongdol-desk.vercel.app/feedback?app=1&v=1.1.1&b=4&d=iPhone17,1")
         XCTAssertEqual(SuggestionForm.url?.host, "mongdol-desk.vercel.app")
         XCTAssertFalse(SuggestionForm.deviceModel.isEmpty)
     }
