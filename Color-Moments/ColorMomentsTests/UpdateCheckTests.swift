@@ -176,6 +176,20 @@ final class UpdateCheckTests: XCTestCase {
         XCTAssertEqual(UpdateCheck.storeURL.absoluteString, "itms-apps://apps.apple.com/app/id6817888379")
     }
 
+    func testReviewLinkOpensWriteReview() {
+        XCTAssertEqual(UpdateCheck.reviewURL.absoluteString,
+                       "itms-apps://apps.apple.com/app/id6817888379?action=write-review")
+    }
+
+    func testSuggestionFormHiddenUntilAddressIsSet() {
+        XCTAssertNil(SuggestionForm.link(nil))
+        XCTAssertNil(SuggestionForm.link(""))
+        XCTAssertNil(SuggestionForm.link("  "))
+        XCTAssertNil(SuggestionForm.link("http://forms.gle/abc"))
+        XCTAssertEqual(SuggestionForm.link("https://forms.gle/abc")?.absoluteString, "https://forms.gle/abc")
+        XCTAssertEqual(SuggestionForm.url, SuggestionForm.link(SuggestionForm.address))
+    }
+
     func testVersionLineUsesBundleValues() {
         let v = AppVersion(info: ["CFBundleShortVersionString": "1.0.0", "CFBundleVersion": "2"])
         XCTAssertEqual(v.line, "버전 1.0.0 (2)")
