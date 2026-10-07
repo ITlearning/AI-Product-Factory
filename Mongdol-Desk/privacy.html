@@ -1,0 +1,76 @@
+<!doctype html>
+<!-- npm run build:privacy 로 Color-Moments/PRIVACY.md 에서 만든 파일 — 손으로 고치지 말 것 -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#06070A">
+<meta name="color-scheme" content="dark">
+<meta name="format-detection" content="telephone=no">
+<title>몽돌 · 개인정보 처리방침</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='16' cy='17' rx='12' ry='11' fill='%23F4A58A'/%3E%3Cellipse cx='13' cy='13' rx='5' ry='3.5' fill='%23fff' opacity='.5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Myeongjo:wght@800&display=swap">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main class="page">
+  <header class="doc-head">
+    <p class="wordmark">몽돌</p>
+    <h1 class="doc-title">개인정보 처리방침</h1>
+  </header>
+  <article class="doc">
+<p>시행일: 2026년 10월 3일</p>
+<p>몽돌은 계정이 없고, 몽돌만의 서버도 없습니다. 개발자는 사용자의 사진이나 기록을 받지도, 볼 수도 없습니다.</p>
+<h2>1. 수집하지 않는 것</h2>
+<ul>
+<li>이름, 이메일, 전화번호 등 사용자를 알아볼 수 있는 정보</li>
+<li>사용 기록·분석 데이터 (분석 도구를 쓰지 않습니다)</li>
+<li>광고 식별자 (광고와 추적이 없습니다)</li>
+</ul>
+<h2>2. 기기에 저장되는 것</h2>
+<p>몽돌을 쓰는 동안 아래 정보가 사용자의 기기에 저장됩니다.</p>
+<ul>
+<li><strong>사진 기록</strong>: 찍은 시각, 사진의 대표 색, 사진에 붙은 한 단어, 사진 앱 속 그 사진을 다시 찾기 위한 식별자</li>
+<li><strong>찍은 곳</strong> (위치를 허용한 경우만): 좌표, 동네 이름, 그때 날씨</li>
+<li><strong>조약돌</strong>: 하루의 이름과 한 줄 말, 받은 날, 마무리한 시각</li>
+<li><strong>설정</strong>: 조약돌 모양, 알림 빈도 등</li>
+</ul>
+<p>몽돌로 찍은 사진은 기기의 <strong>사진 앱</strong>에 저장되고, 몽돌은 사진 앱에 있는 사진을 다시 불러와 보여 줍니다.</p>
+<h2>3. iCloud로 이어지는 것</h2>
+<p>iCloud에 로그인되어 있으면 2항의 기록(사진 파일 제외)이 <strong>사용자 본인의 iCloud</strong>(Apple CloudKit 개인 데이터베이스)에 저장되어, 같은 Apple 계정을 쓰는 기기끼리 이어집니다.</p>
+<ul>
+<li>이 데이터베이스는 사용자 본인만 접근할 수 있으며, 개발자는 열람할 수 없습니다.</li>
+<li>사진 파일 자체는 몽돌이 iCloud에 올리지 않습니다. 다른 기기에서 사진이 보이는 것은 사용자가 켠 iCloud 사진(Apple 서비스)을 통해서입니다.</li>
+</ul>
+<h2>4. 기기 기능을 쓰는 이유</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">권한</th><th scope="col">쓰는 곳</th></tr></thead>
+<tbody><tr><td>카메라</td><td>몽돌 카메라와 잠금화면 카메라로 사진을 찍을 때</td></tr>
+<tr><td>사진</td><td>찍은 사진을 사진 앱에 저장하고, 고른 사진과 지난 사진을 몽돌에 담을 때</td></tr>
+<tr><td>위치 (선택)</td><td>사진을 찍은 동네 이름과 그때 날씨를 사진 옆에 적을 때</td></tr>
+<tr><td>알림 (선택)</td><td>조약돌이 도착한 아침, 사진이 없는 날에 알려 드릴 때 (기기 안에서 예약)</td></tr></tbody>
+</table></div>
+<ul>
+<li><strong>위치</strong>: 동네 이름과 날씨를 찾을 때 좌표가 Apple 지도와 Apple 날씨(WeatherKit)로 전달되어 그 자리에서 처리됩니다. 이 처리에는 <a href="https://www.apple.com/kr/legal/privacy/">Apple 개인정보 처리방침</a>이 적용됩니다. 위치를 허용하지 않아도 몽돌의 다른 기능은 그대로 쓸 수 있습니다.</li>
+<li><strong>사진 분석</strong>: 사진에 어울리는 한 단어를 고르고 첫날 사진을 추천하는 일은 모두 기기 안에서 이루어지며, 사진이 기기 밖으로 나가지 않습니다. 단어는 이 기기 안에서 사진을 보고 고릅니다. 공개 이미지 모델(TinyCLIP) 위에 단어를 고르는 층을 개발자의 사진으로 학습해 얹었고, 사용자의 사진은 학습에 쓰지 않으며 기기 밖으로 보내지 않습니다.</li>
+<li><strong>새 버전 확인</strong>: 설정을 열면 App Store에 몽돌의 최신 버전을 물어봅니다(하루 한 번). 이때 보내는 것은 몽돌 앱을 가리키는 번들 ID와 국가(한국)뿐이며, 사용자나 기기를 알아볼 수 있는 정보는 보내지 않습니다. 이 요청에는 <a href="https://www.apple.com/kr/legal/privacy/">Apple 개인정보 처리방침</a>이 적용됩니다.</li>
+</ul>
+<h2>5. 지우기</h2>
+<ul>
+<li>몽돌을 삭제하면 기기에 저장된 몽돌의 기록이 함께 삭제됩니다. 사진 앱에 저장된 사진은 남습니다.</li>
+<li>iCloud에 저장된 기록은 사용자의 iCloud 계정에서 관리하고 삭제할 수 있습니다.</li>
+</ul>
+<h2>6. 어린이</h2>
+<p>몽돌은 연령과 관계없이 개인정보를 수집하지 않습니다.</p>
+<h2>7. 바뀔 때</h2>
+<p>이 방침이 바뀌면 이 페이지에 시행일과 함께 알립니다.</p>
+<h2>8. 문의</h2>
+<p><a href="https://github.com/ITlearning/AI-Product-Factory/issues">https://github.com/ITlearning/AI-Product-Factory/issues</a></p>
+  </article>
+  <footer class="doc-foot"><a href="/feedback">건의하기</a></footer>
+</main>
+</body>
+</html>

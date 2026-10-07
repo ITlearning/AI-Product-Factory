@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#06070A">
+<meta name="color-scheme" content="dark">
+<meta name="format-detection" content="telephone=no">
+<title>몽돌 · 건의하기</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='16' cy='17' rx='12' ry='11' fill='%23F4A58A'/%3E%3Cellipse cx='13' cy='13' rx='5' ry='3.5' fill='%23fff' opacity='.5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Myeongjo:wght@800&family=IBM+Plex+Sans+KR:wght@600&display=swap">
+<link rel="stylesheet" href="./styles.css">
+<script>/* ?app=1 = 앱의 WKWebView 시트(앱이 머리줄을 그린다). 그리기 전에 붙여야 「몽돌」 머리가 깜빡이지 않는다. */
+if (/[?&]app=1(&|$)/.test(location.search)) document.documentElement.classList.add('in-app');</script>
+</head>
+<body>
+<main class="page">
+  <form id="fb-form" novalidate>
+    <h1 class="wordmark page-head">몽돌</h1>
+    <p class="lede">쓰다가 불편했던 점이나 바라는 것을 편하게 들려주세요.</p>
+
+    <fieldset class="field">
+      <legend class="label">어떤 이야기인가요</legend>
+      <div class="chips" role="radiogroup">
+        <label class="chip"><input type="radio" name="kind" value="bug"><span>불편한 점</span></label>
+        <label class="chip"><input type="radio" name="kind" value="wish"><span>바라는 기능</span></label>
+        <label class="chip"><input type="radio" name="kind" value="etc"><span>그 밖에</span></label>
+      </div>
+    </fieldset>
+
+    <div class="field">
+      <label class="label" for="fb-text">내용</label>
+      <textarea id="fb-text" class="box" name="text" maxlength="2000" required placeholder="언제, 어떤 화면에서였는지 적어 주시면 더 잘 알 수 있어요."></textarea>
+      <div class="under"><span class="count num" id="fb-count" aria-live="polite">0 / 2000</span></div>
+    </div>
+
+    <div class="field">
+      <label class="label" for="fb-contact">답장 받을 곳 <span class="optional">(선택)</span></label>
+      <input id="fb-contact" class="box" name="contact" type="text" maxlength="200" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="이메일이나 인스타그램 아이디">
+      <div class="under"><span>적으면 답장할 때만 써요.</span></div>
+    </div>
+
+    <div class="hp" aria-hidden="true">
+      <label for="fb-website">웹사이트</label>
+      <input id="fb-website" name="website" type="text" tabindex="-1" autocomplete="off">
+    </div>
+
+    <p class="meta" id="fb-meta" hidden></p>
+    <button class="primary-btn" id="fb-send" type="submit" disabled>보내기</button>
+    <p class="error" id="fb-error" role="alert" hidden></p>
+    <p class="privacy">보낸 내용은 몽돌을 다듬는 데만 쓰고, 다 읽고 나면 지울 수 있어요.</p>
+  </form>
+
+  <section class="done" id="fb-done" hidden aria-live="polite">
+    <img class="done-pebble" src="./img/pebble.jpg" width="150" height="150" alt="" decoding="async">
+    <h1 class="done-title" tabindex="-1">잘 받았어요. 고마워요.</h1>
+    <p class="done-sub">하나하나 읽어 볼게요.</p>
+    <p class="done-close"><span class="web-only">이제 이 창을 닫아도 돼요.</span><span class="app-only">위의 「닫기」를 누르면 돼요.</span></p>
+  </section>
+</main>
+<script src="./js/feedback.js"></script>
+</body>
+</html>
