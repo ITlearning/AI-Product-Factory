@@ -25,11 +25,11 @@ struct SettingsSheet: View {
             VStack(alignment: .leading, spacing: 0) {
                 content
                 links
+                about
             }
             .padding(.horizontal, 24)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .safeAreaInset(edge: .bottom, spacing: 0) { footer }
         .background(Tone.base.ignoresSafeArea())
         .presentationDetents([.large])
         .presentationBackground(Tone.base)
@@ -124,36 +124,27 @@ struct SettingsSheet: View {
 
     private var links: some View {
         VStack(alignment: .leading, spacing: 0) {
-            linkRow("리뷰 남기기", hint: "App Store 리뷰 쓰기 화면을 엽니다") {
+            Text("몽돌").font(Face.caption).foregroundStyle(Tone.tertiary)
+            if hasUpdate {
+                linkRow("새 버전이 있어요", detail: "App Store 에서 업데이트할 수 있어요", hint: "App Store 업데이트 화면을 엽니다") {
+                    UIApplication.shared.open(UpdateCheck.storeURL)
+                }
+            }
+            linkRow("리뷰 남기기", detail: "몽돌이 마음에 들었다면 한 줄 남겨 주세요", hint: "App Store 리뷰 쓰기 화면을 엽니다") {
                 UIApplication.shared.open(UpdateCheck.reviewURL)
             }
             if SuggestionForm.url != nil {
-                linkRow("건의하기", hint: "건의 페이지를 엽니다") { showingSuggestion = true }
+                linkRow("건의하기", detail: "불편한 점이나 바라는 것을 들려주세요", hint: "건의 페이지를 엽니다") { showingSuggestion = true }
             }
         }
-        .padding(.bottom, 16)
+        .padding(.bottom, 28)
         .sheet(isPresented: $showingSuggestion) {
             if let url = SuggestionForm.url { SafariSheet(url: url).ignoresSafeArea() }
         }
     }
 
-    /// 맨 아래 고정 — 작은 화면에선 위 내용만 스크롤된다.
-    private var footer: some View {
+    private var about: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if hasUpdate {
-                Button { UIApplication.shared.open(UpdateCheck.storeURL) } label: {
-                    HStack(spacing: 6) {
-                        Text("새 버전이 있어요").foregroundStyle(Tone.secondary)
-                        Text("·").foregroundStyle(Tone.tertiary)
-                        Text("업데이트").foregroundStyle(Tone.primary)
-                    }
-                    .font(Face.guide)
-                    .frame(maxWidth: .infinity, minHeight: Shape2.minTouch, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("새 버전이 있어요. 업데이트")
-            }
             Text(AppVersion.current.line)
                 .font(Face.caption).foregroundStyle(Tone.tertiary)
             Text("단어는 이 기기 안에서 사진을 보고 고릅니다")
@@ -169,20 +160,25 @@ struct SettingsSheet: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("출처와 라이선스 전문을 엽니다")
-            .padding(.bottom, 4)
         }
+        .padding(.bottom, 24)
         .sheet(isPresented: $showingLicenses) { LicensesSheet() }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tone.base)
     }
 
-    private func linkRow(_ title: String, hint: String, action: @escaping () -> Void) -> some View {
+    private func linkRow(_ title: String, detail: String, hint: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
-                .font(Face.guide).foregroundStyle(Tone.secondary)
-                .frame(maxWidth: .infinity, minHeight: Shape2.minTouch, alignment: .leading)
-                .contentShape(Rectangle())
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(Face.line).foregroundStyle(Tone.primary)
+                    Text(detail).font(Face.caption).foregroundStyle(Tone.tertiary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Tone.tertiary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityHint(hint)
