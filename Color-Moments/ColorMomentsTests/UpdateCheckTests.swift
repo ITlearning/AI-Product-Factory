@@ -187,7 +187,11 @@ final class UpdateCheckTests: XCTestCase {
         XCTAssertNil(SuggestionForm.link("  "))
         XCTAssertNil(SuggestionForm.link("http://forms.gle/abc"))
         XCTAssertEqual(SuggestionForm.link("https://forms.gle/abc")?.absoluteString, "https://forms.gle/abc")
-        XCTAssertEqual(SuggestionForm.url, SuggestionForm.link(SuggestionForm.address))
+        let v = AppVersion(info: ["CFBundleShortVersionString": "1.1.1", "CFBundleVersion": "4"])
+        XCTAssertEqual(SuggestionForm.link("https://mongdol-desk.vercel.app/feedback", version: v, device: "iPhone17,1")?.absoluteString,
+                       "https://mongdol-desk.vercel.app/feedback?v=1.1.1&b=4&d=iPhone17,1")
+        XCTAssertEqual(SuggestionForm.url?.host, "mongdol-desk.vercel.app")
+        XCTAssertFalse(SuggestionForm.deviceModel.isEmpty)
     }
 
     func testVersionLineUsesBundleValues() {
