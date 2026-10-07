@@ -59,6 +59,8 @@ struct HomeShell: View {
     @State private var libraryCoverUp = false
     // 사진첩 시트를 열기 직전 기록이 하나도 없었는지 — 온보딩 증정 하루를 고를지 판단한다.
     @State private var recordsWereEmptyBeforeLibraryImport = false
+    // 가져오기는 고르기를 내려도 끝까지 돈다 — 카메라 요청이 내린 고르기면 끝나도 막 연 카메라를 닫지 않는다.
+    @State private var pickerDismissedForCamera = false
 
     @AppStorage("didSwipeToCamera") private var didSwipe = false
     @AppStorage("didFinishOnboarding") private var didFinishOnboarding = false
@@ -147,6 +149,9 @@ struct HomeShell: View {
         .onChange(of: cameraRequest.pending && OnboardingGate.opensRequestedCamera(onboarding), initial: true) { _, opens in
             guard opens else { return }
             cameraRequest.pending = false
+            // 시트 뒤에서 열면 카메라가 안 보인다 — 증정은 받은 걸로 치지 않고 카메라를 닫은 뒤 다시 뜬다.
+            pickerDismissedForCamera = pickingLibrary || libraryCoverUp || pickingToday != nil
+            PresentedScreens.dismissAll()
             makeCamera()
             progress = 1
         }
@@ -277,13 +282,14 @@ struct HomeShell: View {
 
     private func openTodayPicker(_ assetIDs: [String]) {
         recordsWereEmptyBeforeLibraryImport = store.moments.isEmpty
+        pickerDismissedForCamera = false
         pickingToday = TodayPick(assetIDs: assetIDs)
     }
 
     private func libraryImported(_ importedDayKeys: Set<String>) {
         guard !importedDayKeys.isEmpty else { return }
         camera?.confirm("담겼어요")
-        progress = 0
+        if pickerDismissedForCamera { pickerDismissedForCamera = false } else { progress = 0 }
         pendingLibraryFocus = true
         if recordsWereEmptyBeforeLibraryImport {
             onboardingGiftDay = OnboardingGift.firstImportDay(existingRecordsWereEmpty: true,
@@ -304,6 +310,7 @@ struct HomeShell: View {
 
     private func openLibraryPicker() {
         recordsWereEmptyBeforeLibraryImport = store.moments.isEmpty
+        pickerDismissedForCamera = false
         libraryCoverUp = true
         pickingLibrary = true
     }

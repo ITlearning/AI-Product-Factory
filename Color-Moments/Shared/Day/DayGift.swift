@@ -50,7 +50,7 @@ struct DayGiftPresenter: ViewModifier {
             // 어제를 막 증정했으면 마무리한 오늘이 다음 트리거까지 기다리지 않고 커버가 다 닫힌 뒤 이어서 뜬다.
             .fullScreenCover(item: $pending, onDismiss: {
                 ceremonyUp = false
-                if let key = lastShownDayKey { onCeremonyFinished?(key) }
+                if let key = Self.finishedDay(lastShown: lastShownDayKey, isGifted: gifts.isGifted) { onCeremonyFinished?(key) }
                 present()
             }) { day in
                 BadgeCeremony(
@@ -63,6 +63,11 @@ struct DayGiftPresenter: ViewModifier {
                                              pending = nil
                                          }))
             }
+    }
+
+    /// 카메라 요청이 증정을 받기 전에 내렸으면 끝난 게 아니다 — 증정은 다음 기회에 다시 뜬다.
+    static func finishedDay(lastShown: String?, isGifted: (String) -> Bool) -> String? {
+        lastShown.flatMap { isGifted($0) ? $0 : nil }
     }
 
     private func present() {

@@ -116,3 +116,15 @@ struct ColorMomentsApp: App {
 final class CameraRequest {
     var pending = false
 }
+
+/// 카메라 요청이 오면 떠 있는 시트·커버(겹친 것까지)를 한 번에 내린다 — 바인딩과 onDismiss 는 SwiftUI 가 따라 맞춘다.
+enum PresentedScreens {
+    @MainActor
+    static func dismissAll(in window: UIWindow? = nil) {
+        let window = window ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }?.keyWindow
+            ?? UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first
+        guard let root = window?.rootViewController, root.presentedViewController != nil else { return }
+        root.dismiss(animated: true)
+    }
+}
