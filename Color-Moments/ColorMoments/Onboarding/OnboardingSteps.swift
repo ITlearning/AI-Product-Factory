@@ -409,6 +409,7 @@ struct ArrivalStep: View {
                         let granted = (try? await UNUserNotificationCenter.current()
                             .requestAuthorization(options: [.alert, .sound])) ?? false
                         didAskArrivalNotice = true
+                        Telemetry.send(.noticeAccess(granted ? .allowed : .denied))
                         asking = false
                         answered()
                         if granted {
@@ -419,6 +420,7 @@ struct ArrivalStep: View {
                 }
                 SecondaryAction(title: "괜찮아요") {
                     didAskArrivalNotice = true
+                    Telemetry.send(.noticeAccess(.declined))
                     answered()
                 }
             }
@@ -447,13 +449,14 @@ struct PlaceStep: View {
                 asking = true
                 Task {
                     recordsPlace = true
-                    _ = await PlaceFinder.shared.requestIfNeeded()
+                    Telemetry.send(.placeAccess(await PlaceFinder.shared.requestIfNeeded() ? .allowed : .denied))
                     asking = false
                     answered()
                 }
             }
             SecondaryAction(title: "괜찮아요") {
                 recordsPlace = false
+                Telemetry.send(.placeAccess(.declined))
                 answered()
             }
         }

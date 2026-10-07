@@ -177,6 +177,7 @@ final class CaptureInbox {
         let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked,
                             place: place, originalName: name)
         let added = store.add(moment)
+        if added { Telemetry.photosAdded(.locked, count: 1, total: store.moments.count) }
         note("기록 \(hex) · \(Moment.dayKey(for: capturedAt))")
         return added ? moment : nil
     }

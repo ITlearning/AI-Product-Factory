@@ -13,6 +13,8 @@ public enum PhotoEnrichment {
 
     public nonisolated(unsafe) static var weather: ((Moment) async -> PlaceWeather?)?
     public nonisolated(unsafe) static var attribution: (() async -> Attribution?)?
+    /// ↻ 를 썼을 때 — 사용 기록은 앱 타깃만 알아서 앱이 꽂는다. 단어는 넘기지 않는다.
+    public nonisolated(unsafe) static var wordRejected: (() -> Void)?
 
     /// WeatherCondition.rawValue → 짧은 우리말. 모르는 값이면 보이지 않는다.
     public static func label(_ condition: String) -> String? { look(condition)?.label }
@@ -406,6 +408,7 @@ struct DayPhotoView: View {
                                 weather: current?.place?.weather?.condition,
                                 appVersion: "\(info?["CFBundleShortVersionString"] ?? "?")(\(info?["CFBundleVersion"] ?? "?"))",
                                 at: Date()))
+        PhotoEnrichment.wordRejected?()
         Haptics.tickPassed()
     }
 }
