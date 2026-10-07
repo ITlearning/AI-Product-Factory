@@ -214,7 +214,7 @@ https://github.com/ITlearning/AI-Product-Factory/blob/main/Color-Moments/PRIVACY
 | 사진 분석(한 단어·추천) | 기기 안 Vision | 아니다 |
 | 알림 | 기기 안 로컬 예약 | 아니다 |
 | 새 버전 확인 (1.1~) | 설정을 열 때 하루 한 번 Apple 조회 API(`itunes.apple.com/lookup`)에 몽돌의 bundleId·country 만 | 아니다 — 사용자·기기 정보를 보내지 않는다 |
-| 건의하기 (1.1.1~) | 앱 안 Safari 로 여는 구글 설문 — 사용자가 직접 적은 것만, Google 정책 | 몽돌 코드가 보내는 것은 없다 — 사용자가 적어 낸 응답 |
+| 건의하기 (1.1.1~) | 앱 안 Safari 로 여는 몽돌 건의 페이지(mongdol-desk.vercel.app) — 사용자가 적은 내용·종류·선택 연락처 + 앱 버전·빌드·기종 | 사용자가 직접 적어 보낼 때만. 연락처는 적은 경우만 — Apple 기준 「연락처 정보」는 앱이 자동으로 모으지 않으므로 사용자가 선택적으로 제출하는 고객 지원 내용으로 본다(확인 필요) |
 
 코드 근거: 1.0.0 은 앱·확장 어디에도 `URLSession`·외부 주소가 없다(2026-10-03 확인). 1.1 부터 앱 본체 `UpdateCheck` 가 위 조회 API 를 부른다. 1.1.1 부터 앱 본체에 PostHog iOS SDK 3.90.2(SPM, 앱 타깃만 — 확장 둘에는 링크되지 않음, Release 빌드 nm·strings 로 확인)가 들어가고, 보내는 이벤트는 `ColorMoments/App/Telemetry.swift` 한 파일에 모두 있다(속성은 고정 문자열 enum 과 `Photo.added` 의 정수 `count` 뿐). 세션 리플레이·화면/요소 자동 수집·설문·피처 플래그 미리 불러오기·푸시 토큰·오류 자동 수집·GeoIP 는 `Telemetry.makeConfig` 에서 끈다(스위즐링 자체를 끔). `Telemetry.apiKey` 가 비었거나 설정 「사용 기록 보내기」가 꺼진 채 시작하면 SDK 를 세우지 않고, 켠 뒤 끄면 `optOut()`. 앱 `PrivacyInfo.xcprivacy` 에 제품 상호작용·기타 사용 데이터·기기 ID(연결 안 됨, 추적 아님, 분석)를 적었고, 확장 둘의 manifest 는 그대로 수집 없음.
 
