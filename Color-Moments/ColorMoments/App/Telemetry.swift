@@ -1,13 +1,14 @@
 import Foundation
 import Photos
-import TelemetryDeck
+import PostHog
 
-/// 익명 사용 기록(TelemetryDeck) — 보내는 이름과 값은 이 파일에 적힌 것뿐이다.
+/// 익명 사용 기록(PostHog) — 보내는 이름과 값은 이 파일에 적힌 것뿐이다.
 /// 사진·단어·색·조약돌 이름·위치·날짜 키·파일명은 보내지 않는다. 앱 본체만 — 확장엔 없다.
 enum Telemetry {
 
-    /// TelemetryDeck 앱 ID — 비어 있으면 SDK 를 켜지도, 아무것도 보내지도 않는다.
-    static let appID = ""
+    /// PostHog Project API Key(`phc_…`) — 비어 있으면 SDK 를 켜지도, 아무것도 보내지도 않는다.
+    static let apiKey = "phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK"
+    static let host = "https://eu.i.posthog.com"
 
     static let enabledKey = "sendsTelemetry"
     static let firstPhotoKey = "telemetryFirstPhoto"
@@ -58,9 +59,15 @@ enum Telemetry {
             }
         }
 
-        var floatValue: Double? {
-            if case .photoAdded(_, let count) = self { return Double(count) }
+        var count: Int? {
+            if case .photoAdded(_, let count) = self { return count }
             return nil
+        }
+
+        var properties: [String: Any] {
+            var properties: [String: Any] = parameters
+            if let count { properties["count"] = count }
+            return properties
         }
     }
 
@@ -85,37 +92,57 @@ enum Telemetry {
 
     // MARK: 켜고 끄기
 
-    static func sends(appID: String, enabled: Bool, testing: Bool) -> Bool {
-        !appID.isEmpty && enabled && !testing
+    static func sends(apiKey: String, enabled: Bool, testing: Bool) -> Bool {
+        !apiKey.isEmpty && enabled && !testing
     }
 
     static var isEnabled: Bool { UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true }
 
     private static let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-    private static var sending: Bool { sends(appID: appID, enabled: isEnabled, testing: isTesting) }
+    private static var sending: Bool { sends(apiKey: apiKey, enabled: isEnabled, testing: isTesting) }
 
-    private enum State { case idle, on, off }
-    private static var state = State.idle
+    /// 사진 앱이라 화면·누른 곳·위치가 나갈 길은 모두 막는다 — 우리가 부르는 capture 와 앱 열림·닫힘만 남는다.
+    static func makeConfig(apiKey: String) -> PostHogConfig {
+        let config = PostHogConfig(projectToken: apiKey, host: host)
+        config.enableSwizzling = false
+        config.sessionReplay = false
+        config.captureScreenViews = false
+        config.captureElementInteractions = false
+        config.captureSwiftUIElementInteractions = false
+        config.captureAutocaptureElementText = false
+        config.rageClickConfig.enabled = false
+        config.capturePushNotificationSubscriptions = false
+        config.capturePushNotificationOpened = false
+        config.surveys = false
+        config.preloadFeatureFlags = false
+        config.sendFeatureFlagEvent = false
+        config.errorTrackingConfig.autoCapture = false
+        config.personProfiles = .never
+        config.setDefaultPersonProperties = false
+        config.disableGeoIp = true
+        config.captureApplicationLifecycleEvents = true
+        return config
+    }
 
-    /// 앱 시작과 설정 스위치에서 — 껐으면 SDK 를 「분석 꺼짐」으로 다시 세운다(세션 신호까지 막힌다).
+    private static var isSetUp = false
+
+    /// 앱 시작과 설정 스위치에서 — 끈 채로 시작하면 SDK 를 아예 세우지 않는다.
     static func apply() {
         if sending {
-            guard state != .on else { return }
-            TelemetryDeck.initialize(config: .init(appID: appID))
-            state = .on
-        } else if state == .on {
-            // terminate() 는 쓰지 않는다 — 뒤에 남은 세션 관찰자가 빈 매니저를 부르면 디버그에서 멈춘다.
-            var config = TelemetryDeck.Config(appID: appID)
-            config.analyticsDisabled = true
-            config.sessionStatsEnabled = false
-            TelemetryDeck.initialize(config: config)
-            state = .off
+            if !isSetUp {
+                PostHogSDK.shared.setup(makeConfig(apiKey: apiKey))
+                isSetUp = true
+            }
+            // SDK 는 optOut 을 디스크에 남겨 다음 setup 때 되살린다 — 켜져 있으면 매번 optIn 으로 풀어야 한다.
+            PostHogSDK.shared.optIn()
+        } else if isSetUp {
+            PostHogSDK.shared.optOut()
         }
     }
 
     static func send(_ event: Event) {
-        guard state == .on, sending else { return }
-        TelemetryDeck.signal(event.name, parameters: event.parameters, floatValue: event.floatValue)
+        guard isSetUp, sending else { return }
+        PostHogSDK.shared.capture(event.name, properties: event.properties)
     }
 
     // MARK: 정해진 지점들

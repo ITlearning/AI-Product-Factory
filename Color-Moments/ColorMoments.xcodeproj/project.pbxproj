@@ -242,7 +242,7 @@
 		AE9B0B31B29DD8778ED65B97 /* UpdateCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D9C2463F56E1FA771972D9 /* UpdateCheck.swift */; };
 		AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0539FB03BB33151F171D2BD /* HomeShell.swift */; };
 		AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
-		B00E12EB9F738811BE917A19 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 5F6E4F5425144E7C928814DD /* TelemetryDeck */; };
+		B00E12EB9F738811BE917A19 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = D865E82B2669A2984091D3FE /* PostHog */; };
 		B3358B78B3BA94067A3E02B1 /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
 		B5DB8DA5DC01E0D3A2EF9121 /* Keepsake.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3649A8DB3B4FF16005111AC /* Keepsake.swift */; };
 		B74DE691E2FF8FD1FD32E7D0 /* AsyncGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACCB0D6CE5A9643C54DF3DB /* AsyncGate.swift */; };
@@ -627,7 +627,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F0DD38512B10A0EC9EF97BD6 /* AVKit.framework in Frameworks */,
-				B00E12EB9F738811BE917A19 /* TelemetryDeck in Frameworks */,
+				B00E12EB9F738811BE917A19 /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1047,7 +1047,7 @@
 			);
 			name = ColorMoments;
 			packageProductDependencies = (
-				5F6E4F5425144E7C928814DD /* TelemetryDeck */,
+				D865E82B2669A2984091D3FE /* PostHog */,
 			);
 			productName = ColorMoments;
 			productReference = 5AADBCB38DB09CEFBA41590A /* ColorMoments.app */;
@@ -1146,7 +1146,7 @@
 			mainGroup = 6B1123F879906576EAE48406;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				7E56438A19057D7F7D038C18 /* XCRemoteSwiftPackageReference "SwiftSDK" */,
+				C5DBB91168C2733BFC9C1E18 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 57A9638C65291DC60DDCCA01 /* Products */;
@@ -1917,21 +1917,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		7E56438A19057D7F7D038C18 /* XCRemoteSwiftPackageReference "SwiftSDK" */ = {
+		C5DBB91168C2733BFC9C1E18 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/TelemetryDeck/SwiftSDK";
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
 			requirement = {
 				kind = exactVersion;
-				version = 2.14.2;
+				version = 3.90.2;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		5F6E4F5425144E7C928814DD /* TelemetryDeck */ = {
+		D865E82B2669A2984091D3FE /* PostHog */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 7E56438A19057D7F7D038C18 /* XCRemoteSwiftPackageReference "SwiftSDK" */;
-			productName = TelemetryDeck;
+			package = C5DBB91168C2733BFC9C1E18 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

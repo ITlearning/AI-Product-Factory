@@ -13,9 +13,9 @@ settings:
     MARKETING_VERSION: "1.1.1"
     CURRENT_PROJECT_VERSION: "1"
 packages:
-  TelemetryDeck:
-    url: https://github.com/TelemetryDeck/SwiftSDK
-    exactVersion: 2.14.2
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    exactVersion: 3.90.2
 targets:
   ColorMoments:
     type: application
@@ -28,7 +28,7 @@ targets:
         buildPhase: resources
     dependencies:
       - sdk: AVKit.framework
-      - package: TelemetryDeck   # 앱 본체만 — 확장엔 넣지 않는다
+      - package: PostHog   # 앱 본체만 — 확장엔 넣지 않는다
       - target: ColorMomentsCapture
         embed: true
       - target: ColorMomentsControl

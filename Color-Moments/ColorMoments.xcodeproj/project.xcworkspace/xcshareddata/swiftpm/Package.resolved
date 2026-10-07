@@ -1,13 +1,13 @@
 {
-  "originHash" : "fa7ab4bc9518bd495b4c17d8a96bebc401eb5a2f99ae8b4bc316b04b7b2aea05",
+  "originHash" : "a2fc303e4b16c93c972ef2ddc4042cf91a9400e5d1639bc9740a80c0336cdd4e",
   "pins" : [
     {
-      "identity" : "swiftsdk",
+      "identity" : "posthog-ios",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/TelemetryDeck/SwiftSDK",
+      "location" : "https://github.com/PostHog/posthog-ios",
       "state" : {
-        "revision" : "58f436299d3f6710bcedc18aff26480aaf1879fc",
-        "version" : "2.14.2"
+        "revision" : "2f6db7d9ccfac0307722c9a2a4029bf534985e2f",
+        "version" : "3.90.2"
       }
     }
   ],
