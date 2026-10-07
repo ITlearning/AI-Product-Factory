@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>몽돌 App Store 헤더</title>
+<style>
+@font-face { font-family: 'MongdolSerif'; src: url('fonts/NanumMyeongjo-Bold.ttf'); font-weight: 700; }
+/* 폰 모양은 index.html 과 같다 */
+.phone { position: absolute; box-sizing: border-box; padding: 20px; border-radius: 136px; z-index: 20;
+  background: linear-gradient(145deg, #303137, #16171a 45%, #222328);
+  box-shadow: 0 0 0 3px #44454b, inset 0 0 0 2px rgba(255,255,255,.09), 0 90px 170px rgba(0,0,0,.72), 0 30px 60px rgba(0,0,0,.5); }
+.phone .screen { position: relative; width: 100%; aspect-ratio: 1206 / 2622; border-radius: 116px; overflow: hidden; background: #000; }
+.phone .screen > img.shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.phone .island { position: absolute; top: 1.26%; left: 50%; transform: translateX(-50%); width: 31.3%; aspect-ratio: 126 / 37; border-radius: 100px; background: #000; z-index: 6; }
+.sb { position: absolute; left: 0; right: 0; top: 0; height: 6.6%; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 0 9.5% 0 13.2%; box-sizing: border-box;
+  -webkit-mask-image: linear-gradient(#000 82%, transparent); mask-image: linear-gradient(#000 82%, transparent); }
+.sb .t { font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; font-weight: 600; font-size: 33px; color: #fff; letter-spacing: -.01em; padding-top: 6px; }
+.sb svg { height: 22px; width: 110px; }
+.vf-photo { position: absolute; left: 2.49%; top: 8.70%; width: 95.02%; height: 63.16%; border-radius: 5.76% / 3.99%; overflow: hidden; }
+.vf-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vf-dot { position: absolute; left: 44%; top: 0; width: 12%; height: 3%; background: #000; z-index: 4; }
+html, body { margin: 0; background: #06070A; }
+#canvas { position: relative; width: 5244px; height: 2950px; overflow: hidden;
+  background:
+    radial-gradient(1500px 1400px at 1450px 1500px, rgba(84,104,190,.42), transparent 70%),
+    radial-gradient(1700px 1500px at 2622px 1250px, rgba(240,200,170,.30), transparent 70%),
+    radial-gradient(1500px 1400px at 3800px 1500px, rgba(100,78,160,.40), transparent 70%),
+    #06070A; }
+.copy { position: absolute; left: 0; right: 0; top: 2330px; text-align: center; z-index: 30;
+  font-family: 'MongdolSerif'; font-weight: 700; font-size: 132px; color: rgba(255,255,255,.92); letter-spacing: -.01em; }
+body.notext .copy { display: none; }
+body.notext .phone { margin-top: 160px; }
+/* 안전 영역: 21:9 헤더(위아래 351px 잘림), 3:2 검색 결과(좌우 409px 잘림) — ?guide 로 본다 */
+.guide { display: none; position: absolute; border: 6px dashed rgba(255,80,80,.8); box-sizing: border-box; z-index: 60; }
+body.show-guide .guide { display: block; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="sbicons" viewBox="0 0 120 24"><g fill="#fff">
+    <rect x="0" y="15" width="6" height="8" rx="1.5"/><rect x="9" y="11" width="6" height="12" rx="1.5"/><rect x="18" y="7" width="6" height="16" rx="1.5"/><rect x="27" y="3" width="6" height="20" rx="1.5"/>
+    <path d="M52 8.5a15 15 0 0 1 19 0l-2.4 2.6a11.5 11.5 0 0 0-14.2 0zM55.6 12.6a9.6 9.6 0 0 1 11.8 0l-2.5 2.7a6 6 0 0 0-6.8 0zM59.2 16.8a4 4 0 0 1 4.6 0L61.5 19.4z"/>
+    <rect x="82" y="4" width="32" height="16" rx="4.5" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/><rect x="85" y="7" width="26" height="10" rx="2.5"/><rect x="116" y="9" width="2.5" height="6" rx="1" fill-opacity=".45"/>
+  </g></symbol>
+</svg>
+<div id="canvas">
+  <!-- 찍고 → 받고 → 쌓인다 -->
+  <div class="phone" style="left:1060px; top:560px; width:760px; transform:rotate(-7deg)">
+    <div class="screen">
+      <img class="shot" src="input/viewfinder.png">
+      <div class="vf-dot"></div>
+      <div class="vf-photo"><img src="input/sky.jpg"></div>
+      <div class="island"></div>
+    </div>
+  </div>
+  <div class="phone" style="left:3424px; top:560px; width:760px; transform:rotate(7deg)">
+    <div class="screen">
+      <img class="shot" src="input/home.png">
+      <div class="sb" style="background:linear-gradient(#0D0C0E, #121011)"><span class="t">9:41</span><svg><use href="#sbicons"/></svg></div>
+      <div class="island"></div>
+    </div>
+  </div>
+  <div class="phone" style="left:2197px; top:400px; width:850px; z-index:25">
+    <div class="screen">
+      <img class="shot" src="input/gift.jpg">
+      <div class="island"></div>
+    </div>
+  </div>
+  <div class="copy">찍어 둔 하루가, 밤이면 조약돌로</div>
+  <div class="guide" style="left:0; right:0; top:351px; height:2247px"></div>
+  <div class="guide" style="top:0; bottom:0; left:409px; width:4425px"></div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.has('notext')) document.body.classList.add('notext');
+  if (q.has('guide')) document.body.classList.add('show-guide');
+</script>
+</body>
+</html>

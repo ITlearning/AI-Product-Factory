@@ -5,6 +5,7 @@
 #   ./render.sh preview          panorama-preview.png 한 장만 (빠른 확인용)
 #   ./render.sh notch            6.5인치 노치 판 6장(1284×2778) notch-N.png + notch-panorama.png
 #   ./render.sh notch preview    notch-panorama-preview.png 한 장만
+#   ./render.sh header           헤더·검색 결과 크리에이티브(16:9, 5244×2950) header.png + header-notext.png + 안전 영역 확인용 header-guide.png
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -21,6 +22,17 @@ shoot() { # url width height out
 }
 
 PAGE="file://$PWD/index.html"
+
+if [ "${1:-}" = "header" ]; then
+  HP="file://$PWD/header.html"
+  for v in "header:" "header-notext:notext" "header-guide:guide"; do
+    shoot "$HP?${v#*:}" 5244 2950 "output/raw-${v%%:*}.png"
+    ffmpeg -loglevel error -y -i "output/raw-${v%%:*}.png" -pix_fmt rgb24 "output/${v%%:*}.png"
+    rm "output/raw-${v%%:*}.png"
+  done
+  ls -1 output/header.png output/header-notext.png output/header-guide.png
+  exit 0
+fi
 
 if [ "${1:-}" = "notch" ]; then
   shift
