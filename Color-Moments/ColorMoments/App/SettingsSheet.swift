@@ -297,15 +297,26 @@ struct LicensesSheet: View {
     }
 }
 
-/// 설정의 「건의하기」 — 구글 설문 주소가 생기면 address 한 줄만 채운다. 비어 있으면 줄이 숨는다.
+/// 설정의 「건의하기」 — 몽돌 데스크(Mongdol-Desk) 건의 페이지. 버전·빌드·기종을 쿼리로 넘겨 미리 채운다.
 enum SuggestionForm {
-    static let address: String? = nil
-    static var url: URL? { link(address) }
+    static let address: String? = "https://mongdol-desk.vercel.app/feedback"
+    static var url: URL? { link(address, version: .current, device: deviceModel) }
 
-    static func link(_ address: String?) -> URL? {
-        guard let address, let url = URL(string: address.trimmingCharacters(in: .whitespaces)),
-              url.scheme == "https", url.host != nil else { return nil }
-        return url
+    static func link(_ address: String?, version: AppVersion? = nil, device: String = "") -> URL? {
+        guard let address, var parts = URLComponents(string: address.trimmingCharacters(in: .whitespaces)),
+              parts.scheme == "https", parts.host != nil else { return nil }
+        if let version {
+            parts.queryItems = [URLQueryItem(name: "v", value: version.short),
+                                URLQueryItem(name: "b", value: version.build),
+                                URLQueryItem(name: "d", value: device)]
+        }
+        return parts.url
+    }
+
+    static var deviceModel: String {
+        var info = utsname()
+        uname(&info)
+        return withUnsafeBytes(of: &info.machine) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
     }
 }
 
