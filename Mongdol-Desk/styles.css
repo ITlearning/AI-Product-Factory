@@ -108,16 +108,25 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .error { margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--warn); text-align: center; }
 .privacy { margin-top: 18px; font-size: 13px; line-height: 1.6; color: var(--tertiary); text-align: center; }
 
-/* 보낸 뒤 */
+/* 보낸 뒤 — 돌은 앱 아이콘 그림(img/pebble.jpg, 360px). 정사각 그림이라 둥근 마스크로 배경 모서리를 지우고(앱스토어 미리보기 .hero-pebble 과 같은 값),
+   1:1 을 강제한다 — 눌리면 「알 같다·찌부됐다」(2026-10-08 Tabber). 세로는 가운데보다 살짝 위. */
 .done {
-  min-height: calc(100dvh - 120px);
+  min-height: calc(100dvh - 140px);
   display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-  padding-bottom: 40px;
+  padding: 24px 8px 14vh;
 }
-.done-pebble { width: 92px; height: 70px; margin-bottom: 28px; animation: roll-in 0.9s cubic-bezier(.2, 1.1, .3, 1) both; }
+.done-pebble {
+  display: block; flex: none;
+  width: 150px; height: auto; aspect-ratio: 1; object-fit: contain;
+  margin-bottom: 18px;
+  -webkit-mask-image: radial-gradient(circle at 50% 51%, #000 44%, transparent 64%);
+  mask-image: radial-gradient(circle at 50% 51%, #000 44%, transparent 64%);
+  animation: roll-in 0.9s cubic-bezier(.2, 1.1, .3, 1) both;
+}
 .done-title { font-size: 24px; line-height: 1.4; }
-.done-sub { margin-top: 10px; font-size: 15px; line-height: 1.6; color: var(--secondary); }
-.done-close { margin-top: 26px; font-size: 13px; color: var(--tertiary); }
+.done-sub { margin-top: 12px; font-size: 15px; line-height: 1.6; color: var(--secondary); }
+.done-close { margin-top: 36px; font-size: 13px; color: var(--tertiary); }
+.app-only { display: none; }
 @keyframes roll-in { from { opacity: 0; transform: translateX(-36px) rotate(-40deg); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .done-pebble { animation: fade 0.4s ease both; }
@@ -166,7 +175,7 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .doc p, .doc ul, .doc .table-wrap { margin: 14px 0 0; }
 .doc > p:first-child { margin-top: 18px; font-size: 14px; color: var(--tertiary); }
 .doc h2 { margin: 38px 0 0; font-size: 18px; font-weight: 400; line-height: 1.45; }
-.doc h3 { margin: 26px 0 0; font-size: 16px; font-weight: 400; color: var(--secondary); }
+.doc h3 { margin: 26px 0 0; font-size: 16px; font-weight: 400; color: var(--primary); }
 .doc ul { padding-left: 1.1em; }
 .doc li + li { margin-top: 8px; }
 .doc li::marker { color: var(--tertiary); }
@@ -186,3 +195,19 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
   border: 1px solid var(--hairline); background: var(--fill);
   font-size: 15px; color: var(--secondary); text-decoration: none;
 }
+
+/* ── 앱 안(?app=1, html.in-app) — 앱이 시트 위에 「건의하기 · 닫기」 머리줄을 그린다 ──
+   앱 머리줄과 이어지게 단색 배경(번짐 끔), 「몽돌」 머리 숨김, 보내기 버튼이 시트 아래 끝에 붙지 않게 아래 여백. */
+.in-app body::before { display: none; }
+.in-app .page-head { display: none; }
+.in-app .page-head + .lede { margin-top: 0; }
+.in-app .web-only { display: none; }
+.in-app .app-only { display: inline; }
+.in-app .done { min-height: calc(100dvh - 100px); }
+.in-app .page { padding-top: max(16px, calc(var(--safe-t) + 8px)); padding-bottom: calc(var(--safe-b) + 48px); }
+
+/* ── 지원(/support) — 처리방침의 .doc 를 같이 쓴다 ── */
+.doc > p.doc-lede { margin-top: 18px; font-size: 16px; color: var(--secondary); }
+.doc a.primary-btn { margin-top: 26px; color: var(--base); text-decoration: none; }
+.doc .support-note { margin-top: 10px; font-size: 13px; line-height: 1.6; color: var(--tertiary); text-align: center; }
+.doc h3 + p { margin-top: 6px; color: var(--secondary); }

@@ -66,6 +66,8 @@ try {
     await page.click('#fb-send', { force: true, timeout: 500 }).catch(() => {});
     await page.waitForSelector('#fb-done:not([hidden])');
     assert.equal(posts - before, 1, '두 번 눌러도 한 번만 간다');
+    await page.waitForTimeout(1000);
+    assert.equal(await page.isVisible('.done-close .web-only'), true, '앱 밖이면 「이제 이 창을 닫아도 돼요」');
     await page.screenshot({ path: join(SHOTS, `${name}-feedback-done.png`) });
 
     await page.goto(`${base}/feedback`);
@@ -74,6 +76,28 @@ try {
     await page.click('text=바라는 기능');
     await page.click('#fb-send');
     await page.waitForSelector('#fb-done:not([hidden])');
+
+    // 앱 안(?app=1): 「몽돌」 머리 숨김, 위 번짐 끔(단색), 아래 여백 넉넉히. 쿼리 v·b·d 는 그대로.
+    await page.goto(`${base}/feedback?app=1&v=1.1.1&b=4&d=iPhone17,1`);
+    await page.waitForTimeout(600);
+    assert.equal(await page.isHidden('.page-head'), true, 'app=1 이면 「몽돌」 머리를 숨긴다');
+    assert.equal(await page.isVisible('.lede'), true);
+    assert.equal(await page.evaluate(() => getComputedStyle(document.body, '::before').display), 'none', 'app=1 이면 번짐 없음');
+    assert.ok(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.page')).paddingBottom)) >= 40, '아래 여백 40 이상');
+    assert.equal(await page.textContent('#fb-meta'), '몽돌 1.1.1 (4) · iPhone17,1 정보가 함께 가요.');
+    await page.screenshot({ path: join(SHOTS, `${name}-feedback-app.png`) });
+    await page.fill('#fb-text', '앱 안에서 보내 봐요.');
+    await page.click('#fb-send');
+    await page.waitForSelector('#fb-done:not([hidden])');
+    await page.waitForTimeout(1000); // 돌 굴러 들어오기(0.9초)
+    const box = await page.locator('.done-pebble').boundingBox();
+    assert.ok(box.width >= 140 && box.width <= 160 && Math.abs(box.width - box.height) < 1, `돌은 1:1 (${box.width}×${box.height})`);
+    assert.equal(await page.textContent('.done-close'), '이제 이 창을 닫아도 돼요.위의 「닫기」를 누르면 돼요.');
+    assert.equal(await page.isVisible('.done-close .app-only'), true, 'app=1 이면 위의 닫기 안내');
+    assert.equal(await page.isHidden('.done-close .web-only'), true);
+    await page.screenshot({ path: join(SHOTS, `${name}-feedback-done-app.png`) });
+    await page.goto(`${base}/feedback?v=1.1.1`);
+    assert.equal(await page.isVisible('.page-head'), true, 'app=1 이 아니면 그대로');
 
     await page.goto(`${base}/admin`);
     await page.waitForSelector('#ad-login:not([hidden])');

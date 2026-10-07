@@ -13,11 +13,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Myeongjo:wght@800&family=IBM+Plex+Sans+KR:wght@600&display=swap">
 <link rel="stylesheet" href="./styles.css">
+<script>/* ?app=1 = 앱의 WKWebView 시트(앱이 머리줄을 그린다). 그리기 전에 붙여야 「몽돌」 머리가 깜빡이지 않는다. */
+if (/[?&]app=1(&|$)/.test(location.search)) document.documentElement.classList.add('in-app');</script>
 </head>
 <body>
 <main class="page">
   <form id="fb-form" novalidate>
-    <h1 class="wordmark">몽돌</h1>
+    <h1 class="wordmark page-head">몽돌</h1>
     <p class="lede">쓰다가 불편했던 점이나 바라는 것을 편하게 들려주세요.</p>
 
     <fieldset class="field">
@@ -53,18 +55,10 @@
   </form>
 
   <section class="done" id="fb-done" hidden aria-live="polite">
-    <svg class="done-pebble" viewBox="0 0 92 70" aria-hidden="true">
-      <defs>
-        <radialGradient id="pg" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stop-color="#F6C6AE"/><stop offset="0.6" stop-color="#C98F86"/><stop offset="1" stop-color="#7D5A63"/>
-        </radialGradient>
-      </defs>
-      <ellipse cx="46" cy="37" rx="42" ry="30" fill="url(#pg)"/>
-      <ellipse cx="34" cy="24" rx="16" ry="8" fill="#fff" opacity="0.22"/>
-    </svg>
+    <img class="done-pebble" src="./img/pebble.jpg" width="150" height="150" alt="" decoding="async">
     <h1 class="done-title" tabindex="-1">잘 받았어요. 고마워요.</h1>
     <p class="done-sub">하나하나 읽어 볼게요.</p>
-    <p class="done-close">이제 이 창을 닫아도 돼요.</p>
+    <p class="done-close"><span class="web-only">이제 이 창을 닫아도 돼요.</span><span class="app-only">위의 「닫기」를 누르면 돼요.</span></p>
   </section>
 </main>
 <script src="./js/feedback.js"></script>

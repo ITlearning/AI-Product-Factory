@@ -1,6 +1,6 @@
 # 몽돌 데스크
 
-iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 **건의 페이지**와, 받은 건의를 읽는 **관리 페이지**, 그리고 App Store 에 거는 **개인정보 처리방침**.
+iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 **건의 페이지**와, 받은 건의를 읽는 **관리 페이지**, 그리고 App Store 에 거는 **개인정보 처리방침**·**지원** 페이지.
 원래 구글 설문이었는데 앱 디자인에 맞춰 따로 배포한다(2026-10-08 Tabber). 몽돌 ENFP 웹(`../Mongdol-ENFP-Web`)과는 **다른 Vercel 프로젝트**다 — 관례(정적 HTML + `api/` 서버리스 + Upstash)만 본떴고 파일은 나눠 쓰지 않는다.
 나중에 다른 관리 기능이 붙을 수 있게 `/admin` 은 칸(섹션) 구조로 두었다. 지금 칸은 「건의함」 하나.
 
@@ -9,8 +9,9 @@ iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 
 | 주소 | 하는 일 |
 |---|---|
 | `/` | `/feedback` 으로 넘긴다(307, 쿼리 그대로) |
-| `/feedback?v=<앱 버전>&b=<빌드>&d=<기종 식별자>` | 건의 쓰기. 앱이 SFSafariViewController 로 연다. 예: `/feedback?v=1.1.1&b=4&d=iPhone17,1` |
+| `/feedback?app=1&v=<앱 버전>&b=<빌드>&d=<기종 식별자>` | 건의 쓰기. 앱이 WKWebView 시트로 연다(`app=1`). 예: `/feedback?app=1&v=1.1.1&b=4&d=iPhone17,1` |
 | `/privacy` | 개인정보 처리방침(`Color-Moments/PRIVACY.md` 의 사본, 캐시 5분) |
+| `/support` | 지원(App Store 「지원 URL」). 소개 한 줄 · 건의하기 · 자주 묻는 것 3개 · 처리방침 링크 |
 | `/admin` | 관리(토큰으로 연다) — 건의함 |
 | `POST /api/feedback` | 건의 받기 |
 | `GET·PATCH·DELETE /api/admin/feedback` | 건의 목록·읽음 표시·지우기(관리 토큰) |
@@ -19,7 +20,7 @@ iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 
   모양: `v`·`b` = `[0-9A-Za-z._-]` 20자까지, `d` = `[0-9A-Za-z,._ -]` 40자까지. 어긋나면 그 값만 빈 값으로 보낸다(글을 잃지 않게).
   앱에선 `v` = `CFBundleShortVersionString`, `b` = `CFBundleVersion`, `d` = `utsname.machine`(시뮬레이터면 `SIMULATOR_MODEL_IDENTIFIER`)을 퍼센트 인코딩해서 붙이면 된다.
 - 확장자 없는 주소는 `vercel.json` 의 `cleanUrls` 로(`feedback.html` → `/feedback`). 모든 응답에 `X-Robots-Tag: noindex, nofollow`, 페이지에도 `<meta name="robots">`.
-- 서비스 워커·PWA 는 없다(앱 안 Safari 에서 한 번 쓰고 닫는 페이지라).
+- 서비스 워커·PWA 는 없다(앱 안 웹뷰에서 한 번 쓰고 닫는 페이지라).
 
 ## 건의 페이지(`feedback.html` · `js/feedback.js`)
 
@@ -28,6 +29,15 @@ iOS 앱 「몽돌」(`../Color-Moments`) 설정의 「건의하기」가 여는 
 - 입력란 글자 16px — 그 아래면 iOS 가 입력할 때 화면을 확대한다.
 - 보내기: 누르면 바로 잠기고(두 번 눌러도 한 번), 글마다 무작위 `cid` 를 같이 보내 응답만 못 받고 다시 눌러도 서버가 한 번만 저장한다. 성공하면 「잘 받았어요. 고마워요.」 화면, 실패하면 버튼 아래 다시 시도 안내(429 는 「한 시간에 다섯 번까지」).
 - 허니팟: 화면 밖 `website` 입력. 차 있으면 서버가 성공처럼 답하고 저장하지 않는다.
+
+- **앱 안 모드 `?app=1`**: 앱이 시트 위에 「건의하기 · 닫기」 머리줄을 그리므로 — `<head>` 의 한 줄 스크립트가 그리기 전에 `html.in-app` 을 붙이고(깜빡임 없게), 「몽돌」 머리 숨김(설명 문장은 둠)·위 번짐 끔(앱과 같은 `#06070A` 단색 — 번짐이 앱 머리줄과 띠처럼 갈렸다)·아래 여백 `safe-area + 48px`(보내기 버튼이 시트 끝에 붙어 보였다)·완료 화면 안내를 「위의 「닫기」를 누르면 돼요.」로. `app=1` 이 없으면 예전 그대로.
+- 완료 화면의 돌은 앱 아이콘 그림(`img/pebble.jpg`, `icon-1024.png` 를 `sips` 로 360px JPEG, 13KB). 정사각 그림이라 둥근 마스크로 배경을 지우고 `aspect-ratio: 1` 로 눌리지 않게 한다(CSS 로 그린 납작한 타원은 「알 같다」로 기각, 2026-10-08).
+
+## 지원(`support.html`)
+
+- 손으로 쓴 정적 페이지. 자주 묻는 것은 `Color-Moments` 의 README·DESIGN·PRIVACY 로 확인되는 것만 둔다(카메라 컨트롤 고르는 곳, iCloud·사진이 어디 남는지, 지우면 어떻게 되는지). 처리방침처럼 자동으로 맞춰지지 않으니 앱이 바뀌면 같이 고친다.
+- 「사용 기록 보내기」 끄는 법은 1.1.1(익명 사용 기록)이 나가고 PRIVACY.md 가 그 판이 되면 더한다.
+- **App Store Connect 의 지원 URL 을 `https://mongdol-desk.vercel.app/support` 로.**
 
 ## 개인정보 처리방침(`privacy.html` · `tools/build-privacy.mjs`)
 
@@ -80,7 +90,7 @@ npx vercel --prod
 
 - 루트 디렉터리는 `Mongdol-Desk`(이 폴더에서 CLI 로 올린다). Git 연결은 하지 않는다(계정 하루 배포 한도 — ENFP 웹과 같은 방식).
 - Upstash 를 Vercel 「Storage → Connect」로 이 프로젝트에도 붙이면 `KV_REST_API_*` 가 자동으로 들어간다. 직접 넣을 땐 `UPSTASH_REDIS_REST_URL`·`UPSTASH_REDIS_REST_TOKEN` 이름도 받는다.
-- **배포 때 지우면 안 되는 것:** `api/`, `package.json`, `package-lock.json`, `vercel.json`, `feedback.html`, `admin.html`, `privacy.html`, `styles.css`, `js/`. (`tests/`, `tools/`, `README.md` 는 지워도 된다. `node_modules/` 는 올리지 않는다.)
+- **배포 때 지우면 안 되는 것:** `api/`, `package.json`, `package-lock.json`, `vercel.json`, `feedback.html`, `admin.html`, `privacy.html`, `support.html`, `styles.css`, `js/`, `img/`. (`tests/`, `tools/`, `README.md` 는 지워도 된다. `node_modules/` 는 올리지 않는다.)
 - 확인: `/feedback` 이 뜨는지, `/admin` 에서 토큰으로 열리는지, `curl -s -o /dev/null -w '%{http_code}' https://<주소>/api/admin/feedback` 가 `401`(환경변수가 없으면 `503`)인지.
 
 ## 시험
@@ -88,11 +98,11 @@ npx vercel --prod
 ```bash
 npm ci && npm run verify     # 문법 확인 + node --test (메모리 가짜 Redis — 실제 Redis 는 안 쓴다)
 npm run build:privacy        # 앱 PRIVACY.md 가 바뀌었을 때 privacy.html 다시 만들기
-TZ=Asia/Seoul node tests/e2e.mjs <스크린샷 폴더> [webkit|chromium]   # 브라우저로 쓰기→보내기→관리(로그인·읽음·지우기), 390×844
+TZ=Asia/Seoul node tests/e2e.mjs <스크린샷 폴더> [webkit|chromium]   # 브라우저로 쓰기→보내기→app=1(머리·번짐·여백·완료 돌 1:1)→관리(로그인·읽음·지우기), 390×844
 ```
 
 - `tests/feedback-server.test.mjs` — 저장 형태(IP 없음) · 쿼리 없음 · 검증 실패 · 허니팟 · cid 중복 · 레이트리밋(IP 해시) · 5,000개 상한 · 관리 인증(환경변수 없음 503 / 없음·틀림 401 / 맞음 200) · 틀린 횟수 429 · 목록·쪽 나누기·읽음·지우기 · 색인만 남은 id 걷기.
-- `tests/pages.test.mjs` — 세 페이지 noindex · 참조 파일이 이 폴더 안 · `vercel.json`(처리방침 캐시 포함).
+- `tests/pages.test.mjs` — 모든 페이지 noindex · 참조 파일이 이 폴더 안 · `vercel.json`(처리방침 캐시 포함) · `/support` 링크 · `?app=1` 장치(head 스크립트·CSS)·완료 돌 1:1.
 - `tests/privacy.test.mjs` — `privacy.html` 이 지금 `PRIVACY.md` 와 맞는지 · 변환기(이스케이프·링크·목록·표).
 - `tests/clock-redis.mjs` — ENFP 웹의 시계 달린 가짜 Redis 에 정렬 집합·mget 을 더한 것.
 - `tests/e2e.mjs` 는 gstack 에 깔린 playwright 를 빌려 쓴다(의존성에 넣지 않았다).

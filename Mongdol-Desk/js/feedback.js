@@ -1,4 +1,4 @@
-// 건의하기(/feedback) — 앱이 ?v=<버전>&b=<빌드>&d=<기종> 을 붙여 앱 안 Safari 로 연다.
+// 건의하기(/feedback) — 앱이 ?app=1&v=<버전>&b=<빌드>&d=<기종> 을 붙여 WKWebView 시트로 연다(app=1 처리는 feedback.html head·styles.css).
 // 모듈이 아니라 그냥 스크립트다: file:// 로 열어 확인할 때도 뜨게.
 (function () {
   'use strict';
