@@ -1,6 +1,6 @@
-import SafariServices
 import SwiftUI
 import UIKit
+import WebKit
 
 /// 홈 오른쪽 위 설정 — 조약돌 모양(고르면 그 자리에서 바뀐다)과 사진 앱 ♥ 담기.
 struct SettingsSheet: View {
@@ -154,7 +154,7 @@ struct SettingsSheet: View {
         }
         .padding(.bottom, 28)
         .sheet(isPresented: $showingSuggestion) {
-            if let url = SuggestionForm.url { SafariSheet(url: url).ignoresSafeArea() }
+            if let url = SuggestionForm.url { SuggestionSheet(url: url) }
         }
     }
 
@@ -320,15 +320,63 @@ enum SuggestionForm {
     }
 }
 
-struct SafariSheet: UIViewControllerRepresentable {
+/// 건의 페이지 — Safari 창은 주소창을 늘 보여 줘서 앱 안 웹 화면으로 띄운다.
+struct SuggestionSheet: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button { dismiss() } label: {
+                    Text("닫기")
+                        .font(Face.actionSecondary)
+                        .foregroundStyle(Tone.primary)
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: Shape2.minTouch)
+                        .background(.white.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            SuggestionWebView(url: url)
+        }
+        .background(Tone.base.ignoresSafeArea())
+        .presentationBackground(Tone.base)
+        .preferredColorScheme(.dark)
+    }
+}
+
+struct SuggestionWebView: UIViewRepresentable {
     let url: URL
 
-    func makeUIViewController(context: Context) -> SFSafariViewController {
-        let vc = SFSafariViewController(url: url)
-        vc.preferredControlTintColor = .white
-        vc.preferredBarTintColor = .black
-        return vc
+    func makeCoordinator() -> Coordinator { Coordinator(home: url) }
+
+    func makeUIView(context: Context) -> WKWebView {
+        let web = WKWebView()
+        web.isOpaque = false
+        web.backgroundColor = .clear
+        web.scrollView.backgroundColor = .clear
+        web.navigationDelegate = context.coordinator
+        web.load(URLRequest(url: url))
+        return web
     }
 
-    func updateUIViewController(_ vc: SFSafariViewController, context: Context) {}
+    func updateUIView(_ web: WKWebView, context: Context) {}
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        let home: URL
+        init(home: URL) { self.home = home }
+
+        func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
+                     decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
+            guard let target = action.request.url, target.host != home.host, action.targetFrame?.isMainFrame != false else {
+                decisionHandler(.allow); return
+            }
+            UIApplication.shared.open(target)
+            decisionHandler(.cancel)
+        }
+    }
 }
