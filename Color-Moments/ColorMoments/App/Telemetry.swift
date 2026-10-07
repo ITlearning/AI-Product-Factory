@@ -7,7 +7,7 @@ import PostHog
 enum Telemetry {
 
     /// PostHog Project API Key(`phc_…`) — 비어 있으면 SDK 를 켜지도, 아무것도 보내지도 않는다.
-    static let apiKey = ""
+    static let apiKey = "phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK"
     static let host = "https://eu.i.posthog.com"
 
     static let enabledKey = "sendsTelemetry"
