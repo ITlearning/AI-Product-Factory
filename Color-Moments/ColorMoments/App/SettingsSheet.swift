@@ -1,3 +1,4 @@
+import SafariServices
 import SwiftUI
 import UIKit
 
@@ -16,6 +17,7 @@ struct SettingsSheet: View {
     @AppStorage(MomentReminder.key) private var reminder: MomentReminder.Frequency = .sometimes
     @State private var hasUpdate = false
     @State private var showingLicenses = false
+    @State private var showingSuggestion = false
     var store: DayStore? = nil
 
     var body: some View {
@@ -133,6 +135,12 @@ struct SettingsSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("새 버전이 있어요. 업데이트")
             }
+            linkRow("리뷰 남기기", hint: "App Store 리뷰 쓰기 화면을 엽니다") {
+                UIApplication.shared.open(UpdateCheck.reviewURL)
+            }
+            if SuggestionForm.url != nil {
+                linkRow("건의하기", hint: "건의 설문을 엽니다") { showingSuggestion = true }
+            }
             Text(AppVersion.current.line)
                 .font(Face.caption).foregroundStyle(Tone.tertiary)
             Text("단어는 이 기기 안에서 사진을 보고 고릅니다")
@@ -151,9 +159,23 @@ struct SettingsSheet: View {
             .padding(.bottom, 4)
         }
         .sheet(isPresented: $showingLicenses) { LicensesSheet() }
+        .sheet(isPresented: $showingSuggestion) {
+            if let url = SuggestionForm.url { SafariSheet(url: url).ignoresSafeArea() }
+        }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Tone.base)
+    }
+
+    private func linkRow(_ title: String, hint: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(Face.guide).foregroundStyle(Tone.secondary)
+                .frame(maxWidth: .infinity, minHeight: Shape2.minTouch, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(hint)
     }
 
     private func option(_ s: PebbleStyle, _ title: String) -> some View {
@@ -252,4 +274,29 @@ struct LicensesSheet: View {
         .presentationBackground(Tone.base)
         .preferredColorScheme(.dark)
     }
+}
+
+/// 설정의 「건의하기」 — 구글 설문 주소가 생기면 address 한 줄만 채운다. 비어 있으면 줄이 숨는다.
+enum SuggestionForm {
+    static let address: String? = nil
+    static var url: URL? { link(address) }
+
+    static func link(_ address: String?) -> URL? {
+        guard let address, let url = URL(string: address.trimmingCharacters(in: .whitespaces)),
+              url.scheme == "https", url.host != nil else { return nil }
+        return url
+    }
+}
+
+struct SafariSheet: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let vc = SFSafariViewController(url: url)
+        vc.preferredControlTintColor = .white
+        vc.preferredBarTintColor = .black
+        return vc
+    }
+
+    func updateUIViewController(_ vc: SFSafariViewController, context: Context) {}
 }
