@@ -84,6 +84,9 @@ TestFlight 업로드는 `bundle exec fastlane beta` — 셋업과 CodeStudy 와 
 (기기 로그: `Capture Application Requirements Unmet: "Camera not actively used; AVCaptureEventInteraction not installed"`).
 크래시 로그엔 `EXC_CRASH (SIGKILL)` · `RUNNINGBOARD 0` · 쉬고 있는 메인 스레드만 남아 원인이 안 보인다.
 그래서 `ColorCaptureIntent.perform()` 이 앱 본체에서 불리면 홈이 카메라를 연다(`CameraRequest`).
+요청은 무엇이 떠 있든 이긴다 — 떠 있는 시트·커버는 키 윈도 루트에서 한 번에 내리고(`PresentedScreens`,
+증정은 받은 걸로 치지 않고 카메라를 닫은 뒤 다시 뜬다), 온보딩 중이면 카메라가 안내 **위에** 떠서
+닫으면 안내 그 자리로 돌아온다(온보딩 층이 홈 ZStack 에서 카메라 면 아래에 깔린다). 로드 전(`undecided`)에도 바로 연다.
 (2026-10-02 TestFlight 1.0.0(1) 크래시 4건, 참고: JuniperPhoton 「Addressing Unexpected Terminations when launching from unlocked Camera Control」)
 
 애플 문서(Creating a camera experience for the Lock Screen) 원문:

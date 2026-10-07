@@ -552,8 +552,11 @@ struct HowToStep: View {
             } words: {
                 VStack(alignment: .leading, spacing: 22) {
                     OnboardingText(title: "홈에서 왼쪽 가장자리를 오른쪽으로 쓸면 카메라가 열려요")
-                    OnboardingText(title: "잠금화면에서도 찍을 수 있어요",
-                                   detail: "잠금화면 카메라 컨트롤에서 몽돌을 고르면 돼요.")
+                    VStack(alignment: .leading, spacing: 14) {
+                        OnboardingText(title: "잠금화면에서도 찍을 수 있어요",
+                                       detail: "잠금화면 아래 버튼이나 제어 센터에 「색 남기기」를 더하면 돼요.")
+                        SettingsPath(steps: ["잠금화면 길게 누르기", "사용자화", "아래 버튼 바꾸기", "색 남기기"])
+                    }
                 }
             }
         } actions: {
@@ -572,12 +575,93 @@ struct CameraButtonStep: View {
             SceneLayout {
                 CameraButtonScene()
             } words: {
-                OnboardingText(title: "옆면 카메라 컨트롤로 바로 몽돌을 열 수 있어요",
-                               detail: "설정 → 카메라 → 카메라 컨트롤에서 몽돌을 고르면 돼요.")
+                VStack(alignment: .leading, spacing: 14) {
+                    OnboardingText(title: "옆면 카메라 컨트롤로 바로 몽돌을 열 수 있어요",
+                                   detail: "설정 앱에서 이 순서로 몽돌을 골라 주세요.")
+                    SettingsPath(steps: ["설정", "카메라", "카메라 컨트롤", "몽돌"])
+                }
             }
         } actions: {
             PrimaryAction(title: "다음", action: next)
         }
+    }
+}
+
+/// 따라 누를 길 — 마지막 칸이 고를 것. 설정 화면으로 바로 보내는 공개 URL 은 없어 길만 보여 준다.
+struct SettingsPath: View {
+    let steps: [String]
+
+    @Environment(\.onboardingInk) private var ink
+
+    var body: some View {
+        PathFlow(spacing: 6, lineSpacing: 8) {
+            ForEach(steps.indices, id: \.self) { i in
+                let last = i == steps.count - 1
+                HStack(spacing: 6) {
+                    Text(steps[i])
+                        .font(Face.guide)
+                        .foregroundStyle(last ? ink.primary : ink.secondary)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 32)
+                        .background(Capsule().fill(last ? ink.hairline : .clear))
+                        .overlay(Capsule().strokeBorder(ink.hairline, lineWidth: 1))
+                    if !last {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(ink.secondary)
+                    }
+                }
+                .fixedSize()
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(steps.joined(separator: ", "))
+    }
+}
+
+/// 한 줄에 안 들어가면 다음 줄로 — 칸은 쪼개지 않는다.
+private struct PathFlow: Layout {
+    let spacing: CGFloat
+    let lineSpacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = rows(width: proposal.width ?? .infinity, subviews: subviews)
+        let width = rows.map(\.width).max() ?? 0
+        let height = rows.map(\.height).reduce(0, +) + lineSpacing * CGFloat(max(0, rows.count - 1))
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(width: bounds.width, subviews: subviews) {
+            var x = bounds.minX
+            for i in row.indices {
+                let size = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), proposal: .unspecified)
+                x += size.width + spacing
+            }
+            y += row.height + lineSpacing
+        }
+    }
+
+    private struct Row { var indices: [Int] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
+
+    private func rows(width: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = []
+        var row = Row()
+        for i in subviews.indices {
+            let size = subviews[i].sizeThatFits(.unspecified)
+            let needed = row.indices.isEmpty ? size.width : row.width + spacing + size.width
+            if needed > width, !row.indices.isEmpty {
+                rows.append(row)
+                row = Row()
+            }
+            row.width = row.indices.isEmpty ? size.width : row.width + spacing + size.width
+            row.height = max(row.height, size.height)
+            row.indices.append(i)
+        }
+        if !row.indices.isEmpty { rows.append(row) }
+        return rows
     }
 }
 
