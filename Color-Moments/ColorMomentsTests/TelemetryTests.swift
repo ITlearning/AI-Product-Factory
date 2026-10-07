@@ -1,14 +1,45 @@
 import Photos
+import PostHog
 import XCTest
 @testable import ColorMoments
 
 final class TelemetryTests: XCTestCase {
 
-    func testSendsOnlyWithAppIDAndSwitchOnOutsideTests() {
-        XCTAssertFalse(Telemetry.sends(appID: "", enabled: true, testing: false))
-        XCTAssertFalse(Telemetry.sends(appID: "ABC", enabled: false, testing: false))
-        XCTAssertFalse(Telemetry.sends(appID: "ABC", enabled: true, testing: true))
-        XCTAssertTrue(Telemetry.sends(appID: "ABC", enabled: true, testing: false))
+    func testSendsOnlyWithKeyAndSwitchOnOutsideTests() {
+        XCTAssertFalse(Telemetry.sends(apiKey: "", enabled: true, testing: false))
+        XCTAssertFalse(Telemetry.sends(apiKey: "phc_ABC", enabled: false, testing: false))
+        XCTAssertFalse(Telemetry.sends(apiKey: "phc_ABC", enabled: true, testing: true))
+        XCTAssertTrue(Telemetry.sends(apiKey: "phc_ABC", enabled: true, testing: false))
+    }
+
+    func testConfigGoesToEUAndCapturesNothingOnItsOwn() {
+        let config = Telemetry.makeConfig(apiKey: "phc_ABC")
+        XCTAssertEqual(config.projectToken, "phc_ABC")
+        XCTAssertEqual(config.host.absoluteString, "https://eu.i.posthog.com")
+        XCTAssertFalse(config.enableSwizzling)
+        XCTAssertFalse(config.sessionReplay)
+        XCTAssertFalse(config.captureScreenViews)
+        XCTAssertFalse(config.captureElementInteractions)
+        XCTAssertFalse(config.captureSwiftUIElementInteractions)
+        XCTAssertFalse(config.captureAutocaptureElementText)
+        XCTAssertFalse(config.rageClickConfig.enabled)
+        XCTAssertFalse(config.capturePushNotificationSubscriptions)
+        XCTAssertFalse(config.capturePushNotificationOpened)
+        XCTAssertFalse(config.surveys)
+        XCTAssertFalse(config.preloadFeatureFlags)
+        XCTAssertFalse(config.sendFeatureFlagEvent)
+        XCTAssertFalse(config.errorTrackingConfig.autoCapture)
+        XCTAssertEqual(config.personProfiles, .never)
+        XCTAssertFalse(config.setDefaultPersonProperties)
+        XCTAssertTrue(config.disableGeoIp)
+        XCTAssertNil(config.tracingHeaders)
+        XCTAssertFalse(config.optOut)
+    }
+
+    func testSendDoesNothingWhileTesting() {
+        Telemetry.apply()
+        Telemetry.send(.wordRejected)
+        XCTAssertTrue(PostHogSDK.shared.isOptOut())
     }
 
     func testSwitchDefaultsOn() {
@@ -59,16 +90,29 @@ final class TelemetryTests: XCTestCase {
         XCTAssertEqual(Set(names), Set(Telemetry.stepNames))
     }
 
-    func testEventNamesAreFixedAndAvoidReservedPrefix() {
+    /// 「묶음.동작」 한 가지 꼴 — PostHog 의 `$` 이벤트나 앱 수명주기 이벤트(「Application Opened」)와 겹치지 않는다.
+    func testEventNamesAreFixedAndConsistent() {
         let names = Set(Self.allEvents.map(\.name))
         XCTAssertEqual(names.count, 10)
-        XCTAssertTrue(names.allSatisfy { !$0.lowercased().hasPrefix("telemetrydeck.") })
+        for name in names {
+            let parts = name.split(separator: ".")
+            XCTAssertEqual(parts.count, 2, name)
+            XCTAssertTrue(parts.allSatisfy { $0.first?.isLetter == true && $0.allSatisfy(\.isLetter) }, name)
+            XCTAssertTrue(parts[0].first?.isUppercase == true, name)
+            XCTAssertTrue(parts[1].first?.isLowercase == true, name)
+        }
     }
 
-    func testOnlyLibraryCountTravelsAsNumber() {
-        XCTAssertEqual(Telemetry.Event.photoAdded(.library, count: 12).floatValue, 12)
-        XCTAssertNil(Telemetry.Event.firstPhoto(.app).floatValue)
-        XCTAssertNil(Telemetry.Event.cameraOpened(.swipe).floatValue)
+    func testOnlyPhotoAddedCarriesWholeCount() {
+        let added = Telemetry.Event.photoAdded(.library, count: 12).properties
+        XCTAssertEqual(added["count"] as? Int, 12)
+        XCTAssertEqual(added["source"] as? String, "library")
+        XCTAssertEqual(added.count, 2)
+        XCTAssertNil(Telemetry.Event.firstPhoto(.app).count)
+        XCTAssertNil(Telemetry.Event.cameraOpened(.swipe).properties["count"])
+        for event in Self.allEvents where event.count == nil {
+            XCTAssertEqual(event.properties.count, event.parameters.count, event.name)
+        }
     }
 
     func testExitDropsDayKey() {
