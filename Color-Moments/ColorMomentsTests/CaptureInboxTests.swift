@@ -1,4 +1,6 @@
 import XCTest
+import SwiftUI
+import UIKit
 @testable import ColorMoments
 
 @MainActor
@@ -160,5 +162,102 @@ final class CaptureIntentTests: XCTestCase {
         _ = try await ColorCaptureIntent().perform()
 
         XCTAssertTrue(request.pending)
+        XCTAssertTrue(request.take())
+        XCTAssertFalse(request.pending)
+        XCTAssertFalse(request.take(), "한 번 연 요청으로 카메라를 다시 열지 않는다")
+    }
+}
+
+// 카메라 요청은 UIKit 으로 프레젠테이션 사슬을 내린다 — SwiftUI 상태가 따라오지 않으면 다음에 다시 못 띄운다.
+@MainActor
+final class PresentedScreensTests: XCTestCase {
+
+    @Observable
+    final class Probe {
+        var sheet = false
+        var day: Day?
+        var dismissed: [String] = []
+    }
+
+    struct Day: Identifiable { let id: String }
+
+    private struct Nested: View {
+        @State private var cover = false
+        let onUp: () -> Void
+        var body: some View {
+            Color.clear
+                .onAppear { cover = true }
+                .fullScreenCover(isPresented: $cover) { Color.clear.onAppear(perform: onUp) }
+        }
+    }
+
+    private struct ProbeView: View {
+        @Bindable var probe: Probe
+        let onNestedUp: () -> Void
+        var body: some View {
+            Color.clear
+                .sheet(isPresented: $probe.sheet, onDismiss: { probe.dismissed.append("sheet") }) {
+                    Nested(onUp: onNestedUp)
+                }
+                .fullScreenCover(item: $probe.day, onDismiss: { probe.dismissed.append("day") }) { _ in Color.clear }
+        }
+    }
+
+    private var window: UIWindow?
+
+    override func tearDown() {
+        window?.isHidden = true
+        window = nil
+        super.tearDown()
+    }
+
+    private func host(_ probe: Probe, onNestedUp: @escaping () -> Void = {}) throws -> UIViewController {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        let host = UIHostingController(rootView: ProbeView(probe: probe, onNestedUp: onNestedUp))
+        window.rootViewController = host
+        window.isHidden = false
+        self.window = window
+        return host
+    }
+
+    private func until(_ condition: () -> Bool, file: StaticString = #filePath, line: UInt = #line) async throws {
+        for _ in 0..<60 where !condition() { try await Task.sleep(for: .milliseconds(50)) }
+        XCTAssertTrue(condition(), file: file, line: line)
+    }
+
+    func testDismissAllClosesNestedSheetAndResetsBinding() async throws {
+        let probe = Probe()
+        var nestedUp = false
+        let host = try host(probe) { nestedUp = true }
+        probe.sheet = true
+        try await until { nestedUp && host.presentedViewController?.presentedViewController != nil }
+
+        PresentedScreens.dismissAll(in: window)
+
+        try await until { host.presentedViewController == nil && !probe.sheet && probe.dismissed == ["sheet"] }
+        probe.sheet = true
+        try await until { host.presentedViewController != nil }
+    }
+
+    func testDismissAllResetsItemCover() async throws {
+        let probe = Probe()
+        let host = try host(probe)
+        probe.day = Day(id: "2026-10-07")
+        try await until { host.presentedViewController != nil }
+
+        PresentedScreens.dismissAll(in: window)
+
+        try await until { host.presentedViewController == nil && probe.day == nil && probe.dismissed == ["day"] }
+        probe.day = Day(id: "2026-10-07")
+        try await until { host.presentedViewController != nil }
+    }
+
+    func testDismissAllWithNothingUpIsQuiet() throws {
+        let probe = Probe()
+        let host = try host(probe)
+        PresentedScreens.dismissAll(in: window)
+        XCTAssertNil(host.presentedViewController)
+        XCTAssertTrue(probe.dismissed.isEmpty)
     }
 }
