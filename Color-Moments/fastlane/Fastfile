@@ -40,8 +40,9 @@ platform :ios do
     )
   end
 
+  # 빌드 번호는 버전마다 1부터 — 1.1.0 (3) 다음 1.1.1 은 (1).
   def latest_build(api_key)
-    latest_testflight_build_number(app_identifier: APP_ID, api_key: api_key, initial_build_number: 0)
+    latest_testflight_build_number(app_identifier: APP_ID, api_key: api_key, version: marketing_version, initial_build_number: 0)
   end
 
   # 키체인에 Apple Distribution 인증서가 없다 — Xcode 클라우드 관리 인증서로 서명한다.
