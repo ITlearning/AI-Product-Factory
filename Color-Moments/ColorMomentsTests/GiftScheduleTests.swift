@@ -14,6 +14,14 @@ final class GiftScheduleTests: XCTestCase {
                        "2026-09-21")
     }
 
+    @MainActor
+    func testCeremonyClosedBeforeReceivingIsNotFinished() {
+        XCTAssertEqual(DayGiftPresenter.finishedDay(lastShown: "2026-09-21", isGifted: { _ in true }), "2026-09-21")
+        XCTAssertNil(DayGiftPresenter.finishedDay(lastShown: "2026-09-21", isGifted: { _ in false }),
+                     "카메라 요청이 내린 증정 — 온보딩 증정 하루를 지우면 다시 안 뜬다")
+        XCTAssertNil(DayGiftPresenter.finishedDay(lastShown: nil, isGifted: { _ in true }))
+    }
+
     func testAlreadyGiftedDayDoesNotComeBack() {
         XCTAssertNil(GiftSchedule.pending(dayKeys: ["2026-09-22", "2026-09-21"], today: "2026-09-22",
                                           isGifted: { $0 <= "2026-09-21" }))
