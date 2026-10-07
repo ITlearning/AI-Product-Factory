@@ -550,14 +550,7 @@ struct HowToStep: View {
             SceneLayout {
                 HowToScene()
             } words: {
-                VStack(alignment: .leading, spacing: 22) {
-                    OnboardingText(title: "홈에서 왼쪽 가장자리를 오른쪽으로 쓸면 카메라가 열려요")
-                    VStack(alignment: .leading, spacing: 14) {
-                        OnboardingText(title: "잠금화면에서도 찍을 수 있어요",
-                                       detail: "잠금화면 아래 버튼이나 제어 센터에 「색 남기기」를 더하면 돼요.")
-                        SettingsPath(steps: ["잠금화면 길게 누르기", "사용자화", "아래 버튼 바꾸기", "색 남기기"])
-                    }
-                }
+                OnboardingText(title: "홈에서 왼쪽 가장자리를 오른쪽으로 쓸면 카메라가 열려요")
             }
         } actions: {
             PrimaryAction(title: "다음", action: next)
