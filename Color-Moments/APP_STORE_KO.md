@@ -104,7 +104,7 @@ Apple 표준 사용권 계약 그대로.
 · 색으로 그날의 기분을 판단하지 않아요.
 
 ■ 내 사진은 내 곁에
-· 계정이 없어요. 광고도, 추적도 없어요. 몽돌에는 서버가 없어요.
+· 계정이 없어요. 광고도, 추적도 없어요. 어디서 멈추는지 익명 사용 기록만 받고, 설정에서 끌 수 있어요.
 · 몽돌로 찍은 사진은 사진 앱에 저장되고, 기록은 내 iCloud로만 기기 사이에 이어져요.
 · 사진에서 한 단어를 고르는 일은 모두 기기 안에서 해요.
 
@@ -173,7 +173,7 @@ Permissions:
 - Notifications (optional): a morning notice when yesterday's pebble arrives, and occasional reminders on days without photos (Settings: often / sometimes / off).
 
 Weather data is provided by Apple Weather (WeatherKit); attribution is shown in the photo viewer.
-Records sync through the user's own iCloud (CloudKit private database). The app has no server, no analytics and no ads.
+Records sync through the user's own iCloud (CloudKit private database). The app has no server of its own and no ads. Since 1.1.1 it sends anonymous usage signals (onboarding steps, permission answers, capture path) to TelemetryDeck — no photos, words, colors, locations or dates; users can turn this off in Settings > 사용 기록.
 ```
 
 ---
@@ -188,20 +188,31 @@ https://github.com/ITlearning/AI-Product-Factory/blob/main/Color-Moments/PRIVACY
 
 이 브랜치가 main 에 머지돼야 열린다 — **제출 전에 머지 확인**.
 
-### 데이터 수집 — 「아니요, 이 앱에서 데이터를 수집하지 않습니다」
+### 데이터 수집 — 「예, 이 앱에서 데이터를 수집합니다」 (1.1.1~)
 
-Apple 기준의 「수집」은 기기 밖으로 보내 개발자(또는 제3자)가 실시간 처리 이상으로 접근할 수 있게 하는 것이다. 몽돌은:
+1.0~1.1.0 은 「아니요」였다. 1.1.1 부터 TelemetryDeck 익명 사용 기록을 보내므로 아래처럼 바꾼다(TelemetryDeck 문서 「Apple App Privacy」 권장과 같음).
+
+| 유형 | 항목 | 용도 | 사용자에게 연결 | 추적 |
+|---|---|---|---|---|
+| 사용 데이터 | **제품 상호작용** | 분석 | 아니요 | 아니요 |
+| 식별자 | **기기 ID** | 분석 | 아니요 | 아니요 |
+
+기기 ID 를 넣는 이유: SDK 가 설치를 세려고 `identifierForVendor` 를 기기에서 소금 친 SHA-256 으로 해시해 보낸다(서버에서 한 번 더 해시). 사용자와 연결되지 않지만 Apple 기준의 「수집」이라 TelemetryDeck 도 함께 표시하라고 권한다. SDK 자체 privacy manifest 도 이 두 항목을 같은 값으로 적어 두었다.
+
+나머지는 여전히 수집이 아니다:
 
 | 데이터 | 어디로 | 수집인가 |
 |---|---|---|
+| 익명 사용 기록 (1.1.1~) | TelemetryDeck(독일 회사, EU 서버) — 정해진 이벤트 10개와 SDK 기본 정보(앱·OS 버전, 기종, 언어·지역·시간대, 세션 길이) | **예** — 위 표 |
 | 사진 기록(시각·대표 색·한 단어·장소 이름·좌표·날씨) | 사용자 본인 iCloud(CloudKit **개인** 데이터베이스) | 아니다 — 개발자가 열람할 수 없다 |
 | 사진 자체 | 기기 사진 앱 (iCloud 사진은 사용자가 켠 Apple 서비스) | 아니다 — 몽돌이 보내지 않는다 |
 | 위치 | 장소 이름·날씨를 찾을 때 Apple(지오코딩·WeatherKit)이 그 자리에서 처리 | 아니다 — 개발자 서버 없음 |
 | 사진 분석(한 단어·추천) | 기기 안 Vision | 아니다 |
 | 알림 | 기기 안 로컬 예약 | 아니다 |
 | 새 버전 확인 (1.1~) | 설정을 열 때 하루 한 번 Apple 조회 API(`itunes.apple.com/lookup`)에 몽돌의 bundleId·country 만 | 아니다 — 사용자·기기 정보를 보내지 않는다 |
+| 건의하기 (1.1.1~) | 앱 안 Safari 로 여는 구글 설문 — 사용자가 직접 적은 것만, Google 정책 | 몽돌 코드가 보내는 것은 없다 — 사용자가 적어 낸 응답 |
 
-코드 근거: 1.0.0 은 앱·확장 어디에도 `URLSession`·외부 주소가 없다(2026-10-03 확인). 1.1 부터 앱 본체 `UpdateCheck` 하나만 위 조회 API 를 부른다 — ephemeral 세션, 주소의 bundleId·country 말고 보내는 값 없음, 확장에는 없다. `PrivacyInfo.xcprivacy` 도 수집 데이터 없음 · 추적 없음(조회 결과 캐시는 이미 적어 둔 UserDefaults `CA92.1` 안).
+코드 근거: 1.0.0 은 앱·확장 어디에도 `URLSession`·외부 주소가 없다(2026-10-03 확인). 1.1 부터 앱 본체 `UpdateCheck` 가 위 조회 API 를 부른다. 1.1.1 부터 앱 본체에 TelemetryDeck SwiftSDK 2.14.2(SPM, 앱 타깃만 — 확장 둘에는 링크되지 않음)가 들어가고, 보내는 이벤트는 `ColorMoments/App/Telemetry.swift` 한 파일에 모두 있다(파라미터는 고정 문자열 enum 뿐). `Telemetry.appID` 가 비었거나 설정 「사용 기록 보내기」가 꺼져 있으면 SDK 를 켜지 않는다. 앱 `PrivacyInfo.xcprivacy` 에 제품 상호작용·기기 ID(연결 안 됨, 추적 아님, 분석)를 적었고, 확장 둘의 manifest 는 그대로 수집 없음.
 
 ---
 
@@ -238,5 +249,8 @@ Apple 기준의 「수집」은 기기 밖으로 보내 개발자(또는 제3자
 - [ ] 빌드 선택 — 크래시 수정이 들어간 빌드(2 이상)
 - [ ] 6.9인치 스크린샷 6장 (6.5인치는 「6.9 사용」 또는 노치 판)
 - [ ] CloudKit Production 스키마 — 최근 필드까지 배포됨(2026-10-01 완료)
-- [ ] 연령 등급 설문 · 개인정보(수집 안 함) · 카테고리 · 콘텐츠 권한 저장
+- [ ] 연령 등급 설문 · 카테고리 · 콘텐츠 권한 저장
+- [ ] 앱 개인정보 (1.1.1~): 「데이터 수집 — 예」, 사용 데이터 › 제품 상호작용 + 식별자 › 기기 ID — 둘 다 분석 · 사용자에게 연결 안 됨 · 추적 아님
+- [ ] `Telemetry.appID` 에 TelemetryDeck 앱 ID 를 넣은 빌드인지 (비어 있으면 아무것도 안 보낸다)
+- [ ] PRIVACY.md 시행일을 1.1.1 출시일로
 - [ ] 심사 메모 · 연락처
