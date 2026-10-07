@@ -116,6 +116,7 @@ struct OnboardingView: View {
             }
         }
         .onDisappear { firstPebble.stop() }
+        .onChange(of: step, initial: true) { _, s in Telemetry.send(.onboardingStep(s)) }
     }
 
     @State private var pickerStartedEmpty = true
@@ -331,6 +332,7 @@ struct OnboardingView: View {
     }
 
     private func ceremonyFinished() {
+        Telemetry.pebbleReceived(.onboarding)
         if let day = onboardingGiftDay, gifts.isGifted(day) {
             onboardingGiftDay = nil
             Task { await ArrivalNotice.clear(dayKey: day) }

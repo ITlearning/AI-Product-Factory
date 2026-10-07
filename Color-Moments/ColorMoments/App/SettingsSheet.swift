@@ -15,6 +15,7 @@ struct SettingsSheet: View {
     @State private var placeAccess = PlaceFinder.shared.access
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(MomentReminder.key) private var reminder: MomentReminder.Frequency = .sometimes
+    @AppStorage(Telemetry.enabledKey) private var sendsTelemetry = true
     @State private var hasUpdate = false
     @State private var showingLicenses = false
     @State private var showingSuggestion = false
@@ -113,7 +114,21 @@ struct SettingsSheet: View {
             Text("아침과 노을 무렵에 가볍게. 담은 날은 오지 않아요.")
                 .font(Face.caption).foregroundStyle(Tone.tertiary)
                 .padding(.top, 8)
-                .padding(.bottom, 24)
+
+            Text("사용 기록").font(Face.caption).foregroundStyle(Tone.tertiary)
+                .padding(.top, 28)
+            Toggle(isOn: $sendsTelemetry) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("사용 기록 보내기").font(Face.line).foregroundStyle(Tone.primary)
+                    Text("어디서 멈추는지 익명으로 보내요. 사진·단어·색·위치는 보내지 않아요.")
+                        .font(Face.caption).foregroundStyle(Tone.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .tint(Tone.primary.opacity(0.6))
+            .padding(.top, 10)
+            .padding(.bottom, 24)
+            .onChange(of: sendsTelemetry) { _, _ in Telemetry.apply() }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

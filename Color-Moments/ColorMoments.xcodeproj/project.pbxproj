@@ -242,6 +242,7 @@
 		AE9B0B31B29DD8778ED65B97 /* UpdateCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D9C2463F56E1FA771972D9 /* UpdateCheck.swift */; };
 		AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0539FB03BB33151F171D2BD /* HomeShell.swift */; };
 		AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
+		B00E12EB9F738811BE917A19 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 5F6E4F5425144E7C928814DD /* TelemetryDeck */; };
 		B3358B78B3BA94067A3E02B1 /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
 		B5DB8DA5DC01E0D3A2EF9121 /* Keepsake.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3649A8DB3B4FF16005111AC /* Keepsake.swift */; };
 		B74DE691E2FF8FD1FD32E7D0 /* AsyncGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACCB0D6CE5A9643C54DF3DB /* AsyncGate.swift */; };
@@ -255,6 +256,7 @@
 		BB2A2EFB0C185E4CF5E6A42C /* ArrivalNoticeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */; };
 		BBA3C897A5072F8F6501382D /* IBMPlexSansKR-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */; };
 		BC08FAC35928BE504FD2119B /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
+		BD1D86546001A3F32085451A /* Telemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19752BA8213A2EB875050A24 /* Telemetry.swift */; };
 		BDA0F83F9AE241A5608DEAC6 /* CaptureInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C596DA0AD3AFEE2ECCAC656 /* CaptureInboxTests.swift */; };
 		BE6A32DF3751591BADBDD413 /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
 		BF5F91888309FFEC78C6003E /* ISODateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 662CDEB15BA3A248BA43C279 /* ISODateTests.swift */; };
@@ -272,6 +274,7 @@
 		C60F65BA453B7C15942834E6 /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
 		C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F12A3264BC11396ACCF8B1CD /* NanumMyeongjo-OFL.txt */; };
 		C6592BFBDEAAB5F814989180 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
+		C68526B75225708A4AEC346A /* TelemetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCF588BE1445AEF867823F0 /* TelemetryTests.swift */; };
 		C6B84EDC7E5B3C86DD325A3C /* DayTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926BDBAFE04F7B17464F627E /* DayTimeline.swift */; };
 		C6F53A70ADED30A0C697C6C7 /* DayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */; };
 		C880AD6491173648CF11DAE3 /* ChunkedApplyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 547A7E4D2CDA31CFFB9F1A84 /* ChunkedApplyTests.swift */; };
@@ -418,6 +421,7 @@
 		160019A37882F81114DE5A27 /* HomeNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigationTests.swift; sourceTree = "<group>"; };
 		1742B64CFC5498D0537E50F4 /* UpdateCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCheckTests.swift; sourceTree = "<group>"; };
 		1782AA90AE018A879A1B0885 /* HomeNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigation.swift; sourceTree = "<group>"; };
+		19752BA8213A2EB875050A24 /* Telemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Telemetry.swift; sourceTree = "<group>"; };
 		19897FA92EBD86A58ABB4B61 /* LibrarySections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySections.swift; sourceTree = "<group>"; };
 		1A15FE60A1D19309F5650EF9 /* LunarDaysTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LunarDaysTests.swift; sourceTree = "<group>"; };
 		1CEE6ECDE3B4A71986BA27EE /* AssetDiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDiagnosticsTests.swift; sourceTree = "<group>"; };
@@ -468,6 +472,7 @@
 		582DDE9973C653338A1C72CD /* HandfulCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandfulCard.swift; sourceTree = "<group>"; };
 		5AADBCB38DB09CEFBA41590A /* ColorMoments.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ColorMoments.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B689D73DBFBD16C7B857686 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
+		5CCF588BE1445AEF867823F0 /* TelemetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryTests.swift; sourceTree = "<group>"; };
 		5F6FEDED27EB43CE95CB3F37 /* FirstPebbleModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstPebbleModel.swift; sourceTree = "<group>"; };
 		604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAssets.swift; sourceTree = "<group>"; };
 		613CC2B68F4FC778DC2CD902 /* WordModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordModelTests.swift; sourceTree = "<group>"; };
@@ -622,6 +627,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F0DD38512B10A0EC9EF97BD6 /* AVKit.framework in Frameworks */,
+				B00E12EB9F738811BE917A19 /* TelemetryDeck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -762,6 +768,7 @@
 				915E2C36A82446AD4B2298C3 /* SyncPerformanceTests.swift */,
 				453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */,
 				38A1E3BB45B083CCB0E9847F /* TakeOutTests.swift */,
+				5CCF588BE1445AEF867823F0 /* TelemetryTests.swift */,
 				74311A97D566985BF731BB7F /* ThumbnailLoadingTests.swift */,
 				1742B64CFC5498D0537E50F4 /* UpdateCheckTests.swift */,
 				ACF0FEAA69BCAAE696688328 /* WidgetSnapshotTests.swift */,
@@ -951,6 +958,7 @@
 				8E607FA8DB377F42C22222F8 /* PlaceFinder.swift */,
 				5175844256F2AE80471F6EE6 /* SettingsSheet.swift */,
 				915F51F76D8105385A924494 /* SpikeView.swift */,
+				19752BA8213A2EB875050A24 /* Telemetry.swift */,
 				65D9C2463F56E1FA771972D9 /* UpdateCheck.swift */,
 				B801BBBCB1178424D102539A /* WeatherLookup.swift */,
 				E8A5A3F6C7C71DEB7306029B /* WordEncoder.mlpackage */,
@@ -1039,6 +1047,7 @@
 			);
 			name = ColorMoments;
 			packageProductDependencies = (
+				5F6E4F5425144E7C928814DD /* TelemetryDeck */,
 			);
 			productName = ColorMoments;
 			productReference = 5AADBCB38DB09CEFBA41590A /* ColorMoments.app */;
@@ -1136,6 +1145,9 @@
 			);
 			mainGroup = 6B1123F879906576EAE48406;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7E56438A19057D7F7D038C18 /* XCRemoteSwiftPackageReference "SwiftSDK" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 57A9638C65291DC60DDCCA01 /* Products */;
 			projectDirPath = "";
@@ -1344,6 +1356,7 @@
 				0D19B56D25DAFD794BE542E9 /* SyncPerformanceTests.swift in Sources */,
 				7D72341D340848C9972CBF03 /* SyncRecordsTests.swift in Sources */,
 				F90A1D050D2691DE5F06B74D /* TakeOutTests.swift in Sources */,
+				C68526B75225708A4AEC346A /* TelemetryTests.swift in Sources */,
 				7E4CF1AE86D465AE928C5A44 /* ThumbnailLoadingTests.swift in Sources */,
 				903AA9F3CCDCA22CEE3C5502 /* UpdateCheckTests.swift in Sources */,
 				2F32BACBD22DF83C086079D6 /* WidgetSnapshotTests.swift in Sources */,
@@ -1454,6 +1467,7 @@
 				1022D45CC633B39F10A120C8 /* StartScene.swift in Sources */,
 				FCEE317A7C230C41A6485A20 /* SyncRecords.swift in Sources */,
 				FBC024F294753C132ABCD31B /* SystemFieldsCache.swift in Sources */,
+				BD1D86546001A3F32085451A /* Telemetry.swift in Sources */,
 				839143816019CFB52E8335B2 /* Tokens.swift in Sources */,
 				AE9B0B31B29DD8778ED65B97 /* UpdateCheck.swift in Sources */,
 				66137DD1C4BEED7292A6259B /* WeatherLookup.swift in Sources */,
@@ -1901,6 +1915,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7E56438A19057D7F7D038C18 /* XCRemoteSwiftPackageReference "SwiftSDK" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/TelemetryDeck/SwiftSDK";
+			requirement = {
+				kind = exactVersion;
+				version = 2.14.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5F6E4F5425144E7C928814DD /* TelemetryDeck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7E56438A19057D7F7D038C18 /* XCRemoteSwiftPackageReference "SwiftSDK" */;
+			productName = TelemetryDeck;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E0F153A180DAA09D96CBD96F /* Project object */;
 }
