@@ -17,6 +17,7 @@
 | [`CodeStudy/iOS`](CodeStudy/iOS) | 코드 학습 iOS 앱 (CodeStudy) | active (1.2.1 출시) |
 | [`Seoul-Youth-Rent-Checker`](Seoul-Youth-Rent-Checker) | 서울 청년월세지원 자격 체커 v0.1 | active |
 | [`Norae-Galpi`](Norae-Galpi) | 노래갈피 — 노래에 얽힌 기억 아카이브 | active (시드 단계) |
+| [`Mongdol-Desk`](Mongdol-Desk) | 몽돌 건의 페이지 + 관리 페이지 (Vercel `mongdol-desk`) | active |
 | [`Mongdol-ENFP-Web`](Mongdol-ENFP-Web) | 몽돌 ENFP 감성 웹판(정적, WebGL 조약돌) | active |
 | `UGGK` | 초기 단계; 디렉토리 미생성, 명시적 구현 요청이 없으면 docs/spec-first | spec-first |
 | [`docs`](docs) | 계획, 설계 노트, 프로세스 문서 | active |
@@ -127,6 +128,7 @@
 | [`CodeStudy/iOS`](CodeStudy/iOS) | Xcode build (서비스 README 참고) |
 | [`Seoul-Youth-Rent-Checker`](Seoul-Youth-Rent-Checker) | `cd Seoul-Youth-Rent-Checker && npm run verify` |
 | [`Norae-Galpi`](Norae-Galpi) | `cd Norae-Galpi && npm run verify` |
+| [`Mongdol-Desk`](Mongdol-Desk) | `cd Mongdol-Desk && npm run verify` |
 | [`Mongdol-ENFP-Web`](Mongdol-ENFP-Web) | 정적 서버로 열어 확인(`cd Mongdol-ENFP-Web && python3 -m http.server`) — 자동 검증 명령 없음 |
 | `UGGK` | 표준 검증 명령 없음 (디렉토리 미생성) |
 | docs/planning 파일만 변경 | [`docs/process/DOC_LINT.md`](docs/process/DOC_LINT.md) 수동 체크리스트 수행 |
