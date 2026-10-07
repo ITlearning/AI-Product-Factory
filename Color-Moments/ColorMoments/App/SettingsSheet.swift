@@ -306,7 +306,8 @@ enum SuggestionForm {
         guard let address, var parts = URLComponents(string: address.trimmingCharacters(in: .whitespaces)),
               parts.scheme == "https", parts.host != nil else { return nil }
         if let version {
-            parts.queryItems = [URLQueryItem(name: "v", value: version.short),
+            parts.queryItems = [URLQueryItem(name: "app", value: "1"),
+                                URLQueryItem(name: "v", value: version.short),
                                 URLQueryItem(name: "b", value: version.build),
                                 URLQueryItem(name: "d", value: device)]
         }
@@ -320,14 +321,16 @@ enum SuggestionForm {
     }
 }
 
-/// 건의 페이지 — Safari 창은 주소창을 늘 보여 줘서 앱 안 웹 화면으로 띄운다.
+/// 건의 페이지 — Safari 창은 주소창을 늘 보여 줘서 앱 안 웹 화면으로 띄운다. 페이지는 app=1 이면 자기 머리를 숨긴다.
 struct SuggestionSheet: View {
     let url: URL
     @Environment(\.dismiss) private var dismiss
+    @State private var progress: Double = 0
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
+                Text("건의하기").font(Face.lineCeremony).foregroundStyle(Tone.primary)
                 Spacer()
                 Button { dismiss() } label: {
                     Text("닫기")
@@ -340,8 +343,18 @@ struct SuggestionSheet: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 16)
-            SuggestionWebView(url: url)
+            .padding(.top, 20)
+            .padding(.bottom, 12)
+            ZStack(alignment: .leading) {
+                Rectangle().fill(.white.opacity(0.08))
+                Rectangle().fill(.white.opacity(0.6))
+                    .scaleEffect(x: progress, anchor: .leading)
+                    .opacity(progress < 1 ? 1 : 0)
+            }
+            .frame(height: 1)
+            .animation(.easeOut(duration: 0.25), value: progress)
+            SuggestionWebView(url: url, progress: $progress)
+                .ignoresSafeArea(edges: .bottom)
         }
         .background(Tone.base.ignoresSafeArea())
         .presentationBackground(Tone.base)
@@ -351,8 +364,9 @@ struct SuggestionSheet: View {
 
 struct SuggestionWebView: UIViewRepresentable {
     let url: URL
+    @Binding var progress: Double
 
-    func makeCoordinator() -> Coordinator { Coordinator(home: url) }
+    func makeCoordinator() -> Coordinator { Coordinator(home: url, progress: $progress) }
 
     func makeUIView(context: Context) -> WKWebView {
         let web = WKWebView()
@@ -360,6 +374,7 @@ struct SuggestionWebView: UIViewRepresentable {
         web.backgroundColor = .clear
         web.scrollView.backgroundColor = .clear
         web.navigationDelegate = context.coordinator
+        context.coordinator.watch(web)
         web.load(URLRequest(url: url))
         return web
     }
@@ -368,7 +383,20 @@ struct SuggestionWebView: UIViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         let home: URL
-        init(home: URL) { self.home = home }
+        let progress: Binding<Double>
+        private var observation: NSKeyValueObservation?
+
+        init(home: URL, progress: Binding<Double>) {
+            self.home = home
+            self.progress = progress
+        }
+
+        func watch(_ web: WKWebView) {
+            observation = web.observe(\.estimatedProgress, options: [.new]) { [weak self] web, _ in
+                let value = web.estimatedProgress
+                DispatchQueue.main.async { self?.progress.wrappedValue = value }
+            }
+        }
 
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
                      decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
