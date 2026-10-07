@@ -17,9 +17,10 @@ enum OnboardingGate {
         return didAskArrivalNotice ? .none : .arrivalAskOnly
     }
 
-    /// 카메라 컨트롤로 열렸을 때 카메라를 지금 열지 — 첫 실행 안내 밑에서 열면 안내를 마친 사람이 홈 대신 카메라에 떨어진다.
-    static func opensRequestedCamera(_ presentation: Presentation) -> Bool {
-        presentation == .none || presentation == .arrivalAskOnly
+    /// 쓸어서 카메라를 열 수 있는지 — 안내가 깔려 있으면 그 쓸기는 안내 몫이다.
+    /// 카메라 컨트롤 요청은 이와 상관없이 언제나 연다(카메라가 안내 위에 뜬다) — 안 열면 시스템이 앱을 죽인다.
+    static func swipeOpensCamera(_ presentation: Presentation) -> Bool {
+        presentation == .none || presentation == .undecided
     }
 
     /// 기존 사용자 한 장은 알림 권한을 읽기 전엔 띄우지 않고, 이미 결정된 기기면 아예 건너뛴다.

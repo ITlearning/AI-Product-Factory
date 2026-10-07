@@ -51,14 +51,11 @@ final class OnboardingRulesTests: XCTestCase {
 
     // MARK: 카메라 컨트롤로 열렸을 때
 
-    func testRequestedCameraOpensOnHomeAndUnderArrivalAsk() {
-        XCTAssertTrue(OnboardingGate.opensRequestedCamera(.none))
-        XCTAssertTrue(OnboardingGate.opensRequestedCamera(.arrivalAskOnly), "한 장을 답하고 나면 카메라가 그대로 있다")
-    }
-
-    func testRequestedCameraWaitsForLoadAndFullOnboarding() {
-        XCTAssertFalse(OnboardingGate.opensRequestedCamera(.undecided), "로드 전엔 온보딩이 뜰지 모른다")
-        XCTAssertFalse(OnboardingGate.opensRequestedCamera(.full))
+    func testSwipeOpensCameraOnlyWithoutGuideLayer() {
+        XCTAssertTrue(OnboardingGate.swipeOpensCamera(.none))
+        XCTAssertTrue(OnboardingGate.swipeOpensCamera(.undecided), "로드 전엔 아무것도 덮고 있지 않다")
+        XCTAssertFalse(OnboardingGate.swipeOpensCamera(.full), "온보딩의 옆으로 넘기기와 겹친다")
+        XCTAssertFalse(OnboardingGate.swipeOpensCamera(.arrivalAskOnly))
     }
 
     // MARK: 단계

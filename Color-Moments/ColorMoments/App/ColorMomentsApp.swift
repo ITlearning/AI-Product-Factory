@@ -115,6 +115,13 @@ struct ColorMomentsApp: App {
 @Observable
 final class CameraRequest {
     var pending = false
+
+    /// 한 번만 연다 — 온보딩 단계와 상관없이(카메라가 안내 위에 뜬다).
+    func take() -> Bool {
+        guard pending else { return false }
+        pending = false
+        return true
+    }
 }
 
 /// 카메라 요청이 오면 떠 있는 시트·커버(겹친 것까지)를 한 번에 내린다 — 바인딩과 onDismiss 는 SwiftUI 가 따라 맞춘다.

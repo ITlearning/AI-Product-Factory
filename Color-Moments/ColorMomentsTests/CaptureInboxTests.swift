@@ -162,6 +162,9 @@ final class CaptureIntentTests: XCTestCase {
         _ = try await ColorCaptureIntent().perform()
 
         XCTAssertTrue(request.pending)
+        XCTAssertTrue(request.take())
+        XCTAssertFalse(request.pending)
+        XCTAssertFalse(request.take(), "한 번 연 요청으로 카메라를 다시 열지 않는다")
     }
 }
 

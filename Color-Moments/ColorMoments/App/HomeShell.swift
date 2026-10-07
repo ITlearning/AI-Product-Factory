@@ -112,6 +112,12 @@ struct HomeShell: View {
                     .offset(x: progress * w)
                     .disabled(abs(progress) > 0.01)
 
+                // 카메라보다 아래 — 온보딩 중 카메라 컨트롤로 열면 카메라가 안내 위에 뜨고, 닫으면 안내 그 자리로 돌아온다.
+                onboardingLayer
+                    .animation(reduceMotion ? nil : Self.onboardingFade, value: onboarding)
+                    .offset(x: progress * w)
+                    .disabled(abs(progress) > 0.01)
+
                 cameraSide
                     .offset(x: -w + progress * w)
 
@@ -146,9 +152,8 @@ struct HomeShell: View {
         .onChange(of: store.dayKeys) { _, keys in
             if onboardingGiftDay != nil { onboardingGiftDay = OnboardingGift.retained(onboardingGiftDay, dayKeys: keys) }
         }
-        .onChange(of: cameraRequest.pending && OnboardingGate.opensRequestedCamera(onboarding), initial: true) { _, opens in
-            guard opens else { return }
-            cameraRequest.pending = false
+        .onChange(of: cameraRequest.pending, initial: true) { _, _ in
+            guard cameraRequest.take() else { return }
             // 시트 뒤에서 열면 카메라가 안 보인다 — 증정은 받은 걸로 치지 않고 카메라를 닫은 뒤 다시 뜬다.
             pickerDismissedForCamera = pickingLibrary || libraryCoverUp || pickingToday != nil
             PresentedScreens.dismissAll()
@@ -193,7 +198,6 @@ struct HomeShell: View {
             if showsFrameMeter { FrameMeterBadge().allowsHitTesting(true).padding(.bottom, 4) }
         }
         #endif
-        .overlay { onboardingLayer.animation(reduceMotion ? nil : Self.onboardingFade, value: onboarding) }
         .onChange(of: store.isLoaded, initial: true) { _, loaded in
             if liveOnboarding == .full { onboardingLatched = true }
             if loaded {
@@ -339,7 +343,8 @@ struct HomeShell: View {
                 guard axis == .horizontal else { return }
                 if !dragging {
                     // 모은 조약돌 쪽(열기·닫기)과 홈 안쪽 왼쪽 쓸기(사진 더미)는 이 제스처 몫이 아니다.
-                    guard !collectionDragging, progress > -0.5, progress > 0.5 || dx > 0 else { axis = .vertical; return }
+                    guard !collectionDragging, progress > -0.5,
+                          progress > 0.5 || (dx > 0 && OnboardingGate.swipeOpensCamera(onboarding)) else { axis = .vertical; return }
                     dragSide = .camera
                     dragStart = progress
                     dragging = true
