@@ -55,3 +55,14 @@ test('/feedback?app=1 — 그리기 전에 html.in-app, 머리 숨김·번짐 �
   assert.match(css, /\.done-pebble \{[^}]*aspect-ratio: 1; object-fit: contain;[^}]*mask-image: radial-gradient/, '돌은 1:1 + 둥근 마스크');
   assert.match(css, /\.in-app \.page \{[^}]*padding-bottom: calc\(var\(--safe-b\) \+ 4\d+px\)/);
 });
+
+test('/get — 앱과 같은 PostHog(EU)로 조회·App Store 버튼만, 저장소·녹화·프로필 없이', () => {
+  const html = read('get.html');
+  assert.match(html, /<meta name="robots" content="noindex, nofollow">/);
+  assert.match(html, /posthog\.init\('phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK'/, '앱 Telemetry.swift 와 같은 키');
+  assert.match(html, /api_host: 'https:\/\/eu\.i\.posthog\.com'/, '처리방침대로 EU');
+  for (const opt of [/persistence: 'memory'/, /person_profiles: 'never'/, /disable_session_recording: true/, /autocapture: false/, /enable_heatmaps: false/]) assert.match(html, opt);
+  assert.match(html, /posthog\.register\(\{ \$geoip_disable: true \}\)/, '처리방침 2항처럼 GeoIP 끔');
+  assert.match(html, /id="get-appstore" href="https:\/\/apps\.apple\.com\//);
+  assert.match(html, /posthog\.capture\('get_appstore_click', \{\}, \{ transport: 'sendBeacon' \}\)/, '페이지를 떠나도 보내지게');
+});
