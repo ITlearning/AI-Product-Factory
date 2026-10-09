@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#06070A">
+<meta name="color-scheme" content="dark">
+<meta name="format-detection" content="telephone=no">
+<title>몽돌 · 사진에 우리말 한 단어</title>
+<meta name="description" content="찍기만 하면 그 순간에 맞는 우리말이 하나 붙는 iPhone 앱, 몽돌.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='16' cy='17' rx='12' ry='11' fill='%23F4A58A'/%3E%3Cellipse cx='13' cy='13' rx='5' ry='3.5' fill='%23fff' opacity='.5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Myeongjo:wght@800&family=IBM+Plex+Sans+KR:wght@600&display=swap">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main class="page">
+  <header class="doc-head">
+    <p class="wordmark">몽돌</p>
+    <h1 class="doc-title">찍기만 하면, 그 순간에 맞는 말이 하나 붙어요</h1>
+  </header>
+  <article class="doc">
+    <img class="get-shot" src="/img/get-phone.jpg" alt="몽돌 화면 — 윤슬 사진에 「윤슬」 한 단어가 붙은 모습" width="428" height="880">
+    <p class="doc-lede">표준국어대사전의 우리말 1,600여 개 가운데 그날의 빛과 날씨, 사진 속 주인공을 보고 골라요. 하루가 닫히면 그날 사진의 색으로 빚은 조약돌이 도착해요.</p>
+    <a class="primary-btn" id="get-appstore" href="https://apps.apple.com/kr/app/id6817888379">App Store에서 받기</a>
+    <p class="support-note">iPhone 앱이에요. 사진은 기기 밖으로 나가지 않아요.<br>뜻풀이 · 국립국어원 표준국어대사전</p>
+  </article>
+  <footer class="doc-foot"><a href="/privacy">개인정보 처리방침</a></footer>
+</main>
+<!-- 광고로 들어온 조회·App Store 버튼 누름만 센다. 앱과 같은 PostHog 프로젝트(EU). 쿠키·저장소 없이(memory), 녹화 없이, 사람 프로필 없이, 앱처럼 GeoIP 끔. -->
+<script>
+!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+posthog.init('phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK', {
+  api_host: 'https://eu.i.posthog.com',
+  persistence: 'memory',
+  person_profiles: 'never',
+  disable_session_recording: true,
+  disable_surveys: true,
+  autocapture: false,
+  enable_heatmaps: false,
+  capture_pageleave: false,
+});
+posthog.register({ $geoip_disable: true });
+document.getElementById('get-appstore').addEventListener('click', function () {
+  posthog.capture('get_appstore_click', {}, { transport: 'sendBeacon' });
+});
+</script>
+</body>
+</html>

@@ -211,3 +211,4 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .doc a.primary-btn { margin-top: 26px; color: var(--base); text-decoration: none; }
 .doc .support-note { margin-top: 10px; font-size: 13px; line-height: 1.6; color: var(--tertiary); text-align: center; }
 .doc h3 + p { margin-top: 6px; color: var(--secondary); }
+.doc img.get-shot { display: block; width: min(60%, 230px); height: auto; margin: 28px auto 0; border-radius: 34px; }
