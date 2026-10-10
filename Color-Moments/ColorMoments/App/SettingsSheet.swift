@@ -124,7 +124,7 @@ struct SettingsSheet: View {
             Toggle(isOn: $sendsTelemetry) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("사용 기록 보내기").font(Face.line).foregroundStyle(Tone.primary)
-                    Text("어디서 멈추는지 익명으로 보내요. 사진·단어·색·위치는 보내지 않아요.")
+                    Text("어디서 멈추는지 익명으로 보내요. 사진·색·위치는 보내지 않아요.")
                         .font(Face.caption).foregroundStyle(Tone.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
