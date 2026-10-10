@@ -15,4 +15,31 @@ final class EntryPathTests: XCTestCase {
         let e = EntryPath(); e.mark(.widget); e.mark(.control)
         XCTAssertEqual(e.resolve(), .control)
     }
+
+    func testClearIfIdleDropsStaleMarks() {
+        let e = EntryPath(); e.mark(.notice)
+        e.clearIfIdle()
+        XCTAssertEqual(e.resolve(), .icon, "대기 중 전송이 없으면 늦게 온 표시를 버린다")
+    }
+
+    func testClearIfIdleKeepsMarksWhilePending() async {
+        let e = EntryPath()
+        let sent = expectation(description: "sent")
+        var got: Telemetry.Path?
+        e.sendAfterGrace(grace: .milliseconds(50)) { got = $0; sent.fulfill() }
+        e.mark(.widget)
+        e.clearIfIdle()
+        await fulfillment(of: [sent], timeout: 2)
+        XCTAssertEqual(got, .widget, "대기 중이면 그 전송이 resolve 한다 — 지우지 않는다")
+    }
+
+    func testSecondScheduleWhilePendingSendsOnce() async {
+        let e = EntryPath()
+        let sent = expectation(description: "sent"); sent.expectedFulfillmentCount = 1
+        sent.assertForOverFulfill = true
+        e.sendAfterGrace(grace: .milliseconds(50)) { _ in sent.fulfill() }
+        e.sendAfterGrace(grace: .milliseconds(50)) { _ in sent.fulfill() }
+        await fulfillment(of: [sent], timeout: 2)
+        try? await Task.sleep(for: .milliseconds(150))
+    }
 }

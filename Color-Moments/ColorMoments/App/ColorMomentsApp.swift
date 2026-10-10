@@ -105,6 +105,7 @@ struct ColorMomentsApp: App {
                 }
             case .background:
                 // 저장은 백그라운드 큐에 밀려 있을 수 있다 — 멈추기 전에 끝낸다.
+                EntryPath.shared.clearIfIdle()
                 store.flush()
                 sync?.flush()
                 Task {
