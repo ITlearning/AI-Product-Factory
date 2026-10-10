@@ -6,6 +6,14 @@ final class PebbleStopsLogTests: XCTestCase {
     private let a = [DayGradient.Stop(location: 0.3, hex: "#E9B07D"), DayGradient.Stop(location: 0.7, hex: "#4C6C81")]
     private let b = [DayGradient.Stop(location: 0.5, hex: "#111111")]
 
+    func testStampOnGiftUsesPaletteRuleEvenForGiftedDay() {
+        let l = log()
+        var m = Moment(capturedAt: Date(timeIntervalSince1970: 1_791_000_000), colorHex: "#E9B07D", fileName: "a.jpg", source: .app)
+        m.palette = ["#E9B07D:70", "#4C6C81:30"]
+        l.stampOnGift(m.dayKey, moments: [m])
+        XCTAssertEqual(l.stops(on: m.dayKey)?.map(\.hex), ["#E9B07D", "#4C6C81"], "1.1.2 가 직접 증정한 날 — 증정 장면에 뜬 새 규칙 그대로 굳힌다")
+    }
+
     func testFirstStampStays() {
         let l = log(); l.stamp("2026-10-10", a); l.stamp("2026-10-10", b)
         XCTAssertEqual(l.stops(on: "2026-10-10"), a, "처음 찍은 도장 그대로")

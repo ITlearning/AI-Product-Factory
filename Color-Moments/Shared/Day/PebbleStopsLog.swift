@@ -28,6 +28,10 @@ public final class PebbleStopsLog {
         onLocalChange(dayKey)
     }
 
+    public func stampOnGift(_ dayKey: String, moments: [Moment]) {
+        stamp(dayKey, DayGradient.paletteStops(for: moments))
+    }
+
     /// 두 기기가 다르게 찍었으면 인코딩 문자열이 앞선 쪽으로 모인다. 바뀌었으면 true.
     @discardableResult
     public func applyRemote(dayKey: String, stops: [DayGradient.Stop]) -> Bool {

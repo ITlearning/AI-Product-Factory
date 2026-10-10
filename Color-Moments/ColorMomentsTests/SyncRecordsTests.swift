@@ -100,6 +100,22 @@ final class SyncRecordsTests: XCTestCase {
         XCTAssertNil(r["labelsEmpty"], "같은 레코드를 다시 채울 때 옛 표식이 남으면 안 된다")
     }
 
+    func testDayCarriesPebbleStops() {
+        let stops = [DayGradient.Stop(location: 0.3, hex: "#E9B07D"), DayGradient.Stop(location: 0.7, hex: "#4C6C81")]
+        let d = SyncRecords.DayState(dayKey: "2026-10-10", closedAt: nil, gifted: true, pebbleStops: stops)
+        let r = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: d.dayKey))
+        SyncRecords.fill(r, with: d)
+        XCTAssertEqual(SyncRecords.day(from: r)?.pebbleStops, stops)
+    }
+
+    func testDayWithoutStopsFromOldVersion() {
+        let old = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: "2026-10-09"))
+        old["gifted"] = 1
+        XCTAssertNil(SyncRecords.day(from: old)?.pebbleStops, "1.1.x 가 올린 받은 날 — 도장 없음(1.1 규칙으로 그린다)")
+        old["pebbleStopLocations"] = [0.5, 0.9]; old["pebbleStopHexes"] = ["#111111"]
+        XCTAssertNil(SyncRecords.day(from: old)?.pebbleStops, "두 배열 길이가 다르면 버린다")
+    }
+
     func testDayRoundTripAndRefs() {
         let d = SyncRecords.DayState(dayKey: "2026-09-22", closedAt: Date(timeIntervalSince1970: 1_790_000_000), gifted: true)
         let r = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: d.dayKey))

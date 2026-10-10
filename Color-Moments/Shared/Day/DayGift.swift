@@ -59,6 +59,7 @@ struct DayGiftPresenter: ViewModifier {
                                          set: { shown in
                                              guard !shown else { return }
                                              PebbleNaming.stamp(day.id, moments: store.pebbleMoments(on: day.id))
+                                             DayGradient.stamps.stampOnGift(day.id, moments: store.pebbleMoments(on: day.id))
                                              gifts.markGifted(day.id)
                                              pending = nil
                                          }))
