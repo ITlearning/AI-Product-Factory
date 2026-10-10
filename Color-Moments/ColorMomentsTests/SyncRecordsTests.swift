@@ -21,6 +21,21 @@ final class SyncRecordsTests: XCTestCase {
         XCTAssertEqual(back.fileName, Moment.receivedFileName(cloudID: "CLOUD/1", id: m.id))
     }
 
+    func testMomentCarriesPalette() {
+        let m = Moment(capturedAt: Date(timeIntervalSince1970: 1_790_000_000), colorHex: "#E9B07D", fileName: "x.jpg",
+                       source: .app, palette: ["#E9B07D:76", "#4C6C81:24"])
+        let r = CKRecord(recordType: "Moment", recordID: SyncRecords.recordID(moment: m.id))
+        SyncRecords.fill(r, with: m)
+        XCTAssertEqual(SyncRecords.moment(from: r)?.palette, ["#E9B07D:76", "#4C6C81:24"])
+    }
+
+    func testFillWithoutPaletteSendsNoKey() {
+        let m = Moment(capturedAt: Date(), colorHex: "#112233", fileName: "y.jpg", source: .library)
+        let r = CKRecord(recordType: "Moment", recordID: SyncRecords.recordID(moment: m.id))
+        SyncRecords.fill(r, with: m)
+        XCTAssertNil(r["palette"], "팔레트 없는 기록은 키를 비운다")
+    }
+
     func testMomentWithoutOptionalsRoundTrips() {
         let m = Moment(capturedAt: Date(timeIntervalSince1970: 1_790_000_000), colorHex: "#000000",
                        fileName: "shot-1.jpg", source: .app)

@@ -43,6 +43,7 @@ enum SyncRecords {
         r["addedAt"] = m.addedAt
         r["batchID"] = m.batchID?.uuidString
         r["cloudID"] = m.cloudID
+        r["palette"] = m.palette
     }
 
     static func moment(from r: CKRecord) -> Moment? {
@@ -71,7 +72,8 @@ enum SyncRecords {
                       fileName: Moment.receivedFileName(cloudID: cloudID, id: id), source: source,
                       word: word, labels: labels, place: place,
                       addedAt: r["addedAt"] as? Date,
-                      batchID: (r["batchID"] as? String).flatMap(UUID.init(uuidString:)), cloudID: cloudID)
+                      batchID: (r["batchID"] as? String).flatMap(UUID.init(uuidString:)), cloudID: cloudID,
+                      palette: r["palette"] as? [String])
     }
 
     /// 받은 레코드를 메인 밖에서 미리 풀어 둔 것 — 메인에서는 사전 넣기와 applyRemote 만 한다.

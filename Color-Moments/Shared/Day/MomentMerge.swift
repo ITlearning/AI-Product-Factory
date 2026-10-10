@@ -16,7 +16,8 @@ public enum MomentMerge {
                       labels: useRemoteWord ? remote.labels : (local.labels ?? remote.labels),
                       assetID: local.assetID, place: Place.merged(remote.place, local.place),
                       addedAt: remote.addedAt ?? local.addedAt, batchID: remote.batchID ?? local.batchID,
-                      originalName: local.originalName, cloudID: remote.cloudID ?? local.cloudID)
+                      originalName: local.originalName, cloudID: remote.cloudID ?? local.cloudID,
+                      palette: remote.palette ?? local.palette)
     }
 
     /// 같은 사진이 두 기록일 때 a 를 남기나. id 만 본다 — capturedAt 은 저장·CloudKit 정밀도가 기기마다 달라 서로 이긴다고 판정할 수 있다.
@@ -34,13 +35,14 @@ public enum MomentMerge {
                       word: wordSide.word, labels: wordSide.labels ?? winner.labels ?? loser.labels,
                       assetID: device.assetID, place: Place.merged(winner.place, loser.place),
                       addedAt: winner.addedAt ?? loser.addedAt, batchID: winner.batchID ?? loser.batchID,
-                      originalName: device.originalName, cloudID: winner.cloudID ?? loser.cloudID)
+                      originalName: device.originalName, cloudID: winner.cloudID ?? loser.cloudID,
+                      palette: winner.palette ?? loser.palette)
     }
 
     public static func syncedEqual(_ a: Moment, _ b: Moment) -> Bool {
         a.id == b.id && sameInstant(a.capturedAt, b.capturedAt) && a.colorHex == b.colorHex && a.source == b.source
             && a.word == b.word && a.labels == b.labels && a.place == b.place && sameInstant(a.addedAt, b.addedAt)
-            && a.batchID == b.batchID && a.cloudID == b.cloudID
+            && a.batchID == b.batchID && a.cloudID == b.cloudID && a.palette == b.palette
     }
 
     // 반올림 비교는 days.json(밀리초 절삭)과 CloudKit 값이 경계에서 1ms 갈려 끝없이 다시 올린다 — 차이로 본다.
