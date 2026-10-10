@@ -14,11 +14,28 @@ enum Telemetry {
     static let firstPhotoKey = "telemetryFirstPhoto"
     static let firstPebbleKey = "telemetryFirstPebble"
 
-    enum Source: String, CaseIterable { case app, locked, library }
+    enum Source: String, CaseIterable { case app, locked, library, today }
     enum Answer: String, CaseIterable { case allowed, limited, denied, declined }
     enum Exit: String, CaseIterable { case home, camera, day }
     enum Place: String, CaseIterable { case onboarding, home }
     enum CameraPath: String, CaseIterable { case swipe, button, control }
+    enum Lag: String, CaseIterable { case same, next, later }
+    enum Photos: String, CaseIterable {
+        case one = "1", two = "2", threePlus = "3plus"
+        init(count: Int) { self = count <= 1 ? .one : count == 2 ? .two : .threePlus }
+    }
+    enum Stay: String, CaseIterable {
+        case short, mid, long
+        init(seconds: TimeInterval) { self = seconds < 5 ? .short : seconds <= 30 ? .mid : .long }
+    }
+    enum Path: String, CaseIterable { case icon, notice, control, widget }
+
+    static func lag(dayKey: String, now: Date) -> Lag {
+        let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
+        guard let a = f.date(from: dayKey), let b = f.date(from: Moment.dayKey(for: now)) else { return .later }
+        let d = Calendar(identifier: .gregorian).dateComponents([.day], from: a, to: b).day ?? 2
+        return d <= 0 ? .same : d == 1 ? .next : .later
+    }
 
     enum Event: Equatable {
         case onboardingStep(OnboardingStep)
@@ -30,7 +47,13 @@ enum Telemetry {
         case photoAdded(Source, count: Int)
         case firstPebble(Place)
         case cameraOpened(CameraPath)
-        case wordRejected
+        case wordRejected(String)
+        case pebbleReceived(Place, lag: Lag, photos: Photos)
+        case pebbleOpened
+        case cameraClosed(count: Int, stay: Stay)
+        case appEntered(Path)
+        case todayShown
+        case wordShown(String)
 
         var name: String {
             switch self {
@@ -44,6 +67,12 @@ enum Telemetry {
             case .firstPebble: "First.pebble"
             case .cameraOpened: "Camera.opened"
             case .wordRejected: "Word.rejected"
+            case .pebbleReceived: "Pebble.received"
+            case .pebbleOpened: "Pebble.opened"
+            case .cameraClosed: "Camera.closed"
+            case .appEntered: "App.entered"
+            case .todayShown: "Today.shown"
+            case .wordShown: "Word.shown"
             }
         }
 
@@ -55,13 +84,19 @@ enum Telemetry {
             case .firstPhoto(let s), .photoAdded(let s, _): ["source": s.rawValue]
             case .firstPebble(let p): ["where": p.rawValue]
             case .cameraOpened(let p): ["path": p.rawValue]
-            case .wordRejected: [:]
+            case .wordRejected(let id), .wordShown(let id): ["word": id]
+            case .pebbleReceived(let p, let l, let n): ["where": p.rawValue, "lag": l.rawValue, "photos": n.rawValue]
+            case .cameraClosed(_, let s): ["stay": s.rawValue]
+            case .appEntered(let p): ["path": p.rawValue]
+            case .pebbleOpened, .todayShown: [:]
             }
         }
 
         var count: Int? {
-            if case .photoAdded(_, let count) = self { return count }
-            return nil
+            switch self {
+            case .photoAdded(_, let c), .cameraClosed(let c, _): c
+            default: nil
+            }
         }
 
         var properties: [String: Any] {
