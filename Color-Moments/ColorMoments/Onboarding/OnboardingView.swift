@@ -98,6 +98,8 @@ struct OnboardingView: View {
                                                set: { shown in
                                                    guard !shown else { return }
                                                    PebbleNaming.stamp(day.id, moments: store.pebbleMoments(on: day.id))
+                                                   DayGradient.stamps.stampGift(day: day.id, dayKeys: store.dayKeys, wasGifted: gifts.isGifted,
+                                                                                    moments: { store.pebbleMoments(on: $0) })
                                                    gifts.markGifted(day.id)
                                                    ceremonyDay = nil
                                                }))

@@ -28,6 +28,27 @@ public final class PebbleStopsLog {
         onLocalChange(dayKey)
     }
 
+    public func stampOnGift(_ dayKey: String, moments: [Moment]) {
+        stamp(dayKey, DayGradient.paletteStops(for: moments))
+    }
+
+    /// 건너뛴 날 — 바닥선 때문에 D 이하가 전부 받은 날이 되니, 증정 직전까지 안 받은 앞선 날을 새 규칙 그림으로 먼저 굳힌다.
+    public func stampSkipped(before dayKey: String, dayKeys: [String], wasGifted: (String) -> Bool,
+                             moments: (String) -> [Moment]) {
+        for key in dayKeys where key < dayKey && all[key] == nil && !wasGifted(key) {
+            let ms = moments(key)
+            if !ms.isEmpty { stamp(key, DayGradient.paletteStops(for: ms)) }
+        }
+    }
+
+    /// 증정 장면이 닫힐 때(markGifted 전에) — 이미 받은 날이면 다른 기기에서 1.1 규칙으로 보이던 색을 건드리지 않는다.
+    public func stampGift(day dayKey: String, dayKeys: [String], wasGifted: (String) -> Bool,
+                          moments: (String) -> [Moment]) {
+        guard !wasGifted(dayKey) else { return }
+        stampSkipped(before: dayKey, dayKeys: dayKeys, wasGifted: wasGifted, moments: moments)
+        stampOnGift(dayKey, moments: moments(dayKey))
+    }
+
     /// 두 기기가 다르게 찍었으면 인코딩 문자열이 앞선 쪽으로 모인다. 바뀌었으면 true.
     @discardableResult
     public func applyRemote(dayKey: String, stops: [DayGradient.Stop]) -> Bool {
@@ -38,7 +59,7 @@ public final class PebbleStopsLog {
     }
 
     /// 디스크에 저장되는 모양(소수 3자리)으로 맞춰 메모리와 재실행 뒤 값이 같게 한다.
-    private static func normalized(_ stops: [DayGradient.Stop]) -> [DayGradient.Stop] {
+    public static func normalized(_ stops: [DayGradient.Stop]) -> [DayGradient.Stop] {
         decode(encode(stops)) ?? stops
     }
 

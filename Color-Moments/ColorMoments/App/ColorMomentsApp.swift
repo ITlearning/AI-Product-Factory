@@ -36,6 +36,8 @@ struct ColorMomentsApp: App {
         _store = State(initialValue: store)
         let gifts = GiftLog()
         _gifts = State(initialValue: gifts)
+        // 첫 렌더 전에 꽂는다 — 늦으면 받은 날이 잠깐 규칙 B 로 그려진다. 앱 타깃만(위젯은 기본값).
+        DayGradient.isGifted = { gifts.isGifted($0) }
         _catchUp = State(initialValue: CatchUp(steps: [
             .init(budget: .seconds(20)) {
                 let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
