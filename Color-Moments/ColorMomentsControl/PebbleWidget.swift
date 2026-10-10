@@ -50,6 +50,7 @@ struct PebbleWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .widgetURL(URL(string: "mongdol://widget"))
         .containerBackground(Tone.base, for: .widget)
     }
 

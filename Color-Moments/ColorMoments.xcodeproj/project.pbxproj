@@ -91,6 +91,7 @@
 		33F453AFE9E4B766D55AC703 /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
 		341D43357966166F08E749AD /* ColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */; };
 		34991A672B219A9EF99F78D8 /* DayStoreLoadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A186DF75D61CD87751F694 /* DayStoreLoadTests.swift */; };
+		34F2F944035AF6CF853AC3FB /* EntryPathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D0B00B278D914DFDA0DC32 /* EntryPathTests.swift */; };
 		37BEA1D1B07AEF6FF452A7E3 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7537CCE985C86CC09C1787 /* Haptics.swift */; };
 		37C59604D09AD4404338DFD5 /* WordEncoder.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = E8A5A3F6C7C71DEB7306029B /* WordEncoder.mlpackage */; };
 		38CA87D9341976C98CBA90ED /* ColorExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */; };
@@ -293,6 +294,7 @@
 		D002F3C374A894D45ED1C188 /* LunarDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36AAB9304A6FFD7612422D3 /* LunarDays.swift */; };
 		D0232AF91965F3F9595ABB68 /* HomeNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1782AA90AE018A879A1B0885 /* HomeNavigation.swift */; };
 		D151122EFFD53DFECF743789 /* gowun-mini-chars.txt in Resources */ = {isa = PBXBuildFile; fileRef = FC37FA4015A2627C80032174 /* gowun-mini-chars.txt */; };
+		D3BCF30E9A219E2A644D1D34 /* EntryPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B1A42D87650CEA89FAC29BD /* EntryPath.swift */; };
 		D3F9C0F6433997EF580B87CC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8747F82BBC5889D32A11161B /* SwiftUI.framework */; };
 		D5C93675F60081912DCFFA3D /* LunarDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36AAB9304A6FFD7612422D3 /* LunarDays.swift */; };
 		D5E1E5C4EBF105326E1862DF /* Arrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */; };
@@ -463,6 +465,7 @@
 		452858DEF9018E249641A3F3 /* lunar-days.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "lunar-days.json"; sourceTree = "<group>"; };
 		453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncRecordsTests.swift; sourceTree = "<group>"; };
 		464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedPlaceNote.swift; sourceTree = "<group>"; };
+		4B1A42D87650CEA89FAC29BD /* EntryPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryPath.swift; sourceTree = "<group>"; };
 		4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStoreRecoveryTests.swift; sourceTree = "<group>"; };
 		4CAE45231E1CFDF89BECAFD8 /* CloudEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudEnvironment.swift; sourceTree = "<group>"; };
 		503FB3A2F6076A7563C32074 /* ColorMomentsControl.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ColorMomentsControl.entitlements; sourceTree = "<group>"; };
@@ -577,6 +580,7 @@
 		D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummary.swift; sourceTree = "<group>"; };
 		D562234B79316343C1D670F5 /* ImageRequestBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRequestBridgeTests.swift; sourceTree = "<group>"; };
 		D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentMerge.swift; sourceTree = "<group>"; };
+		D6D0B00B278D914DFDA0DC32 /* EntryPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryPathTests.swift; sourceTree = "<group>"; };
 		D7284FE09B31C6D29E4790FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D9C7A51085814AAD190D567A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayStore.swift; sourceTree = "<group>"; };
@@ -744,6 +748,7 @@
 				4BC811A4A2C9A120233EADF3 /* DayStoreRecoveryTests.swift */,
 				9D560E148CF707BADEB351E9 /* DayStoreTests.swift */,
 				F6F0FA76C7F73C30E1F30962 /* DayTimelineTests.swift */,
+				D6D0B00B278D914DFDA0DC32 /* EntryPathTests.swift */,
 				219FB2ED514DBE95A9AFAB53 /* Fixtures */,
 				08FA4218B93874BE76730863 /* FontSubsetTests.swift */,
 				FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */,
@@ -954,6 +959,7 @@
 				93F205E2DDC888B76CB362D3 /* CatchUp.swift */,
 				CAF34CDBFF121BBAE3831F91 /* CollectionSwipe.swift */,
 				41AA3BF8CB64DB2AABCEECE3 /* ColorMomentsApp.swift */,
+				4B1A42D87650CEA89FAC29BD /* EntryPath.swift */,
 				F0539FB03BB33151F171D2BD /* HomeShell.swift */,
 				953A1415A221B2ED1198C5E8 /* HomeView.swift */,
 				E46082B433DCE04145412FFA /* HomeWidget.swift */,
@@ -1334,6 +1340,7 @@
 				F7D0586574B35D5D31A02C46 /* DayStoreRecoveryTests.swift in Sources */,
 				1996A6A10339037B3A5CCC8F /* DayStoreTests.swift in Sources */,
 				97BEEB530BE9186A6F1A872A /* DayTimelineTests.swift in Sources */,
+				34F2F944035AF6CF853AC3FB /* EntryPathTests.swift in Sources */,
 				2D2DCAAA1704F58B8D38A822 /* FontSubsetTests.swift in Sources */,
 				5C46EE00CA3DADB1F2965E39 /* GiftScheduleTests.swift in Sources */,
 				17862587A29EF312EF46CBD3 /* HomeNavigationTests.swift in Sources */,
@@ -1415,6 +1422,7 @@
 				7B6207CFDF0718F8241F4FB7 /* DayPhotoView.swift in Sources */,
 				A8FD510AB6600E0ABEC48A32 /* DayStore.swift in Sources */,
 				7DF8236D94540E4E4AC11388 /* DayTimeline.swift in Sources */,
+				D3BCF30E9A219E2A644D1D34 /* EntryPath.swift in Sources */,
 				322E6AB5DFDE530AF01F6D0C /* FirstPebbleModel.swift in Sources */,
 				C38AD4FB6BDCBDA2B54AE2A9 /* FramePause.swift in Sources */,
 				46AD1F7A020AA01BF62EEBEC /* GiftSchedule.swift in Sources */,
