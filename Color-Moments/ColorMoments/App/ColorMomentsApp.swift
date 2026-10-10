@@ -28,7 +28,7 @@ struct ColorMomentsApp: App {
         // 인텐트는 첫 화면보다 먼저 올 수 있다 — 홈이 뜨면 이 표시를 보고 카메라를 연다.
         let cameraRequest = CameraRequest()
         _cameraRequest = State(initialValue: cameraRequest)
-        ColorCaptureIntent.opensApp = { cameraRequest.pending = true }
+        ColorCaptureIntent.opensApp = { cameraRequest.pending = true; Task { @MainActor in EntryPath.shared.mark(.control) } }
         // store 가 같은 closures 인스턴스를 봐야 「마무리하기」가 그 자리에서 반영된다.
         let closures = DayClosures()
         _closures = State(initialValue: closures)
@@ -55,6 +55,9 @@ struct ColorMomentsApp: App {
         WindowGroup {
             HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures, cameraRequest: cameraRequest,
                       prepare: { [catchUp] in await catchUp.run() })
+                .onOpenURL { url in
+                    if url.scheme == "mongdol", url.host == "widget" { EntryPath.shared.mark(.widget) }
+                }
                 .task {
                     Task(priority: .userInitiated) { await SoftPebbleView.precompile() }
                     await store.waitUntilLoaded()
@@ -92,6 +95,7 @@ struct ColorMomentsApp: App {
             case .active:
                 // 설정 앱에서 사진 권한을 켜고 돌아온 경우.
                 reconcilerObserver?.activateIfAllowed()
+                EntryPath.shared.sendAfterGrace()
                 Task {
                     await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()
