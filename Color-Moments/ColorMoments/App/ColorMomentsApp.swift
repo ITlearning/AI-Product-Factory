@@ -12,6 +12,7 @@ struct ColorMomentsApp: App {
     @State private var sync: CloudSync?
     @State private var catchUp: CatchUp
     @State private var cameraRequest: CameraRequest
+    @State private var entryGate = ForegroundEntryGate()
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
@@ -97,7 +98,7 @@ struct ColorMomentsApp: App {
             case .active:
                 // 설정 앱에서 사진 권한을 켜고 돌아온 경우.
                 reconcilerObserver?.activateIfAllowed()
-                EntryPath.shared.sendAfterGrace()
+                if entryGate.didBecomeActive() { EntryPath.shared.sendAfterGrace() }
                 Task {
                     await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()
@@ -106,6 +107,7 @@ struct ColorMomentsApp: App {
                     await catchUp.run()
                 }
             case .background:
+                entryGate.didEnterBackground()
                 // 저장은 백그라운드 큐에 밀려 있을 수 있다 — 멈추기 전에 끝낸다.
                 EntryPath.shared.clearIfIdle()
                 store.flush()

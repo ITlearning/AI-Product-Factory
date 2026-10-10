@@ -68,7 +68,7 @@ python3 -m fontTools.subset /tmp/gd.ttf --text-file=Shared/Design/Fonts/gowun-ks
 python3 - <<'PY'   # 확장 소스의 한글만
 import re, pathlib
 files = ["Shared/Capture/CaptureScreen.swift", "Shared/Capture/ShotViewer.swift", "Shared/Capture/CaptureEngine.swift",
-         "ColorMomentsControl/PebbleWidget.swift", "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift"]
+         "ColorMomentsControl/PebbleWidget.swift", "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift", "Shared/Capture/ZoomLadder.swift"]
 chars = set()
 for f in files: chars |= set(re.findall(r'[가-힣]', pathlib.Path(f).read_text()))
 pathlib.Path("Shared/Design/Fonts/gowun-mini-chars.txt").write_text("".join(sorted(chars)))

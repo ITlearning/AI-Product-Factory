@@ -28,7 +28,11 @@ public final class PebbleStopsLog {
         onLocalChange(dayKey)
     }
 
+    /// 팔레트 없는 날(1.1.1 시절)은 도장 없이도 늘 같은 1.1 규칙이다 — 덜 동기화된 기기가 찍어 퍼뜨리면 받은 색이 바뀐다.
+    private static func hasPalette(_ moments: [Moment]) -> Bool { moments.contains { !$0.paletteColors.isEmpty } }
+
     public func stampOnGift(_ dayKey: String, moments: [Moment]) {
+        guard Self.hasPalette(moments) else { return }
         stamp(dayKey, DayGradient.paletteStops(for: moments))
     }
 
@@ -37,7 +41,7 @@ public final class PebbleStopsLog {
                              moments: (String) -> [Moment]) {
         for key in dayKeys where key < dayKey && all[key] == nil && !wasGifted(key) {
             let ms = moments(key)
-            if !ms.isEmpty { stamp(key, DayGradient.paletteStops(for: ms)) }
+            if Self.hasPalette(ms) { stamp(key, DayGradient.paletteStops(for: ms)) }
         }
     }
 

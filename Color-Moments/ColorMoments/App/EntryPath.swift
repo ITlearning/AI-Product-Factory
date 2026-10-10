@@ -30,3 +30,10 @@ final class EntryPath {
         if scheduled == nil { marks.removeAll() }
     }
 }
+
+/// App.entered 는 콜드 스타트와 백그라운드에서 돌아올 때만 센다 — 권한 창·제어 센터 엿보기(inactive→active)는 세지 않는다.
+struct ForegroundEntryGate {
+    private var cameFromBackground = true
+    mutating func didBecomeActive() -> Bool { defer { cameFromBackground = false }; return cameFromBackground }
+    mutating func didEnterBackground() { cameFromBackground = true }
+}

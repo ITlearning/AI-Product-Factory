@@ -33,7 +33,15 @@ final class SyncRecordsTests: XCTestCase {
         let m = Moment(capturedAt: Date(), colorHex: "#112233", fileName: "y.jpg", source: .library)
         let r = CKRecord(recordType: "Moment", recordID: SyncRecords.recordID(moment: m.id))
         SyncRecords.fill(r, with: m)
-        XCTAssertNil(r["palette"], "팔레트 없는 기록은 키를 비운다")
+        XCTAssertFalse(r.changedKeys().contains("palette"), "nil 대입으로 서버 값을 지우지 않는다")
+    }
+
+    func testFillDayWithoutStopsSendsNoKey() {
+        let d = SyncRecords.DayState(dayKey: "2026-10-10", closedAt: nil, gifted: true)
+        let r = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: d.dayKey))
+        SyncRecords.fill(r, with: d)
+        XCTAssertFalse(r.changedKeys().contains("pebbleStopLocations"))
+        XCTAssertFalse(r.changedKeys().contains("pebbleStopHexes"))
     }
 
     func testMomentWithoutOptionalsRoundTrips() {
