@@ -53,6 +53,16 @@ final class PebbleStopsLogTests: XCTestCase {
         XCTAssertNotNil(l.stops(on: m.dayKey))
     }
 
+    func testDaysWithoutPaletteAreNeverStamped() {
+        let l = log(); let m = moment(0, palette: nil)
+        l.stampOnGift(m.dayKey, moments: [m])
+        XCTAssertNil(l.stops(on: m.dayKey))
+        l.stampSkipped(before: "2999-01-01", dayKeys: [m.dayKey], wasGifted: { _ in false }, moments: { _ in [m] })
+        XCTAssertNil(l.stops(on: m.dayKey))
+        l.stampGift(day: m.dayKey, dayKeys: [m.dayKey], wasGifted: { _ in false }, moments: { _ in [m] })
+        XCTAssertNil(l.stops(on: m.dayKey), "팔레트 없는 날은 1.1 규칙으로 늘 같다")
+    }
+
     func testFirstStampStays() {
         let l = log(); l.stamp("2026-10-10", a); l.stamp("2026-10-10", b)
         XCTAssertEqual(l.stops(on: "2026-10-10"), a, "처음 찍은 도장 그대로")

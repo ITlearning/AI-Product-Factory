@@ -42,4 +42,13 @@ final class EntryPathTests: XCTestCase {
         await fulfillment(of: [sent], timeout: 2)
         try? await Task.sleep(for: .milliseconds(150))
     }
+
+    func testGateCountsColdStartAndReturnFromBackgroundOnly() {
+        var g = ForegroundEntryGate()
+        XCTAssertTrue(g.didBecomeActive(), "콜드 스타트")
+        XCTAssertFalse(g.didBecomeActive(), "권한 창·제어 센터 엿보기")
+        g.didEnterBackground()
+        XCTAssertTrue(g.didBecomeActive(), "백그라운드에서 돌아옴")
+        XCTAssertFalse(g.didBecomeActive())
+    }
 }
