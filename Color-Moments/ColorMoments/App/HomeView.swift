@@ -481,6 +481,7 @@ struct HomeView: View {
             .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.07)))
             .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .onTapGesture { onRequestTodayPicker(todayPending) }
+            .onAppear { if Telemetry.shouldSendTodayShown(todayKey: todayKey) { Telemetry.send(.todayShown) } }
             .padding(.bottom, 20)
             .transition(.move(edge: .top).combined(with: .opacity))
         }

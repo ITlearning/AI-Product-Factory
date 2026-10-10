@@ -13,13 +13,17 @@ struct PebbleProvider: TimelineProvider {
 
     func getSnapshot(in context: Context, completion: @escaping (PebbleEntry) -> Void) {
         let now = Date()
-        let entry = WidgetSnapshot.read().entries(now: now).first
+        let snapshot = WidgetSnapshot.read()
+        snapshot.applyStopsToDayGradient()
+        let entry = snapshot.entries(now: now).first
         completion(PebbleEntry(date: now, state: entry?.state ?? .empty))
     }
 
     // 앱이 증정·담김·전환 때마다 reload 하므로 스스로 다시 묻지 않는다.
     func getTimeline(in context: Context, completion: @escaping (Timeline<PebbleEntry>) -> Void) {
-        let entries = WidgetSnapshot.read().entries(now: Date()).map { PebbleEntry(date: $0.date, state: $0.state) }
+        let snapshot = WidgetSnapshot.read()
+        snapshot.applyStopsToDayGradient()
+        let entries = snapshot.entries(now: Date()).map { PebbleEntry(date: $0.date, state: $0.state) }
         completion(Timeline(entries: entries, policy: .never))
     }
 }
@@ -50,6 +54,7 @@ struct PebbleWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .widgetURL(URL(string: "mongdol://widget"))
         .containerBackground(Tone.base, for: .widget)
     }
 

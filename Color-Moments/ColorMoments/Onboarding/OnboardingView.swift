@@ -98,6 +98,8 @@ struct OnboardingView: View {
                                                set: { shown in
                                                    guard !shown else { return }
                                                    PebbleNaming.stamp(day.id, moments: store.pebbleMoments(on: day.id))
+                                                   DayGradient.stamps.stampGift(day: day.id, dayKeys: store.dayKeys, wasGifted: gifts.isGifted,
+                                                                                    moments: { store.pebbleMoments(on: $0) })
                                                    gifts.markGifted(day.id)
                                                    ceremonyDay = nil
                                                }))
@@ -332,7 +334,11 @@ struct OnboardingView: View {
     }
 
     private func ceremonyFinished() {
-        Telemetry.pebbleReceived(.onboarding)
+        if let day = receivedDay ?? onboardingGiftDay, gifts.isGifted(day) {
+            Telemetry.pebbleReceived(.onboarding)
+            Telemetry.send(.pebbleReceived(.onboarding, lag: Telemetry.lag(dayKey: day, now: Date()),
+                                           photos: Telemetry.Photos(count: store.pebbleMoments(on: day).count)))
+        }
         if let day = onboardingGiftDay, gifts.isGifted(day) {
             onboardingGiftDay = nil
             Task { await ArrivalNotice.clear(dayKey: day) }

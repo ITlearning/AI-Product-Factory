@@ -12,6 +12,7 @@ enum SyncRecords {
         let closedAt: Date?
         let gifted: Bool
         var pebbleName: PebbleName? = nil
+        var pebbleStops: [DayGradient.Stop]? = nil
     }
 
     static func recordID(moment id: UUID) -> CKRecord.ID { CKRecord.ID(recordName: "m-" + id.uuidString, zoneID: zoneID) }
@@ -43,6 +44,8 @@ enum SyncRecords {
         r["addedAt"] = m.addedAt
         r["batchID"] = m.batchID?.uuidString
         r["cloudID"] = m.cloudID
+        // nil 대입은 changedKeys 에 들어가 서버 값을 지운다 — 한 번 생긴 값은 지워지지 않으니 있을 때만 쓴다.
+        if let palette = m.palette { r["palette"] = palette }
     }
 
     static func moment(from r: CKRecord) -> Moment? {
@@ -71,7 +74,8 @@ enum SyncRecords {
                       fileName: Moment.receivedFileName(cloudID: cloudID, id: id), source: source,
                       word: word, labels: labels, place: place,
                       addedAt: r["addedAt"] as? Date,
-                      batchID: (r["batchID"] as? String).flatMap(UUID.init(uuidString:)), cloudID: cloudID)
+                      batchID: (r["batchID"] as? String).flatMap(UUID.init(uuidString:)), cloudID: cloudID,
+                      palette: r["palette"] as? [String])
     }
 
     /// 받은 레코드를 메인 밖에서 미리 풀어 둔 것 — 메인에서는 사전 넣기와 applyRemote 만 한다.
@@ -97,11 +101,21 @@ enum SyncRecords {
         r["gifted"] = d.gifted ? 1 : 0
         r["pebbleName"] = d.pebbleName?.name
         r["pebbleLine"] = d.pebbleName?.line
+        if let stops = d.pebbleStops {
+            r["pebbleStopLocations"] = stops.map(\.location)
+            r["pebbleStopHexes"] = stops.map(\.hex)
+        }
     }
 
     static func day(from r: CKRecord) -> DayState? {
         guard case .day(let key) = ref(r.recordID) else { return nil }
         let pebble = (r["pebbleName"] as? String).map { PebbleName(name: $0, line: r["pebbleLine"] as? String ?? "") }
-        return DayState(dayKey: key, closedAt: r["closedAt"] as? Date, gifted: (r["gifted"] as? Int ?? 0) != 0, pebbleName: pebble)
+        let stops: [DayGradient.Stop]? = {
+            guard let locs = r["pebbleStopLocations"] as? [Double], let hexes = r["pebbleStopHexes"] as? [String],
+                  locs.count == hexes.count, !locs.isEmpty else { return nil }
+            return zip(locs, hexes).map { DayGradient.Stop(location: $0, hex: $1) }
+        }()
+        return DayState(dayKey: key, closedAt: r["closedAt"] as? Date, gifted: (r["gifted"] as? Int ?? 0) != 0, pebbleName: pebble,
+                        pebbleStops: stops)
     }
 }

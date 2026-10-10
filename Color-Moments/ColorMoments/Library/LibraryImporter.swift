@@ -45,6 +45,7 @@ final class LibraryImporter {
 
     /// 이번에 실제로 넣은 기록의 하루(dayKey)들 — iCloud 로 그 사이 들어온 원격 기록은 섞이지 않는다.
     func importAssets(_ assets: [PHAsset], into store: DayStore,
+                      source: Telemetry.Source = .library,
                       onProgress: ((Progress) -> Void)? = nil) async -> Set<String> {
         let batch = UUID()
         var progress = Progress(done: 0, total: assets.count)
@@ -70,27 +71,29 @@ final class LibraryImporter {
             guard !store.containsAsset(id), !buffer.contains(where: { $0.assetID == id }) else { continue }
             guard let data = await Self.imageData(for: asset) else { continue }
             // 색 추출은 CPU 무거운 일이라 메인 액터 밖(백그라운드 스레드)에서 돌린다. 원본은 파일로 쓰지 않는다 — assetID 로 바로 Moment.
-            guard let hex = await Task.detached(priority: .userInitiated, operation: {
-                Self.process(data: data)
+            guard let colors = await Task.detached(priority: .userInitiated, operation: {
+                Self.colors(data: data)
             }).value else { continue }
             let place = asset.location.map {
                 Place(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude, accuracy: $0.horizontalAccuracy)
             }
-            buffer.append(Moment(capturedAt: asset.creationDate ?? Date(), colorHex: hex,
+            buffer.append(Moment(capturedAt: asset.creationDate ?? Date(), colorHex: colors.hex,
                                  fileName: Moment.assetFileName(for: id),
-                                 source: .library, assetID: id, place: place, addedAt: Date(), batchID: batch))
+                                 source: .library, assetID: id, place: place, addedAt: Date(), batchID: batch, palette: colors.palette))
             if buffer.count >= Self.addChunk { await flush() }
         }
         if !buffer.isEmpty { await flush() }
-        Telemetry.photosAdded(.library, count: addedCount, total: store.moments.count)
+        Telemetry.photosAdded(source, count: addedCount, total: store.moments.count)
         await CloudIDMapper.assignMissing(store: store)
         return dayKeys
     }
 
-    nonisolated private static func process(data: Data) -> String? {
+    nonisolated static func colors(data: Data) -> (hex: String, palette: [String])? {
         autoreleasepool {
             guard let ci = CIImage(data: data) else { return nil }
-            return ColorExtractor.symbolicColor(for: ci).hex
+            let palette = ColorExtractor.palette(for: ci)
+            guard let head = palette.first else { return nil }
+            return (head.hex, palette.map(\.encoded))
         }
     }
 

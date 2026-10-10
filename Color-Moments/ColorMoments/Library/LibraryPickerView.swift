@@ -9,6 +9,7 @@ struct LibraryPickerView: View {
     var range: Range<Date>? = nil
     /// 있으면 이 사진들만 — 홈의 「카메라 앱으로 찍은 사진」(카메라로 직접 찍은 것만 골라 둔 목록).
     var only: [String]? = nil
+    var telemetrySource: Telemetry.Source = .library
     let onDone: (Set<String>) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -334,7 +335,7 @@ struct LibraryPickerView: View {
                 .enumerateObjects { asset, _, _ in picked.append(asset) }
             return picked.sorted { ($0.creationDate ?? .distantPast) > ($1.creationDate ?? .distantPast) }
         }.value
-        let importedDayKeys = await LibraryImporter().importAssets(toImport, into: store) { importProgress = $0 }
+        let importedDayKeys = await LibraryImporter().importAssets(toImport, into: store, source: telemetrySource) { importProgress = $0 }
         isImporting = false
         importProgress = nil
         onDone(importedDayKeys)

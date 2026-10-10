@@ -101,4 +101,72 @@ public enum ColorExtractor {
         }
         return picked
     }
+
+    public static func palette(for image: CIImage) -> [PaletteColor] {
+        let kept = afterDarkCut(sample(image))
+        guard !kept.isEmpty else { return [PaletteColor(hex: RGB(r: 0.5, g: 0.5, b: 0.5).hex, share: 100)] }
+        return palette(kept)
+    }
+
+    // histogramColors(count:) 는 고른 색의 이웃 빈을 다시 후보로 받아 같은 색을 여러 번 고른다 — 축마다 2칸 안은 건너뛴다.
+    static func palette(_ px: [RGB], count: Int = 4) -> [PaletteColor] {
+        let L = levels, R = neighborRadius
+        func bin(_ p: RGB) -> (Int, Int, Int) {
+            (min(L - 1, Int(p.r * Double(L))), min(L - 1, Int(p.g * Double(L))), min(L - 1, Int(p.b * Double(L))))
+        }
+        let bins = px.map(bin)
+        let ks = px.map { 0.35 + $0.saturation }
+        var w = [Double](repeating: 0, count: L * L * L)
+        for (i, b) in bins.enumerated() { w[(b.0 * L + b.1) * L + b.2] += ks[i] }
+        let total = ks.reduce(0, +)
+        var scored: [(idx: Int, score: Double)] = []
+        for r in 0..<L { for g in 0..<L { for b in 0..<L {
+            var s = 0.0
+            for dr in -R...R { for dg in -R...R { for db in -R...R {
+                let rr = r + dr, gg = g + dg, bb = b + db
+                if rr < 0 || gg < 0 || bb < 0 || rr >= L || gg >= L || bb >= L { continue }
+                s += w[(rr * L + gg) * L + bb]
+            }}}
+            if s > 0 { scored.append((idx: (r * L + g) * L + b, score: s)) }
+        }}}
+        scored.sort { $0.score != $1.score ? $0.score > $1.score : $0.idx < $1.idx }
+
+        var picked: [(rgb: RGB, weight: Double)] = []
+        var used = Set<Int>(), centers: [(Int, Int, Int)] = []
+        for cand in scored {
+            guard picked.count < count else { break }
+            if used.contains(cand.idx) { continue }
+            let c = (cand.idx / (L * L), (cand.idx / L) % L, cand.idx % L)
+            if centers.contains(where: { abs($0.0 - c.0) <= 2 && abs($0.1 - c.1) <= 2 && abs($0.2 - c.2) <= 2 }) { continue }
+            var n = 0.0, sr = 0.0, sg = 0.0, sb = 0.0
+            for (i, b) in bins.enumerated() {
+                guard abs(b.0 - c.0) <= R, abs(b.1 - c.1) <= R, abs(b.2 - c.2) <= R else { continue }
+                let p = px[i], k = ks[i]
+                sr += p.r * k; sg += p.g * k; sb += p.b * k; n += k
+                used.insert((b.0 * L + b.1) * L + b.2)
+            }
+            guard n > 0 else { continue }
+            centers.append(c)
+            picked.append((RGB(r: sr / n, g: sg / n, b: sb / n), n / total))
+        }
+
+        var merged: [(rgb: RGB, weight: Double)] = []
+        for p in picked {
+            if let i = merged.firstIndex(where: { distance($0.rgb, p.rgb) < 0.10 || channelGap($0.rgb, p.rgb) <= 25.0 / 255 }) { merged[i].weight += p.weight }
+            else { merged.append(p) }
+        }
+        let sum = merged.map(\.weight).reduce(0, +)
+        var shares = merged.map { Int(($0.weight / sum * 100).rounded()) }
+        if !shares.isEmpty { shares[0] += 100 - shares.reduce(0, +) }
+        let colors = zip(merged, shares).map { PaletteColor(hex: $0.rgb.hex, share: $1) }
+        guard let head = colors.first else { return [] }
+        return [head] + colors.dropFirst().sorted { $0.share > $1.share }
+    }
+
+    // 유클리드 거리로는 안 합쳐지는 무채색 근처 두 색(채널 차 24)이 조약돌에서 한 색으로 보인다.
+    static func channelGap(_ a: RGB, _ b: RGB) -> Double { max(abs(a.r - b.r), abs(a.g - b.g), abs(a.b - b.b)) }
+
+    static func distance(_ a: RGB, _ b: RGB) -> Double {
+        ((a.r - b.r) * (a.r - b.r) + (a.g - b.g) * (a.g - b.g) + (a.b - b.b) * (a.b - b.b)).squareRoot()
+    }
 }

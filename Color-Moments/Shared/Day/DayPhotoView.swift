@@ -13,8 +13,10 @@ public enum PhotoEnrichment {
 
     public nonisolated(unsafe) static var weather: ((Moment) async -> PlaceWeather?)?
     public nonisolated(unsafe) static var attribution: (() async -> Attribution?)?
-    /// ↻ 를 썼을 때 — 사용 기록은 앱 타깃만 알아서 앱이 꽂는다. 단어는 넘기지 않는다.
-    public nonisolated(unsafe) static var wordRejected: (() -> Void)?
+    /// ↻ 를 썼을 때 버려진 단어의 id — 사용 기록은 앱 타깃만 알아서 앱이 꽂는다.
+    public nonisolated(unsafe) static var wordRejected: ((String) -> Void)?
+    /// 사진에 단어가 처음 붙었을 때 그 id.
+    public nonisolated(unsafe) static var wordShown: ((String) -> Void)?
 
     /// WeatherCondition.rawValue → 짧은 우리말. 모르는 값이면 보이지 않는다.
     public static func label(_ condition: String) -> String? { look(condition)?.label }
@@ -356,7 +358,8 @@ struct DayPhotoView: View {
         // 틀린 단어를 바꿀 때도 ↻ 로 버린 단어는 빼야 한다.
         guard !Task.isCancelled, current?.standingWord() == nil,
               let pick = await pickWord(for: m, labels: labels, banned: rejections.rejected(m.id)), !Task.isCancelled else { return }
-        store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: stale)
+        let word = PhotoWord(pick.word)
+        if store.stampWord(m.id, word, labels: labels, replacing: stale), stale == nil { PhotoEnrichment.wordShown?(word.wordID) }
     }
 
     private func pickWord(for m: Moment, labels: [String], banned: Set<String> = [], skip: WordEntry? = nil) async -> (word: WordEntry, pool: [WordEntry])? {
@@ -408,7 +411,7 @@ struct DayPhotoView: View {
                                 weather: current?.place?.weather?.condition,
                                 appVersion: "\(info?["CFBundleShortVersionString"] ?? "?")(\(info?["CFBundleVersion"] ?? "?"))",
                                 at: Date()))
-        PhotoEnrichment.wordRejected?()
+        PhotoEnrichment.wordRejected?(old.wordID)
         Haptics.tickPassed()
     }
 }

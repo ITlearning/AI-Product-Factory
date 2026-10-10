@@ -38,7 +38,7 @@ final class TelemetryTests: XCTestCase {
 
     func testSendDoesNothingWhileTesting() {
         Telemetry.apply()
-        Telemetry.send(.wordRejected)
+        Telemetry.send(.wordRejected("yunseul"))
         XCTAssertTrue(PostHogSDK.shared.isOptOut())
     }
 
@@ -62,7 +62,10 @@ final class TelemetryTests: XCTestCase {
         for s in Telemetry.Source.allCases { events += [.firstPhoto(s), .photoAdded(s, count: 3)] }
         events += Telemetry.Place.allCases.map { .firstPebble($0) }
         events += Telemetry.CameraPath.allCases.map { .cameraOpened($0) }
-        events.append(.wordRejected)
+        events += [.pebbleReceived(.home, lag: .next, photos: .one), .pebbleReceived(.onboarding, lag: .same, photos: .threePlus),
+                   .pebbleOpened, .cameraClosed(count: 0, stay: .short), .cameraClosed(count: 3, stay: .long),
+                   .appEntered(.icon), .appEntered(.notice), .appEntered(.control), .appEntered(.widget),
+                   .todayShown, .wordShown("yunseul"), .wordRejected("yunseul"), .photoAdded(.today, count: 2)]
         return events
     }
 
@@ -74,11 +77,18 @@ final class TelemetryTests: XCTestCase {
             "answer": Set(Telemetry.Answer.allCases.map(\.rawValue)),
             "source": Set(Telemetry.Source.allCases.map(\.rawValue)),
             "where": Set(Telemetry.Place.allCases.map(\.rawValue)),
-            "path": Set(Telemetry.CameraPath.allCases.map(\.rawValue)),
+            "path": Set(Telemetry.CameraPath.allCases.map(\.rawValue) + Telemetry.Path.allCases.map(\.rawValue)),
+            "lag": Set(Telemetry.Lag.allCases.map(\.rawValue)),
+            "photos": Set(Telemetry.Photos.allCases.map(\.rawValue)),
+            "stay": Set(Telemetry.Stay.allCases.map(\.rawValue)),
         ]
         for event in Self.allEvents {
-            XCTAssertLessThanOrEqual(event.parameters.count, 1, event.name)
+            XCTAssertLessThanOrEqual(event.parameters.count, 3, event.name)
             for (key, value) in event.parameters {
+                if key == "word" {
+                    XCTAssertTrue(BundledWordSource.cached.contains { $0.id == value }, "단어는 정해진 목록의 id 만")
+                    continue
+                }
                 XCTAssertTrue(allowed[key]?.contains(value) ?? false, "\(event.name) \(key)=\(value)")
             }
         }
@@ -93,7 +103,7 @@ final class TelemetryTests: XCTestCase {
     /// 「묶음.동작」 한 가지 꼴 — PostHog 의 `$` 이벤트나 앱 수명주기 이벤트(「Application Opened」)와 겹치지 않는다.
     func testEventNamesAreFixedAndConsistent() {
         let names = Set(Self.allEvents.map(\.name))
-        XCTAssertEqual(names.count, 10)
+        XCTAssertEqual(names.count, 16)
         for name in names {
             let parts = name.split(separator: ".")
             XCTAssertEqual(parts.count, 2, name)
@@ -103,16 +113,37 @@ final class TelemetryTests: XCTestCase {
         }
     }
 
-    func testOnlyPhotoAddedCarriesWholeCount() {
+    func testOnlyCountedEventsCarryWholeCount() {
         let added = Telemetry.Event.photoAdded(.library, count: 12).properties
         XCTAssertEqual(added["count"] as? Int, 12)
         XCTAssertEqual(added["source"] as? String, "library")
         XCTAssertEqual(added.count, 2)
         XCTAssertNil(Telemetry.Event.firstPhoto(.app).count)
         XCTAssertNil(Telemetry.Event.cameraOpened(.swipe).properties["count"])
+        XCTAssertEqual(Telemetry.Event.cameraClosed(count: 4, stay: .mid).properties["count"] as? Int, 4)
+        for event in Self.allEvents {
+            switch event {
+            case .photoAdded, .cameraClosed: XCTAssertNotNil(event.count, event.name)
+            default: XCTAssertNil(event.count, event.name)
+            }
+        }
         for event in Self.allEvents where event.count == nil {
             XCTAssertEqual(event.properties.count, event.parameters.count, event.name)
         }
+    }
+
+    func testLagCountsLocalDays() {
+        let cal = Calendar.current
+        let noon = cal.date(bySettingHour: 12, minute: 0, second: 0, of: Date(timeIntervalSince1970: 1_791_000_000))!
+        let key = Moment.dayKey(for: noon)
+        XCTAssertEqual(Telemetry.lag(dayKey: key, now: noon), .same)
+        XCTAssertEqual(Telemetry.lag(dayKey: key, now: noon.addingTimeInterval(86_400)), .next)
+        XCTAssertEqual(Telemetry.lag(dayKey: key, now: noon.addingTimeInterval(3 * 86_400)), .later)
+    }
+
+    func testBucketsAreFixed() {
+        XCTAssertEqual(Telemetry.Photos(count: 1), .one); XCTAssertEqual(Telemetry.Photos(count: 2), .two); XCTAssertEqual(Telemetry.Photos(count: 9), .threePlus)
+        XCTAssertEqual(Telemetry.Stay(seconds: 4.9), .short); XCTAssertEqual(Telemetry.Stay(seconds: 5), .mid); XCTAssertEqual(Telemetry.Stay(seconds: 30.1), .long)
     }
 
     func testExitDropsDayKey() {
@@ -150,5 +181,12 @@ final class TelemetryTests: XCTestCase {
         XCTAssertEqual(Telemetry.Answer(.limited), .limited)
         XCTAssertEqual(Telemetry.Answer(.denied), .denied)
         XCTAssertEqual(Telemetry.Answer(.restricted), .denied)
+    }
+
+    func testTodayShownOncePerDay() {
+        let d = UserDefaults(suiteName: "today-\(UUID())")!
+        XCTAssertTrue(Telemetry.shouldSendTodayShown(todayKey: "2026-10-10", defaults: d))
+        XCTAssertFalse(Telemetry.shouldSendTodayShown(todayKey: "2026-10-10", defaults: d), "같은 날 두 번 보내지 않는다")
+        XCTAssertTrue(Telemetry.shouldSendTodayShown(todayKey: "2026-10-11", defaults: d))
     }
 }

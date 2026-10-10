@@ -146,6 +146,35 @@ final class WidgetSnapshotTests: XCTestCase {
         }
     }
 
+    func testSnapshotCarriesFinishedStops() throws {
+        add("2026-09-20T09:00:00", "#AA0000")
+        add("2026-09-20T18:00:00", "#00AA00")
+        gifts.markGifted("2026-09-20")
+        let s = WidgetSnapshot.make(store: store, gifts: gifts)
+        let latest = try XCTUnwrap(s.latest)
+        XCTAssertEqual(latest.stops?.map(\.hex), DayGradient.pebbleStops(for: store.pebbleMoments(on: latest.dayKey)).map(\.hex),
+                       "위젯은 도장·받은 날을 못 읽는다 — 앱이 완성된 정지점을 실어 보낸다")
+    }
+
+    func testOldSnapshotWithoutStopsStillReads() throws {
+        let json = ##"{"arrivals":[],"latest":{"dayKey":"2026-10-09","colors":[{"hex":"#111111","location":0}]}}"##
+        let s = try JSONDecoder().decode(WidgetSnapshot.self, from: Data(json.utf8))
+        XCTAssertNil(s.latest?.stops)
+    }
+
+    func testWidgetUsesSnapshotStopsAndForgetsPreviousOnes() {
+        let saved = DayGradient.stamps
+        defer { DayGradient.stamps = saved }
+        func snap(_ hex: String) -> WidgetSnapshot {
+            WidgetSnapshot(latest: .init(dayKey: "2026-09-20", name: nil, colors: [.init(hex: hex, location: 0)],
+                                         stops: [.init(hex: hex, location: 0.5)]), arrivals: [])
+        }
+        snap("#AA0000").applyStopsToDayGradient()
+        XCTAssertEqual(DayGradient.stamps.stops(on: "2026-09-20")?.map(\.hex), ["#AA0000"])
+        snap("#00BB00").applyStopsToDayGradient()
+        XCTAssertEqual(DayGradient.stamps.stops(on: "2026-09-20")?.map(\.hex), ["#00BB00"], "새 스냅샷이 옛 값을 덮어야 한다")
+    }
+
     func testUnreadableFileFallsBackToEmpty() {
         let missing = FileManager.default.temporaryDirectory.appendingPathComponent("none-\(UUID().uuidString).json")
         XCTAssertEqual(WidgetSnapshot.read(from: missing), .empty)

@@ -12,6 +12,87 @@ final class DayGradientTests: XCTestCase {
                       colorHex: hex, fileName: "\(minutesFromNoon).jpg", source: .app)
     }
 
+    private func moment(_ minutesFromNoon: Int, _ hex: String, palette: [String]) -> Moment {
+        var m = moment(minutesFromNoon, hex); m.palette = palette; return m
+    }
+
+    private var savedStamps = DayGradient.stamps
+    private var savedGifted = DayGradient.isGifted
+
+    override func setUp() {
+        super.setUp()
+        savedStamps = DayGradient.stamps
+        savedGifted = DayGradient.isGifted
+        DayGradient.stamps = PebbleStopsLog(defaults: UserDefaults(suiteName: "pebble-stops-\(UUID())")!)
+        DayGradient.isGifted = { _ in false }
+    }
+
+    override func tearDown() {
+        DayGradient.stamps = savedStamps
+        DayGradient.isGifted = savedGifted
+        super.tearDown()
+    }
+
+    private func assertLocations(_ a: [Double], _ b: [Double], accuracy: Double, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(a.count, b.count, file: file, line: line)
+        for (x, y) in zip(a, b) { XCTAssertEqual(x, y, accuracy: accuracy, file: file, line: line) }
+    }
+
+    func testOnePhotoDayGetsMainAndAccents() {
+        let m = moment(0, "#E9B07D", palette: ["#E9B07D:70", "#4C6C81:20", "#CD906E:10"])
+        let stops = DayGradient.pebbleStops(for: [m])
+        XCTAssertEqual(stops.map(\.hex), ["#E9B07D", "#4C6C81", "#CD906E"], "1장 날도 곁들임 색이 들어간다")
+        assertLocations(stops.map(\.location), [0.3, 0.7, 0.9], accuracy: 0.0001)
+    }
+
+    func testAccentsBelowEightPercentAreLeftOut() {
+        let m = moment(0, "#E9B07D", palette: ["#E9B07D:90", "#4C6C81:6", "#CD906E:4"])
+        XCTAssertEqual(DayGradient.pebbleStops(for: [m]).map(\.hex), ["#E9B07D"])
+    }
+
+    func testNoAccentFallsBackToSolid() {
+        let m = moment(0, "#808085", palette: ["#808085:100"])
+        let stops = DayGradient.pebbleStops(for: [m])
+        XCTAssertEqual(stops.count, 1)
+        XCTAssertEqual(stops.first?.location ?? -1, 0.5, accuracy: 0.0001)
+    }
+
+    func testTwoPhotosSplitTheBand() {
+        let a = moment(0, "#AA0000", palette: ["#AA0000:70", "#00AA00:30"])
+        let b = moment(60, "#0000AA", palette: ["#0000AA:100"])
+        let stops = DayGradient.pebbleStops(for: [a, b])
+        XCTAssertEqual(stops.map(\.hex), ["#AA0000", "#00AA00", "#0000AA"])
+        assertLocations(stops.map(\.location), [0.15, 0.4, 0.75], accuracy: 0.0001)
+    }
+
+    func testMixedPaletteAndLegacyMoments() {
+        let old = moment(0, "#111111")
+        let new = moment(60, "#AA0000", palette: ["#AA0000:60", "#00AA00:40"])
+        let stops = DayGradient.pebbleStops(for: [old, new])
+        XCTAssertEqual(stops.map(\.hex), ["#111111", "#AA0000", "#00AA00"], "팔레트 없는 사진은 대표 색 100% 몫")
+    }
+
+    func testDayWithoutAnyPaletteKeepsLegacyRule() {
+        let moments = [moment(0, "#111111"), moment(72, "#222222"), moment(480, "#444444")]
+        XCTAssertEqual(DayGradient.pebbleStops(for: moments), DayGradient.legacyPebbleStops(for: moments),
+                       "팔레트가 하나도 없는 날(옛 사진만)은 지금과 똑같이")
+    }
+
+    func testGiftedDayWithoutStampKeepsLegacyRule() {
+        let m = moment(0, "#E9B07D", palette: ["#E9B07D:70", "#4C6C81:30"])
+        DayGradient.isGifted = { $0 == m.dayKey }
+        XCTAssertEqual(DayGradient.pebbleStops(for: [m]), DayGradient.legacyPebbleStops(for: [m]),
+                       "1.1.x 에서 이미 받은 조약돌 — 업데이트 뒤에도 그림이 바뀌면 안 된다")
+    }
+
+    func testStampWinsOverEverything() {
+        let m = moment(0, "#E9B07D", palette: ["#E9B07D:70", "#4C6C81:30"])
+        let stamped = [DayGradient.Stop(location: 0, hex: "#123456")]
+        DayGradient.stamps.stamp(m.dayKey, stamped)
+        DayGradient.isGifted = { _ in true }
+        XCTAssertEqual(DayGradient.pebbleStops(for: [m]), stamped)
+    }
+
     func testEmptyDayHasNoStops() {
         XCTAssertTrue(DayGradient.stops(for: []).isEmpty)
     }

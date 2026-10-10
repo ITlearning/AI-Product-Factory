@@ -21,6 +21,29 @@ final class SyncRecordsTests: XCTestCase {
         XCTAssertEqual(back.fileName, Moment.receivedFileName(cloudID: "CLOUD/1", id: m.id))
     }
 
+    func testMomentCarriesPalette() {
+        let m = Moment(capturedAt: Date(timeIntervalSince1970: 1_790_000_000), colorHex: "#E9B07D", fileName: "x.jpg",
+                       source: .app, palette: ["#E9B07D:76", "#4C6C81:24"])
+        let r = CKRecord(recordType: "Moment", recordID: SyncRecords.recordID(moment: m.id))
+        SyncRecords.fill(r, with: m)
+        XCTAssertEqual(SyncRecords.moment(from: r)?.palette, ["#E9B07D:76", "#4C6C81:24"])
+    }
+
+    func testFillWithoutPaletteSendsNoKey() {
+        let m = Moment(capturedAt: Date(), colorHex: "#112233", fileName: "y.jpg", source: .library)
+        let r = CKRecord(recordType: "Moment", recordID: SyncRecords.recordID(moment: m.id))
+        SyncRecords.fill(r, with: m)
+        XCTAssertFalse(r.changedKeys().contains("palette"), "nil 대입으로 서버 값을 지우지 않는다")
+    }
+
+    func testFillDayWithoutStopsSendsNoKey() {
+        let d = SyncRecords.DayState(dayKey: "2026-10-10", closedAt: nil, gifted: true)
+        let r = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: d.dayKey))
+        SyncRecords.fill(r, with: d)
+        XCTAssertFalse(r.changedKeys().contains("pebbleStopLocations"))
+        XCTAssertFalse(r.changedKeys().contains("pebbleStopHexes"))
+    }
+
     func testMomentWithoutOptionalsRoundTrips() {
         let m = Moment(capturedAt: Date(timeIntervalSince1970: 1_790_000_000), colorHex: "#000000",
                        fileName: "shot-1.jpg", source: .app)
@@ -83,6 +106,22 @@ final class SyncRecordsTests: XCTestCase {
         SyncRecords.fill(r, with: classified(labels: [], word: yunseul))
         SyncRecords.fill(r, with: classified(labels: ["sky"], word: yunseul))
         XCTAssertNil(r["labelsEmpty"], "같은 레코드를 다시 채울 때 옛 표식이 남으면 안 된다")
+    }
+
+    func testDayCarriesPebbleStops() {
+        let stops = [DayGradient.Stop(location: 0.3, hex: "#E9B07D"), DayGradient.Stop(location: 0.7, hex: "#4C6C81")]
+        let d = SyncRecords.DayState(dayKey: "2026-10-10", closedAt: nil, gifted: true, pebbleStops: stops)
+        let r = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: d.dayKey))
+        SyncRecords.fill(r, with: d)
+        XCTAssertEqual(SyncRecords.day(from: r)?.pebbleStops, stops)
+    }
+
+    func testDayWithoutStopsFromOldVersion() {
+        let old = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: "2026-10-09"))
+        old["gifted"] = 1
+        XCTAssertNil(SyncRecords.day(from: old)?.pebbleStops, "1.1.x 가 올린 받은 날 — 도장 없음(1.1 규칙으로 그린다)")
+        old["pebbleStopLocations"] = [0.5, 0.9]; old["pebbleStopHexes"] = ["#111111"]
+        XCTAssertNil(SyncRecords.day(from: old)?.pebbleStops, "두 배열 길이가 다르면 버린다")
     }
 
     func testDayRoundTripAndRefs() {

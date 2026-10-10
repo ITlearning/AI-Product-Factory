@@ -12,6 +12,7 @@ struct ColorMomentsApp: App {
     @State private var sync: CloudSync?
     @State private var catchUp: CatchUp
     @State private var cameraRequest: CameraRequest
+    @State private var entryGate = ForegroundEntryGate()
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
@@ -23,11 +24,12 @@ struct ColorMomentsApp: App {
         WordModel.install()
         BackgroundHold.install()
         Telemetry.apply()
-        PhotoEnrichment.wordRejected = { Telemetry.send(.wordRejected) }
+        PhotoEnrichment.wordRejected = { Telemetry.send(.wordRejected($0)) }
+        PhotoEnrichment.wordShown = { Telemetry.send(.wordShown($0)) }
         // 인텐트는 첫 화면보다 먼저 올 수 있다 — 홈이 뜨면 이 표시를 보고 카메라를 연다.
         let cameraRequest = CameraRequest()
         _cameraRequest = State(initialValue: cameraRequest)
-        ColorCaptureIntent.opensApp = { cameraRequest.pending = true }
+        ColorCaptureIntent.opensApp = { cameraRequest.pending = true; Task { @MainActor in EntryPath.shared.mark(.control) } }
         // store 가 같은 closures 인스턴스를 봐야 「마무리하기」가 그 자리에서 반영된다.
         let closures = DayClosures()
         _closures = State(initialValue: closures)
@@ -35,6 +37,8 @@ struct ColorMomentsApp: App {
         _store = State(initialValue: store)
         let gifts = GiftLog()
         _gifts = State(initialValue: gifts)
+        // 첫 렌더 전에 꽂는다 — 늦으면 받은 날이 잠깐 규칙 B 로 그려진다. 앱 타깃만(위젯은 기본값).
+        DayGradient.isGifted = { gifts.isGifted($0) }
         _catchUp = State(initialValue: CatchUp(steps: [
             .init(budget: .seconds(20)) {
                 let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
@@ -54,6 +58,9 @@ struct ColorMomentsApp: App {
         WindowGroup {
             HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures, cameraRequest: cameraRequest,
                       prepare: { [catchUp] in await catchUp.run() })
+                .onOpenURL { url in
+                    if url.scheme == "mongdol", url.host == "widget" { EntryPath.shared.mark(.widget) }
+                }
                 .task {
                     Task(priority: .userInitiated) { await SoftPebbleView.precompile() }
                     await store.waitUntilLoaded()
@@ -91,6 +98,7 @@ struct ColorMomentsApp: App {
             case .active:
                 // 설정 앱에서 사진 권한을 켜고 돌아온 경우.
                 reconcilerObserver?.activateIfAllowed()
+                if entryGate.didBecomeActive() { EntryPath.shared.sendAfterGrace() }
                 Task {
                     await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()
@@ -99,7 +107,9 @@ struct ColorMomentsApp: App {
                     await catchUp.run()
                 }
             case .background:
+                entryGate.didEnterBackground()
                 // 저장은 백그라운드 큐에 밀려 있을 수 있다 — 멈추기 전에 끝낸다.
+                EntryPath.shared.clearIfIdle()
                 store.flush()
                 sync?.flush()
                 Task {

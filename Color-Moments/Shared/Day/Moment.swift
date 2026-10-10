@@ -54,6 +54,8 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     public var originalName: String?
     /// CloudKit 레코드 id. 이 기기가 붙였거나(setCloudID) 다른 기기에서 받은 기록에 이미 있다.
     public var cloudID: String?
+    /// PaletteColor.encoded 들, 대표 색이 먼저. 1.1.2 부터 담은 사진만 있다.
+    public var palette: [String]?
 
     public enum Source: String, Codable, Sendable {
 
@@ -67,7 +69,7 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
     public init(id: UUID = UUID(), capturedAt: Date, colorHex: String,
                 fileName: String, source: Source, word: PhotoWord? = nil, labels: [String]? = nil,
                 assetID: String? = nil, place: Place? = nil, addedAt: Date? = nil, batchID: UUID? = nil,
-                originalName: String? = nil, cloudID: String? = nil) {
+                originalName: String? = nil, cloudID: String? = nil, palette: [String]? = nil) {
         self.id = id
         self.capturedAt = capturedAt
         self.colorHex = colorHex
@@ -81,7 +83,10 @@ public struct Moment: Codable, Identifiable, Equatable, Sendable {
         self.batchID = batchID
         self.originalName = originalName
         self.cloudID = cloudID
+        self.palette = palette
     }
+
+    public var paletteColors: [PaletteColor] { (palette ?? []).compactMap(PaletteColor.init(encoded:)) }
 }
 
 public extension Moment {
@@ -122,7 +127,7 @@ public extension Moment {
     func withDeviceFields(fileName: String, assetID: String?, originalName: String?) -> Moment {
         Moment(id: id, capturedAt: capturedAt, colorHex: colorHex, fileName: fileName, source: source,
                word: word, labels: labels, assetID: assetID, place: place, addedAt: addedAt,
-               batchID: batchID, originalName: originalName, cloudID: cloudID)
+               batchID: batchID, originalName: originalName, cloudID: cloudID, palette: palette)
     }
 
     /// 다른 기기에서 받은 기록의 자리 이름 — 파일은 없다. cloudID 가 있으면 사진 기준이라 기기마다 같다.

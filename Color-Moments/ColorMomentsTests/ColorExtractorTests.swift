@@ -67,4 +67,48 @@ final class ColorExtractorTests: XCTestCase {
         XCTAssertEqual(kept.count, 75)
         XCTAssertGreaterThanOrEqual(kept.first!.value, 0.24)
     }
+
+    func testPaletteStartsWithSymbolicColor() throws {
+        for (name, _) in expected {
+            let image = try fixture(name)
+            let palette = ColorExtractor.palette(for: image)
+            XCTAssertEqual(palette.first?.hex, ColorExtractor.symbolicColor(for: image).hex, "\(name): 첫 색이 대표 색이어야 홈·타임라인과 어긋나지 않는다")
+            XCTAssertEqual(palette.map(\.share).reduce(0, +), 100, "\(name): 비중 합 100")
+            XCTAssertLessThanOrEqual(palette.count, 4)
+            let rest = palette.dropFirst().map(\.share)
+            XCTAssertEqual(rest, rest.sorted(by: >), "\(name): 대표 색 뒤로는 비중 순")
+        }
+    }
+
+    func testPaletteColorsAreDistinct() throws {
+        for (name, _) in expected {
+            let p = ColorExtractor.palette(for: try fixture(name))
+            for i in p.indices { for j in p.indices where j > i {
+                XCTAssertGreaterThan(channelDelta(p[i].hex, p[j].hex), 25, "\(name): \(p[i].hex)·\(p[j].hex) — 거의 같은 색을 두 번 고르면 조약돌이 단색이 된다")
+            }}
+        }
+    }
+
+    func testFlatImageGivesSingleColor() {
+        let flat = CIImage(color: CIColor(red: 0.5, green: 0.5, blue: 0.52)).cropped(to: CGRect(x: 0, y: 0, width: 200, height: 200))
+        let p = ColorExtractor.palette(for: flat)
+        XCTAssertEqual(p.count, 1, "한 색뿐인 사진 — 빈 팔레트도, 가짜 곁들임도 없이 한 색")
+        XCTAssertEqual(p.first?.share, 100)
+    }
+
+    func testPaletteColorEncodingRoundTrips() {
+        let c = PaletteColor(hex: "#E9B07D", share: 76)
+        XCTAssertEqual(c.encoded, "#E9B07D:76")
+        XCTAssertEqual(PaletteColor(encoded: c.encoded), c)
+        XCTAssertNil(PaletteColor(encoded: "E9B07D"), "모양이 어긋난 값은 버린다")
+        XCTAssertNil(PaletteColor(encoded: "#E9B07D:x"))
+    }
+
+    func testLibraryImporterKeepsPalette() throws {
+        let name = expected[0].0
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: name, withExtension: "jpg", subdirectory: "Fixtures"))
+        let got = try XCTUnwrap(LibraryImporter.colors(data: try Data(contentsOf: url)))
+        XCTAssertEqual(got.palette.first.flatMap(PaletteColor.init(encoded:))?.hex, got.hex, "사진첩으로 담은 사진도 팔레트 첫 색 = 대표 색")
+        XCTAssertFalse(got.palette.isEmpty)
+    }
 }

@@ -18,6 +18,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     // 알림을 누르면 그냥 앱이 열린다 — 증정은 DayGiftPresenter 가 알아서 띄우므로 따로 라우팅하지 않는다.
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
+        let id = response.notification.request.identifier
+        if id.hasPrefix(ArrivalNotice.idPrefix) || id.hasPrefix(MomentReminder.idPrefix) {
+            Task { @MainActor in EntryPath.shared.mark(.notice) }
+        }
         completionHandler()
     }
 }
