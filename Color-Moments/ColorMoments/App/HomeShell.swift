@@ -12,6 +12,8 @@ struct HomeShell: View {
 
     /// 0 홈, 1 카메라(왼쪽에서 들어옴), -1 모은 조약돌(오른쪽에서 들어옴).
     @State private var progress: CGFloat = 0
+    @State private var cameraOpenedAt: Date?
+    @State private var shotsSinceOpen = 0
     @State private var dragSide: SwipeSide?
     /// 모은 조약돌은 처음 열 때 만든다 — 한 번도 안 연 사람에게 비용을 쓰지 않는다.
     @State private var collectionLoaded = false
@@ -138,8 +140,13 @@ struct HomeShell: View {
                                 onChanged: { moveCollectionSwipe($0, width: w) },
                                 onEnded: { _, vx in endCollectionSwipe(velocity: vx) })
             )
-            .onChange(of: progress) { _, p in
+            .onChange(of: progress) { old, p in
                 if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start(); PlaceFinder.shared.warm() }
+                if old < 0.999, p >= 0.999, cameraOpenedAt == nil { cameraOpenedAt = Date(); shotsSinceOpen = 0 }
+                if p <= 0.001, let at = cameraOpenedAt {
+                    Telemetry.send(.cameraClosed(count: shotsSinceOpen, stay: Telemetry.Stay(seconds: Date().timeIntervalSince(at))))
+                    cameraOpenedAt = nil
+                }
             }
             .onChange(of: swipeHeld) { _, held in
                 // onEnded 가 먼저 돌게 한 박자 미룬다.
@@ -176,7 +183,7 @@ struct HomeShell: View {
             LibraryPickerView(store: store, onDone: libraryImported)
         }
         .sheet(item: $pickingToday, onDismiss: focusLastImported) { pick in
-            LibraryPickerView(store: store, only: pick.assetIDs, onDone: libraryImported)
+            LibraryPickerView(store: store, only: pick.assetIDs, telemetrySource: .today, onDone: libraryImported)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
@@ -457,7 +464,10 @@ struct HomeShell: View {
                                onRecorded: { shot in
             var m = shot
             if m.place == nil { m.place = PlaceFinder.shared.recentPlace(near: m.capturedAt) }
-            if store.add(m) { Telemetry.photosAdded(.app, count: 1, total: store.moments.count) }
+            if store.add(m) {
+                shotsSinceOpen += 1
+                Telemetry.photosAdded(.app, count: 1, total: store.moments.count)
+            }
             Task {
                 // 처음 찍을 때만 묻는다 — 이미 물어봤으면 상태가 notDetermined 가 아니다.
                 if PHPhotoLibrary.authorizationStatus(for: .readWrite) == .notDetermined {
@@ -480,6 +490,8 @@ struct HomeShell: View {
     // 아침 소식은 온보딩(기존 사용자는 한 장)에서 이미 묻는다 — 증정 뒤엔 묻지 않는다.
     private func handleCeremonyFinished(_ dayKey: String) {
         Telemetry.pebbleReceived(.home)
+        Telemetry.send(.pebbleReceived(.home, lag: Telemetry.lag(dayKey: dayKey, now: Date()),
+                                       photos: Telemetry.Photos(count: store.pebbleMoments(on: dayKey).count)))
         if dayKey == onboardingGiftDay { onboardingGiftDay = nil }
         Task { await ArrivalNotice.clear(dayKey: dayKey) }
         HomeWidget.refresh(store: store, gifts: gifts)

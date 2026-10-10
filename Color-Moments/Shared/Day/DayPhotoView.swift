@@ -358,7 +358,8 @@ struct DayPhotoView: View {
         // 틀린 단어를 바꿀 때도 ↻ 로 버린 단어는 빼야 한다.
         guard !Task.isCancelled, current?.standingWord() == nil,
               let pick = await pickWord(for: m, labels: labels, banned: rejections.rejected(m.id)), !Task.isCancelled else { return }
-        store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: stale)
+        let word = PhotoWord(pick.word)
+        if store.stampWord(m.id, word, labels: labels, replacing: stale), stale == nil { PhotoEnrichment.wordShown?(word.wordID) }
     }
 
     private func pickWord(for m: Moment, labels: [String], banned: Set<String> = [], skip: WordEntry? = nil) async -> (word: WordEntry, pool: [WordEntry])? {

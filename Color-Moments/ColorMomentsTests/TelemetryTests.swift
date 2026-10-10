@@ -182,4 +182,11 @@ final class TelemetryTests: XCTestCase {
         XCTAssertEqual(Telemetry.Answer(.denied), .denied)
         XCTAssertEqual(Telemetry.Answer(.restricted), .denied)
     }
+
+    func testTodayShownOncePerDay() {
+        let d = UserDefaults(suiteName: "today-\(UUID())")!
+        XCTAssertTrue(Telemetry.shouldSendTodayShown(todayKey: "2026-10-10", defaults: d))
+        XCTAssertFalse(Telemetry.shouldSendTodayShown(todayKey: "2026-10-10", defaults: d), "같은 날 두 번 보내지 않는다")
+        XCTAssertTrue(Telemetry.shouldSendTodayShown(todayKey: "2026-10-11", defaults: d))
+    }
 }

@@ -113,6 +113,7 @@ struct PebbleCollectionView: View {
         let moments = store.pebbleMoments(on: key)
         return Button {
             guard acceptsTaps else { return }
+            Telemetry.send(.pebbleOpened)
             opened = OpenedDay(id: key)
         } label: {
             VStack(spacing: 4) {

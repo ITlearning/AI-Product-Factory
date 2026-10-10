@@ -187,9 +187,8 @@ enum Telemetry {
         !alreadyMarked && count > 0 && total == count
     }
 
-    static func photosAdded(_ source: Moment.Source, count: Int, total: Int, defaults: UserDefaults = .standard) {
+    static func photosAdded(_ s: Source, count: Int, total: Int, defaults: UserDefaults = .standard) {
         guard count > 0 else { return }
-        let s = Source(source)
         if isFirstPhoto(count: count, total: total, alreadyMarked: defaults.bool(forKey: firstPhotoKey)) {
             defaults.set(true, forKey: firstPhotoKey)
             send(.firstPhoto(s))
@@ -200,6 +199,15 @@ enum Telemetry {
     /// 첫 사진을 이 기기에서 담은 사람만 — 업데이트한 기존 사용자의 조약돌은 「처음」이 아니다.
     static func isFirstPebble(startedFresh: Bool, alreadyMarked: Bool) -> Bool {
         startedFresh && !alreadyMarked
+    }
+
+    static let todayShownKey = "telemetryTodayShown"
+
+    /// 오늘 카드는 하루 한 번만 센다 — 홈을 오갈 때마다 다시 보이기 때문.
+    static func shouldSendTodayShown(todayKey: String, defaults: UserDefaults = .standard) -> Bool {
+        guard defaults.string(forKey: todayShownKey) != todayKey else { return false }
+        defaults.set(todayKey, forKey: todayShownKey)
+        return true
     }
 
     static func pebbleReceived(_ place: Place, defaults: UserDefaults = .standard) {
