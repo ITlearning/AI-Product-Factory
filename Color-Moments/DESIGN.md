@@ -261,6 +261,8 @@ SPEC §4.1의 「그라데이션 + 대각 광택 한 겹」을 **여섯 겹으�
 > **모양은 날마다 다르다** — SPEC §4.1의 날짜 해시 결정론을 그대로 쓴다.
 > 같은 화면에 두 개 이상 보일 때 둥글기와 기울임이 눈에 띄게 달라야 한다.
 
+**정지점 (1.1.2)** — 조약돌 그라데이션의 색 정지점은 `DayGradient.pebbleStops` 가 도장 → 받은 날 1.1 규칙 → 규칙 B 순서로 고른다. 도장은 `PebbleStopsLog`(`pebbleStops` UserDefaults, iCloud `Day.pebbleStopLocations/Hexes`)에 남기고, 위젯은 그 스냅샷 정지점을 그대로 쓴다.
+
 ### 2.5 사진 더미
 
 | 장 | 크기 | 회전 | radius | 불투명도 |
