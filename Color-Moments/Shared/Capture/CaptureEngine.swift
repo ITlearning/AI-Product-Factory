@@ -264,6 +264,7 @@ extension CaptureEngine: AVCapturePhotoCaptureDelegate {
               let image = UIImage(data: data),
               let ci = CIImage(data: data) else { return }
         let color = ColorExtractor.symbolicColor(for: ci)
+        let palette = onRecorded == nil ? nil : ColorExtractor.palette(for: ci).map(\.encoded)
 
         let dir = destination()
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -274,7 +275,7 @@ extension CaptureEngine: AVCapturePhotoCaptureDelegate {
 
         if let onRecorded {
             let moment = Moment(capturedAt: capturedAt, colorHex: color.hex,
-                                fileName: name, source: .app)
+                                fileName: name, source: .app, palette: palette)
             DispatchQueue.main.async { onRecorded(moment) }
         }
 

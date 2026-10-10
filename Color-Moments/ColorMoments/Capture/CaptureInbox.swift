@@ -159,10 +159,12 @@ final class CaptureInbox {
         let name = url.lastPathComponent
 
         // 색 추출은 CPU 무거운 일이라 메인 액터 밖(백그라운드)에서 돌린다.
-        guard let hex = await Task.detached(priority: .userInitiated) { () -> String? in
+        guard let colors = await Task.detached(priority: .userInitiated) { () -> (hex: String, palette: [String])? in
             autoreleasepool {
                 guard let image = CIImage(contentsOf: url) else { return nil }
-                return ColorExtractor.symbolicColor(for: image).hex
+                let palette = ColorExtractor.palette(for: image)
+                guard let head = palette.first else { return nil }
+                return (head.hex, palette.map(\.encoded))
             }
         }.value else {
             note("색 추출 실패 \(name)")
@@ -174,11 +176,11 @@ final class CaptureInbox {
         let recordsPlace = UserDefaults.standard.object(forKey: PlaceFinder.enabledKey) as? Bool ?? true
         let place = recordsPlace ? placeNote?.place : nil
         UserDefaults.standard.set(placeNote?.summary ?? "쪽지 없음(위치 시험 전 확장)", forKey: Self.lockedPlaceProbeKey)
-        let moment = Moment(capturedAt: capturedAt, colorHex: hex, fileName: name, source: .locked,
-                            place: place, originalName: name)
+        let moment = Moment(capturedAt: capturedAt, colorHex: colors.hex, fileName: name, source: .locked,
+                            place: place, originalName: name, palette: colors.palette)
         let added = store.add(moment)
         if added { Telemetry.photosAdded(.locked, count: 1, total: store.moments.count) }
-        note("기록 \(hex) · \(Moment.dayKey(for: capturedAt))")
+        note("기록 \(colors.hex) · \(Moment.dayKey(for: capturedAt))")
         return added ? moment : nil
     }
 
