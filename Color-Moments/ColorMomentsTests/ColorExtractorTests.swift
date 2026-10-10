@@ -103,4 +103,12 @@ final class ColorExtractorTests: XCTestCase {
         XCTAssertNil(PaletteColor(encoded: "E9B07D"), "모양이 어긋난 값은 버린다")
         XCTAssertNil(PaletteColor(encoded: "#E9B07D:x"))
     }
+
+    func testLibraryImporterKeepsPalette() throws {
+        let name = expected[0].0
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: name, withExtension: "jpg", subdirectory: "Fixtures"))
+        let got = try XCTUnwrap(LibraryImporter.colors(data: try Data(contentsOf: url)))
+        XCTAssertEqual(got.palette.first.flatMap(PaletteColor.init(encoded:))?.hex, got.hex, "사진첩으로 담은 사진도 팔레트 첫 색 = 대표 색")
+        XCTAssertFalse(got.palette.isEmpty)
+    }
 }
