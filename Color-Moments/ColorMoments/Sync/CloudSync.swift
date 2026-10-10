@@ -183,7 +183,7 @@ final class CloudSync: CKSyncEngineDelegate {
         // 이 기기가 더 이른 마무리나 받은 증정, 앞선 이름 도장을 알고 있으면 다시 올린다.
         let mine = dayState(d.dayKey)
         // 서버 값도 이 기기 저장 모양(소수 3자리)으로 맞춰 비교한다 — 안 그러면 같은 도장을 끝없이 다시 올린다.
-        let remoteStops = d.pebbleStops.flatMap { PebbleStopsLog.decode(PebbleStopsLog.encode($0)) }
+        let remoteStops = d.pebbleStops.map(PebbleStopsLog.normalized)
         if mine.gifted != d.gifted || !Self.sameInstant(mine.closedAt, d.closedAt) || mine.pebbleName != d.pebbleName
             || mine.pebbleStops != remoteStops {
             enqueueDay(d.dayKey)
