@@ -23,7 +23,7 @@ public final class PebbleStopsLog {
 
     public func stamp(_ dayKey: String, _ stops: [DayGradient.Stop]) {
         guard all[dayKey] == nil, !stops.isEmpty else { return }
-        all[dayKey] = stops; save()
+        all[dayKey] = Self.normalized(stops); save()
         guard let onLocalChange else { unsent.append(dayKey); return }
         onLocalChange(dayKey)
     }
@@ -32,8 +32,14 @@ public final class PebbleStopsLog {
     @discardableResult
     public func applyRemote(dayKey: String, stops: [DayGradient.Stop]) -> Bool {
         guard !stops.isEmpty else { return false }
+        let stops = Self.normalized(stops)
         if let mine = all[dayKey], mine == stops || Self.encode(mine).joined() <= Self.encode(stops).joined() { return false }
         all[dayKey] = stops; save(); return true
+    }
+
+    /// 디스크에 저장되는 모양(소수 3자리)으로 맞춰 메모리와 재실행 뒤 값이 같게 한다.
+    private static func normalized(_ stops: [DayGradient.Stop]) -> [DayGradient.Stop] {
+        decode(encode(stops)) ?? stops
     }
 
     public static func encode(_ stops: [DayGradient.Stop]) -> [String] {

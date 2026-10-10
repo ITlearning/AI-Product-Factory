@@ -30,4 +30,24 @@ final class PebbleStopsLogTests: XCTestCase {
         l.stamp("2026-10-10", a); l.stamp("2026-10-10", a)
         XCTAssertEqual(sent, ["2026-10-10"])
     }
+
+    func testStampedValueEqualsReloadedValue() {
+        let d = UserDefaults(suiteName: "stops-\(UUID())")!
+        let l = PebbleStopsLog(defaults: d)
+        l.stamp("2026-10-10", [DayGradient.Stop(location: 0.30004, hex: "#E9B07D")])
+        XCTAssertEqual(PebbleStopsLog(defaults: d).stops(on: "2026-10-10"), l.stops(on: "2026-10-10"))
+    }
+
+    func testStampRoundsToThreeDecimals() {
+        let l = log()
+        l.stamp("2026-10-10", [DayGradient.Stop(location: 0.30004, hex: "#E9B07D")])
+        XCTAssertEqual(l.stops(on: "2026-10-10"), [DayGradient.Stop(location: 0.3, hex: "#E9B07D")])
+    }
+
+    func testApplyRemoteSameValueIsNoChange() {
+        let l = log()
+        l.stamp("2026-10-10", [DayGradient.Stop(location: 0.30004, hex: "#E9B07D")])
+        XCTAssertFalse(l.applyRemote(dayKey: "2026-10-10", stops: [DayGradient.Stop(location: 0.3, hex: "#E9B07D")]))
+        XCTAssertFalse(l.applyRemote(dayKey: "2026-10-10", stops: [DayGradient.Stop(location: 0.30004, hex: "#E9B07D")]))
+    }
 }
