@@ -22,30 +22,51 @@
     <h1 class="doc-title">찍기만 하면, 그 순간에 맞는 말이 하나 붙어요</h1>
   </header>
   <article class="doc">
+    <a class="primary-btn get-appstore get-appstore-top" data-place="top" href="https://apps.apple.com/kr/app/id6817888379">App Store에서 받기</a>
     <img class="get-shot" src="/img/get-phone.jpg" alt="몽돌 화면 — 윤슬 사진에 「윤슬」 한 단어가 붙은 모습" width="428" height="880">
     <p class="doc-lede">표준국어대사전의 우리말 1,600여 개 가운데 그날의 빛과 날씨, 사진 속 주인공을 보고 골라요. 하루가 닫히면 그날 사진의 색으로 빚은 조약돌이 도착해요.</p>
-    <a class="primary-btn" id="get-appstore" href="https://apps.apple.com/kr/app/id6817888379">App Store에서 받기</a>
+    <a class="primary-btn get-appstore" data-place="bottom" href="https://apps.apple.com/kr/app/id6817888379">App Store에서 받기</a>
     <p class="support-note">iPhone 앱이에요. 사진은 기기 밖으로 나가지 않아요.<br>뜻풀이 · 국립국어원 표준국어대사전</p>
   </article>
   <footer class="doc-foot"><a href="/privacy">개인정보 처리방침</a></footer>
 </main>
-<!-- 광고로 들어온 조회·App Store 버튼 누름만 센다. 앱과 같은 PostHog 프로젝트(EU). 쿠키·저장소 없이(memory), 녹화 없이, 사람 프로필 없이, 앱처럼 GeoIP 끔. -->
+<!-- 광고로 들어온 조회·App Store 버튼 누름만 센다. 앱과 같은 PostHog 프로젝트(EU). 쿠키·저장소 없이, 녹화 없이, 사람 프로필 없이, 앱처럼 GeoIP 끔.
+     posthog-js 를 받아 켜기 전에 닫거나 넘어가면 안 세져서(Meta 랜딩 조회 112 중 약 50만 잡힘) 열리는 즉시 sendBeacon 으로 직접 보낸다. -->
 <script>
-!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-posthog.init('phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK', {
-  api_host: 'https://eu.i.posthog.com',
-  persistence: 'memory',
-  person_profiles: 'never',
-  disable_session_recording: true,
-  disable_surveys: true,
-  autocapture: false,
-  enable_heatmaps: false,
-  capture_pageleave: false,
-});
-posthog.register({ $geoip_disable: true });
-document.getElementById('get-appstore').addEventListener('click', function () {
-  posthog.capture('get_appstore_click', {}, { transport: 'sendBeacon' });
-});
+(function () {
+  var KEY = 'phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK';
+  var URL_ = 'https://eu.i.posthog.com/i/v0/e/';
+  var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+  var q = new URLSearchParams(location.search);
+  var ua = navigator.userAgent;
+  var base = {
+    $lib: 'web',
+    $current_url: location.href,
+    $host: location.host,
+    $pathname: location.pathname,
+    $referrer: document.referrer || '$direct',
+    $screen_width: screen.width,
+    $screen_height: screen.height,
+    $browser_language: navigator.language,
+    $os: /iPhone|iPad|iPod/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac OS X' : /Windows/.test(ua) ? 'Windows' : 'Other',
+    $device_type: /iPad|Tablet/.test(ua) ? 'Tablet' : /Mobi|iPhone|Android/.test(ua) ? 'Mobile' : 'Desktop',
+    $process_person_profile: false,
+    $geoip_disable: true,
+  };
+  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id'].forEach(function (k) { if (q.get(k)) base[k] = q.get(k); });
+  function send(event, extra) {
+    var props = Object.assign({}, base, extra || {});
+    var body = JSON.stringify({ api_key: KEY, event: event, distinct_id: id, timestamp: new Date().toISOString(), properties: props });
+    var blob = new Blob([body], { type: 'text/plain' });
+    if (!(navigator.sendBeacon && navigator.sendBeacon(URL_, blob))) {
+      fetch(URL_, { method: 'POST', body: body, keepalive: true, headers: { 'Content-Type': 'text/plain' } }).catch(function () {});
+    }
+  }
+  send('$pageview');
+  document.querySelectorAll('.get-appstore').forEach(function (a) {
+    a.addEventListener('click', function () { send('get_appstore_click', { place: a.dataset.place }); });
+  });
+})();
 </script>
 </body>
 </html>
