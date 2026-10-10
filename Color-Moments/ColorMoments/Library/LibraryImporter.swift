@@ -45,6 +45,7 @@ final class LibraryImporter {
 
     /// 이번에 실제로 넣은 기록의 하루(dayKey)들 — iCloud 로 그 사이 들어온 원격 기록은 섞이지 않는다.
     func importAssets(_ assets: [PHAsset], into store: DayStore,
+                      source: Telemetry.Source = .library,
                       onProgress: ((Progress) -> Void)? = nil) async -> Set<String> {
         let batch = UUID()
         var progress = Progress(done: 0, total: assets.count)
@@ -82,7 +83,7 @@ final class LibraryImporter {
             if buffer.count >= Self.addChunk { await flush() }
         }
         if !buffer.isEmpty { await flush() }
-        Telemetry.photosAdded(.library, count: addedCount, total: store.moments.count)
+        Telemetry.photosAdded(source, count: addedCount, total: store.moments.count)
         await CloudIDMapper.assignMissing(store: store)
         return dayKeys
     }

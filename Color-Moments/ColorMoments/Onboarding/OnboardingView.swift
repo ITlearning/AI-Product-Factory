@@ -332,7 +332,11 @@ struct OnboardingView: View {
     }
 
     private func ceremonyFinished() {
-        Telemetry.pebbleReceived(.onboarding)
+        if let day = receivedDay ?? onboardingGiftDay, gifts.isGifted(day) {
+            Telemetry.pebbleReceived(.onboarding)
+            Telemetry.send(.pebbleReceived(.onboarding, lag: Telemetry.lag(dayKey: day, now: Date()),
+                                           photos: Telemetry.Photos(count: store.pebbleMoments(on: day).count)))
+        }
         if let day = onboardingGiftDay, gifts.isGifted(day) {
             onboardingGiftDay = nil
             Task { await ArrivalNotice.clear(dayKey: day) }
