@@ -56,13 +56,20 @@ test('/feedback?app=1 — 그리기 전에 html.in-app, 머리 숨김·번짐 �
   assert.match(css, /\.in-app \.page \{[^}]*padding-bottom: calc\(var\(--safe-b\) \+ 4\d+px\)/);
 });
 
-test('/get — 앱과 같은 PostHog(EU)로 조회·App Store 버튼만, 저장소·녹화·프로필 없이', () => {
+test('/get — 앱과 같은 PostHog(EU)로 조회·App Store 버튼만, 열리자마자 직접 보내고 저장소·프로필 없이', () => {
   const html = read('get.html');
   assert.match(html, /<meta name="robots" content="noindex, nofollow">/);
-  assert.match(html, /posthog\.init\('phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK'/, '앱 Telemetry.swift 와 같은 키');
-  assert.match(html, /api_host: 'https:\/\/eu\.i\.posthog\.com'/, '처리방침대로 EU');
-  for (const opt of [/persistence: 'memory'/, /person_profiles: 'never'/, /disable_session_recording: true/, /autocapture: false/, /enable_heatmaps: false/]) assert.match(html, opt);
-  assert.match(html, /posthog\.register\(\{ \$geoip_disable: true \}\)/, '처리방침 2항처럼 GeoIP 끔');
-  assert.match(html, /id="get-appstore" href="https:\/\/apps\.apple\.com\//);
-  assert.match(html, /posthog\.capture\('get_appstore_click', \{\}, \{ transport: 'sendBeacon' \}\)/, '페이지를 떠나도 보내지게');
+  assert.match(html, /'phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK'/, '앱 Telemetry.swift 와 같은 키');
+  assert.match(html, /'https:\/\/eu\.i\.posthog\.com\/i\/v0\/e\/'/, '처리방침대로 EU');
+  assert.doesNotMatch(html, /array\.js|posthog\.init|localStorage|document\.cookie/, 'posthog-js·저장소 없이');
+  assert.match(html, /\$process_person_profile: false/, '사람 프로필 없이');
+  assert.match(html, /\$geoip_disable: true/, '처리방침 2항처럼 GeoIP 끔');
+  assert.match(html, /\$lib: 'web'/, '대시보드가 앱 기록과 가르는 값');
+  assert.match(html, /navigator\.sendBeacon\(URL_, blob\)/, '페이지를 떠나도 보내지게');
+  assert.match(html, /send\('\$pageview'\);/, '열리자마자 조회를 보낸다');
+  assert.match(html, /send\('get_appstore_click', \{ place: a\.dataset\.place \}\)/);
+  const btns = [...html.matchAll(/class="primary-btn get-appstore[^"]*" data-place="(\w+)" href="https:\/\/apps\.apple\.com\/kr\/app\/id6817888379"/g)].map((m) => m[1]);
+  assert.deepEqual(btns, ['top', 'bottom'], 'App Store 버튼은 맨 위(첫 화면)와 맨 아래');
+  assert.ok(html.indexOf('data-place="top"') < html.indexOf('class="get-shot"'), '위 버튼은 그림보다 먼저');
+  assert.doesNotMatch(html, /location\.(href|replace|assign)\s*=|http-equiv="refresh"/, '저절로 App Store 로 넘기지 않는다');
 });
