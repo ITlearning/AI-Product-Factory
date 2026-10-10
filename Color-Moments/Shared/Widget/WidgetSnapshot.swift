@@ -12,6 +12,8 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         public let dayKey: String
         public let name: String?
         public let colors: [ColorPoint]
+        // 앱이 완성해 보낸 조약돌 정지점 — 위젯은 도장·받은 날을 못 읽는다. 옛 스냅샷엔 없다.
+        public var stops: [ColorPoint]? = nil
 
         // PebbleView 는 시각에서 그라데이션 위치(비율)와 실루엣의 dayKey 만 본다 — 그 날 08시부터 12시간 안에 비율대로 되살린다.
         public var moments: [Moment] {
@@ -65,6 +67,9 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
                           name: PebbleNaming.name(for: pebble)?.name,
                           colors: DayGradient.positions(for: pebble).map {
                               ColorPoint(hex: $0.moment.colorHex, location: ($0.location * 1000).rounded() / 1000)
+                          },
+                          stops: DayGradient.pebbleStops(for: pebble).map {
+                              ColorPoint(hex: $0.hex, location: ($0.location * 1000).rounded() / 1000)
                           })
         }
         let arrivals = candidates.filter { !gifts.isGifted($0) }.compactMap { key in
@@ -101,6 +106,16 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public func write(to url: URL? = WidgetSnapshot.containerFile) {
         guard let url, let data = try? encoded() else { return }
         try? data.write(to: url, options: .atomic)
+    }
+
+    // 위젯 프로세스에서 쓴다 — 스냅샷의 정지점을 비운 메모리 전용 도장으로 끼워, 이전 스냅샷 값이 남지 않게 한다.
+    public func applyStopsToDayGradient() {
+        let suite = "widget-stops"
+        UserDefaults(suiteName: suite)?.removePersistentDomain(forName: suite)
+        guard let latest, let stops = latest.stops, let defaults = UserDefaults(suiteName: suite) else { return }
+        let log = PebbleStopsLog(defaults: defaults)
+        log.stamp(latest.dayKey, stops.map { DayGradient.Stop(location: $0.location, hex: $0.hex) })
+        DayGradient.stamps = log
     }
 
     public static func read(from url: URL? = WidgetSnapshot.containerFile) -> WidgetSnapshot {
