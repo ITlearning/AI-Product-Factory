@@ -311,6 +311,17 @@ final class DayStoreTests: XCTestCase {
         XCTAssertNil(m.assetID); XCTAssertNil(m.place); XCTAssertNil(m.addedAt); XCTAssertNil(m.batchID)
     }
 
+    func testReadsRecordsWithoutPalette() throws {
+        let json = """
+        [{"id":"\(UUID().uuidString)","capturedAt":"2026-10-01T03:00:00.000Z","colorHex":"#112233","fileName":"a.jpg","source":"app"}]
+        """
+        try Data(json.utf8).write(to: tempFile)
+        let m = DayStore(fileURL: tempFile, closures: closures).moments.first
+        XCTAssertNotNil(m, "1.1.1 이 쓴 기록 — 팔레트 키가 없어도 읽혀야 한다")
+        XCTAssertNil(m?.palette)
+        XCTAssertEqual(m?.paletteColors, [])
+    }
+
     func testHasSealedMomentsIsTrueForCameraPhoto() {
         store.add(moment(date(2026, 9, 22, 12, 0), name: "cam.jpg"))
         XCTAssertTrue(store.hasSealedMoments(on: "2026-09-22"), "카메라 사진이 있으면 그 하루는 증정 대상이다")
