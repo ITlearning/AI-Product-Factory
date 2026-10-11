@@ -1,4 +1,5 @@
 import Photos
+import StoreKit
 import SwiftUI
 
 struct HomeShell: View {
@@ -84,6 +85,7 @@ struct HomeShell: View {
     #endif
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.requestReview) private var requestReview
     private static let onboardingFade = Animation.easeInOut(duration: 0.8)
 
     private static let commitDistance: CGFloat = 0.42
@@ -495,5 +497,11 @@ struct HomeShell: View {
         if dayKey == onboardingGiftDay { onboardingGiftDay = nil }
         Task { await ArrivalNotice.clear(dayKey: dayKey) }
         HomeWidget.refresh(store: store, gifts: gifts)
+        if ReviewPrompt.claim(giftedDays: gifts.giftedDayKeys.count) {
+            Task {
+                try? await Task.sleep(for: .seconds(1.2))
+                requestReview()
+            }
+        }
     }
 }
