@@ -39,13 +39,11 @@ bundle exec fastlane beta         # 마지막 + 1 로 아카이브 → TestFligh
 
 ### 맥스튜디오에서 돌릴 때
 
-맥스튜디오는 `/usr/bin/ruby`(2.6, bundler 1.17)와 Homebrew ruby 3.4 가 섞여 `bundle exec` 가 gem 을 못 찾는다.
-Homebrew ruby 와 bundler 2.6 으로 맞춰 돌린다. `Gemfile.lock` 의 `BUNDLED WITH` 가 바뀌면 되돌린다(다른 맥은 1.17).
+맥스튜디오는 `bundle exec` 대신 **Homebrew fastlane 을 그대로** 쓴다 — `fastlane beta`.
+`bundle exec fastlane` 은 PATH 의 Homebrew fastlane 래퍼가 잡혀 그 전용 Ruby 3.4 로 갈아타는 바람에 gem 을 못 찾는다(2026-10-11).
 
-```bash
-export PATH=/opt/homebrew/opt/ruby/bin:$PATH BUNDLER_VERSION=2.6.2 BUNDLE_PATH=vendor/bundle
-bundle install && bundle exec fastlane latest; git checkout Gemfile.lock
-```
+SSH 로 접속해 돌리면 로그인 키체인이 잠겨 서명이 `errSecInternalComponent` 로 죽는다.
+`beta`·`build_only` 는 SSH 면 아카이브 전에 키체인을 연다 — `.env` 에 `KEYCHAIN_PASSWORD`(맥 로그인 비밀번호)가 있으면 그걸로, 없으면 한 번 묻는다.
 
 API 키는 맥마다 따로다 — 맥스튜디오는 `~/.appstoreconnect/private_keys/AuthKey_A8H33DUY68.p8` (`.env` 의 `ASC_KEY_PATH`).
 
