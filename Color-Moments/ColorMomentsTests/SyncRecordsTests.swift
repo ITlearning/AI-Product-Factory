@@ -4,6 +4,10 @@ import XCTest
 
 final class SyncRecordsTests: XCTestCase {
 
+    override func tearDown() {
+        SyncRecords.sendsPaletteFields = false
+    }
+
     func testMomentRoundTripDropsDeviceOnlyFields() {
         let m = Moment(capturedAt: Date(timeIntervalSince1970: 1_790_000_000), colorHex: "#A1B2C3",
                        fileName: "asset-abc", source: .locked,
@@ -25,8 +29,22 @@ final class SyncRecordsTests: XCTestCase {
         let m = Moment(capturedAt: Date(timeIntervalSince1970: 1_790_000_000), colorHex: "#E9B07D", fileName: "x.jpg",
                        source: .app, palette: ["#E9B07D:76", "#4C6C81:24"])
         let r = CKRecord(recordType: "Moment", recordID: SyncRecords.recordID(moment: m.id))
+        SyncRecords.sendsPaletteFields = true
         SyncRecords.fill(r, with: m)
         XCTAssertEqual(SyncRecords.moment(from: r)?.palette, ["#E9B07D:76", "#4C6C81:24"])
+    }
+
+    func testPaletteFieldsHeldUntilProductionSchema() {
+        let m = Moment(capturedAt: Date(), colorHex: "#E9B07D", fileName: "z.jpg", source: .app, palette: ["#E9B07D:100"])
+        let mr = CKRecord(recordType: "Moment", recordID: SyncRecords.recordID(moment: m.id))
+        SyncRecords.fill(mr, with: m)
+        XCTAssertFalse(mr.changedKeys().contains("palette"))
+        let d = SyncRecords.DayState(dayKey: "2026-10-10", closedAt: nil, gifted: true,
+                                     pebbleStops: [DayGradient.Stop(location: 0.5, hex: "#E9B07D")])
+        let dr = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: d.dayKey))
+        SyncRecords.fill(dr, with: d)
+        XCTAssertFalse(dr.changedKeys().contains("pebbleStopLocations"))
+        XCTAssertFalse(dr.changedKeys().contains("pebbleStopHexes"))
     }
 
     func testFillWithoutPaletteSendsNoKey() {
@@ -112,6 +130,7 @@ final class SyncRecordsTests: XCTestCase {
         let stops = [DayGradient.Stop(location: 0.3, hex: "#E9B07D"), DayGradient.Stop(location: 0.7, hex: "#4C6C81")]
         let d = SyncRecords.DayState(dayKey: "2026-10-10", closedAt: nil, gifted: true, pebbleStops: stops)
         let r = CKRecord(recordType: "Day", recordID: SyncRecords.recordID(day: d.dayKey))
+        SyncRecords.sendsPaletteFields = true
         SyncRecords.fill(r, with: d)
         XCTAssertEqual(SyncRecords.day(from: r)?.pebbleStops, stops)
     }

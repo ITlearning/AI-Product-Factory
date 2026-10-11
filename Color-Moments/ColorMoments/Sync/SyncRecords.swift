@@ -4,6 +4,8 @@ enum SyncRecords {
     static let zoneID = CKRecordZone.ID(zoneName: "Mongdol", ownerName: CKCurrentUserDefaultName)
     static let momentType = "Moment"
     static let dayType = "Day"
+    // 운영 스키마에 palette·pebbleStop* 이 없으면 Day·Moment 저장이 통째로 BAD_REQUEST — 배포되면 true(2026-10-11 콘솔 Deploy 고장).
+    static var sendsPaletteFields = false
 
     enum Ref { case moment(UUID), day(String) }
 
@@ -45,7 +47,7 @@ enum SyncRecords {
         r["batchID"] = m.batchID?.uuidString
         r["cloudID"] = m.cloudID
         // nil 대입은 changedKeys 에 들어가 서버 값을 지운다 — 한 번 생긴 값은 지워지지 않으니 있을 때만 쓴다.
-        if let palette = m.palette { r["palette"] = palette }
+        if sendsPaletteFields, let palette = m.palette { r["palette"] = palette }
     }
 
     static func moment(from r: CKRecord) -> Moment? {
@@ -101,7 +103,7 @@ enum SyncRecords {
         r["gifted"] = d.gifted ? 1 : 0
         r["pebbleName"] = d.pebbleName?.name
         r["pebbleLine"] = d.pebbleName?.line
-        if let stops = d.pebbleStops {
+        if sendsPaletteFields, let stops = d.pebbleStops {
             r["pebbleStopLocations"] = stops.map(\.location)
             r["pebbleStopHexes"] = stops.map(\.hex)
         }
