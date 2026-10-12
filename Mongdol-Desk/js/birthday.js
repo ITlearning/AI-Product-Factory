@@ -1,4 +1,4 @@
-// /birthday — 생일(월·일) → data/birthday.json 의 우리말 하나. 같은 생일이면 누구나 같은 말.
+// /birthday — 생일(월·일) → 그 달에 어울리는 우리말 하나(고르기는 birthday-pick.js). 같은 생일이어도 사람마다 다르고, 한 브라우저에선 늘 같다.
 // 생일은 서버로 보내지 않는다. 세는 건 조회·결과 봄·공유·앱 보러 가기 누름뿐(날짜 없이) — get.html 과 같은 PostHog(EU), 저장소·프로필 없이.
 (function () {
   var KEY = 'phc_nQAKwQjfrQnNCXC4FomYsLBH79wA4jVnokYKw7uMLicK';
@@ -70,7 +70,12 @@
   day.value = String(now.getDate());
   month.addEventListener('change', fillDays);
 
-  var table = fetch('./data/birthday.json').then(function (r) { return r.json(); });
+  var words = fetch('./data/birthday-words.json').then(function (r) { return r.json(); });
+  // 브라우저마다 한 번 만드는 열쇠 — 같은 생일이어도 사람마다 다른 말, 다시 해도 같은 말. 저장소를 못 쓰면 이 화면 동안만.
+  var seed = (function () {
+    var fresh = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+    try { var s = localStorage.getItem('mongdol-birthday-seed'); if (!s) { s = fresh; localStorage.setItem('mongdol-birthday-seed', s); } return s; } catch (e) { return fresh; }
+  })();
   // 두구두구 — 카드 안에서 다른 말들이 빠르게 지나가다 점점 느려지고, 번짐이 숨 쉬다가 제 말에 멈춘다.
   // 도는 동안 카드를 누르면 바로 멈춘다. 움직임 줄이기면 돌리지 않는다.
   var stop = null;
@@ -80,10 +85,10 @@
     el.setAttribute('aria-label', text);
   }
   function roll(t, done) {
-    var all = Object.keys(t), word = $('word'), result = $('result'), at = 0, ticks = 0, timer = null, ended = false;
+    var word = $('word'), result = $('result'), at = 0, ticks = 0, timer = null, ended = false;
     result.classList.add('bd-rolling');
     function tick() {
-      word.textContent = t[all[Math.floor(Math.random() * all.length)]].w;
+      word.textContent = t[Math.floor(Math.random() * t.length)].w;
       if (navigator.vibrate) navigator.vibrate(6);
       var gap = 55 + ticks * ticks * 2.2; // 처음엔 빠르게, 갈수록 느리게
       ticks++; at += gap;
@@ -106,9 +111,8 @@
   $('form').addEventListener('submit', function (e) {
     e.preventDefault();
     var m = Number(month.value), d = Number(day.value);
-    table.then(function (t) {
-      var w = t[String(m).padStart(2, '0') + String(d).padStart(2, '0')];
-      if (!w) return;
+    words.then(function (t) {
+      var w = birthdayPick(t, seed, m, d);
       var word = $('word'), date = $('date');
       $('bridge').textContent = m + '월 ' + d + '일의 우리말은 「' + w.w + '」였어요.';
       $('meaning').textContent = w.m;
@@ -119,6 +123,7 @@
         b.textContent = x.w; s.textContent = x.m; li.append(b, s); more.append(li);
       });
       $('card').dataset.season = SEASON[m];
+      last = { date: m + '월 ' + d + '일', w: w.w, m: w.m, x: w.x, season: SEASON[m] };
       $('copied').hidden = true;
       $('result').classList.remove('bd-landed');
       function land() { date.textContent = m + '월 ' + d + '일의 우리말'; letters(word, w.w); }
@@ -142,4 +147,57 @@
     navigator.clipboard && navigator.clipboard.writeText(url).then(function () { $('copied').hidden = false; });
   });
   $('app').addEventListener('click', function () { send('birthday_app_click'); });
+
+  // 이미지로 저장 — 결과 카드를 1080×1350 그림으로. 아래에 이 페이지 주소를 넣어 보는 사람이 직접 해 볼 수 있게.
+  // 공유 시트가 파일을 받으면(iOS·안드로이드) 시트로, 아니면 내려받기.
+  var GLOW = { spring: '244,165,190', summer: '120,200,160', autumn: '240,170,90', winter: '150,180,240' };
+  var last = null;
+  function wrap(ctx, text, maxW) {
+    var lines = [], line = '';
+    text.split(' ').forEach(function (word) {
+      var t = line ? line + ' ' + word : word;
+      if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = word; } else line = t;
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+  function drawCard(r) {
+    var W = 1080, H = 1350, c = document.createElement('canvas'), x = c.getContext('2d');
+    c.width = W; c.height = H;
+    x.fillStyle = '#06070A'; x.fillRect(0, 0, W, H);
+    var g = x.createRadialGradient(W / 2, 520, 0, W / 2, 520, 620);
+    g.addColorStop(0, 'rgba(' + GLOW[r.season] + ',0.55)'); g.addColorStop(1, 'rgba(' + GLOW[r.season] + ',0)');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+    var serif = '"Nanum Myeongjo", "AppleMyungjo", serif', sans = '"Gowun Dodum", -apple-system, sans-serif';
+    x.fillStyle = 'rgba(255,255,255,0.64)'; x.font = '40px ' + sans; x.fillText(r.date + '의 우리말', W / 2, 330);
+    var size = 190; x.font = '800 ' + size + 'px ' + serif;
+    while (x.measureText(r.w).width > W - 160 && size > 90) { size -= 10; x.font = '800 ' + size + 'px ' + serif; }
+    x.fillStyle = 'rgba(255,255,255,0.95)'; x.fillText(r.w, W / 2, 560);
+    x.font = '44px ' + sans; x.fillStyle = 'rgba(255,255,255,0.72)';
+    wrap(x, r.m, W - 220).forEach(function (l, i) { x.fillText(l, W / 2, 670 + i * 64); });
+    x.fillStyle = 'rgba(255,255,255,0.42)'; x.font = '34px ' + sans; x.fillText('이날의 다른 말', W / 2, 930);
+    x.fillStyle = 'rgba(255,255,255,0.8)'; x.font = '800 54px ' + serif; x.fillText(r.x.map(function (e) { return e.w; }).join('  ·  '), W / 2, 1010);
+    x.fillStyle = 'rgba(255,255,255,0.88)'; x.font = '800 44px ' + serif; x.fillText('몽돌', W / 2, 1200);
+    x.fillStyle = 'rgba(255,255,255,0.5)'; x.font = '32px ' + sans; x.fillText('mongdol-desk.vercel.app/birthday', W / 2, 1256);
+    return c;
+  }
+  $('image').addEventListener('click', function () {
+    if (!last) return;
+    send('birthday_image');
+    var fonts = document.fonts ? Promise.all(['800 190px "Nanum Myeongjo"', '40px "Gowun Dodum"'].map(function (f) { return document.fonts.load(f); })) : Promise.resolve();
+    fonts.catch(function () {}).then(function () {
+      drawCard(last).toBlob(function (blob) {
+        var file = new File([blob], '내-생일의-우리말-' + last.w + '.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file] }).catch(function () {});
+          return;
+        }
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = file.name;
+        document.body.append(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      }, 'image/png');
+    });
+  });
 })();
