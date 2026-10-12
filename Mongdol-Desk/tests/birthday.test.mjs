@@ -124,3 +124,14 @@ test('「어떤 기준으로 고르나요?」 — 그 달 말 몇 개 중에서 
     assert.equal(pick(source, 'x', m, d).pool, inMonth, `${m}/${d}`);
   }
 });
+
+test('다리 문장 — 받침 있으면 「이었어요」, 없으면 「였어요」', () => {
+  const js = read('js/birthday.js');
+  const m = js.match(/var last = w\.w\.charCodeAt\(w\.w\.length - 1\), batchim = ([^;]+);/);
+  assert.ok(m);
+  const tail = (word) => { const w = { w: word }; const last = w.w.charCodeAt(w.w.length - 1); return eval(m[1]) ? '이었어요.' : '였어요.'; };
+  assert.equal(tail('갈대꽃'), '이었어요.');
+  assert.equal(tail('억새밭'), '이었어요.');
+  assert.equal(tail('진달래'), '였어요.');
+  assert.equal(tail('노랑나비'), '였어요.');
+});
