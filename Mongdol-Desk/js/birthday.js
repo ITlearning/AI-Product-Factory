@@ -15,6 +15,12 @@
     $process_person_profile: false, $geoip_disable: true,
   };
   ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].forEach(function (k) { if (q.get(k)) base[k] = q.get(k); });
+  // Tabber 기기 표시 — ?internal=1 로 한 번 열면 이 브라우저의 기록에 internal 이 붙어 대시보드에서 빠진다(?internal=0 으로 해제).
+  try {
+    if (q.get('internal') === '1') localStorage.setItem('mongdol-internal', '1');
+    if (q.get('internal') === '0') localStorage.removeItem('mongdol-internal');
+    if (localStorage.getItem('mongdol-internal')) base.internal = true;
+  } catch (e) {}
   function send(event) {
     var body = JSON.stringify({ api_key: KEY, event: event, distinct_id: id, timestamp: new Date().toISOString(), properties: base });
     if (!(navigator.sendBeacon && navigator.sendBeacon(URL_, new Blob([body], { type: 'text/plain' })))) {

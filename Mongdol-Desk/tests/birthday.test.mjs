@@ -99,3 +99,12 @@ test('이미지로 저장 — 1080×1350 그림, 페이지 주소를 넣고, 파
   assert.match(js, /navigator\.canShare\(\{ files: \[file\] \}\)/);
   assert.match(js, /send\('birthday_image'\)/);
 });
+
+test('Tabber 기기 표시 — ?internal=1 이면 localStorage 에 남기고 기록에 internal 을 붙인다(생일만 — /get 은 저장소를 안 쓴다고 처리방침에 약속)', () => {
+  assert.doesNotMatch(read('get.html'), /mongdol-internal/);
+  for (const f of ['js/birthday.js']) {
+    const s = read(f);
+    assert.match(s, /q\.get\('internal'\) === '1'\) localStorage\.setItem\('mongdol-internal', '1'\)/, f);
+    assert.match(s, /if \(localStorage\.getItem\('mongdol-internal'\)\) base\.internal = true;/, f);
+  }
+});
