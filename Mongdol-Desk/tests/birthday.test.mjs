@@ -188,3 +188,15 @@ test('이미지 글꼴 — 그릴 글자를 알려 주고 받는다(조각 글�
   assert.match(js, /var serifText = r\.w \+ r\.x\.map/);
   assert.match(js, /var sansText = r\.date \+ '의 우리말' \+ r\.m/);
 });
+
+test('외부 스크립트 오류는 거른다 — 우리 주소의 파일만, iabjs:// 등은 빼고', () => {
+  const js = read('js/birthday.js');
+  const src = js.match(/function ours\(file, stack\) \{[\s\S]*?\n  \}/)[0];
+  const ours = new Function('location', src + '; return ours;')({ origin: 'https://mongdol-desk.vercel.app' });
+  assert.equal(ours('https://mongdol-desk.vercel.app/js/birthday.js', ''), true);
+  assert.equal(ours('', 'Error | at sendDataToNative (iabjs://navigation_performance_logger_android:1:11853)'), false);
+  assert.equal(ours('iabjs://navigation_performance_logger_android', ''), false);
+  assert.equal(ours('', ''), false, 'Script error. — 다른 출처');
+  assert.equal(ours('https://www.instagram.com/static/x.js', ''), false);
+  assert.match(js, /send\('birthday_image', \{ via: 'hold' \}\)/);
+});

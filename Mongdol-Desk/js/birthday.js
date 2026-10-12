@@ -44,8 +44,22 @@
       image_ready: !!ready,
     }, more || {}));
   }
-  window.addEventListener('error', function (e) { report('page', e.error || { name: 'Error', message: e.message }, { source: String(e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno }); });
-  window.addEventListener('unhandledrejection', function (e) { report('promise', e.reason); });
+  // 앱 안 브라우저(인스타 iabjs:// 등)가 끼워 넣은 스크립트의 오류는 우리 고장이 아니다 — 우리 주소의 파일에서 난 것만 남긴다.
+  // 다른 출처 스크립트는 파일 이름 없이 「Script error.」로만 오므로 그것도 거른다.
+  function ours(file, stack) {
+    var f = String(file || ''), s = String(stack || '');
+    if (/iabjs:|chrome-extension:|safari-extension:|moz-extension:/.test(f + s)) return false;
+    return f.indexOf(location.origin + '/') === 0;
+  }
+  window.addEventListener('error', function (e) {
+    if (!ours(e.filename, e.error && e.error.stack)) return;
+    report('page', e.error || { name: 'Error', message: e.message }, { source: String(e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno });
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var st = String((e.reason && e.reason.stack) || '');
+    if (/iabjs:|chrome-extension:|safari-extension:|moz-extension:/.test(st)) return;
+    report('promise', e.reason);
+  });
 
   var $ = function (s) { return document.getElementById(s); };
   var INSTA = 'mongdol.app'; // 몽돌 인스타 아이디 — 비우면 팔로우 링크를 숨긴다
@@ -274,6 +288,8 @@
     $('sheet').hidden = false;
   }
   $('sheetClose').addEventListener('click', function () { $('sheet').hidden = true; });
+  // 길게 누르면 contextmenu 가 온다 — 저장 메뉴가 실제로 떴는지는 모르지만, 누가 어느 앱에서 길게 눌러 봤는지는 남긴다.
+  $('sheetImg').addEventListener('contextmenu', function () { send('birthday_image', { via: 'hold' }); });
   $('sheet').addEventListener('click', function (e) { if (e.target === $('sheet')) $('sheet').hidden = true; });
   var mobile = /iPhone|iPad|iPod|Android/.test(ua) || IOS;
   $('image').addEventListener('click', function () {
