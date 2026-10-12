@@ -36,7 +36,25 @@
     var insta = $('insta');
     insta.href = 'https://www.instagram.com/' + INSTA + '/';
     insta.hidden = false;
-    insta.addEventListener('click', function () { send('birthday_insta_click'); });
+    // 인스타·스레드·카톡·페북 내장 브라우저에서는 https 링크가 앱으로 안 넘어가고 내장 브라우저 안에서 웹 인스타(로그인 화면)가 열린다.
+    // 그래서 인스타 앱을 직접 연다 — iPhone 은 instagram:// , 안드로이드는 intent:// . 1.2초 안에 앱으로 안 넘어가면 웹 주소로.
+    // 사파리·크롬은 https 그대로 둔다(운영체제가 앱으로 넘겨 주고, 앱이 없을 때 instagram:// 는 오류 창을 띄운다).
+    var inApp = /Instagram|Barcelona|KAKAOTALK|FBAN|FBAV|Line\//.test(ua);
+    var web = insta.href;
+    insta.addEventListener('click', function (e) {
+      send('birthday_insta_click');
+      if (!inApp) return;
+      var app = IOS ? 'instagram://user?username=' + INSTA
+        : /Android/.test(ua) ? 'intent://instagram.com/_u/' + INSTA + '/#Intent;package=com.instagram.android;scheme=https;S.browser_fallback_url=' + encodeURIComponent(web) + ';end'
+        : null;
+      if (!app) return;
+      e.preventDefault();
+      var left = false, mark = function () { left = true; };
+      document.addEventListener('visibilitychange', mark, { once: true });
+      window.addEventListener('pagehide', mark, { once: true });
+      location.href = app;
+      setTimeout(function () { if (!left && !document.hidden) location.href = web; }, 1200);
+    });
   }
   // iPhone 이 아니면 받을 수 없는 앱 대신 인스타를 앞에 둔다.
   if (!IOS) {
