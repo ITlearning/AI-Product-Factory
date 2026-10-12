@@ -24,7 +24,7 @@
   send('$pageview');
 
   var $ = function (s) { return document.getElementById(s); };
-  var INSTA = ''; // 몽돌 인스타 아이디 — 비어 있으면 팔로우 링크를 숨긴다
+  var INSTA = 'mongdol.app'; // 몽돌 인스타 아이디 — 비우면 팔로우 링크를 숨긴다
   var IOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   if (INSTA) {
     var insta = $('insta');
