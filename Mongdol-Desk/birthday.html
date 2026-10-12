@@ -37,6 +37,7 @@
       <label class="bd-select"><span class="label">일</span><select class="box" id="day" aria-label="태어난 날"></select></label>
     </div>
     <button class="primary-btn" type="submit">알아보기</button>
+    <p class="bd-safe">생일과 나온 단어는 어디에도 보내지 않아요.<br>누가 해 봤는지도 알 수 없게 만들었어요.</p>
   </form>
 
   <section class="bd-result" id="result" hidden aria-live="polite">
@@ -49,6 +50,11 @@
       <p class="bd-more-title">이날의 다른 말</p>
       <ul class="bd-more-list" id="more"></ul>
     </div>
+    <details class="bd-how">
+      <summary>어떤 기준으로 고르나요?</summary>
+      <p>표준국어대사전의 고유어 가운데 생일에 받기 좋은 말 1,200여 개를 골라, 달마다 그 계절에 어울리는 말끼리 묶어 두었어요.</p>
+      <p id="how"></p>
+    </details>
     <div class="bd-actions">
       <button class="ghost-btn" type="button" id="again">다른 날도 보기</button>
       <button class="ghost-btn" type="button" id="image">이미지로 저장</button>
@@ -70,7 +76,7 @@
     </div>
   </section>
 
-  <p class="privacy">고른 생일은 이 화면에서만 쓰고 어디에도 보내지 않아요.<br>뜻풀이 · 국립국어원 표준국어대사전(일부는 쉽게 풀어 씀)</p>
+  <p class="privacy">뜻풀이 · 국립국어원 표준국어대사전(일부는 쉽게 풀어 씀)</p>
 </main>
 <script src="./js/birthday-pick.js"></script>
 <script src="./js/birthday.js"></script>

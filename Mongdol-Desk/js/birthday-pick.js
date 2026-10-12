@@ -24,6 +24,6 @@ var birthdayPick = (function () {
     // 곁말 하나는 그 달 말 중 대표로 안 나가는 뒤쪽(31번째부터)에서, 하나는 아무 때나 좋은 말에서.
     var x1 = L > 31 ? pm[31 + (d - 1) % (L - 31)] : pm[(d + 14) % L];
     var x2 = pa[((m - 1) * 31 + d - 1) % pa.length];
-    return { w: main.w, m: main.m, x: [plain(x1), plain(x2)] };
+    return { w: main.w, m: main.m, x: [plain(x1), plain(x2)], pool: L + (DAY[key] ? 1 : 0) };
   };
 })();

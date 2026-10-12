@@ -120,8 +120,11 @@
     words.then(function (t) {
       var w = birthdayPick(t, seed, m, d);
       var word = $('word'), date = $('date');
-      $('bridge').textContent = m + '월 ' + d + '일의 우리말은 「' + w.w + '」였어요.';
+      // 받침이 있으면 「이었어요」(갈대꽃이었어요), 없으면 「였어요」(진달래였어요).
+      var last = w.w.charCodeAt(w.w.length - 1), batchim = last >= 0xAC00 && last <= 0xD7A3 && (last - 0xAC00) % 28 !== 0;
+      $('bridge').textContent = m + '월 ' + d + '일의 우리말은 「' + w.w + '」' + (batchim ? '이었어요.' : '였어요.');
       $('meaning').textContent = w.m;
+      $('how').textContent = '이번 말은 ' + m + '월에 어울리는 말 ' + w.pool + '개 가운데서 골랐어요. 그중 하나를 사람마다 정해 드려서, 같은 생일이어도 친구와 다를 수 있고 다시 해 봐도 내 말은 그대로예요.';
       var more = $('more');
       more.textContent = '';
       w.x.forEach(function (x) {
