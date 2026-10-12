@@ -38,7 +38,7 @@
     $('iosNote').hidden = false;
     $('iosNote').textContent = /Android/.test(ua)
       ? '안드로이드 버전은 지금 준비하고 있어요. 인스타를 팔로우하고 소식을 기다려 주세요.'
-      : '몽돌은 지금 iPhone 앱만 있어요. 안드로이드 버전은 준비하고 있어요.';
+      : '몽돌은 지금 iPhone 앱만 있어요.\n안드로이드 버전은 준비하고 있어요.';
     if (INSTA) { $('insta').className = 'primary-btn bd-insta'; $('insta').textContent = '인스타 팔로우하고 소식 받기'; }
   }
 
