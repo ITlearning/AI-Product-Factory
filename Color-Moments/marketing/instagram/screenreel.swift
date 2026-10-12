@@ -46,11 +46,12 @@ Task {
   var latest: CGImage? = nil, next = start
   var rect = CGRect.zero, srcRect = CGRect.zero
   func place(_ img: CGImage) {
-    // 위(상태 막대·녹화 점)와 아래(사파리 도구 막대)를 잘라 내고, 높이 1380 에 맞춰 가운데.
+    // 위(상태 막대·녹화 점)와 아래(사파리 도구 막대)를 잘라 내고 가운데에.
     let sw = Double(img.width), sh = Double(img.height)
     srcRect = CGRect(x: 0, y: sh * crop[0], width: sw, height: sh * (1 - crop[0] - crop[1]))
-    let dh: CGFloat = 1380, dw: CGFloat = dh * srcRect.width / srcRect.height
-    rect = CGRect(x: (CGFloat(W) - dw) / 2, y: CGFloat(H) - 360 - dh, width: dw, height: dh)
+    // 위 430px 은 문구 자리(인스타 위쪽 메뉴가 150px 가량 덮는다), 화면은 그 아래 1280px.
+    let dh: CGFloat = 1280, dw: CGFloat = dh * srcRect.width / srcRect.height
+    rect = CGRect(x: (CGFloat(W) - dw) / 2, y: CGFloat(H) - 430 - dh, width: dw, height: dh)
   }
   func frame(_ ctx: CGContext, _ img: CGImage) {
     ctx.draw(bg, in: CGRect(x: 0, y: 0, width: W, height: H))
