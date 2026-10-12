@@ -31,7 +31,7 @@
   </header>
 
   <form class="bd-form" id="form">
-    <p class="lede">생일을 고르면, 그날에 어울리는 우리말 하나를 알려 줘요.</p>
+    <p class="lede">생일을 고르면, 그날에 어울리는 우리말 하나를 알려 줘요.<br>같은 생일이어도 사람마다 다른 말이 나와요.</p>
     <div class="bd-pick">
       <label class="bd-select"><span class="label">월</span><select class="box" id="month" aria-label="태어난 달"></select></label>
       <label class="bd-select"><span class="label">일</span><select class="box" id="day" aria-label="태어난 날"></select></label>
@@ -51,6 +51,7 @@
     </div>
     <div class="bd-actions">
       <button class="ghost-btn" type="button" id="again">다른 날도 보기</button>
+      <button class="ghost-btn" type="button" id="image">이미지로 저장</button>
       <button class="ghost-btn" type="button" id="share">친구에게도 알려 주기</button>
     </div>
     <p class="bd-copied" id="copied" hidden>주소를 복사했어요</p>
@@ -71,6 +72,7 @@
 
   <p class="privacy">고른 생일은 이 화면에서만 쓰고 어디에도 보내지 않아요.<br>뜻풀이 · 국립국어원 표준국어대사전(일부는 쉽게 풀어 씀)</p>
 </main>
+<script src="./js/birthday-pick.js"></script>
 <script src="./js/birthday.js"></script>
 </body>
 </html>
