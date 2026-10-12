@@ -39,7 +39,11 @@ body.pebble .photo img { transform: scale(var(--zoom, 1)); }
 
 /* 릴스(1080×1920) — 카드를 위로 조금 올린다. 아래쪽은 인스타 캡션과 버튼이 덮는다. */
 body.reel, body.reel #card { height: 1920px; }
-body.reel .frame { top: 200px; }
+body.reel .frame { top: 150px; }
+body.reel .mark { bottom: 70px; }
+.tagline { display: none; position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
+  font-family: 'MongdolSans'; font-size: 26px; letter-spacing: .04em; color: rgba(255,255,255,.55); }
+body.reel .tagline { display: block; }
 body.reel .tint { background:
   radial-gradient(900px 900px at 50% 37%, var(--c-glow) 0%, transparent 72%),
   linear-gradient(180deg, var(--c-top) 0%, #0B0C10 100%); }
@@ -60,6 +64,7 @@ body.reel .word h1 span { display: inline-block; white-space: pre; }
       <p id="meaning"></p>
     </div>
     <div class="mark" id="mark">몽돌</div>
+    <div class="tagline" id="tagline">사진을 담으면 단어가 붙어요</div>
   </div>
   <div class="grain"></div>
 </div>
@@ -124,7 +129,7 @@ if (q.get('reel')) {
   h1.replaceChildren(...letters);
   const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.pow(1 - x, 3);
   const zoom = Number(q.get('zoom') || 1), meaningAt = 1.4 + (letters.length - 1) * .28 + .6;
-  window.reelLength = Math.max(7, meaningAt + .9 + 2.5);
+  window.reelLength = Math.max(7, meaningAt + 1.4 + .9 + 2);
   const fade = (el, t, at, dur, dy = 0, blur = 0) => { const p = ease((t - at) / dur);
     el.style.opacity = p; el.style.transform = dy ? `translateY(${(1 - p) * dy}px)` : '';
     el.style.filter = blur ? `blur(${(1 - p) * blur}px)` : ''; };
@@ -135,6 +140,7 @@ if (q.get('reel')) {
     letters.forEach((s, i) => fade(s, t, 1.4 + i * .28, .7, 16, 8));
     fade(document.getElementById('meaning'), t, meaningAt, .9, 10);
     fade(document.getElementById('mark'), t, meaningAt + .3, .9);
+    fade(document.getElementById('tagline'), t, meaningAt + 1.4, .9, 8);
   };
 }
 </script>
