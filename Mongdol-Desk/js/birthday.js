@@ -121,7 +121,7 @@
       var w = birthdayPick(t, seed, m, d);
       var word = $('word'), date = $('date');
       // 받침이 있으면 「이었어요」(갈대꽃이었어요), 없으면 「였어요」(진달래였어요).
-      var last = w.w.charCodeAt(w.w.length - 1), batchim = last >= 0xAC00 && last <= 0xD7A3 && (last - 0xAC00) % 28 !== 0;
+      var end = w.w.charCodeAt(w.w.length - 1), batchim = end >= 0xAC00 && end <= 0xD7A3 && (end - 0xAC00) % 28 !== 0; // last 는 이미지 저장이 쓰는 이름 — 겹치면 저장이 멈춘다
       $('bridge').textContent = m + '월 ' + d + '일의 우리말은 「' + w.w + '」' + (batchim ? '이었어요.' : '였어요.');
       $('meaning').textContent = w.m;
       $('how').textContent = '이번 말은 ' + m + '월에 어울리는 말 ' + w.pool + '개 가운데서 골랐어요. 그중 하나를 사람마다 정해 드려서, 같은 생일이어도 친구와 다를 수 있고 다시 해 봐도 내 말은 그대로예요.';
@@ -133,6 +133,7 @@
       });
       $('card').dataset.season = SEASON[m];
       last = { date: m + '월 ' + d + '일', w: w.w, m: w.m, x: w.x, season: SEASON[m] };
+      prepareImage(last);
       $('copied').hidden = true;
       $('result').classList.remove('bd-landed');
       function land() { date.textContent = m + '월 ' + d + '일의 우리말'; letters(word, w.w); }
@@ -158,7 +159,6 @@
   $('app').addEventListener('click', function () { send('birthday_app_click'); });
 
   // 이미지로 저장 — 결과 카드를 1080×1350 그림으로. 아래에 이 페이지 주소를 넣어 보는 사람이 직접 해 볼 수 있게.
-  // 공유 시트가 파일을 받으면(iOS·안드로이드) 시트로, 아니면 내려받기.
   var GLOW = { spring: '244,165,190', summer: '120,200,160', autumn: '240,170,90', winter: '150,180,240' };
   var last = null;
   function wrap(ctx, text, maxW) {
@@ -191,22 +191,40 @@
     x.fillStyle = 'rgba(255,255,255,0.5)'; x.font = '32px ' + sans; x.fillText('mongdol-desk.vercel.app/birthday', W / 2, 1256);
     return c;
   }
+  // 이미지는 결과가 뜨는 순간 미리 만든다 — 누른 뒤에 글꼴·그림을 기다리면 iPhone 은 「누른 직후」가 지나 공유 시트를 조용히 막는다.
+  // 공유 시트가 파일을 받으면 시트로. 앱 안 브라우저(카톡 등)는 시트도 내려받기도 못 해서(「지원하지 않는 형식」) 그림을 띄우고 길게 눌러 저장하게 한다.
+  var ready = null;
+  function prepareImage(r) {
+    ready = null;
+    var fonts = document.fonts ? Promise.all(['800 190px "Nanum Myeongjo"', '40px "Gowun Dodum"'].map(function (f) { return document.fonts.load(f); })) : Promise.resolve();
+    fonts.catch(function () {}).then(function () {
+      if (r !== last) return;
+      var c = drawCard(r), url = c.toDataURL('image/png');
+      c.toBlob(function (blob) {
+        if (r !== last || !blob) return;
+        ready = { r: r, url: url, file: new File([blob], '내-생일의-우리말-' + r.w + '.png', { type: 'image/png' }) };
+      }, 'image/png');
+    });
+  }
+  function showSheet(url) {
+    $('sheetImg').src = url;
+    $('sheet').hidden = false;
+  }
+  $('sheetClose').addEventListener('click', function () { $('sheet').hidden = true; });
+  $('sheet').addEventListener('click', function (e) { if (e.target === $('sheet')) $('sheet').hidden = true; });
+  var mobile = /iPhone|iPad|iPod|Android/.test(ua) || IOS;
   $('image').addEventListener('click', function () {
     if (!last) return;
     send('birthday_image');
-    var fonts = document.fonts ? Promise.all(['800 190px "Nanum Myeongjo"', '40px "Gowun Dodum"'].map(function (f) { return document.fonts.load(f); })) : Promise.resolve();
-    fonts.catch(function () {}).then(function () {
-      drawCard(last).toBlob(function (blob) {
-        var file = new File([blob], '내-생일의-우리말-' + last.w + '.png', { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file] }).catch(function () {});
-          return;
-        }
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = file.name;
-        document.body.append(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-      }, 'image/png');
-    });
-  });
+    if (!ready || ready.r !== last) { showSheet(drawCard(last).toDataURL('image/png')); return; } // 아직 못 만들었으면 지금 그려서 띄운다
+    var file = ready.file, url = ready.url;
+    if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file] }).catch(function (err) { if (!err || err.name !== 'AbortError') showSheet(url); });
+      return;
+    }
+    if (mobile) { showSheet(url); return; }
+    var a = document.createElement('a');
+    a.href = url; a.download = file.name;
+    document.body.append(a); a.click(); a.remove();
+  });;
 })();

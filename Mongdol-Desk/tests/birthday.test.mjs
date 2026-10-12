@@ -96,7 +96,7 @@ test('이미지로 저장 — 1080×1350 그림, 페이지 주소를 넣고, 파
   assert.match(html, /id="image">이미지로 저장</);
   assert.match(js, /var W = 1080, H = 1350/);
   assert.match(js, /mongdol-desk\.vercel\.app\/birthday/);
-  assert.match(js, /navigator\.canShare\(\{ files: \[file\] \}\)/);
+  assert.match(js, /navigator\.canShare\({ files: \[file\] }\)/);
   assert.match(js, /send\('birthday_image'\)/);
 });
 
@@ -127,11 +127,26 @@ test('「어떤 기준으로 고르나요?」 — 그 달 말 몇 개 중에서 
 
 test('다리 문장 — 받침 있으면 「이었어요」, 없으면 「였어요」', () => {
   const js = read('js/birthday.js');
-  const m = js.match(/var last = w\.w\.charCodeAt\(w\.w\.length - 1\), batchim = ([^;]+);/);
+  const m = js.match(/var end = w\.w\.charCodeAt\(w\.w\.length - 1\), batchim = ([^;]+);/);
   assert.ok(m);
-  const tail = (word) => { const w = { w: word }; const last = w.w.charCodeAt(w.w.length - 1); return eval(m[1]) ? '이었어요.' : '였어요.'; };
+  const tail = (word) => { const w = { w: word }; const end = w.w.charCodeAt(w.w.length - 1); return eval(m[1]) ? '이었어요.' : '였어요.'; };
   assert.equal(tail('갈대꽃'), '이었어요.');
   assert.equal(tail('억새밭'), '이었어요.');
   assert.equal(tail('진달래'), '였어요.');
   assert.equal(tail('노랑나비'), '였어요.');
+});
+
+test('이미지 저장 — 결과가 뜰 때 미리 만들고, 시트가 안 되거나 실패하면(취소 빼고) 그림을 띄워 길게 눌러 저장', () => {
+  const js = read('js/birthday.js'), html = read('birthday.html');
+  assert.match(js, /prepareImage\(last\);/);
+  assert.match(js, /if \(!err \|\| err\.name !== 'AbortError'\) showSheet\(url\)/);
+  assert.match(js, /if \(mobile\) \{ showSheet\(url\); return; \}/);
+  assert.doesNotMatch(js, /createObjectURL/, 'blob 내려받기는 앱 안 브라우저에서 「지원하지 않는 형식」');
+  assert.match(html, /<div class="bd-sheet" id="sheet" hidden>/);
+  assert.match(html, /이미지를 길게 눌러 저장하거나 공유해 주세요/);
+});
+
+test('결과 데이터(last)는 한 곳에만 — 다른 함수에서 var last 로 다시 선언하면 이미지 저장이 멈춘다', () => {
+  const js = read('js/birthday.js');
+  assert.equal((js.match(/var last\b/g) || []).length, 1);
 });
