@@ -54,9 +54,12 @@ test('페이지 — noindex, 참조 파일이 있다, 생일을 보내지 않고
   assert.match(html, /<meta name="robots" content="noindex, nofollow">/);
   for (const [, ref] of html.matchAll(/(?:src|href)="\.\/([^"]+)"/g)) assert.ok(existsSync(new URL(`../${ref}`, import.meta.url)), ref);
   const js = read('js/birthday.js');
-  const sends = [...js.matchAll(/send\(([^)]*)\)/g)].map((m) => m[1]).filter((a) => a !== 'event');
-  assert.ok(sends.length >= 5);
-  for (const a of sends) assert.match(a, /^'[a-z_$]+'$/, `send(${a}) — 이벤트 이름만`);
+  const calls = js.split('\n').filter((l) => /\bsend\(/.test(l) && !/function send\(/.test(l));
+  assert.ok(calls.length >= 8);
+  for (const l of calls) {
+    assert.match(l, /send\('[a-z_$]+'(\)|, \{ (via|where): |, Object\.assign\(\{$)/, `이벤트 이름 + via/where 만: ${l.trim()}`);
+    assert.doesNotMatch(l, /send\([^;]*\b(last|w\.w|w\.m|month\.value|day\.value|seed)\b/, `생일·단어·열쇠를 싣지 않는다: ${l.trim()}`);
+  }
   assert.match(js, /location\.origin \+ '\/birthday\?utm_source=share'/);
   assert.match(html, /href="\/get\?utm_source=birthday/);
 });
@@ -97,7 +100,7 @@ test('이미지로 저장 — 1080×1350 그림, 페이지 주소를 넣고, 파
   assert.match(js, /var W = 1080, H = 1350/);
   assert.match(js, /mongdol-desk\.vercel\.app\/birthday/);
   assert.match(js, /navigator\.canShare\({ files: \[file\] }\)/);
-  assert.match(js, /send\('birthday_image'\)/);
+  assert.match(js, /send\('birthday_image', \{ via: 'share' \}\)/);
 });
 
 test('Tabber 기기 표시 — ?internal=1 이면 localStorage 에 남기고 기록에 internal 을 붙인다(생일만 — /get 은 저장소를 안 쓴다고 처리방침에 약속)', () => {
@@ -139,8 +142,8 @@ test('다리 문장 — 받침 있으면 「이었어요」, 없으면 「였어
 test('이미지 저장 — 결과가 뜰 때 미리 만들고, 시트가 안 되거나 실패하면(취소 빼고) 그림을 띄워 길게 눌러 저장', () => {
   const js = read('js/birthday.js'), html = read('birthday.html');
   assert.match(js, /prepareImage\(last\);/);
-  assert.match(js, /if \(!err \|\| err\.name !== 'AbortError'\) showSheet\(url\)/);
-  assert.match(js, /if \(mobile\) \{ showSheet\(url\); return; \}/);
+  assert.match(js, /if \(err && err\.name === 'AbortError'\) return;/);
+  assert.match(js, /if \(mobile\) \{ send\('birthday_image', \{ via: 'sheet' \}\); showSheet\(url\); return; \}/);
   assert.doesNotMatch(js, /createObjectURL/, 'blob 내려받기는 앱 안 브라우저에서 「지원하지 않는 형식」');
   assert.match(html, /<div class="bd-sheet" id="sheet" hidden>/);
   assert.match(html, /이미지를 길게 눌러 저장하거나 공유해 주세요/);
@@ -159,4 +162,21 @@ test('인스타 버튼 — 앱 내장 브라우저(인스타·스레드·카톡�
   assert.match(js, /'instagram:\/\/user\?username=' \+ INSTA/);
   assert.match(js, /intent:\/\/instagram\.com\/_u\/' \+ INSTA \+ '\/#Intent;package=com\.instagram\.android;scheme=https;S\.browser_fallback_url=/);
   assert.match(js, /setTimeout\(function \(\) \{ if \(!left && !document\.hidden\) location\.href = web; \}, 1200\)/);
+});
+
+test('고장 기록 — 어디서·오류 이름·메시지·스택·앱 종류를 자세히, 이미지 저장은 방식(via)을 함께', () => {
+  const js = read('js/birthday.js');
+  for (const w of ['page', 'promise', 'data', 'share', 'image', 'draw', 'canshare']) assert.match(js, new RegExp(`report\\('${w}'`), w);
+  for (const k of ['error_name', 'error_message', 'error_stack', 'can_share', 'image_ready']) assert.match(js, new RegExp(`${k}:`), k);
+  assert.match(js, /browser_app: \/KAKAOTALK\//);
+  for (const v of ['share', 'sheet', 'download']) assert.match(js, new RegExp(`send\\('birthday_image', \\{ via: '${v}' \\}\\)`), v);
+  const reports = js.split('\n').filter((l) => /\breport\(/.test(l) && !/function report\(/.test(l));
+  for (const l of reports) assert.doesNotMatch(l.slice(l.indexOf('report(')), /\b(last|w\.w|w\.m|month\.value|day\.value|seed)\b/, `생일·단어·열쇠를 싣지 않는다: ${l.trim()}`);
+});
+
+test('이미지는 toDataURL 하나로 — toBlob(일부 앱 안 브라우저에서 null) 안 쓰고, 글꼴은 1.5초 상한', () => {
+  const js = read('js/birthday.js');
+  assert.doesNotMatch(js, /\.toBlob\(/);
+  assert.match(js, /setTimeout\(r, 1500\)/);
+  assert.match(js, /alert\('이미지를 만들지 못했어요\. 이 화면을 캡처해 주세요\.'\)/);
 });

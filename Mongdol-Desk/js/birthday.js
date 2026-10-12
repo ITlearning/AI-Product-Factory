@@ -13,6 +13,8 @@
     $os: /iPhone|iPad|iPod/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac OS X' : /Windows/.test(ua) ? 'Windows' : 'Other',
     $device_type: /iPad|Tablet/.test(ua) ? 'Tablet' : /Mobi|iPhone|Android/.test(ua) ? 'Mobile' : 'Desktop',
     $process_person_profile: false, $geoip_disable: true,
+    // 어느 앱 안에서 열었나 — 앱 안 브라우저마다 공유·내려받기 지원이 달라 고장을 가르는 데 쓴다.
+    browser_app: /KAKAOTALK/.test(ua) ? 'kakao' : /Instagram/.test(ua) ? 'instagram' : /Barcelona/.test(ua) ? 'threads' : /FBAN|FBAV/.test(ua) ? 'facebook' : /Line\//.test(ua) ? 'line' : 'browser',
   };
   ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].forEach(function (k) { if (q.get(k)) base[k] = q.get(k); });
   // Tabber 기기 표시 — ?internal=1 로 한 번 열면 이 브라우저의 기록에 internal 이 붙어 대시보드에서 빠진다(?internal=0 으로 해제).
@@ -21,13 +23,29 @@
     if (q.get('internal') === '0') localStorage.removeItem('mongdol-internal');
     if (localStorage.getItem('mongdol-internal')) base.internal = true;
   } catch (e) {}
-  function send(event) {
-    var body = JSON.stringify({ api_key: KEY, event: event, distinct_id: id, timestamp: new Date().toISOString(), properties: base });
+  function send(event, extra) {
+    var props = Object.assign({}, base, extra || {});
+    var body = JSON.stringify({ api_key: KEY, event: event, distinct_id: id, timestamp: new Date().toISOString(), properties: props });
     if (!(navigator.sendBeacon && navigator.sendBeacon(URL_, new Blob([body], { type: 'text/plain' })))) {
       fetch(URL_, { method: 'POST', body: body, keepalive: true, headers: { 'Content-Type': 'text/plain' } }).catch(function () {});
     }
   }
   send('$pageview');
+  // 고장은 방문자가 먼저 본다 — 어디서·무슨 오류가·어떤 앱 안에서 났는지 자세히 남긴다. 생일·단어·열쇠는 넣지 않는다.
+  var ready = null;
+  function report(where, err, more) {
+    var e = err || {};
+    send('birthday_error', Object.assign({
+      where: where,
+      error_name: String(e.name || typeof e).slice(0, 60),
+      error_message: String(e.message || e).slice(0, 300),
+      error_stack: String(e.stack || '').split('\n').slice(0, 4).join(' | ').slice(0, 500),
+      can_share: !!navigator.share,
+      image_ready: !!ready,
+    }, more || {}));
+  }
+  window.addEventListener('error', function (e) { report('page', e.error || { name: 'Error', message: e.message }, { source: String(e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno }); });
+  window.addEventListener('unhandledrejection', function (e) { report('promise', e.reason); });
 
   var $ = function (s) { return document.getElementById(s); };
   var INSTA = 'mongdol.app'; // 몽돌 인스타 아이디 — 비우면 팔로우 링크를 숨긴다
@@ -95,6 +113,7 @@
   month.addEventListener('change', fillDays);
 
   var words = fetch('./data/birthday-words.json').then(function (r) { return r.json(); });
+  words.catch(function (e) { report('data', e); });
   // 브라우저마다 한 번 만드는 열쇠 — 같은 생일이어도 사람마다 다른 말, 다시 해도 같은 말. 저장소를 못 쓰면 이 화면 동안만.
   var seed = (function () {
     var fresh = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
@@ -211,17 +230,29 @@
   }
   // 이미지는 결과가 뜨는 순간 미리 만든다 — 누른 뒤에 글꼴·그림을 기다리면 iPhone 은 「누른 직후」가 지나 공유 시트를 조용히 막는다.
   // 공유 시트가 파일을 받으면 시트로. 앱 안 브라우저(카톡 등)는 시트도 내려받기도 못 해서(「지원하지 않는 형식」) 그림을 띄우고 길게 눌러 저장하게 한다.
-  var ready = null;
+  // toBlob 은 일부 앱 안 브라우저에서 null 을 준다 — 이미지는 toDataURL 하나로 만들고, 공유용 파일도 거기서 만든다.
+  function fontsReady() {
+    var p = document.fonts ? Promise.all(['800 190px "Nanum Myeongjo"', '40px "Gowun Dodum"'].map(function (f) { return document.fonts.load(f); })) : Promise.resolve();
+    return Promise.race([p.catch(function () {}), new Promise(function (r) { setTimeout(r, 1500); })]); // 글꼴이 멈춰도 1.5초 뒤 기본 글꼴로
+  }
+  function render(r) {
+    try {
+      var url = drawCard(r).toDataURL('image/png');
+      if (!url || url.length < 1000) { report('draw', { name: 'EmptyImage', message: 'dataURL length ' + (url ? url.length : 0) }); return null; }
+      return url;
+    } catch (e) { report('draw', e); return null; }
+  }
+  function toFile(url, name) {
+    var bin = atob(url.split(',')[1]), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    try { return new File([bytes], name, { type: 'image/png' }); } catch (e) { var b = new Blob([bytes], { type: 'image/png' }); b.name = name; return b; }
+  }
   function prepareImage(r) {
     ready = null;
-    var fonts = document.fonts ? Promise.all(['800 190px "Nanum Myeongjo"', '40px "Gowun Dodum"'].map(function (f) { return document.fonts.load(f); })) : Promise.resolve();
-    fonts.catch(function () {}).then(function () {
+    fontsReady().then(function () {
       if (r !== last) return;
-      var c = drawCard(r), url = c.toDataURL('image/png');
-      c.toBlob(function (blob) {
-        if (r !== last || !blob) return;
-        ready = { r: r, url: url, file: new File([blob], '내-생일의-우리말-' + r.w + '.png', { type: 'image/png' }) };
-      }, 'image/png');
+      var url = render(r);
+      if (url) ready = { r: r, url: url, file: toFile(url, '내-생일의-우리말-' + r.w + '.png') };
     });
   }
   function showSheet(url) {
@@ -232,17 +263,30 @@
   $('sheet').addEventListener('click', function (e) { if (e.target === $('sheet')) $('sheet').hidden = true; });
   var mobile = /iPhone|iPad|iPod|Android/.test(ua) || IOS;
   $('image').addEventListener('click', function () {
-    if (!last) return;
-    send('birthday_image');
-    if (!ready || ready.r !== last) { showSheet(drawCard(last).toDataURL('image/png')); return; } // 아직 못 만들었으면 지금 그려서 띄운다
-    var file = ready.file, url = ready.url;
-    if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file] }).catch(function (err) { if (!err || err.name !== 'AbortError') showSheet(url); });
+    if (!last) { report('image', { name: 'NoResult', message: 'image clicked without a result' }); return; }
+    if (!ready || ready.r !== last) {
+      var now = render(last); // 아직 못 만들었으면 지금 그려서 띄운다
+      if (!now) { alert('이미지를 만들지 못했어요. 이 화면을 캡처해 주세요.'); return; }
+      send('birthday_image', { via: 'sheet' });
+      showSheet(now);
       return;
     }
-    if (mobile) { showSheet(url); return; }
+    var file = ready.file, url = ready.url;
+    var canFiles = false;
+    try { canFiles = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] })); } catch (e) { report('canshare', e); }
+    if (canFiles) {
+      send('birthday_image', { via: 'share' });
+      navigator.share({ files: [file] }).catch(function (err) {
+        if (err && err.name === 'AbortError') return; // 사용자가 닫은 것
+        report('share', err);
+        showSheet(url);
+      });
+      return;
+    }
+    if (mobile) { send('birthday_image', { via: 'sheet' }); showSheet(url); return; }
+    send('birthday_image', { via: 'download' });
     var a = document.createElement('a');
-    a.href = url; a.download = file.name;
+    a.href = url; a.download = '내-생일의-우리말-' + last.w + '.png';
     document.body.append(a); a.click(); a.remove();
   });;
 })();
