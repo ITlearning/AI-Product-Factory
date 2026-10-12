@@ -324,3 +324,6 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
   -webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; }
 .bd-sheet p { margin-top: 14px; font-size: 15px; line-height: 1.6; color: var(--secondary); }
 .bd-sheet .ghost-btn { margin-top: 14px; min-height: 44px; }
+
+/* 저장 화면 — 안내 아래 버튼(안드로이드 앱 안은 크롬으로, 일반 브라우저는 바로 저장). */
+.bd-sheet .primary-btn { margin-top: 14px; }

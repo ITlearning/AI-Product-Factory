@@ -131,7 +131,13 @@
   // 브라우저마다 한 번 만드는 열쇠 — 같은 생일이어도 사람마다 다른 말, 다시 해도 같은 말. 저장소를 못 쓰면 이 화면 동안만.
   var seed = (function () {
     var fresh = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
-    try { var s = localStorage.getItem('mongdol-birthday-seed'); if (!s) { s = fresh; localStorage.setItem('mongdol-birthday-seed', s); } return s; } catch (e) { return fresh; }
+    // 안드로이드 앱 안에서 「크롬에서 열어 저장하기」로 넘어오면 주소에 k(열쇠)가 실려 온다 — 같은 결과가 나오게 이어 쓴다.
+    var carried = /^[A-Za-z0-9-]{8,64}$/.test(q.get('k') || '') ? q.get('k') : null;
+    try {
+      var s = carried || localStorage.getItem('mongdol-birthday-seed') || fresh;
+      localStorage.setItem('mongdol-birthday-seed', s);
+      return s;
+    } catch (e) { return carried || fresh; }
   })();
   // 두구두구 — 카드 안에서 다른 말들이 빠르게 지나가다 점점 느려지고, 번짐이 숨 쉬다가 제 말에 멈춘다.
   // 도는 동안 카드를 누르면 바로 멈춘다. 움직임 줄이기면 돌리지 않는다.
@@ -183,7 +189,7 @@
         b.textContent = x.w; s.textContent = x.m; li.append(b, s); more.append(li);
       });
       $('card').dataset.season = SEASON[m];
-      last = { date: m + '월 ' + d + '일', w: w.w, m: w.m, x: w.x, season: SEASON[m] };
+      last = { date: m + '월 ' + d + '일', mo: m, da: d, w: w.w, m: w.m, x: w.x, season: SEASON[m] };
       prepareImage(last);
       $('copied').hidden = true;
       $('result').classList.remove('bd-landed');
@@ -281,12 +287,46 @@
       if (r !== last) return;
       var url = render(r);
       if (url) ready = { r: r, url: url, file: toFile(url, '내-생일의-우리말-' + r.w + '.png') };
+      if (url && autoSave) { autoSave = false; setTimeout(function () { showSheet(url); }, 2600); } // 넘어온 경우 두구두구 뒤에 저장 화면
     });
   }
+  // 저장 화면은 환경마다 다르다.
+  //  · 안드로이드 앱 안(인스타·스레드·페북·카톡…): 길게 눌러도 저장 메뉴가 안 뜬다(스레드 방문자가 두 번 열고 결국 캡처) → 캡처 안내 + 크롬으로 같은 결과 넘기기
+  //  · 아이폰: 앱 안에서도 길게 눌러 「사진에 저장」이 된다 → 그대로
+  //  · 일반 브라우저(크롬·사파리, 넘어온 경우 포함): 「이미지 저장」으로 바로 내려받기
+  var ANDROID_IN_APP = /Android/.test(ua) && base.browser_app !== 'browser';
+  var autoSave = q.get('save') === '1';
   function showSheet(url) {
     $('sheetImg').src = url;
+    var save = $('sheetSave'), note = $('sheetNote');
+    if (ANDROID_IN_APP) {
+      save.hidden = false;
+      save.textContent = base.browser_app === 'kakao' ? '브라우저에서 열어 저장하기' : '크롬에서 열어 저장하기';
+      note.textContent = '이 화면을 캡처해서 저장해 주세요. 이미지 파일이 필요하면 아래 버튼으로 브라우저에서 열 수 있어요.';
+    } else if (IOS && base.browser_app !== 'browser') {
+      save.hidden = true;
+      note.textContent = '이미지를 길게 눌러 저장하거나 공유해 주세요.';
+    } else {
+      save.hidden = false;
+      save.textContent = '이미지 저장';
+      note.textContent = '저장이 안 되면 이미지를 길게 눌러 저장해 주세요.';
+    }
     $('sheet').hidden = false;
   }
+  function openInBrowser() {
+    var url = location.origin + '/birthday?m=' + last.mo + '&d=' + last.da + '&k=' + encodeURIComponent(seed) + '&save=1&from=' + base.browser_app +
+      '&utm_source=' + encodeURIComponent(base.utm_source || base.browser_app);
+    if (base.browser_app === 'kakao') { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); return; }
+    location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+  }
+  $('sheetSave').addEventListener('click', function () {
+    if (!last) return;
+    if (ANDROID_IN_APP) { send('birthday_image', { via: 'external' }); openInBrowser(); return; }
+    send('birthday_image', { via: 'download' });
+    var a = document.createElement('a');
+    a.href = $('sheetImg').src; a.download = '내-생일의-우리말-' + last.w + '.png';
+    document.body.append(a); a.click(); a.remove();
+  });
   $('sheetClose').addEventListener('click', function () { $('sheet').hidden = true; });
   // 길게 누르면 contextmenu 가 온다 — 저장 메뉴가 실제로 떴는지는 모르지만, 누가 어느 앱에서 길게 눌러 봤는지는 남긴다.
   $('sheetImg').addEventListener('contextmenu', function () { send('birthday_image', { via: 'hold' }); });
@@ -323,4 +363,10 @@
     a.href = url; a.download = '내-생일의-우리말-' + last.w + '.png';
     document.body.append(a); a.click(); a.remove();
   });;
+  // 앱 안에서 넘어온 경우(m·d·k) — 같은 생일로 바로 결과를 띄우고, save=1 이면 이미지가 준비되는 대로 저장 화면을 연다.
+  var qm = Number(q.get('m')), qd = Number(q.get('d'));
+  if (qm >= 1 && qm <= 12 && qd >= 1 && qd <= 31) {
+    month.value = String(qm); fillDays(); day.value = String(qd);
+    if ($('form').requestSubmit) $('form').requestSubmit(); else $('form').dispatchEvent(new Event('submit', { cancelable: true }));
+  }
 })();

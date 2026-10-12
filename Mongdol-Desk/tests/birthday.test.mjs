@@ -146,7 +146,7 @@ test('이미지 저장 — 결과가 뜰 때 미리 만들고, 시트가 안 되
   assert.match(js, /if \(mobile\) \{ send\('birthday_image', \{ via: 'sheet' \}\); showSheet\(url\); return; \}/);
   assert.doesNotMatch(js, /createObjectURL/, 'blob 내려받기는 앱 안 브라우저에서 「지원하지 않는 형식」');
   assert.match(html, /<div class="bd-sheet" id="sheet" hidden>/);
-  assert.match(html, /이미지를 길게 눌러 저장하거나 공유해 주세요/);
+  assert.match(html, /id="sheetSave" hidden/);
 });
 
 test('결과 데이터(last)는 한 곳에만 — 다른 함수에서 var last 로 다시 선언하면 이미지 저장이 멈춘다', () => {
@@ -199,4 +199,15 @@ test('외부 스크립트 오류는 거른다 — 우리 주소의 파일만, ia
   assert.equal(ours('', ''), false, 'Script error. — 다른 출처');
   assert.equal(ours('https://www.instagram.com/static/x.js', ''), false);
   assert.match(js, /send\('birthday_image', \{ via: 'hold' \}\)/);
+});
+
+test('저장 화면 분기 — 안드로이드 앱 안은 캡처 안내 + 크롬(카톡은 외부 브라우저)으로 같은 결과, 아이폰 앱 안은 길게 누르기, 일반 브라우저는 내려받기', () => {
+  const js = read('js/birthday.js');
+  assert.match(js, /var ANDROID_IN_APP = \/Android\/\.test\(ua\) && base\.browser_app !== 'browser';/);
+  assert.match(js, /'이 화면을 캡처해서 저장해 주세요\./);
+  assert.match(js, /'kakaotalk:\/\/web\/openExternal\?url=' \+ encodeURIComponent\(url\)/);
+  assert.match(js, /package=com\.android\.chrome;S\.browser_fallback_url=/);
+  assert.match(js, /'\/birthday\?m=' \+ last\.mo \+ '&d=' \+ last\.da \+ '&k=' \+ encodeURIComponent\(seed\) \+ '&save=1/);
+  assert.match(js, /var carried = /);
+  for (const v of ['external', 'download']) assert.match(js, new RegExp(`send\\('birthday_image', \\{ via: '${v}' \\}\\)`), v);
 });
