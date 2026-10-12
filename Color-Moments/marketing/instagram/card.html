@@ -30,6 +30,11 @@ body { width: 1080px; height: 1350px; overflow: hidden; background: #0B0C10; }
 .dot { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: var(--c-dot); vertical-align: 2px; margin-right: 14px;
   box-shadow: 0 0 18px var(--c-dot); }
 
+/* 조약돌 카드 — 앱 화면 스크린샷의 조약돌만 남기고 가장자리를 배경으로 녹인다(셰이더라 HTML 로는 못 그린다). */
+body.pebble .photo { left: 90px; top: 110px; width: 900px; height: 820px; border-radius: 0; box-shadow: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 58%, transparent 100%); mask-image: radial-gradient(closest-side, #000 58%, transparent 100%); }
+body.pebble .photo img { transform: scale(var(--zoom, 1)); }
+
 .mark { position: absolute; bottom: 52px; left: 0; right: 0; text-align: center; z-index: 5;
   font-family: 'MongdolSerif'; font-size: 30px; color: rgba(255,255,255,.45); letter-spacing: .1em; }
 </style>
@@ -48,11 +53,14 @@ body { width: 1080px; height: 1350px; overflow: hidden; background: #0B0C10; }
 </div>
 <script>
 const q = new URLSearchParams(location.search);
+const pebble = q.get('kind') === 'pebble';
+if (pebble) document.body.classList.add('pebble');
+if (q.get('zoom')) document.documentElement.style.setProperty('--zoom', q.get('zoom'));
 document.getElementById('word').textContent = q.get('word') || '윤슬';
 document.getElementById('meaning').textContent = q.get('meaning') || '햇빛이나 달빛에 비쳐 반짝이는 잔물결';
 const head = document.getElementById('head');
 head.innerHTML = '<span class="dot"></span>';
-head.append('오늘의 단어' + (q.get('date') ? ' · ' + q.get('date') : ''));
+head.append((pebble ? '오늘의 조약돌' : '오늘의 단어') + (q.get('date') ? ' · ' + q.get('date') : ''));
 
 const root = document.documentElement.style;
 function paint(r, g, b) {
@@ -66,7 +74,18 @@ const img = document.getElementById('photo');
 img.onload = () => {
   if (q.get('color')) return paint(...hex(q.get('color')));
   const c = document.createElement('canvas'); c.width = c.height = 32;
-  const x = c.getContext('2d'); x.drawImage(img, 0, 0, 32, 32);
+  const x = c.getContext('2d'); // 조약돌 카드는 가운데(돌)만 본다 — 앱 배경색이 섞이면 돌 색이 아니게 된다.
+  if (pebble) { const w = img.naturalWidth, h = img.naturalHeight, side = Math.min(w, h) * .3;
+    // 둘레가 녹아드는 자리를 스크린샷 가장자리 색으로 깐다 — 다른 색이면 돌 둘레에 고리가 생긴다.
+    x.drawImage(img, 0, 0, 32, 32);
+    const e = x.getImageData(0, 0, 32, 32).data; let er = 0, eg = 0, eb = 0, en = 0;
+    for (let i = 0; i < 32 * 32; i++) { const px = i % 32, py = i / 32 | 0;
+      if (px > 2 && px < 29 && py > 2 && py < 29) continue;
+      er += e[i * 4]; eg += e[i * 4 + 1]; eb += e[i * 4 + 2]; en++; }
+    document.getElementById('card').style.background = `rgb(${er / en | 0},${eg / en | 0},${eb / en | 0})`;
+    document.querySelector('.tint').style.opacity = 0;
+    x.drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, 32, 32); }
+  else x.drawImage(img, 0, 0, 32, 32);
   let d; try { d = x.getImageData(0, 0, 32, 32).data; } catch { return paint(120, 130, 150); }
   // 가장 흔한 색 한 점 — 평균은 회색으로 뭉개진다. 너무 어둡거나 하얀 칸은 뺀다.
   const bins = new Map();
