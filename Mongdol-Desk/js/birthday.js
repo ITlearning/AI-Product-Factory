@@ -231,9 +231,23 @@
   // 이미지는 결과가 뜨는 순간 미리 만든다 — 누른 뒤에 글꼴·그림을 기다리면 iPhone 은 「누른 직후」가 지나 공유 시트를 조용히 막는다.
   // 공유 시트가 파일을 받으면 시트로. 앱 안 브라우저(카톡 등)는 시트도 내려받기도 못 해서(「지원하지 않는 형식」) 그림을 띄우고 길게 눌러 저장하게 한다.
   // toBlob 은 일부 앱 안 브라우저에서 null 을 준다 — 이미지는 toDataURL 하나로 만들고, 공유용 파일도 거기서 만든다.
-  function fontsReady() {
-    var p = document.fonts ? Promise.all(['800 190px "Nanum Myeongjo"', '40px "Gowun Dodum"'].map(function (f) { return document.fonts.load(f); })) : Promise.resolve();
-    return Promise.race([p.catch(function () {}), new Promise(function (r) { setTimeout(r, 1500); })]); // 글꼴이 멈춰도 1.5초 뒤 기본 글꼴로
+  // 한글 웹글꼴은 글자 조각(unicode-range)으로 나뉘어 있어, 그릴 글자를 알려 줘야 그 조각까지 받는다.
+  // 글자 없이 load 하면 일부 조각만 받아 그림에 기본 글꼴이 섞인다(갤럭시 「뜰」, 아이폰은 통째로 고딕).
+  var SERIF = '800 190px "Nanum Myeongjo"', SANS = '40px "Gowun Dodum"';
+  function fontsReady(r) {
+    var serifText = r.w + r.x.map(function (e) { return e.w; }).join('') + '몽돌·';
+    var sansText = r.date + '의 우리말' + r.m + '이날의 다른 말mongdol-desk.vercel.app/birthday';
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    var p = Promise.all([document.fonts.load(SERIF, serifText), document.fonts.load(SANS, sansText)]).catch(function (e) { report('font', e); });
+    var cap = new Promise(function (res) { setTimeout(function () { res('timeout'); }, 3000); });
+    return Promise.race([p, cap]).then(function (v) {
+      var missing = [];
+      try {
+        if (!document.fonts.check(SERIF, serifText)) missing.push('serif');
+        if (!document.fonts.check(SANS, sansText)) missing.push('sans');
+      } catch (e) {}
+      if (v === 'timeout' || missing.length) report('font', { name: v === 'timeout' ? 'FontTimeout' : 'FontMissing', message: 'missing ' + (missing.join(',') || 'unknown') });
+    });
   }
   function render(r) {
     try {
@@ -249,7 +263,7 @@
   }
   function prepareImage(r) {
     ready = null;
-    fontsReady().then(function () {
+    fontsReady(r).then(function () {
       if (r !== last) return;
       var url = render(r);
       if (url) ready = { r: r, url: url, file: toFile(url, '내-생일의-우리말-' + r.w + '.png') };
@@ -265,10 +279,14 @@
   $('image').addEventListener('click', function () {
     if (!last) { report('image', { name: 'NoResult', message: 'image clicked without a result' }); return; }
     if (!ready || ready.r !== last) {
-      var now = render(last); // 아직 못 만들었으면 지금 그려서 띄운다
-      if (!now) { alert('이미지를 만들지 못했어요. 이 화면을 캡처해 주세요.'); return; }
+      // 아직 준비 전이면 글꼴을 다 받은 뒤 그려서 띄운다(그림 띄우기는 「누른 직후」가 필요 없다).
+      var r = last;
       send('birthday_image', { via: 'sheet' });
-      showSheet(now);
+      fontsReady(r).then(function () {
+        var now = render(r);
+        if (!now) { alert('이미지를 만들지 못했어요. 이 화면을 캡처해 주세요.'); return; }
+        showSheet(now);
+      });
       return;
     }
     var file = ready.file, url = ready.url;
