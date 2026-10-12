@@ -149,6 +149,8 @@ test('이미지 저장 — 결과가 뜰 때 미리 만들고, 시트가 안 되
 test('결과 데이터(last)는 한 곳에만 — 다른 함수에서 var last 로 다시 선언하면 이미지 저장이 멈춘다', () => {
   const js = read('js/birthday.js');
   assert.equal((js.match(/var last\b/g) || []).length, 1);
+});
+
 test('인스타 버튼 — 앱 내장 브라우저(인스타·스레드·카톡·페북)에서는 인스타 앱을 직접 열고, 안 열리면 웹으로', () => {
   const js = read('js/birthday.js');
   const re = new RegExp(js.match(/var inApp = \/(.+)\/\.test\(ua\);/)[1]);
