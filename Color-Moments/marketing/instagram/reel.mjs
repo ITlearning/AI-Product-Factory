@@ -1,5 +1,5 @@
 // 릴스 프레임 찍기 — 크롬 하나를 띄워 card.html 의 frame(t) 를 넘기며 JPEG 를 찍는다.
-//   node reel.mjs <card.html URL> <프레임 폴더> [fps]
+//   node reel.mjs <card.html URL> <프레임 폴더> [fps]   → {count, intro, box(사진 자리)} JSON 한 줄
 import { spawn } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
@@ -40,7 +40,8 @@ try {
   const loaded = new Promise(ok => waiters.set('Page.loadEventFired', ok));
   await send('Page.navigate', { url });
   await loaded;
-  const length = await evaluate('window.ready.then(() => window.reelLength)');
+  const { length, intro, box } = await evaluate(`window.ready.then(() => { const r = document.getElementById('photoBox').getBoundingClientRect();
+    return { length: window.reelLength, intro: window.introLength, box: [r.x, r.y, r.width, r.height].map(Math.round) }; })`);
   const count = Math.round(length * fps);
   for (let i = 0; i < count; i++) {
     await evaluate(`frame(${i / fps})`);
@@ -48,7 +49,7 @@ try {
     writeFileSync(`${outDir}/f${String(i).padStart(5, '0')}.jpg`, Buffer.from(data, 'base64'));
   }
   ws.close();
-  console.log(count);
+  console.log(JSON.stringify({ count, intro, box }));
 } finally {
   chrome.kill();
 }
