@@ -5,6 +5,9 @@
   var URL_ = 'https://eu.i.posthog.com/i/v0/e/';
   var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
   var q = new URLSearchParams(location.search);
+  // 앱 안에서 바깥 브라우저로 넘어올 때 생일(m·d)과 열쇠(k)는 # 뒤에 싣는다 — # 뒤는 서버로 가지 않아 접속 기록에도 안 남는다. 읽은 뒤 주소에서 지운다.
+  var h = new URLSearchParams(location.hash.slice(1));
+  if (h.get('m')) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
   var ua = navigator.userAgent;
   var base = {
     $lib: 'web', $current_url: location.origin + location.pathname, $host: location.host, $pathname: location.pathname,
@@ -132,7 +135,7 @@
   var seed = (function () {
     var fresh = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
     // 안드로이드 앱 안에서 「크롬에서 열어 저장하기」로 넘어오면 주소에 k(열쇠)가 실려 온다 — 같은 결과가 나오게 이어 쓴다.
-    var carried = /^[A-Za-z0-9-]{8,64}$/.test(q.get('k') || '') ? q.get('k') : null;
+    var carried = /^[A-Za-z0-9-]{8,64}$/.test(h.get('k') || '') ? h.get('k') : null;
     try {
       var s = carried || localStorage.getItem('mongdol-birthday-seed') || fresh;
       localStorage.setItem('mongdol-birthday-seed', s);
@@ -191,7 +194,6 @@
       $('card').dataset.season = SEASON[m];
       last = { date: m + '월 ' + d + '일', mo: m, da: d, w: w.w, m: w.m, x: w.x, season: SEASON[m] };
       prepareImage(last);
-      $('copied').hidden = true;
       $('result').classList.remove('bd-landed');
       function land() { date.textContent = m + '월 ' + d + '일의 우리말'; letters(word, w.w); }
       if (still) land(); else { date.textContent = m + '월 ' + d + '일의 우리말은…'; word.textContent = ''; }
@@ -204,15 +206,6 @@
   });
   $('again').addEventListener('click', function () { stop && stop(); swap($('result'), $('form')); });
 
-  // 결과가 아니라 이 도구를 건넨다 — 주소에 생일을 싣지 않는다.
-  $('share').addEventListener('click', function () {
-    send('birthday_share');
-    var url = location.origin + '/birthday?utm_source=share';
-    // 카톡 등은 text·url 을 줄바꿈 없이 붙여 버린다 — 글 한 줄 + 줄바꿈 + 주소를 text 하나로 넘긴다.
-    var text = '생일을 고르면 그날의 우리말 하나를 알려 줘요\n' + url;
-    if (navigator.share) { navigator.share({ title: '내 생일의 우리말', text: text }).catch(function () {}); return; }
-    navigator.clipboard && navigator.clipboard.writeText(url).then(function () { $('copied').hidden = false; });
-  });
   $('app').addEventListener('click', function () { send('birthday_app_click'); });
 
   // 이미지로 저장 — 결과 카드를 1080×1350 그림으로. 아래에 이 페이지 주소를 넣어 보는 사람이 직접 해 볼 수 있게.
@@ -227,10 +220,12 @@
     if (line) lines.push(line);
     return lines;
   }
-  function drawCard(r) {
+  // tall 은 인스타 스토리용 1080×1920 — 같은 카드를 세로 가운데에 둔다.
+  function drawCard(r, tall) {
     var W = 1080, H = 1350, c = document.createElement('canvas'), x = c.getContext('2d');
-    c.width = W; c.height = H;
-    x.fillStyle = '#06070A'; x.fillRect(0, 0, W, H);
+    c.width = W; c.height = tall ? 1920 : H;
+    x.fillStyle = '#06070A'; x.fillRect(0, 0, W, c.height);
+    if (tall) x.translate(0, (1920 - H) / 2);
     var g = x.createRadialGradient(W / 2, 520, 0, W / 2, 520, 620);
     g.addColorStop(0, 'rgba(' + GLOW[r.season] + ',0.55)'); g.addColorStop(1, 'rgba(' + GLOW[r.season] + ',0)');
     x.fillStyle = g; x.fillRect(0, 0, W, H);
@@ -269,9 +264,9 @@
       if (v === 'timeout' || missing.length) report('font', { name: v === 'timeout' ? 'FontTimeout' : 'FontMissing', message: 'missing ' + (missing.join(',') || 'unknown') });
     });
   }
-  function render(r) {
+  function render(r, tall) {
     try {
-      var url = drawCard(r).toDataURL('image/png');
+      var url = drawCard(r, tall).toDataURL('image/png');
       if (!url || url.length < 1000) { report('draw', { name: 'EmptyImage', message: 'dataURL length ' + (url ? url.length : 0) }); return null; }
       return url;
     } catch (e) { report('draw', e); return null; }
@@ -281,13 +276,19 @@
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     try { return new File([bytes], name, { type: 'image/png' }); } catch (e) { var b = new Blob([bytes], { type: 'image/png' }); b.name = name; return b; }
   }
+  function build(r) {
+    var url = render(r), tall = url && render(r, true);
+    return url && { r: r, url: url, file: toFile(url, '내-생일의-우리말-' + r.w + '.png'), story: tall || url, storyFile: toFile(tall || url, '내-생일의-우리말-스토리-' + r.w + '.png') };
+  }
   function prepareImage(r) {
     ready = null;
     fontsReady(r).then(function () {
       if (r !== last) return;
-      var url = render(r);
-      if (url) ready = { r: r, url: url, file: toFile(url, '내-생일의-우리말-' + r.w + '.png') };
-      if (url && autoSave) { autoSave = false; setTimeout(function () { showSheet(url); }, 2600); } // 넘어온 경우 두구두구 뒤에 저장 화면
+      ready = build(r);
+      if (!ready) return;
+      // 넘어온 경우 두구두구 뒤에 — save=1 은 저장 화면, save=insta 는 「인스타 스토리」를 한 번 더 누르게(공유 시트는 누른 직후에만 열린다)
+      if (autoSave) { autoSave = false; setTimeout(function () { showSheet(ready.url); }, 2600); }
+      else if (autoInsta) { autoInsta = false; setTimeout(function () { showTargets('인스타 스토리를 눌러 주세요.', 'insta'); }, 2600); }
     });
   }
   // 저장 화면은 환경마다 다르다.
@@ -295,9 +296,10 @@
   //  · 아이폰: 앱 안에서도 길게 눌러 「사진에 저장」이 된다 → 그대로
   //  · 일반 브라우저(크롬·사파리, 넘어온 경우 포함): 「이미지 저장」으로 바로 내려받기
   var ANDROID_IN_APP = /Android/.test(ua) && base.browser_app !== 'browser';
-  var autoSave = q.get('save') === '1';
+  var autoSave = q.get('save') === '1', autoInsta = q.get('save') === 'insta';
   function showSheet(url) {
-    $('sheetImg').src = url;
+    $('targets').hidden = true;
+    $('sheetImg').src = url; $('sheetImg').hidden = false;
     var save = $('sheetSave'), note = $('sheetNote');
     if (ANDROID_IN_APP) {
       save.hidden = false;
@@ -313,9 +315,9 @@
     }
     $('sheet').hidden = false;
   }
-  function openInBrowser() {
-    var url = location.origin + '/birthday?m=' + last.mo + '&d=' + last.da + '&k=' + encodeURIComponent(seed) + '&save=1&from=' + base.browser_app +
-      '&utm_source=' + encodeURIComponent(base.utm_source || base.browser_app);
+  function openInBrowser(save) {
+    var url = location.origin + '/birthday?save=' + (save || '1') + '&from=' + base.browser_app + '&utm_source=' + encodeURIComponent(base.utm_source || base.browser_app) +
+      '#m=' + last.mo + '&d=' + last.da + '&k=' + encodeURIComponent(seed);
     if (base.browser_app === 'kakao') { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); return; }
     location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
   }
@@ -332,39 +334,102 @@
   $('sheetImg').addEventListener('contextmenu', function () { send('birthday_image', { via: 'hold' }); });
   $('sheet').addEventListener('click', function (e) { if (e.target === $('sheet')) $('sheet').hidden = true; });
   var mobile = /iPhone|iPad|iPod|Android/.test(ua) || IOS;
-  $('image').addEventListener('click', function () {
-    if (!last) { report('image', { name: 'NoResult', message: 'image clicked without a result' }); return; }
-    if (!ready || ready.r !== last) {
-      // 아직 준비 전이면 글꼴을 다 받은 뒤 그려서 띄운다(그림 띄우기는 「누른 직후」가 필요 없다).
-      var r = last;
-      send('birthday_image', { via: 'sheet' });
-      fontsReady(r).then(function () {
-        var now = render(r);
-        if (!now) { alert('이미지를 만들지 못했어요. 이 화면을 캡처해 주세요.'); return; }
-        showSheet(now);
-      });
-      return;
-    }
-    var file = ready.file, url = ready.url;
-    var canFiles = false;
-    try { canFiles = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] })); } catch (e) { report('canshare', e); }
-    if (canFiles) {
-      send('birthday_image', { via: 'share' });
-      navigator.share({ files: [file] }).catch(function (err) {
-        if (err && err.name === 'AbortError') return; // 사용자가 닫은 것
-        report('share', err);
-        showSheet(url);
-      });
-      return;
-    }
-    if (mobile) { send('birthday_image', { via: 'sheet' }); showSheet(url); return; }
-    send('birthday_image', { via: 'download' });
+  // 공유하기 — 기기 공유 시트는 인스타가 목록 뒤쪽에 숨어 있어 찾기 어렵다(친구 피드백 「공유가 어려워요」).
+  // 그래서 어디로 보낼지 먼저 우리 화면에서 고르게 하고, 고른 곳에 맞는 길로 보낸다.
+  // 웹에서 인스타로 사진을 바로 넘기는 주소는 없다 — 사진은 기기 공유 시트로만 갈 수 있다.
+  function canShareFile(f) {
+    try { return !!(f && navigator.canShare && navigator.share && navigator.canShare({ files: [f] })); } catch (e) { report('canshare', e); return false; }
+  }
+  function showTargets(note, hint) {
+    $('sheetImg').src = ready ? ready.url : '';
+    $('sheetImg').hidden = !ready;
+    $('sheetNote').textContent = note || '어디로 보낼까요?';
+    $('sheetSave').hidden = true;
+    $('targets').hidden = false;
+    Array.prototype.forEach.call($('targets').children, function (b) { b.classList.toggle('bd-hint', b.dataset.to === hint); });
+    $('sheet').hidden = false;
+  }
+  function shareFile(f, to, onFail) {
+    send('birthday_share', { via: 'share', to: to });
+    navigator.share({ files: [f] }).catch(function (err) {
+      if (err && err.name === 'AbortError') return; // 사용자가 닫은 것
+      report('share', err, { to: to });
+      onFail();
+    });
+  }
+  function download(url, name) {
     var a = document.createElement('a');
-    a.href = url; a.download = '내-생일의-우리말-' + last.w + '.png';
+    a.href = url; a.download = name;
     document.body.append(a); a.click(); a.remove();
-  });;
+  }
+  // 이 도구를 건네는 글 — 카톡 등은 text·url 을 줄바꿈 없이 붙여 버려서 글 한 줄 + 줄바꿈 + 주소를 text 하나로 넘긴다.
+  function invite(src) { return '생일을 고르면 그날의 우리말 하나를 알려 줘요\n' + location.origin + '/birthday?utm_source=' + src; }
+  function copyLink(src) {
+    var url = location.origin + '/birthday?utm_source=' + src;
+    var done = function () { $('sheetNote').textContent = '주소를 복사했어요. 대화방에 붙여 넣어 주세요.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { $('sheetNote').textContent = url; });
+    else $('sheetNote').textContent = url;
+  }
+  var TO = {
+    insta: function () {
+      var f = ready.storyFile;
+      if (canShareFile(f)) {
+        $('sheetNote').textContent = '목록에서 Instagram 을 눌러 주세요.';
+        shareFile(f, 'insta', function () { showSheet(ready.story); });
+        return;
+      }
+      if (ANDROID_IN_APP) { send('birthday_share', { via: 'external', to: 'insta' }); openInBrowser('insta'); return; }
+      if (!mobile) { send('birthday_share', { via: 'download', to: 'insta' }); download(ready.story, '내-생일의-우리말-스토리-' + last.w + '.png'); return; }
+      send('birthday_share', { via: 'sheet', to: 'insta' });
+      showSheet(ready.story);
+      $('sheetNote').textContent = '이미지를 길게 눌러 사진에 저장한 뒤, 인스타 스토리에서 골라 올려 주세요.';
+    },
+    kakao: function () {
+      if (canShareFile(ready.file)) { shareFile(ready.file, 'kakao', function () { showSheet(ready.url); }); return; }
+      send('birthday_share', { via: 'link', to: 'kakao' });
+      if (navigator.share) { navigator.share({ text: invite('kakao') }).catch(function () {}); return; }
+      copyLink('kakao');
+    },
+    threads: function () {
+      send('birthday_share', { via: 'intent', to: 'threads' });
+      var text = '내 생일의 우리말은 「' + last.w + '」\n' + invite('threads');
+      location.href = 'https://www.threads.net/intent/post?text=' + encodeURIComponent(text);
+    },
+    save: function () {
+      var url = ready.url;
+      if (canShareFile(ready.file)) { send('birthday_image', { via: 'share' }); navigator.share({ files: [ready.file] }).catch(function (err) { if (err && err.name === 'AbortError') return; report('share', err); showSheet(url); }); return; }
+      if (mobile) { send('birthday_image', { via: 'sheet' }); showSheet(url); return; }
+      send('birthday_image', { via: 'download' });
+      download(url, '내-생일의-우리말-' + last.w + '.png');
+    },
+    link: function () {
+      send('birthday_share', { via: 'copy', to: 'link' });
+      copyLink('share');
+    },
+  };
+  $('share').addEventListener('click', function () {
+    if (!last) { report('image', { name: 'NoResult', message: 'share clicked without a result' }); return; }
+    send('birthday_share', { via: 'open' });
+    showTargets();
+    if (ready && ready.r === last) return;
+    // 아직 그림 전이면 글꼴을 받은 뒤 그려서 채운다 — 고르는 동안 준비된다.
+    var r = last;
+    fontsReady(r).then(function () {
+      if (r !== last) return;
+      ready = build(r);
+      if (!ready) { $('sheetNote').textContent = '이미지를 만들지 못했어요. 이 화면을 캡처해 주세요.'; return; }
+      if (!$('targets').hidden) { $('sheetImg').src = ready.url; $('sheetImg').hidden = false; }
+    });
+  });
+  Array.prototype.forEach.call($('targets').children, function (b) {
+    b.addEventListener('click', function () {
+      if (!last) return;
+      if (!ready || ready.r !== last) { $('sheetNote').textContent = '이미지를 만드는 중이에요. 잠시 뒤에 다시 눌러 주세요.'; return; }
+      TO[b.dataset.to]();
+    });
+  });
   // 앱 안에서 넘어온 경우(m·d·k) — 같은 생일로 바로 결과를 띄우고, save=1 이면 이미지가 준비되는 대로 저장 화면을 연다.
-  var qm = Number(q.get('m')), qd = Number(q.get('d'));
+  var qm = Number(h.get('m')), qd = Number(h.get('d'));
   if (qm >= 1 && qm <= 12 && qd >= 1 && qd <= 31) {
     month.value = String(qm); fillDays(); day.value = String(qd);
     if ($('form').requestSubmit) $('form').requestSubmit(); else $('form').dispatchEvent(new Event('submit', { cancelable: true }));
