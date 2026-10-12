@@ -68,26 +68,60 @@
   month.addEventListener('change', fillDays);
 
   var table = fetch('./data/birthday.json').then(function (r) { return r.json(); });
+  // 두구두구 — 카드 안에서 다른 말들이 빠르게 지나가다 점점 느려지고, 번짐이 숨 쉬다가 제 말에 멈춘다.
+  // 도는 동안 카드를 누르면 바로 멈춘다. 움직임 줄이기면 돌리지 않는다.
+  var stop = null;
+  function letters(el, text) {
+    el.textContent = '';
+    Array.from(text).forEach(function (ch, i) { var s = document.createElement('span'); s.textContent = ch; s.style.setProperty('--i', i); el.append(s); });
+    el.setAttribute('aria-label', text);
+  }
+  function roll(t, done) {
+    var all = Object.keys(t), word = $('word'), result = $('result'), at = 0, ticks = 0, timer = null, ended = false;
+    result.classList.add('bd-rolling');
+    function tick() {
+      word.textContent = t[all[Math.floor(Math.random() * all.length)]].w;
+      if (navigator.vibrate) navigator.vibrate(6);
+      var gap = 55 + ticks * ticks * 2.2; // 처음엔 빠르게, 갈수록 느리게
+      ticks++; at += gap;
+      timer = setTimeout(at < 1700 ? tick : end, gap);
+    }
+    function end() {
+      if (ended) return;
+      ended = true; clearTimeout(timer); stop = null;
+      result.classList.remove('bd-rolling', 'bd-play');
+      void result.offsetWidth;
+      result.classList.add('bd-play', 'bd-landed');
+      if (navigator.vibrate) navigator.vibrate([12, 40, 24]);
+      done();
+    }
+    stop = end;
+    tick();
+  }
+  $('card').addEventListener('click', function () { stop && stop(); });
+
   $('form').addEventListener('submit', function (e) {
     e.preventDefault();
     var m = Number(month.value), d = Number(day.value);
     table.then(function (t) {
       var w = t[String(m).padStart(2, '0') + String(d).padStart(2, '0')];
       if (!w) return;
-      $('date').textContent = m + '월 ' + d + '일의 우리말';
-      var word = $('word');
-      word.textContent = '';
-      Array.from(w.w).forEach(function (ch, i) { var s = document.createElement('span'); s.textContent = ch; s.style.setProperty('--i', i); word.append(s); });
-      word.setAttribute('aria-label', w.w);
+      var word = $('word'), date = $('date');
       $('bridge').textContent = m + '월 ' + d + '일의 우리말은 「' + w.w + '」였어요.';
       $('meaning').textContent = w.m;
       $('card').dataset.season = SEASON[m];
       $('copied').hidden = true;
-      swap($('form'), $('result'), function () { window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' }); });
+      $('result').classList.remove('bd-landed');
+      function land() { date.textContent = m + '월 ' + d + '일의 우리말'; letters(word, w.w); }
+      if (still) land(); else { date.textContent = m + '월 ' + d + '일의 우리말은…'; word.textContent = ''; }
+      swap($('form'), $('result'), function () {
+        window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
+        if (!still) setTimeout(function () { roll(t, land); }, 250);
+      });
       send('birthday_shown');
     });
   });
-  $('again').addEventListener('click', function () { swap($('result'), $('form')); });
+  $('again').addEventListener('click', function () { stop && stop(); swap($('result'), $('form')); });
 
   // 결과가 아니라 이 도구를 건넨다 — 주소에 생일을 싣지 않는다.
   $('share').addEventListener('click', function () {
