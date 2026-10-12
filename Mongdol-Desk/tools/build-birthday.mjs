@@ -49,6 +49,19 @@ for (let m = 1; m <= 12; m++) {
     table[String(mm).padStart(2, '0') + String(d).padStart(2, '0')] = { w: w.word, m: w.meaning };
   }
 }
+// 곁말 두 개 — 대표 말로 안 쓴 말에서 그 달에 맞는 것부터, 한 말은 많아야 네 날에만(대표 말 표는 위에서 이미 정해져 그대로다).
+// 곁말에서만 빼는 말 — 여기서 pool 을 건드리면 섞는 순서가 바뀌어 이미 나간 대표 말이 달라진다.
+const SKIP_X = new Set(['구슬땀', '웃날', '붓방아']);
+const rest = pool.filter((w) => !used.has(w.word) && !SKIP_X.has(w.word)), uses = new Map();
+for (const [m, d] of days) {
+  const key = String(m).padStart(2, '0') + String(d).padStart(2, '0'), pick = [];
+  for (const ok of [(w) => fits(w, m), neutral]) {
+    const c = shuffle(rest.filter((w) => ok(w) && (uses.get(w.word) ?? 0) < 4 && !pick.includes(w))).sort((a, b) => (uses.get(a.word) ?? 0) - (uses.get(b.word) ?? 0));
+    while (pick.length < 2 && c.length) pick.push(c.shift());
+  }
+  pick.forEach((w) => uses.set(w.word, (uses.get(w.word) ?? 0) + 1));
+  table[key].x = pick.map((w) => ({ w: w.word, m: w.meaning }));
+}
 const out = Object.fromEntries(Object.keys(table).sort().map((k) => [k, table[k]]));
 writeFileSync(new URL('../data/birthday.json', import.meta.url), JSON.stringify(out, null, 0) + '\n');
-console.log(`${Object.keys(out).length}일 · 후보 ${pool.length}개`);
+console.log(`${Object.keys(out).length}일 · 후보 ${pool.length}개 · 곁말 후보 ${rest.length}개`);

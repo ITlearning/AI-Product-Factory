@@ -112,6 +112,12 @@
       var word = $('word'), date = $('date');
       $('bridge').textContent = m + '월 ' + d + '일의 우리말은 「' + w.w + '」였어요.';
       $('meaning').textContent = w.m;
+      var more = $('more');
+      more.textContent = '';
+      w.x.forEach(function (x) {
+        var li = document.createElement('li'), b = document.createElement('b'), s = document.createElement('span');
+        b.textContent = x.w; s.textContent = x.m; li.append(b, s); more.append(li);
+      });
       $('card').dataset.season = SEASON[m];
       $('copied').hidden = true;
       $('result').classList.remove('bd-landed');

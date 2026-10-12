@@ -281,11 +281,22 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .bd-result.bd-rolling .bd-card { cursor: pointer; }
 .bd-result.bd-rolling .bd-card::before { animation: bd-breathe 0.42s ease-in-out infinite alternate !important; }
 .bd-result.bd-rolling .bd-word { opacity: 0.55; filter: blur(1.5px); }
-.bd-result.bd-rolling .bd-meaning, .bd-result.bd-rolling .bd-actions, .bd-result.bd-rolling .bd-app { opacity: 0; animation: none !important; }
+.bd-result.bd-rolling .bd-meaning, .bd-result.bd-rolling .bd-more, .bd-result.bd-rolling .bd-actions, .bd-result.bd-rolling .bd-app { opacity: 0; animation: none !important; }
 .bd-result.bd-landed .bd-card { animation: bd-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .bd-result.bd-landed .bd-card::before { animation: bd-bloom 0.9s ease-out both; }
 .bd-result.bd-landed .bd-date { animation: bd-fade 0.4s both; }
 .bd-result.bd-landed .bd-word span { animation-delay: calc(0.08s + var(--i) * 0.14s); }
 .bd-result.bd-landed .bd-meaning { animation-delay: 0.6s; }
-.bd-result.bd-landed .bd-actions { animation-delay: 0.85s; }
-.bd-result.bd-landed .bd-app { animation-delay: 1.05s; }
+.bd-result.bd-landed .bd-more { animation-delay: 0.85s; }
+.bd-result.bd-landed .bd-actions { animation-delay: 1.1s; }
+.bd-result.bd-landed .bd-app { animation-delay: 1.3s; }
+
+/* 생일 — 이날의 다른 말 두 개(곁말). 대표 말보다 작게, 카드 아래. */
+.bd-more { margin-top: 18px; padding: 16px 18px; border-radius: 20px; border: 1px solid var(--hairline); background: var(--fill); }
+.bd-more-title { font-size: 13px; color: var(--tertiary); }
+.bd-more-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.bd-more-list li { display: flex; gap: 10px; align-items: baseline; }
+.bd-more-list b { flex: none; font-family: var(--serif); font-weight: 800; font-size: 19px; }
+.bd-more-list span { font-size: 14px; line-height: 1.5; color: var(--secondary); }
+.bd-result.bd-play .bd-more { animation: bd-rise 0.6s 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-landed .bd-more { animation-delay: 0.85s; }
