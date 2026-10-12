@@ -213,3 +213,30 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .doc h3 + p { margin-top: 6px; color: var(--secondary); }
 .doc a.get-appstore-top { margin-top: 22px; }
 .doc img.get-shot { display: block; width: min(60%, 230px); height: auto; margin: 28px auto 0; border-radius: 34px; }
+
+/* ── 생일 우리말(/birthday) — 결과 카드는 철마다 다른 번짐 하나(조약돌 빛처럼), 글자는 명조 ── */
+.bd-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 28px; }
+.bd-select select.box { min-height: 54px; font-size: 17px; text-align: center; text-align-last: center; }
+.bd-result { margin-top: 28px; }
+.bd-card {
+  position: relative; overflow: hidden; isolation: isolate;
+  padding: 56px 24px 52px; border-radius: 28px; border: 1px solid var(--hairline); background: var(--fill);
+  text-align: center;
+}
+.bd-card::before {
+  content: ""; position: absolute; inset: -30% -20%; z-index: -1; filter: blur(50px); opacity: 0.55;
+  background: radial-gradient(45% 40% at 50% 42%, var(--bd-glow, rgba(214, 196, 186, 0.5)), transparent 70%);
+}
+.bd-card[data-season="spring"] { --bd-glow: rgba(244, 165, 190, 0.6); }
+.bd-card[data-season="summer"] { --bd-glow: rgba(120, 200, 160, 0.55); }
+.bd-card[data-season="autumn"] { --bd-glow: rgba(240, 170, 90, 0.55); }
+.bd-card[data-season="winter"] { --bd-glow: rgba(150, 180, 240, 0.55); }
+.bd-date { font-size: 15px; color: var(--secondary); letter-spacing: 0.04em; }
+.bd-word { margin-top: 18px; font-family: var(--serif); font-weight: 800; font-size: clamp(44px, 14vw, 60px); line-height: 1.2; letter-spacing: 0.02em; }
+.bd-meaning { margin-top: 16px; font-size: 17px; line-height: 1.6; color: var(--secondary); }
+.bd-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.bd-actions .ghost-btn { min-height: 44px; }
+.bd-copied { margin-top: 10px; font-size: 13px; color: var(--tertiary); text-align: center; }
+.bd-app { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--hairline); }
+.bd-app-lede { font-size: 15.5px; line-height: 1.6; color: var(--secondary); text-align: center; }
+.bd-app a.primary-btn { text-decoration: none; }
