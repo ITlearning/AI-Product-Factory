@@ -63,8 +63,9 @@
   $('share').addEventListener('click', function () {
     send('birthday_share');
     var url = location.origin + '/birthday?utm_source=share';
-    var text = '생일을 고르면 그날의 우리말 하나를 알려 줘요';
-    if (navigator.share) { navigator.share({ title: '내 생일의 우리말', text: text, url: url }).catch(function () {}); return; }
+    // 카톡 등은 text·url 을 줄바꿈 없이 붙여 버린다 — 글 한 줄 + 줄바꿈 + 주소를 text 하나로 넘긴다.
+    var text = '생일을 고르면 그날의 우리말 하나를 알려 줘요\n' + url;
+    if (navigator.share) { navigator.share({ title: '내 생일의 우리말', text: text }).catch(function () {}); return; }
     navigator.clipboard && navigator.clipboard.writeText(url).then(function () { $('copied').hidden = false; });
   });
   $('app').addEventListener('click', function () { send('birthday_app_click'); });
