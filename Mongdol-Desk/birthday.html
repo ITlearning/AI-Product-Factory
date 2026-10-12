@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-<main class="page">
+<main class="page bd-page">
   <header class="doc-head">
     <p class="wordmark">몽돌</p>
     <h1 class="doc-title">내 생일의 우리말</h1>
@@ -52,8 +52,16 @@
     <p class="bd-copied" id="copied" hidden>주소를 복사했어요</p>
 
     <div class="bd-app">
-      <p class="bd-app-lede">사진을 찍으면 그 순간에 맞는 우리말을 하나 붙여 주는 앱도 있어요.</p>
-      <a class="primary-btn" id="app" href="/get?utm_source=birthday&amp;utm_medium=web">몽돌 보러 가기</a>
+      <div class="bd-app-row">
+        <img class="bd-app-shot" src="./img/get-phone.jpg" alt="몽돌 화면 — 바다 사진에 「윤슬」 한 단어가 붙은 모습" width="428" height="880">
+        <div class="bd-app-text">
+          <p class="bd-app-bridge" id="bridge"></p>
+          <p class="bd-app-lede">오늘 찍은 사진엔 어떤 말이 붙을까요? 몽돌은 사진을 담으면 그 순간에 맞는 우리말 하나를 붙여 줘요.</p>
+        </div>
+      </div>
+      <a class="primary-btn" id="app" href="/get?utm_source=birthday&amp;utm_medium=web">몽돌 받으러 가기</a>
+      <p class="bd-ios-note" id="iosNote" hidden>몽돌은 지금 iPhone 앱만 있어요.</p>
+      <a class="ghost-btn bd-insta" id="insta" hidden>인스타에서 매일 한 단어씩 보기</a>
     </div>
   </section>
 

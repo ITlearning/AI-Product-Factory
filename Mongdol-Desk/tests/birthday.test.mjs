@@ -54,3 +54,13 @@ test('공유 — 글과 주소를 줄을 나눠 text 하나로, 미리보기는 
     assert.equal(table[String(m).padStart(2, '0') + String(d).padStart(2, '0')].w, w, `${m}월 ${d}일 ${w}`);
   }
 });
+
+test('앱으로 잇기 — 방금 본 말로 다리, 앱 화면, iPhone 아니면 인스타를 앞에, 움직임 줄이기 존중', () => {
+  const html = read('birthday.html'), js = read('js/birthday.js'), css = read('styles.css');
+  assert.match(html, /id="bridge"/);
+  assert.match(html, /src="\.\/img\/get-phone\.jpg"/);
+  assert.match(js, /if \(!IOS\)/);
+  assert.match(js, /send\('birthday_insta_click'\)/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
+  assert.match(css, /@keyframes bd-letter/);
+});

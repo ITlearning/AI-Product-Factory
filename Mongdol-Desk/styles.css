@@ -240,3 +240,37 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .bd-app { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--hairline); }
 .bd-app-lede { font-size: 15.5px; line-height: 1.6; color: var(--secondary); text-align: center; }
 .bd-app a.primary-btn { text-decoration: none; }
+
+/* 생일 — 앱으로 잇기: 방금 본 말에서 「오늘 사진엔?」으로, 앱 화면 한 장 */
+.bd-app-row { display: flex; gap: 18px; align-items: center; }
+.bd-app-shot { flex: none; width: 96px; height: auto; border-radius: 18px; border: 1px solid var(--hairline); }
+.bd-app-text { min-width: 0; }
+.bd-app-bridge { font-size: 16px; line-height: 1.55; color: var(--primary); }
+.bd-app .bd-app-lede { margin-top: 6px; text-align: left; font-size: 14.5px; }
+.bd-ios-note { margin-top: 12px; font-size: 13px; color: var(--tertiary); text-align: center; }
+.bd-app .bd-insta { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin-top: 10px; text-decoration: none; }
+.bd-app a.primary-btn.bd-insta { min-height: 54px; color: var(--base); }
+
+/* 생일 — 움직임. 들어올 때 차례로 떠오르고, 낱말은 릴스처럼 흐림에서 한 글자씩. */
+@keyframes bd-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes bd-card { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes bd-bloom { from { opacity: 0; transform: scale(0.6); } to { opacity: 0.55; transform: none; } }
+@keyframes bd-letter { from { opacity: 0; transform: translateY(12px); filter: blur(10px); } to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes bd-fade { from { opacity: 0; } to { opacity: 1; } }
+.bd-page > * { animation: bd-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-page > :nth-child(2) { animation-delay: 0.08s; }
+.bd-page > :nth-child(4) { animation-delay: 0.16s; }
+.bd-form, .bd-result { transition: opacity 0.26s ease, transform 0.26s ease; }
+.bd-out { opacity: 0; transform: translateY(-8px); }
+.bd-form.bd-play { animation: bd-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-play .bd-card { animation: bd-card 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-play .bd-card::before { animation: bd-bloom 1.4s 0.15s ease-out both; }
+.bd-result.bd-play .bd-date { animation: bd-fade 0.6s 0.2s both; }
+.bd-word span { display: inline-block; white-space: pre; }
+.bd-result.bd-play .bd-word span { animation: bd-letter 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(0.4s + var(--i) * 0.14s); }
+.bd-result.bd-play .bd-meaning { animation: bd-rise 0.7s 1s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-play .bd-actions { animation: bd-rise 0.6s 1.25s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-play .bd-app { animation: bd-rise 0.7s 1.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .bd-page *, .bd-page *::before { animation: none !important; transition: none !important; }
+}
