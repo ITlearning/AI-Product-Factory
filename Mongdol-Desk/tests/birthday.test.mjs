@@ -135,3 +135,13 @@ test('다리 문장 — 받침 있으면 「이었어요」, 없으면 「였어
   assert.equal(tail('진달래'), '였어요.');
   assert.equal(tail('노랑나비'), '였어요.');
 });
+
+test('인스타 버튼 — 앱 내장 브라우저(인스타·스레드·카톡·페북)에서는 인스타 앱을 직접 열고, 안 열리면 웹으로', () => {
+  const js = read('js/birthday.js');
+  const re = new RegExp(js.match(/var inApp = \/(.+)\/\.test\(ua\);/)[1]);
+  for (const ua of ['Mozilla/5.0 (iPhone) Instagram 300.0', 'Mozilla/5.0 (iPhone) Barcelona 300.0', 'Mozilla/5.0 (iPhone) KAKAOTALK 10.0', 'Mozilla/5.0 (iPhone) [FBAN/FBIOS;FBAV/400]']) assert.ok(re.test(ua), ua);
+  for (const ua of ['Mozilla/5.0 (iPhone) Version/18.0 Mobile/15E148 Safari/604.1', 'Mozilla/5.0 (Linux; Android 14) Chrome/126 Mobile Safari/537.36']) assert.ok(!re.test(ua), ua);
+  assert.match(js, /'instagram:\/\/user\?username=' \+ INSTA/);
+  assert.match(js, /intent:\/\/instagram\.com\/_u\/' \+ INSTA \+ '\/#Intent;package=com\.instagram\.android;scheme=https;S\.browser_fallback_url=/);
+  assert.match(js, /setTimeout\(function \(\) \{ if \(!left && !document\.hidden\) location\.href = web; \}, 1200\)/);
+});
