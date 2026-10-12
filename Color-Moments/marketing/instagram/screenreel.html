@@ -27,13 +27,15 @@ body.end-part .end { display: flex; }
 </head>
 <body>
 <div class="hook"><h1 id="hook"></h1><p id="sub"></p></div>
-<div class="end"><h1 id="endTitle"></h1><div class="cta"><div>💬 댓글에 <b>생일</b>을 남겨 주세요<br>우리말로 답해 드릴게요</div><div>🔗 프로필 링크에서 직접 해 보기</div></div><div class="mark">몽돌</div></div>
+<div class="end"><h1 id="endTitle"></h1><div class="cta"><div id="c1"></div><div id="c2"></div></div><div class="mark">몽돌</div></div>
 <script>
 const q = new URLSearchParams(location.search);
 if (q.get('part') === 'end') document.body.classList.add('end-part');
 document.getElementById('hook').innerHTML = (q.get('hook') || '').replace(/\n/g, '<br>');
 document.getElementById('sub').textContent = q.get('sub') || '';
 document.getElementById('endTitle').innerHTML = (q.get('end') || '').replace(/\n/g, '<br>');
+document.getElementById('c1').innerHTML = (q.get('c1') || '👥 같이 해 볼 친구를 <b>태그</b>해 주세요').replace(/\n/g, '<br>');
+document.getElementById('c2').innerHTML = (q.get('c2') || '🔗 링크는 <b>프로필</b>에 있어요').replace(/\n/g, '<br>');
 </script>
 </body>
 </html>
