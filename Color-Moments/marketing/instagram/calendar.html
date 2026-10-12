@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>몽돌 달력</title>
+<style>
+@font-face { font-family: 'MongdolSerif'; src: url('../app-store/fonts/NanumMyeongjo-Bold.ttf'); font-weight: 700; }
+@font-face { font-family: 'MongdolSans'; src: url('../../Shared/Design/Fonts/GowunDodum-Hangul.ttf'); }
+
+html, body { margin: 0; }
+body { width: 1080px; height: 1920px; overflow: hidden; background: #0B0C10; color: #fff; }
+.bg { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(14px) brightness(.42) saturate(1.1); }
+.title { position: absolute; top: 230px; left: 0; right: 0; text-align: center; font-family: 'MongdolSerif'; font-weight: 700; font-size: 72px; letter-spacing: .04em; }
+.days { position: absolute; top: 360px; left: 60px; width: 960px; display: grid; grid-template-columns: repeat(7, 1fr);
+  font-family: 'MongdolSans'; font-size: 26px; color: rgba(255,255,255,.7); text-align: center; }
+/* 칸 안 날짜·단어 — 아래 1/4 은 인스타 캡션이 덮으니 달력은 1400px 위에서 끝낸다. */
+.grid { position: absolute; top: 410px; left: 60px; width: 960px; display: grid; grid-template-columns: repeat(7, 1fr);
+  border-top: 1.5px solid rgba(255,255,255,.55); border-left: 1.5px solid rgba(255,255,255,.55); }
+.cell { position: relative; height: 158px; border-right: 1.5px solid rgba(255,255,255,.55); border-bottom: 1.5px solid rgba(255,255,255,.55); overflow: hidden; }
+.cell .n { position: absolute; top: 8px; left: 10px; z-index: 2; font-family: 'MongdolSans'; font-size: 22px; color: rgba(255,255,255,.85); text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+.cell .ph { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; }
+.cell .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.6) 100%); }
+.cell .w { position: absolute; left: 2px; right: 2px; bottom: 10px; z-index: 2; text-align: center; font-family: 'MongdolSerif'; font-weight: 700;
+  font-size: 27px; letter-spacing: .02em; white-space: nowrap; text-shadow: 0 2px 8px rgba(0,0,0,.7); opacity: 0; }
+.end { position: absolute; left: 0; right: 0; top: 1450px; text-align: center; opacity: 0; }
+.end b { display: block; font-family: 'MongdolSerif'; font-size: 32px; letter-spacing: .1em; color: rgba(255,255,255,.75); }
+.end span { display: block; margin-top: 12px; font-family: 'MongdolSans'; font-size: 26px; color: rgba(255,255,255,.62); }
+.grain { position: absolute; inset: 0; opacity: .07; mix-blend-mode: overlay; z-index: 9;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+</style>
+</head>
+<body>
+<div class="bg" id="bg"></div>
+<div class="title" id="title"></div>
+<div class="days" id="days"></div>
+<div class="grid" id="grid"></div>
+<div class="end" id="end"><b>몽돌</b><span>사진을 담으면 단어가 붙어요</span></div>
+<div class="grain"></div>
+<script>
+// calendar.sh 가 ym(2026-10), bg, 그리고 날마다 p<일>·w<일> 을 넘긴다. reel.mjs 가 frame(t) 를 넘기며 찍는다.
+const q = new URLSearchParams(location.search);
+const [year, month] = q.get('ym').split('-').map(Number);
+const first = (new Date(year, month - 1, 1).getDay() + 6) % 7, last = new Date(year, month, 0).getDate(); // 월요일부터
+document.getElementById('title').textContent = `${month}월의 단어`;
+document.getElementById('days').innerHTML = '월화수목금토일'.split('').map(d => `<div>${d}</div>`).join('');
+const grid = document.getElementById('grid'), filled = [], loads = [];
+for (let i = 0; i < Math.ceil((first + last) / 7) * 7; i++) {
+  const day = i - first + 1, cell = document.createElement('div'); cell.className = 'cell';
+  if (day >= 1 && day <= last) {
+    cell.innerHTML = `<div class="ph"></div><div class="n">${day}</div><div class="w"></div>`;
+    const src = q.get('p' + day);
+    if (src) {
+      cell.querySelector('.ph').style.backgroundImage = `url("${src}")`;
+      cell.querySelector('.w').textContent = q.get('w' + day);
+      const img = new Image(); loads.push(new Promise(done => { img.onload = img.onerror = done; })); img.src = src;
+      filled.push({ ph: cell.querySelector('.ph'), w: cell.querySelector('.w') });
+    }
+  }
+  grid.append(cell);
+}
+document.getElementById('bg').style.backgroundImage = `url("${q.get('bg')}")`;
+window.ready = Promise.all([...loads, document.fonts.ready]);
+
+const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.pow(1 - x, 3);
+const step = Math.min(.25, 4.5 / Math.max(1, filled.length)), fillEnd = .9 + filled.length * step, wordAt = fillEnd + .4;
+window.reelLength = wordAt + filled.length * .06 + 3.2;
+const fade = (el, t, at, dur, dy = 0, scale = 0) => { const p = ease((t - at) / dur);
+  el.style.opacity = p; el.style.transform = `translateY(${(1 - p) * dy}px) scale(${1 + (1 - p) * scale})`; };
+window.frame = t => {
+  ['bg', 'title', 'days', 'grid'].forEach((id, i) => fade(document.getElementById(id), t, i * .12, .7));
+  filled.forEach((c, i) => { fade(c.ph, t, .9 + i * step, .45, 0, .18); fade(c.w, t, wordAt + i * .06, .6, 8); });
+  fade(document.getElementById('end'), t, wordAt + filled.length * .06 + .5, .8, 8);
+};
+</script>
+</body>
+</html>
