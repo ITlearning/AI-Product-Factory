@@ -247,7 +247,7 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .bd-app-text { min-width: 0; }
 .bd-app-bridge { font-size: 16px; line-height: 1.55; color: var(--primary); }
 .bd-app .bd-app-lede { margin-top: 6px; text-align: left; font-size: 14.5px; }
-.bd-ios-note { margin-top: 12px; font-size: 13px; color: var(--tertiary); text-align: center; }
+.bd-ios-note { margin-top: 18px; font-size: 14px; line-height: 1.6; color: var(--secondary); text-align: center; }
 .bd-app .bd-insta { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin-top: 10px; text-decoration: none; }
 .bd-app a.primary-btn.bd-insta { min-height: 54px; color: var(--base); }
 

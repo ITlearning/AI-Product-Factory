@@ -36,7 +36,10 @@
   if (!IOS) {
     $('app').hidden = !!INSTA;
     $('iosNote').hidden = false;
-    if (INSTA) $('insta').className = 'primary-btn bd-insta';
+    $('iosNote').textContent = /Android/.test(ua)
+      ? '안드로이드 버전은 지금 준비하고 있어요. 인스타를 팔로우하고 소식을 기다려 주세요.'
+      : '몽돌은 지금 iPhone 앱만 있어요. 안드로이드 버전은 준비하고 있어요.';
+    if (INSTA) { $('insta').className = 'primary-btn bd-insta'; $('insta').textContent = '인스타 팔로우하고 소식 받기'; }
   }
 
   // 화면 바꾸기 — 나가는 쪽을 흐리게 뺀 뒤 들어오는 쪽을 차례로 띄운다. 움직임 줄이기 설정이면 바로 바꾼다.
