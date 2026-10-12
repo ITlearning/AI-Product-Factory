@@ -54,3 +54,29 @@ test('공유 — 글과 주소를 줄을 나눠 text 하나로, 미리보기는 
     assert.equal(table[String(m).padStart(2, '0') + String(d).padStart(2, '0')].w, w, `${m}월 ${d}일 ${w}`);
   }
 });
+
+test('앱으로 잇기 — 방금 본 말로 다리, 앱 화면, iPhone 아니면 인스타를 앞에, 움직임 줄이기 존중', () => {
+  const html = read('birthday.html'), js = read('js/birthday.js'), css = read('styles.css');
+  assert.match(html, /id="bridge"/);
+  assert.match(html, /src="\.\/img\/get-phone\.jpg"/);
+  assert.match(js, /if \(!IOS\)/);
+  assert.match(js, /send\('birthday_insta_click'\)/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
+  assert.match(css, /@keyframes bd-letter/);
+});
+
+test('곁말 — 날마다 두 개, 대표 말·서로와 겹치지 않고, 살아 있는 말, 한 말은 네 날까지', () => {
+  const retired = new Set(words.retired);
+  const live = new Map(words.words.filter((w) => !retired.has(w.id)).map((w) => [w.word, w.meaning]));
+  const mains = new Set(Object.values(table).map((v) => v.w)), uses = new Map();
+  for (const [day, v] of Object.entries(table)) {
+    assert.equal(v.x.length, 2, day);
+    assert.notEqual(v.x[0].w, v.x[1].w, day);
+    for (const x of v.x) {
+      assert.ok(!mains.has(x.w), `${day} ${x.w} — 다른 날 대표 말`);
+      assert.equal(live.get(x.w), x.m, `${day} ${x.w}`);
+      uses.set(x.w, (uses.get(x.w) ?? 0) + 1);
+    }
+  }
+  assert.ok(Math.max(...uses.values()) <= 4);
+});

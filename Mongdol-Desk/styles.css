@@ -232,7 +232,7 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .bd-card[data-season="autumn"] { --bd-glow: rgba(240, 170, 90, 0.55); }
 .bd-card[data-season="winter"] { --bd-glow: rgba(150, 180, 240, 0.55); }
 .bd-date { font-size: 15px; color: var(--secondary); letter-spacing: 0.04em; }
-.bd-word { margin-top: 18px; font-family: var(--serif); font-weight: 800; font-size: clamp(44px, 14vw, 60px); line-height: 1.2; letter-spacing: 0.02em; }
+.bd-word { min-height: 1.2em; margin-top: 18px; font-family: var(--serif); font-weight: 800; font-size: clamp(44px, 14vw, 60px); line-height: 1.2; letter-spacing: 0.02em; }
 .bd-meaning { margin-top: 16px; font-size: 17px; line-height: 1.6; color: var(--secondary); }
 .bd-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
 .bd-actions .ghost-btn { min-height: 44px; }
@@ -240,3 +240,63 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .bd-app { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--hairline); }
 .bd-app-lede { font-size: 15.5px; line-height: 1.6; color: var(--secondary); text-align: center; }
 .bd-app a.primary-btn { text-decoration: none; }
+
+/* 생일 — 앱으로 잇기: 방금 본 말에서 「오늘 사진엔?」으로, 앱 화면 한 장 */
+.bd-app-row { display: flex; gap: 18px; align-items: center; }
+.bd-app-shot { flex: none; width: 96px; height: auto; border-radius: 18px; border: 1px solid var(--hairline); }
+.bd-app-text { min-width: 0; }
+.bd-app-bridge { font-size: 16px; line-height: 1.55; color: var(--primary); }
+.bd-app .bd-app-lede { margin-top: 6px; text-align: left; font-size: 14.5px; }
+.bd-ios-note { white-space: pre-line; margin-top: 18px; font-size: 14px; line-height: 1.6; color: var(--secondary); text-align: center; }
+.bd-app .bd-insta { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin-top: 10px; text-decoration: none; }
+.bd-app a.primary-btn.bd-insta { min-height: 54px; color: var(--base); }
+
+/* 생일 — 움직임. 들어올 때 차례로 떠오르고, 낱말은 릴스처럼 흐림에서 한 글자씩. */
+@keyframes bd-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes bd-card { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes bd-bloom { from { opacity: 0; transform: scale(0.6); } to { opacity: 0.55; transform: none; } }
+@keyframes bd-letter { from { opacity: 0; transform: translateY(12px); filter: blur(10px); } to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes bd-fade { from { opacity: 0; } to { opacity: 1; } }
+.bd-page > * { animation: bd-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-page > :nth-child(2) { animation-delay: 0.08s; }
+.bd-page > :nth-child(4) { animation-delay: 0.16s; }
+.bd-form, .bd-result { transition: opacity 0.26s ease, transform 0.26s ease; }
+.bd-out { opacity: 0; transform: translateY(-8px); }
+.bd-form.bd-play { animation: bd-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-play .bd-card { animation: bd-card 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-play .bd-card::before { animation: bd-bloom 1.4s 0.15s ease-out both; }
+.bd-result.bd-play .bd-date { animation: bd-fade 0.6s 0.2s both; }
+.bd-word span { display: inline-block; white-space: pre; }
+.bd-result.bd-play .bd-word span { animation: bd-letter 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(0.4s + var(--i) * 0.14s); }
+.bd-result.bd-play .bd-meaning { animation: bd-rise 0.7s 1s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-play .bd-actions { animation: bd-rise 0.6s 1.25s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-play .bd-app { animation: bd-rise 0.7s 1.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .bd-page *, .bd-page *::before { animation: none !important; transition: none !important; }
+}
+
+/* 생일 — 두구두구. 도는 동안 낱말은 흐리게 빠르게 바뀌고 번짐이 숨 쉰다. 멈추면 카드가 한 번 튀고 제 말이 한 글자씩. */
+@keyframes bd-breathe { from { opacity: 0.35; transform: scale(0.85); } to { opacity: 0.7; transform: scale(1.08); } }
+@keyframes bd-pop { 0% { transform: scale(1); } 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
+.bd-result.bd-rolling .bd-card { cursor: pointer; }
+.bd-result.bd-rolling .bd-card::before { animation: bd-breathe 0.42s ease-in-out infinite alternate !important; }
+.bd-result.bd-rolling .bd-word { opacity: 0.55; filter: blur(1.5px); }
+.bd-result.bd-rolling .bd-meaning, .bd-result.bd-rolling .bd-more, .bd-result.bd-rolling .bd-actions, .bd-result.bd-rolling .bd-app { opacity: 0; animation: none !important; }
+.bd-result.bd-landed .bd-card { animation: bd-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-landed .bd-card::before { animation: bd-bloom 0.9s ease-out both; }
+.bd-result.bd-landed .bd-date { animation: bd-fade 0.4s both; }
+.bd-result.bd-landed .bd-word span { animation-delay: calc(0.08s + var(--i) * 0.14s); }
+.bd-result.bd-landed .bd-meaning { animation-delay: 0.6s; }
+.bd-result.bd-landed .bd-more { animation-delay: 0.85s; }
+.bd-result.bd-landed .bd-actions { animation-delay: 1.1s; }
+.bd-result.bd-landed .bd-app { animation-delay: 1.3s; }
+
+/* 생일 — 이날의 다른 말 두 개(곁말). 대표 말보다 작게, 카드 아래. */
+.bd-more { margin-top: 18px; padding: 16px 18px; border-radius: 20px; border: 1px solid var(--hairline); background: var(--fill); }
+.bd-more-title { font-size: 13px; color: var(--tertiary); }
+.bd-more-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.bd-more-list li { display: flex; gap: 10px; align-items: baseline; }
+.bd-more-list b { flex: none; font-family: var(--serif); font-weight: 800; font-size: 19px; }
+.bd-more-list span { font-size: 14px; line-height: 1.5; color: var(--secondary); }
+.bd-result.bd-play .bd-more { animation: bd-rise 0.6s 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-landed .bd-more { animation-delay: 0.85s; }
