@@ -113,3 +113,14 @@ test('안심 문구는 「알아보기」 바로 아래 — 생일·단어를 �
   const html = read('birthday.html');
   assert.match(html, /type="submit">알아보기<\/button>\n\s*<p class="bd-safe">생일과 나온 단어는 어디에도 보내지 않아요\./);
 });
+
+test('「어떤 기준으로 고르나요?」 — 그 달 말 몇 개 중에서 골랐는지 숫자가 맞다', () => {
+  assert.match(read('birthday.html'), /<summary>어떤 기준으로 고르나요\?<\/summary>/);
+  for (const [m, d] of [[4, 10], [11, 24], [5, 5]]) {
+    // 날짜가 정해진 말은 제 날에만 후보다(5월 5일 후보에 어버이날은 없다).
+    const DAY = { '0101': '해맞이', '0505': '어린이날', '0508': '어버이날', '1231': '해넘이' };
+    const key = String(m).padStart(2, '0') + String(d).padStart(2, '0');
+    const inMonth = source.filter((w) => w.months.includes(m) && (!Object.values(DAY).includes(w.w) || DAY[key] === w.w)).length;
+    assert.equal(pick(source, 'x', m, d).pool, inMonth, `${m}/${d}`);
+  }
+});

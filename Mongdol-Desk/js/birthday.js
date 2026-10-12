@@ -122,6 +122,7 @@
       var word = $('word'), date = $('date');
       $('bridge').textContent = m + '월 ' + d + '일의 우리말은 「' + w.w + '」였어요.';
       $('meaning').textContent = w.m;
+      $('how').textContent = '이번 말은 ' + m + '월에 어울리는 말 ' + w.pool + '개 가운데서 골랐어요. 그중 하나를 사람마다 정해 드려서, 같은 생일이어도 친구와 다를 수 있고 다시 해 봐도 내 말은 그대로예요.';
       var more = $('more');
       more.textContent = '';
       w.x.forEach(function (x) {

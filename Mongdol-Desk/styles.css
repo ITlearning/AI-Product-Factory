@@ -303,3 +303,14 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 
 /* 생일 — 버튼 바로 아래 안심 문구. 「개인정보 뜯어가네」 오해가 실제로 나와서 맨 아래에서 올렸다. */
 .bd-safe { margin-top: 12px; font-size: 13.5px; line-height: 1.6; color: var(--secondary); text-align: center; }
+
+/* 생일 — 「그냥 랜덤이에요?」에 답하는 접힌 설명. 결과 아래, 눌러야 펼쳐진다. */
+.bd-how { margin-top: 14px; padding: 0 4px; font-size: 14px; line-height: 1.65; color: var(--secondary); }
+.bd-how summary { cursor: pointer; list-style: none; text-align: center; color: var(--tertiary); }
+.bd-how summary::-webkit-details-marker { display: none; }
+.bd-how summary::after { content: ' ▾'; }
+.bd-how[open] summary::after { content: ' ▴'; }
+.bd-how p { margin-top: 10px; }
+.bd-result.bd-play .bd-how { animation: bd-rise 0.6s 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bd-result.bd-landed .bd-how { animation-delay: 0.95s; }
+.bd-result.bd-rolling .bd-how { opacity: 0; animation: none !important; }
