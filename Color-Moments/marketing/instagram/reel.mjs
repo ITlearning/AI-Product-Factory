@@ -40,8 +40,8 @@ try {
   const loaded = new Promise(ok => waiters.set('Page.loadEventFired', ok));
   await send('Page.navigate', { url });
   await loaded;
-  const { length, intro, box } = await evaluate(`window.ready.then(() => { const r = document.getElementById('photoBox').getBoundingClientRect();
-    return { length: window.reelLength, intro: window.introLength, box: [r.x, r.y, r.width, r.height].map(Math.round) }; })`);
+  const { length, intro, box } = await evaluate(`window.ready.then(() => { const r = document.getElementById('photoBox')?.getBoundingClientRect(); // 사진 칸은 card.html 에만 있다
+    return { length: window.reelLength, intro: window.introLength || 0, box: r ? [r.x, r.y, r.width, r.height].map(Math.round) : null }; })`);
   const count = Math.round(length * fps);
   for (let i = 0; i < count; i++) {
     await evaluate(`frame(${i / fps})`);
