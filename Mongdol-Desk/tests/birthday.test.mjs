@@ -41,3 +41,16 @@ test('페이지 — noindex, 참조 파일이 있다, 생일을 보내지 않고
   assert.match(js, /location\.origin \+ '\/birthday\?utm_source=share'/);
   assert.match(html, /href="\/get\?utm_source=birthday/);
 });
+
+test('공유 — 글과 주소를 줄을 나눠 text 하나로, 미리보기는 생일 소개 이미지(예시 카드는 표와 같다)', () => {
+  const js = read('js/birthday.js');
+  assert.match(js, /var text = '[^']+\\n' \+ url;/);
+  assert.doesNotMatch(js, /navigator\.share\(\{[^}]*url:/, 'url 을 따로 넘기면 글 뒤에 붙는다');
+  const html = read('birthday.html');
+  assert.match(html, /og:image" content="https:\/\/mongdol-desk\.vercel\.app\/img\/og-birthday\.jpg"/);
+  assert.ok(existsSync(new URL('../img/og-birthday.jpg', import.meta.url)));
+  const og = read('tools/og-birthday.html');
+  for (const [, m, d, w] of og.matchAll(/(\d+)월 (\d+)일의 우리말<\/div><div class="w">([^<]+)</g)) {
+    assert.equal(table[String(m).padStart(2, '0') + String(d).padStart(2, '0')].w, w, `${m}월 ${d}일 ${w}`);
+  }
+});

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- /birthday 공유 미리보기(1200×630) 원본. 다시 굽기: tools/og-birthday.sh -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Myeongjo:wght@800&display=swap">
+<style>
+html, body { margin: 0; }
+body { width: 1200px; height: 630px; overflow: hidden; background: #06070A; color: rgba(255,255,255,.92); font-family: 'Gowun Dodum', sans-serif; position: relative; }
+body::before { content: ""; position: absolute; inset: -30% -10% auto; height: 500px; background: radial-gradient(50% 50% at 30% 40%, rgba(214,196,186,.25), transparent 70%); filter: blur(60px); }
+.left { position: absolute; left: 80px; top: 0; bottom: 0; width: 470px; display: flex; flex-direction: column; justify-content: center; }
+.brand { font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 30px; color: rgba(255,255,255,.64); }
+h1 { margin: 18px 0 0; font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 66px; line-height: 1.2; letter-spacing: -.5px; }
+p { margin: 24px 0 0; font-size: 26px; line-height: 1.55; color: rgba(255,255,255,.64); word-break: keep-all; }
+.grid { position: absolute; right: 70px; top: 50%; transform: translateY(-50%) rotate(-3deg); display: grid; grid-template-columns: repeat(2, 260px); gap: 18px; }
+.card { position: relative; overflow: hidden; isolation: isolate; height: 230px; border-radius: 26px; border: 1px solid rgba(255,255,255,.24);
+  background: rgba(255,255,255,.06); text-align: center; display: flex; flex-direction: column; justify-content: center; }
+.card::before { content: ""; position: absolute; inset: -30%; z-index: -1; filter: blur(34px); opacity: .7; background: radial-gradient(45% 40% at 50% 45%, var(--g), transparent 70%); }
+.card:nth-child(2), .card:nth-child(4) { transform: translateY(26px); }
+.d { font-size: 18px; color: rgba(255,255,255,.64); }
+.w { margin-top: 10px; font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 50px; }
+.m { margin: 10px 10px 0; font-size: 16px; line-height: 1.45; color: rgba(255,255,255,.6); word-break: keep-all; }
+</style>
+</head>
+<body>
+<div class="left">
+  <div class="brand">몽돌</div>
+  <h1>내 생일의<br>우리말</h1>
+  <p>생일을 고르면, 그날에 어울리는<br>우리말 하나를 알려 줘요.</p>
+</div>
+<div class="grid">
+  <div class="card" style="--g: rgba(244,165,190,.6)"><div class="d">4월 4일의 우리말</div><div class="w">벚꽃</div><div class="m">벚나무의 꽃</div></div>
+  <div class="card" style="--g: rgba(120,200,160,.55)"><div class="d">8월 8일의 우리말</div><div class="w">윤슬</div><div class="m">햇빛이나 달빛에 비쳐 반짝이는 잔물결</div></div>
+  <div class="card" style="--g: rgba(240,170,90,.55)"><div class="d">10월 19일의 우리말</div><div class="w">억새</div><div class="m">가을 들판에 은빛으로 흔들리는 풀</div></div>
+  <div class="card" style="--g: rgba(150,180,240,.55)"><div class="d">2월 22일의 우리말</div><div class="w">함박눈</div><div class="m">굵고 탐스럽게 내리는 눈</div></div>
+</div>
+</body>
+</html>
