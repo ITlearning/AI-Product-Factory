@@ -35,6 +35,20 @@ body.pebble .photo { left: 90px; top: 110px; width: 900px; height: 820px; border
   -webkit-mask-image: radial-gradient(closest-side, #000 58%, transparent 100%); mask-image: radial-gradient(closest-side, #000 58%, transparent 100%); }
 body.pebble .photo img { transform: scale(var(--zoom, 1)); }
 
+.frame { position: absolute; left: 0; top: 0; width: 1080px; height: 1350px; z-index: 5; }
+
+/* 릴스(1080×1920) — 카드를 위로 조금 올린다. 아래쪽은 인스타 캡션과 버튼이 덮는다. */
+body.reel, body.reel #card { height: 1920px; }
+body.reel .frame { top: 150px; }
+body.reel .mark { bottom: 70px; }
+.tagline { display: none; position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
+  font-family: 'MongdolSans'; font-size: 26px; letter-spacing: .04em; color: rgba(255,255,255,.55); }
+body.reel .tagline { display: block; }
+body.reel .tint { background:
+  radial-gradient(900px 900px at 50% 37%, var(--c-glow) 0%, transparent 72%),
+  linear-gradient(180deg, var(--c-top) 0%, #0B0C10 100%); }
+body.reel .word h1 span { display: inline-block; white-space: pre; }
+
 .mark { position: absolute; bottom: 52px; left: 0; right: 0; text-align: center; z-index: 5;
   font-family: 'MongdolSerif'; font-size: 30px; color: rgba(255,255,255,.45); letter-spacing: .1em; }
 </style>
@@ -42,13 +56,16 @@ body.pebble .photo img { transform: scale(var(--zoom, 1)); }
 <body>
 <div id="card">
   <div class="tint"></div>
-  <div class="head" id="head"></div>
-  <div class="photo"><img id="photo" alt=""></div>
-  <div class="word">
-    <h1 id="word"></h1>
-    <p id="meaning"></p>
+  <div class="frame">
+    <div class="head" id="head"></div>
+    <div class="photo" id="photoBox"><img id="photo" alt=""></div>
+    <div class="word">
+      <h1 id="word"></h1>
+      <p id="meaning"></p>
+    </div>
+    <div class="mark" id="mark">몽돌</div>
+    <div class="tagline" id="tagline">사진을 담으면 단어가 붙어요</div>
   </div>
-  <div class="mark">몽돌</div>
   <div class="grain"></div>
 </div>
 <script>
@@ -71,7 +88,7 @@ function paint(r, g, b) {
 function hex(h) { const n = parseInt(h.replace('#', ''), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
 
 const img = document.getElementById('photo');
-img.onload = () => {
+function pickColor() {
   if (q.get('color')) return paint(...hex(q.get('color')));
   const c = document.createElement('canvas'); c.width = c.height = 32;
   const x = c.getContext('2d'); // 조약돌 카드는 가운데(돌)만 본다 — 앱 배경색이 섞이면 돌 색이 아니게 된다.
@@ -99,8 +116,33 @@ img.onload = () => {
   let best = null; for (const e of bins.values()) if (!best || e.w > best.w) best = e;
   if (!best) return paint(120, 130, 150);
   paint(Math.round(best.r / best.n), Math.round(best.g / best.n), Math.round(best.b / best.n));
-};
+}
+const loaded = new Promise(done => { img.onload = () => { pickColor(); done(); }; img.onerror = done; });
 img.src = q.get('photo') || '';
+window.ready = Promise.all([loaded, document.fonts.ready]);
+
+// 릴스 — reel.mjs 가 frame(t) 를 부르고 한 장씩 찍는다. 시간은 초.
+if (q.get('reel')) {
+  document.body.classList.add('reel');
+  const h1 = document.getElementById('word'), letters = Array.from(h1.textContent).map(ch => {
+    const s = document.createElement('span'); s.textContent = ch; return s; });
+  h1.replaceChildren(...letters);
+  const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.pow(1 - x, 3);
+  const zoom = Number(q.get('zoom') || 1), meaningAt = 1.4 + (letters.length - 1) * .28 + .6;
+  window.reelLength = Math.max(7, meaningAt + 1.4 + .9 + 2);
+  const fade = (el, t, at, dur, dy = 0, blur = 0) => { const p = ease((t - at) / dur);
+    el.style.opacity = p; el.style.transform = dy ? `translateY(${(1 - p) * dy}px)` : '';
+    el.style.filter = blur ? `blur(${(1 - p) * blur}px)` : ''; };
+  window.frame = t => {
+    fade(head, t, 0, .8);
+    fade(document.getElementById('photoBox'), t, .1, 1);
+    img.style.transform = `scale(${(1.08 - .08 * ease(t / window.reelLength)) * zoom})`;
+    letters.forEach((s, i) => fade(s, t, 1.4 + i * .28, .7, 16, 8));
+    fade(document.getElementById('meaning'), t, meaningAt, .9, 10);
+    fade(document.getElementById('mark'), t, meaningAt + .3, .9);
+    fade(document.getElementById('tagline'), t, meaningAt + 1.4, .9, 8);
+  };
+}
 </script>
 </body>
 </html>
