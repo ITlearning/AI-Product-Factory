@@ -314,3 +314,13 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .bd-result.bd-play .bd-how { animation: bd-rise 0.6s 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .bd-result.bd-landed .bd-how { animation-delay: 0.95s; }
 .bd-result.bd-rolling .bd-how { opacity: 0; animation: none !important; }
+
+/* 생일 — 이미지를 띄워 길게 눌러 저장. 앱 안 브라우저(카톡 등)는 공유 시트·내려받기가 안 된다. */
+.bd-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: rgba(6, 7, 10, 0.86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.bd-sheet[hidden] { display: none !important; }
+.bd-sheet-box { width: min(100%, 380px); text-align: center; }
+.bd-sheet img { display: block; width: 100%; height: auto; border-radius: 20px; border: 1px solid var(--hairline);
+  -webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; }
+.bd-sheet p { margin-top: 14px; font-size: 15px; line-height: 1.6; color: var(--secondary); }
+.bd-sheet .ghost-btn { margin-top: 14px; min-height: 44px; }
