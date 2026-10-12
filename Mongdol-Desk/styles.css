@@ -300,3 +300,6 @@ input.box { min-height: 50px; padding-top: 12px; padding-bottom: 12px; }
 .bd-more-list span { font-size: 14px; line-height: 1.5; color: var(--secondary); }
 .bd-result.bd-play .bd-more { animation: bd-rise 0.6s 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .bd-result.bd-landed .bd-more { animation-delay: 0.85s; }
+
+/* 생일 — 버튼 바로 아래 안심 문구. 「개인정보 뜯어가네」 오해가 실제로 나와서 맨 아래에서 올렸다. */
+.bd-safe { margin-top: 12px; font-size: 13.5px; line-height: 1.6; color: var(--secondary); text-align: center; }

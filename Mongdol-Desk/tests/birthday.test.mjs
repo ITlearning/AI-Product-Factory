@@ -108,3 +108,8 @@ test('Tabber 기기 표시 — ?internal=1 이면 localStorage 에 남기고 기
     assert.match(s, /if \(localStorage\.getItem\('mongdol-internal'\)\) base\.internal = true;/, f);
   }
 });
+
+test('안심 문구는 「알아보기」 바로 아래 — 생일·단어를 보내지 않고 누군지 알 수 없다', () => {
+  const html = read('birthday.html');
+  assert.match(html, /type="submit">알아보기<\/button>\n\s*<p class="bd-safe">생일과 나온 단어는 어디에도 보내지 않아요\./);
+});
