@@ -3,6 +3,7 @@
 #   ./card.sh <사진> <단어> [날짜 표기] [#색]                 「오늘의 단어」 — 뜻은 Shared/Word/words.json
 #   ./card.sh pebble <앱 스크린샷> <조약돌 이름> [날짜 표기] [확대]   「오늘의 조약돌」 — 한 줄은 Shared/Day/PebbleName.swift
 #   ./card.sh reel [pebble] ...                                  릴스(1080×1920, 소리 없는 mp4 + 표지 JPEG) — 나머지는 위와 같다
+#     MEME=<초록 배경 영상> [HOOK="문구"] ./card.sh reel ...       앞 2.4초에 문구 + 초록을 뺀 밈을 사진 위에 얹는다
 #   예) ./card.sh ~/Downloads/IMG_1234.jpeg 윤슬 "10월 12일"
 #       ./card.sh pebble ~/Downloads/IMG_1240.PNG 그믐 "10월 11일" 1.6
 #       ./card.sh reel ~/Downloads/IMG_1234.jpeg 윤슬 "10월 12일"
@@ -59,7 +60,14 @@ OUT="output/$(date +%Y%m%d)-$KIND-$NAME"
 
 if [ -n "$REEL" ]; then
   [ .work/encode -nt encode.swift ] || swiftc -O -swift-version 5 encode.swift -o .work/encode
-  node reel.mjs "$URL&reel=1" .work/frames 30 >/dev/null
+  HOOK="${HOOK:-}"; [ -n "${MEME:-}" ] && HOOK="${HOOK:-이런 단어가 있는 줄 몰랐던 나:}"
+  META=$(node reel.mjs "$URL&reel=1${HOOK:+&hook=$(enc "$HOOK")}" .work/frames 30)
+  if [ -n "${MEME:-}" ]; then
+    [ -f "$MEME" ] || { echo "밈 영상이 없어요: $MEME" >&2; exit 1; }
+    [ .work/meme -nt meme.swift ] || swiftc -O -swift-version 5 meme.swift -o .work/meme
+    read -r INTRO BOX <<<"$(python3 -I -c 'import json, sys; m = json.loads(sys.argv[1]); print(m["intro"], ",".join(map(str, m["box"])))' "$META")"
+    .work/meme .work/frames "$MEME" "$INTRO" 30 "$BOX"
+  fi
   .work/encode .work/frames "$OUT-reel.mp4" 30
   cp "$(ls .work/frames/*.jpg | tail -1)" "$OUT-reel-cover.jpg"
   echo "$OUT-reel.mp4"

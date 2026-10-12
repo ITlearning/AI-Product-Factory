@@ -2,6 +2,7 @@
 # 인스타 한 세트 — 피드 카드 PNG, 릴스 mp4·표지, 글(피드용·릴스용)을 output/<날짜>-<종류>-<이름>/ 에 모은다.
 #   ./post.sh <사진> <단어> [날짜 표기] [#색] [-m "사진 이야기"]
 #   ./post.sh pebble <앱 스크린샷> <조약돌 이름> [날짜 표기] [확대] [-m "사진 이야기"]
+#   릴스 앞에 밈: -k <초록 배경 영상> [-h "앞 문구"]   (문구 기본값 「이런 단어가 있는 줄 몰랐던 나:」, 영상은 memes/ 에 — git 에 안 올림)
 #   예) ./post.sh ~/Downloads/IMG_1234.HEIC 놀잇감 -m "컵 사이에 개구리 두 마리. 털이 보송보송했어요."
 # 날짜를 안 주면 오늘. 「사진 이야기」는 본 것·있었던 일만 한두 줄 — 안 주면 그 줄 없이 만든다.
 set -euo pipefail
@@ -9,16 +10,21 @@ cd "$(dirname "$0")"
 
 NOTE= ARGS=()
 while [ $# -gt 0 ]; do
-  case "$1" in -m) NOTE="${2:-}"; shift 2 ;; *) ARGS+=("$1"); shift ;; esac
+  case "$1" in
+    -m) NOTE="${2:-}"; shift 2 ;;
+    -k) export MEME="${2:-}"; shift 2 ;;
+    -h) export HOOK="${2:-}"; shift 2 ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
 done
 set -- "${ARGS[@]+"${ARGS[@]}"}"
 KIND=word
 [ "${1:-}" = pebble ] && { KIND=pebble; shift; }
-[ $# -ge 2 ] || { sed -n 2,6p "$0" >&2; exit 1; }
+[ $# -ge 2 ] || { sed -n 2,7p "$0" >&2; exit 1; }
 PHOTO="$1" NAME="$2" DATE="${3:-$(date +'%-m월 %-d일')}" EXTRA="${4:-}"
 P=; [ "$KIND" = pebble ] && P=pebble
 
-STILL=$(./card.sh $P "$PHOTO" "$NAME" "$DATE" "$EXTRA")
+STILL=$(MEME= HOOK= ./card.sh $P "$PHOTO" "$NAME" "$DATE" "$EXTRA")
 REEL=$(./card.sh reel $P "$PHOTO" "$NAME" "$DATE" "$EXTRA")
 DIR="${STILL%.png}"
 rm -rf "$DIR" && mkdir -p "$DIR"
