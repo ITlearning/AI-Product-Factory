@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>몽돌 슬라이드</title>
+<style>
+@font-face { font-family: 'MongdolSerif'; src: url('../app-store/fonts/NanumMyeongjo-Bold.ttf'); font-weight: 700; }
+@font-face { font-family: 'MongdolSans'; src: url('../../Shared/Design/Fonts/GowunDodum-Hangul.ttf'); }
+
+html, body { margin: 0; }
+body { width: 1080px; height: 1920px; overflow: hidden; background: #0B0C10; }
+.slide { position: absolute; inset: 0; overflow: hidden; opacity: 0; }
+.slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shade { position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.18) 0%, transparent 18%, transparent 44%, rgba(0,0,0,.5) 66%, rgba(0,0,0,.66) 100%); }
+/* 단어는 화면 아래 1/4 보다 위에 — 그 아래는 인스타 캡션과 버튼이 덮는다. */
+.text { position: absolute; left: 80px; right: 80px; top: 1130px; text-align: center; }
+.when { font-family: 'MongdolSans'; font-size: 30px; letter-spacing: .08em; color: rgba(255,255,255,.7); margin-bottom: 18px; }
+.text h1 { margin: 0; font-family: 'MongdolSerif'; font-weight: 700; font-size: 112px; line-height: 1.15; letter-spacing: .04em;
+  color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,.35); }
+.text p { margin: 24px auto 0; max-width: 820px; font-family: 'MongdolSans'; font-size: 36px; line-height: 1.5;
+  color: rgba(255,255,255,.85); word-break: keep-all; text-shadow: 0 2px 16px rgba(0,0,0,.4); }
+.end { position: absolute; left: 0; right: 0; top: 1470px; text-align: center; opacity: 0; }
+.end b { display: block; font-family: 'MongdolSerif'; font-size: 32px; letter-spacing: .1em; color: rgba(255,255,255,.75); }
+.end span { display: block; margin-top: 12px; font-family: 'MongdolSans'; font-size: 26px; color: rgba(255,255,255,.62); }
+.grain { position: absolute; inset: 0; opacity: .07; mix-blend-mode: overlay; z-index: 9;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+</style>
+</head>
+<body>
+<div id="slides"></div>
+<div class="end" id="end"><b>몽돌</b><span>사진을 담으면 단어가 붙어요</span></div>
+<div class="grain"></div>
+<script>
+// slides.sh 가 p0·w0·m0·d0 … n, per(장당 초) 를 넘긴다. reel.mjs 가 frame(t) 를 넘기며 찍는다.
+const q = new URLSearchParams(location.search);
+const n = Number(q.get('n') || 0), per = Number(q.get('per') || 2.2), cross = .5;
+const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.pow(1 - x, 3);
+const slides = [], loads = [];
+for (let i = 0; i < n; i++) {
+  const el = document.createElement('div'); el.className = 'slide';
+  el.innerHTML = '<img alt=""><div class="shade"></div><div class="text"><div class="when"></div><h1></h1><p></p></div>';
+  const img = el.querySelector('img');
+  loads.push(new Promise(done => { img.onload = img.onerror = done; }));
+  img.src = q.get('p' + i);
+  el.querySelector('.when').textContent = q.get('d' + i) || '';
+  el.querySelector('h1').textContent = q.get('w' + i);
+  el.querySelector('p').textContent = q.get('m' + i);
+  document.getElementById('slides').append(el);
+  slides.push({ el, img, text: el.querySelector('.text'), when: el.querySelector('.when'), word: el.querySelector('h1'), meaning: el.querySelector('p') });
+}
+window.ready = Promise.all([...loads, document.fonts.ready]);
+window.reelLength = n * per + 1.8;
+
+const fade = (el, t, at, dur, dy = 0, blur = 0) => { const p = ease((t - at) / dur);
+  el.style.opacity = p; el.style.transform = dy ? `translateY(${(1 - p) * dy}px)` : '';
+  el.style.filter = blur ? `blur(${(1 - p) * blur}px)` : ''; };
+window.frame = t => {
+  slides.forEach((s, i) => {
+    const at = i * per, local = t - at, span = per + cross + (i === n - 1 ? 1.8 : 0);
+    s.el.style.opacity = i === 0 ? ease(local / .4) : ease(local / cross); // 다음 장이 위에 덮이며 넘어간다
+    s.el.style.display = local < 0 || local > span + cross ? 'none' : 'block';
+    const z = 1.07 - .07 * Math.min(1, local / span), dx = (i % 2 ? -1 : 1) * 14 * Math.min(1, local / span);
+    s.img.style.transform = `translateX(${dx}px) scale(${z})`;
+    fade(s.when, local, .25, .6);
+    fade(s.word, local, .35, .7, 14, 8);
+    fade(s.meaning, local, .6, .7, 10);
+    s.text.style.opacity = i === n - 1 ? 1 : 1 - ease((local - per) / .2); // 다음 장 글자와 겹치지 않게 먼저 뺀다
+  });
+  fade(document.getElementById('end'), t, n * per + .1, .8, 8);
+};
+</script>
+</body>
+</html>
