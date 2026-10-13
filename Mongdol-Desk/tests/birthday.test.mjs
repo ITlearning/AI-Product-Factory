@@ -115,6 +115,12 @@ test('Tabber 기기 표시 — ?internal=1 이면 localStorage 에 남기고 기
   }
 });
 
+test('실제 주소가 아니면 기록을 보내지 않는다 — 로컬·미리보기 테스트가 실제 통계에 섞이지 않게', () => {
+  const s = read('js/birthday.js');
+  assert.match(s, /var LIVE = location\.hostname === 'mongdol-desk\.vercel\.app';/);
+  assert.match(s, /function send\(event, extra\) \{\n\s*if \(!LIVE\) return;/);
+});
+
 test('안심 문구는 「알아보기」 바로 아래 — 생일·단어를 보내지 않고 누군지 알 수 없다', () => {
   const html = read('birthday.html');
   assert.match(html, /type="submit">알아보기<\/button>\n\s*<p class="bd-safe">생일과 나온 단어는 어디에도 보내지 않아요\./);

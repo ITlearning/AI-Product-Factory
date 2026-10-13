@@ -26,7 +26,10 @@
     if (q.get('internal') === '0') localStorage.removeItem('mongdol-internal');
     if (localStorage.getItem('mongdol-internal')) base.internal = true;
   } catch (e) {}
+  // 로컬·미리보기 주소에서 돌린 테스트가 실제 통계에 섞여 「안드로이드 오류」로 보였다(2026-10-12 20시, 127.0.0.1:8797).
+  var LIVE = location.hostname === 'mongdol-desk.vercel.app';
   function send(event, extra) {
+    if (!LIVE) return;
     var props = Object.assign({}, base, extra || {});
     var body = JSON.stringify({ api_key: KEY, event: event, distinct_id: id, timestamp: new Date().toISOString(), properties: props });
     if (!(navigator.sendBeacon && navigator.sendBeacon(URL_, new Blob([body], { type: 'text/plain' })))) {
