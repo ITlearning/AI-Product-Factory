@@ -2,15 +2,29 @@ import SwiftUI
 import UIKit
 import UIKit.UIGestureRecognizerSubclass
 
-/// 홈 ↔ 모은 조약돌을 넘기는 가로 팬. SwiftUI 루트 호스팅 뷰에 붙여 사진 더미 넘기기·날짜 스크럽·스크롤·조약돌 탭보다
+/// 홈 · 조약돌 · 말 사이를 넘기는 가로 팬. SwiftUI 루트 호스팅 뷰에 붙여 사진 더미 넘기기·날짜 스크럽·스크롤·조약돌 탭보다
 /// 먼저 판정한다 — 다른 인식기는 이 팬이 포기할 때까지 기다리고, 받지 않을 터치는 닿자마자 포기해 지연이 없다.
 struct CollectionSwipe: UIViewRepresentable {
-    enum Mode: Equatable {
-        case off
-        /// 홈 — 오른쪽 가장자리에서 시작해 왼쪽으로.
-        case openFromEdge
-        /// 모은 조약돌 — 어디서든 오른쪽으로.
-        case close
+    struct Mode: Equatable {
+        /// 다음 칸 — 오른쪽 가장자리에서 시작해 왼쪽으로.
+        var forward: Bool
+        /// 앞 칸 — 어디서든 오른쪽으로.
+        var back: Bool
+
+        static let off = Mode(forward: false, back: false)
+        static let openFromEdge = Mode(forward: true, back: false)
+        static let close = Mode(forward: false, back: true)
+    }
+
+    static func accepts(_ mode: Mode, x: CGFloat, width: CGFloat, edgeZone: CGFloat) -> Bool {
+        mode.back || (mode.forward && x >= width - edgeZone)
+    }
+
+    /// 둘 다 열린 칸에선 가장자리 밖에서 시작한 왼쪽 쓸기를 받으면 안 된다 — 닿은 자리를 따로 넘긴다.
+    static func begins(_ mode: Mode, vx: CGFloat, vy: CGFloat, startedAtEdge: Bool) -> Bool {
+        guard abs(vx) > abs(vy) else { return false }
+        if vx < 0 { return mode.forward && startedAtEdge }
+        return vx > 0 && mode.back
     }
 
     var mode: Mode
@@ -79,6 +93,7 @@ struct CollectionSwipe: UIViewRepresentable {
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var parent: CollectionSwipe
         private let pan = EdgePan()
+        private var startedAtEdge = false
 
         init(parent: CollectionSwipe) {
             self.parent = parent
@@ -100,21 +115,14 @@ struct CollectionSwipe: UIViewRepresentable {
         }
 
         private func accepts(_ point: CGPoint) -> Bool {
-            switch parent.mode {
-            case .off: false
-            case .openFromEdge: point.x >= (pan.view?.bounds.width ?? 0) - parent.edgeZone
-            case .close: true
-            }
+            let width = pan.view?.bounds.width ?? 0
+            startedAtEdge = point.x >= width - parent.edgeZone
+            return CollectionSwipe.accepts(parent.mode, x: point.x, width: width, edgeZone: parent.edgeZone)
         }
 
         func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
             let v = pan.velocity(in: pan.view)
-            guard abs(v.x) > abs(v.y) else { return false }
-            switch parent.mode {
-            case .off: return false
-            case .openFromEdge: return v.x < 0
-            case .close: return v.x > 0
-            }
+            return CollectionSwipe.begins(parent.mode, vx: v.x, vy: v.y, startedAtEdge: startedAtEdge)
         }
 
         func gestureRecognizer(_ g: UIGestureRecognizer,
