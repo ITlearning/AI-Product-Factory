@@ -412,11 +412,11 @@ No blocking findings remain. The 10 open minor finding(s) below are recorded for
   | What already exists  | written                                      |
   | TODOS.md updates     | 0 items proposed                             |
   | Approved Mockups     | 0 generated (키 없음), HTML 캔버스 시안 사용   |
-  | Decisions made       | 12 added to plan                             |
-  | Decisions deferred   | 1 (아래)                                      |
+  | Decisions made       | 13 added to plan                             |
+  | Decisions deferred   | 0                                            |
   | Overall design score | 5/10 → 8/10                                  |
 ```
-결정 12: 진입 A(탭바 「말」), 장면 카드·위젯 장면·줍는 맛(Tabber 요청), 잠금화면 세 자리, 1A 온보딩, 업데이트 안내 두 장(Tabber 요청), 2A, 3A, 4A, 5A, 6A, 7A, 8A.
+결정 13: 9A(위젯 붙였으면 「붙었어요」), 진입 A(탭바 「말」), 장면 카드·위젯 장면·줍는 맛(Tabber 요청), 잠금화면 세 자리, 1A 온보딩, 업데이트 안내 두 장(Tabber 요청), 2A, 3A, 4A, 5A, 6A, 7A, 8A.
 
 ## GSTACK REVIEW REPORT
 
@@ -425,11 +425,10 @@ No blocking findings remain. The 10 open minor finding(s) below are recorded for
 | CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | — | — |
 | Outside Review | — | Independent 2nd opinion | 0 | skipped | 디자인 외부 의견 단계 생략(진입 경로 시안으로 대신) |
 | Eng Review | `/plan-eng-review` | Architecture & tests (required) | 0 | — | — |
-| Design Review | `/plan-design-review` | UI/UX gaps | 1 | issues_open | score: 6/10 → 8/10, 12 decisions |
+| Design Review | `/plan-design-review` | UI/UX gaps | 1 | clean | score: 6/10 → 8/10, 13 decisions |
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
 
 - **OUTSIDE COVERAGE:** design 단계 외부 의견 skipped. 디자이너 도구(OpenAI) unavailable — 「No OpenAI API key found」, 시안 0장.
 - **VERDICT:** 아직 CLEAR된 리뷰 없음 — eng review required.
 
-**UNRESOLVED DECISIONS:**
-- 위젯을 붙였는지 앱이 알아채 「붙었어요」를 보여 주기 — 업데이트 안내 요청에 덧붙여 문서에 넣었지만 Tabber가 따로 승인하지 않음
+NO UNRESOLVED DECISIONS
