@@ -84,7 +84,7 @@ A+날씨에 위젯 3크기·잠금화면·「밀려온 말」 전환 인터랙�
 
 ## Recommended Approach — A+날씨
 
-사람 약 3주 / Claude Code 약 3일(생일 장 0.5 · 공유 판정 모듈 0.5 · 위젯 날씨·타임라인 1 · 줍기·주운 말 화면 0.5 · 계측·정리 0.5). 주운 말을 iCloud로 올리기로 하면 +1일과 스키마 선배포.
+사람 약 3주 / Claude Code 약 3일(생일 장 0.5 · 공유 판정 모듈 0.5 · 위젯 날씨·타임라인 1 · 줍기·주운 말 화면 0.5 · 계측·정리 0.5). (주운 말은 기기에만 — iCloud 작업 없음.)
 
 ### 1. 첫날 (온보딩 끝)
 - **온보딩 순서(설계 리뷰 2026-10-15, 1A)**: 몽돌이 뭔지 → 첫 조약돌 받기 → **생일 말** → 아침 도착 소식 → iCloud → 찍는 법 → **위젯 붙이기** → 시작하기. 8장. 예전 6장 「모은 조약돌(쓸면 보여요)」은 탭바(DESIGN §1.4.1)가 대신하므로 뺀다. 생일 말은 첫 조약돌 선물 바로 다음이라 선물이 이어진다.
@@ -138,7 +138,7 @@ A+날씨에 위젯 3크기·잠금화면·「밀려온 말」 전환 인터랙�
 - 사진을 담아 붙은 말이 때·날씨 말이면 자동으로 주운 말에 들어간다(사진과 함께). 대상 말·기분 말은 1.2에서 들어가지 않는다(8번).
 - 「이 단어는 아니에요」로 바꾸면 **그 사진으로 주운 기록 하나만** 빠진다. 같은 말을 위젯·생일로 주운 기록이 남아 있으면 말은 그대로 남고, 남은 기록이 없으면 말이 사라진다.
 - 사용자가 직접 빼는 길: 말을 눌러 연 화면 아래 「주운 말에서 빼기」 글자 버튼(길게 눌러 메뉴는 Tabber 기각 — DESIGN). 그 말의 기록 전부를 뺀다.
-- 기록은 기기 안 + iCloud? → **열린 질문**(새 CloudKit 필드는 이번에 Production 스키마 배포 실패로 고생한 자리).
+- **기록은 기기 안에만(설계 리뷰 8A, 2026-10-15)**. 기기를 바꾸거나 다시 깔면 주운 말은 사라진다 — 알고 받아들인 한계. 동기화는 주운 말이 사람을 데려온다는 신호가 보이고, 새 레코드 형식을 Production 스키마에 **먼저** 배포한 뒤 1.2.x에서(생일 말 기록은 그때도 제외).
 
 ### 4. 같이 넣는 정리
 - words.json 뜻풀이 오류: 해님(앞 글자 빠짐)·첫눈·꽃비(다른 뜻).
@@ -174,7 +174,7 @@ A+날씨에 위젯 3크기·잠금화면·「밀려온 말」 전환 인터랙�
 
 ## Open Questions
 1. ~~「주운 말」로 들어가는 길~~ → 탭바 세 번째 칸 「말」(2026-10-15 결정).
-2. 주운 말 기록을 iCloud로 올릴지. 올린다면 새 레코드 타입·필드를 먼저 Production에 배포하고 앱을 낸다(1.1.2 사고 반복 금지). 안 올리면 기기를 바꾸면 사라진다.
+2. ~~주운 말 iCloud~~ → 1.2는 기기에만(2026-10-15 결정).
 3. 신선도 6시간·재조회 3시간·이동 50km는 첫 값이다. TestFlight에서 실제 날씨와 어긋난 말이 뜨는지 보고 조정한다.
 4. ~~기존 사용자에게 생일 말을 보여 줄지~~ → 업데이트 뒤 한 번, 두 장(2026-10-15 결정).
 5. 평가 요청 조건에 「주운 말이 몇 개 쌓인 뒤」를 더할지(지금: 다른 날 돌아와 두 번째 조약돌 받은 뒤, 버전마다 한 번 — `HomeShell.swift:503`).
@@ -355,3 +355,81 @@ No blocking findings remain. The 10 open minor finding(s) below are recorded for
 
 > Section 4 and Premise 7 still include the PostHog dashboard fixes in 1.2.
 <!-- gstack:office-hours:concerns:end -->
+
+## Design Review (/plan-design-review, 2026-10-15)
+
+### NOT in scope
+- 홈 화면 위젯 중간·큰 크기 — 작은 크기와 잠금화면 세 자리로 먼저 반응을 본다(1.2.x).
+- 주운 말 iCloud 동기화 — 8A, 스키마 선배포 뒤 1.2.x.
+- 「둘이서 단어 찾기」 — 1.3 후보(커뮤니티는 1.2 범위 밖).
+- 대상 말(윤슬 등)의 장면 — 단어 모델 학습 뒤.
+- 디자이너 도구 시안 이미지 — OpenAI 키가 없어 생성 0장, HTML 캔버스로 대신 봤다.
+
+### What already exists (다시 쓴다)
+- 아래 떠 있는 탭바 `PageTabBar`(DESIGN §1.4.1) — 세 번째 칸 「말」을 더한다.
+- 온보딩 「한 화면 한 가지」 구조와 기존 사용자 한 장 규칙(DESIGN §1.5).
+- 사진 한 단어 글자 규칙: 명조 30 + 뜻풀이 고운돋움 13(DESIGN §2.2).
+- 흰색 네 단계·`tertiary` 4.5:1(DESIGN §2.1), 동작 줄이기 fade 선례.
+- 조약돌 위젯 확장(`ColorMomentsControl/PebbleWidget.swift`)과 확장용 글꼴 서브셋 검사.
+
+### Implementation Tasks
+- [ ] **T1 (P1, human ~1일 / CC ~1시간)** — 탭바 — 세 번째 칸 「말」 추가, 「모은 조약돌」→「조약돌」
+  - Surfaced by: Pass 1 — 진입 경로 A
+  - Verify: 실기기에서 세 칸 전환·카메라 쪽 숨김
+- [ ] **T2 (P1, human ~2일 / CC ~2시간)** — 「말」 칸 — 장면 카드 목록(104·22), 빈 상태(지금의 말 카드 + 줍기), 펼친 말
+  - Surfaced by: Pass 1·2 — 2A, 장면 카드
+  - Verify: 시뮬레이터 레이아웃 + 실기기 모션
+- [ ] **T3 (P1, human ~2일 / CC ~2시간)** — 장면 렌더러 — SwiftUI `Canvas` 장면 갈래 10~15, 앱(움직임)·위젯(멈춤) 공용, 밝은 요소는 오른쪽
+  - Surfaced by: Pass 4·5·6 — 4A·5A
+  - Verify: 장면별 글자 자리 대비 4.5:1 테스트
+- [ ] **T4 (P1, human ~1일 / CC ~1시간)** — 줍기 몸짓 — 위젯 전환(1.5초)·앱 안 큰 몸짓·동작 줄이기 fade, 하루 한 번 규칙
+  - Surfaced by: Pass 2 — 3A, 6A
+  - Verify: 실기기(모션은 실기기에서만 판정)
+- [ ] **T5 (P1, human ~1일 / CC ~1시간)** — 잠금화면 위젯 세 자리 — 흰빛 밝기 단계 장면
+  - Surfaced by: D3
+  - Verify: 실기기 잠금화면, 잠긴 상태에서 누르기 동작 확인
+- [ ] **T6 (P1, human ~1일 / CC ~1시간)** — 온보딩 8장 + 업데이트 안내 두 장
+  - Surfaced by: Pass 1 — 1A, 업데이트 안내
+  - Verify: 새 설치·업데이트 두 경로를 시뮬레이터로
+- [ ] **T7 (P2, human ~0.5일 / CC ~30분)** — VoiceOver 묶음 읽기·44pt 누르는 자리
+  - Surfaced by: Pass 6 — 7A
+  - Verify: VoiceOver 켜고 위젯·카드 읽기
+- [ ] **T8 (P2, human ~0.5일 / CC ~20분)** — DESIGN.md에 「그림 색」 표와 「말」 칸 규칙 추가
+  - Surfaced by: Pass 5 — 4A
+
+### Completion Summary
+```
+  | System Audit         | DESIGN.md 있음, UI 범위 있음                 |
+  | Step 0               | 6/10, 전부 + 진입 경로 시안                   |
+  | Pass 1  (Info Arch)  | 6/10 → 9/10                                  |
+  | Pass 2  (States)     | 5/10 → 9/10                                  |
+  | Pass 3  (Journey)    | 6/10 → 9/10                                  |
+  | Pass 4  (AI Slop)    | 8/10 → 8/10                                  |
+  | Pass 5  (Design Sys) | 6/10 → 9/10                                  |
+  | Pass 6  (Responsive) | 5/10 → 9/10                                  |
+  | Pass 7  (Decisions)  | 1 resolved (8A), 0 deferred                  |
+  | NOT in scope         | written (5 items)                            |
+  | What already exists  | written                                      |
+  | TODOS.md updates     | 0 items proposed                             |
+  | Approved Mockups     | 0 generated (키 없음), HTML 캔버스 시안 사용   |
+  | Decisions made       | 12 added to plan                             |
+  | Decisions deferred   | 1 (아래)                                      |
+  | Overall design score | 5/10 → 8/10                                  |
+```
+결정 12: 진입 A(탭바 「말」), 장면 카드·위젯 장면·줍는 맛(Tabber 요청), 잠금화면 세 자리, 1A 온보딩, 업데이트 안내 두 장(Tabber 요청), 2A, 3A, 4A, 5A, 6A, 7A, 8A.
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | — | — |
+| Outside Review | — | Independent 2nd opinion | 0 | skipped | 디자인 외부 의견 단계 생략(진입 경로 시안으로 대신) |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 0 | — | — |
+| Design Review | `/plan-design-review` | UI/UX gaps | 1 | issues_open | score: 6/10 → 8/10, 12 decisions |
+| DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
+
+- **OUTSIDE COVERAGE:** design 단계 외부 의견 skipped. 디자이너 도구(OpenAI) unavailable — 「No OpenAI API key found」, 시안 0장.
+- **VERDICT:** 아직 CLEAR된 리뷰 없음 — eng review required.
+
+**UNRESOLVED DECISIONS:**
+- 위젯을 붙였는지 앱이 알아채 「붙었어요」를 보여 주기 — 업데이트 안내 요청에 덧붙여 문서에 넣었지만 Tabber가 따로 승인하지 않음
