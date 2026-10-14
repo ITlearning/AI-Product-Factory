@@ -36,9 +36,19 @@ final class CloudSync: CKSyncEngineDelegate {
         closures.onLocalChange = { [weak self] key in self?.enqueueDay(key) }
         gifts.onLocalChange = { [weak self] key in self?.enqueueDay(key) }
         PebbleNaming.stamps.onLocalChange = { [weak self] key in self?.enqueueDay(key) }
-        DayGradient.stamps.onLocalChange = { [weak self] key in self?.enqueueDay(key) }
 
         if state == nil { enqueueEverything() }
+        else { retryAfterDroppedFields() }
+    }
+
+    /// 1.1.2 는 Production 스키마에 없는 필드(palette·pebbleStop*)를 실어 저장이 통째로 거절됐고, 엔진은 그 실패를 다시 시도하지 않는다.
+    /// 필드를 뺀 뒤 한 번만 전부 다시 올린다.
+    static let droppedFieldsKey = "syncRetriedDroppedFields"
+
+    private func retryAfterDroppedFields(defaults: UserDefaults = .standard) {
+        guard !defaults.bool(forKey: Self.droppedFieldsKey) else { return }
+        enqueueEverything()
+        defaults.set(true, forKey: Self.droppedFieldsKey)
     }
 
     /// 밀린 시스템 필드 쓰기를 지금 끝낸다 — 앱이 background 로 갈 때.
@@ -76,13 +86,13 @@ final class CloudSync: CKSyncEngineDelegate {
         saveZone()
         enqueue(store.moments.map { .upsert($0.id) })
         let keys = Set(store.dayKeys).union(closures.closedDays.keys).union(gifts.giftedDayKeys)
-            .union(PebbleNaming.stamps.names.keys).union(DayGradient.stamps.dayKeys)
+            .union(PebbleNaming.stamps.names.keys)
         for key in keys.sorted() where closures.closedAt(key) != nil || gifts.isGifted(key) { enqueueDay(key) }
     }
 
     private func dayState(_ key: String) -> SyncRecords.DayState {
         SyncRecords.DayState(dayKey: key, closedAt: closures.closedAt(key), gifted: gifts.isGifted(key),
-                             pebbleName: PebbleNaming.stamps.name(on: key), pebbleStops: DayGradient.stamps.stops(on: key))
+                             pebbleName: PebbleNaming.stamps.name(on: key))
     }
 
     private func record(for id: CKRecord.ID) -> CKRecord? {
@@ -179,17 +189,12 @@ final class CloudSync: CKSyncEngineDelegate {
         if let at = d.closedAt { closures.applyRemote(dayKey: d.dayKey, closedAt: at) }
         if d.gifted { gifts.applyRemote(gifted: d.dayKey) }
         if let name = d.pebbleName { PebbleNaming.stamps.applyRemote(dayKey: d.dayKey, name: name) }
-        if let stops = d.pebbleStops { DayGradient.stamps.applyRemote(dayKey: d.dayKey, stops: stops) }
         // 이 기기가 더 이른 마무리나 받은 증정, 앞선 이름 도장을 알고 있으면 다시 올린다.
         let mine = dayState(d.dayKey)
-        // 서버 값도 이 기기 저장 모양(소수 3자리)으로 맞춰 비교한다 — 안 그러면 같은 도장을 끝없이 다시 올린다.
-        let remoteStops = d.pebbleStops.map(PebbleStopsLog.normalized)
-        if mine.gifted != d.gifted || !Self.sameInstant(mine.closedAt, d.closedAt) || mine.pebbleName != d.pebbleName
-            || mine.pebbleStops != remoteStops {
+        if mine.gifted != d.gifted || !Self.sameInstant(mine.closedAt, d.closedAt) || mine.pebbleName != d.pebbleName {
             enqueueDay(d.dayKey)
         }
         return mine.gifted != before.gifted || !Self.sameInstant(mine.closedAt, before.closedAt) || mine.pebbleName != before.pebbleName
-            || mine.pebbleStops != before.pebbleStops
     }
 
     // CloudKit 은 Date 를 밀리초로 자른다 — 정확히 같다로 비교하면 같은 마무리를 끝없이 다시 올린다.
