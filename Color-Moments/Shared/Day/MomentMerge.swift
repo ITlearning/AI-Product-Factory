@@ -42,7 +42,7 @@ public enum MomentMerge {
     public static func syncedEqual(_ a: Moment, _ b: Moment) -> Bool {
         a.id == b.id && sameInstant(a.capturedAt, b.capturedAt) && a.colorHex == b.colorHex && a.source == b.source
             && a.word == b.word && a.labels == b.labels && a.place == b.place && sameInstant(a.addedAt, b.addedAt)
-            && a.batchID == b.batchID && a.cloudID == b.cloudID && a.palette == b.palette
+            && a.batchID == b.batchID && a.cloudID == b.cloudID
     }
 
     // 반올림 비교는 days.json(밀리초 절삭)과 CloudKit 값이 경계에서 1ms 갈려 끝없이 다시 올린다 — 차이로 본다.

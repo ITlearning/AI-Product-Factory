@@ -104,6 +104,6 @@ final class MomentMergeTests: XCTestCase {
         var withPalette = base; withPalette.palette = ["#112233:100"]
         XCTAssertEqual(MomentMerge.merge(local: base, remote: withPalette).palette, ["#112233:100"], "원격만 가진 팔레트를 잃지 않는다")
         XCTAssertEqual(MomentMerge.merge(local: withPalette, remote: base).palette, ["#112233:100"], "구버전이 올린 기록이 내 팔레트를 지우지 않는다")
-        XCTAssertFalse(MomentMerge.syncedEqual(base, withPalette), "팔레트가 다르면 다시 올린다")
+        XCTAssertTrue(MomentMerge.syncedEqual(base, withPalette), "팔레트는 올리지 않는다 — 다르다고 다시 올리면 기기 사이를 끝없이 돈다")
     }
 }
