@@ -30,6 +30,8 @@ public struct WordEntry: Codable, Equatable, Sendable {
     public let subjects: [String]
     /// 사진에 뭐가 찍혔든 그 「때」(시간대·날씨·계절)만 말하는 단어 — 맞는 대상이 없을 때 쓴다(WordPicker).
     public var moment: Bool = false
+    /// 사진 없이 지금 시각·해·달·날씨·기온만으로 맞는 말 — 위젯·자동 줍기 후보(moment 와 함께). 장면 말(찔레꽃·자리끼)은 아니다.
+    public var ambient: Bool = false
     /// 계절보다 좁은 때(무서리 10~11월). 비면 상관없다.
     public var months: [Int] = []
     public var needs: [WordNeed] = []
@@ -59,7 +61,7 @@ public struct WordEntry: Codable, Equatable, Sendable {
 
 extension WordEntry {
     private enum CodingKeys: String, CodingKey {
-        case id, word, meaning, times, weathers, seasons, subjects, moment, months, needs, with, minCelsius, maxCelsius
+        case id, word, meaning, times, weathers, seasons, subjects, moment, ambient, months, needs, with, minCelsius, maxCelsius
         case hours, conditions, sunMin, sunMax, moonAges, weekdays, fallback
         case rest, lunar, solar, group
     }
@@ -74,6 +76,7 @@ extension WordEntry {
         seasons = try c.decode([Season].self, forKey: .seasons)
         subjects = try c.decode([String].self, forKey: .subjects)
         moment = try c.decodeIfPresent(Bool.self, forKey: .moment) ?? false
+        ambient = try c.decodeIfPresent(Bool.self, forKey: .ambient) ?? false
         months = try c.decodeIfPresent([Int].self, forKey: .months) ?? []
         needs = try c.decodeIfPresent([WordNeed].self, forKey: .needs) ?? []
         with = try c.decodeIfPresent([String].self, forKey: .with) ?? []
