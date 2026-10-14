@@ -57,7 +57,7 @@ Tabber 본인 사용감도 같은 곳을 가리킨다(원문): 「감성적인 �
 9. 출시 때 새 사람 30명 안팎을 들이고, 성공 기준을 출시 전에 숫자로 적는다.
 
 ### 단어 데이터 근거
-`Shared/Word/words.json` 1,792개: 때·날씨 말 523개(시각·계절·날씨·기온·달로 판정, 사진 내용 무관), 대상+때 46개, 대상 말 63개, 조건 없는 기분 말 1,160개.
+`Shared/Word/words.json` 1,792개: 대상 칸이 비고 조건이 있는 말 523개(※ 엔지니어링 리뷰 R1: 이 중 상당수는 장면이 있어야 맞는 말 — 찔레꽃·자리끼 등. **위젯·자동 줍기 후보는 `moment` 74개 + 큐레이션한 `ambient` 표시 150~200개로 한정**), 대상+때 46개, 대상 말 63개, 조건 없는 기분 말 1,160개.
 
 ## Cross-Model Perspective (Claude 서브에이전트 5 페르소나, 이 대화를 보지 않고 요약본만 받음)
 
@@ -423,17 +423,274 @@ No blocking findings remain. The 10 open minor finding(s) below are recorded for
 ```
 결정 13: 9A(위젯 붙였으면 「붙었어요」), 진입 A(탭바 「말」), 장면 카드·위젯 장면·줍는 맛(Tabber 요청), 잠금화면 세 자리, 1A 온보딩, 업데이트 안내 두 장(Tabber 요청), 2A, 3A, 4A, 5A, 6A, 7A, 8A.
 
+## Eng Review (/plan-eng-review, 2026-10-15)
+
+대상: `docs/designs/mongdol-1.2-words.md`(이 문서). 코드 근거: `Color-Moments/` @ 247aec3.
+
+### Scope record
+feature answers: 기능 목록 변경 없음(제안된 잘라내기 없음); structure: Smaller arrangement (D1); accepted scope: 새 타입 4개 — `AmbientNow`(예보 캐시 + 공유 위치 + 지금 말 고르기, Shared), `PickedWords`(주운 말 저장 + 생일 말 고르기, Shared), `SceneView`(장면 렌더러, 앱·위젯 공용), `PickWordIntent`; pending remedies: R1, R2, R3, R4.
+
+## Decision ledger
+
+### R1: 위젯·자동 줍기에 쓸 「지금 밖에 맞는 말」 후보 기준
+Finding: 1, P1, confidence 9/10, `Shared/Word/words.json` + 문서 「단어 데이터 근거」 줄, reviewer: Claude(본 리뷰)
+Plan baseline: 「때·날씨 말 523개(시각·계절·날씨·기온·달로 판정, 사진 내용 무관 → 정확)」 — 원래 제안
+Runtime evidence: 523개 = 대상 칸이 비고 조건이 하나라도 있는 말(분류 스크립트). 표본에 찔레꽃·꽃놀이·햇과일·꽃달임·자리끼·달그림자·회오리·맞바람·떠돌이별(장면이 있어야 맞음). 계절·달만 조건인 말 134개. 기존 큐레이션 플래그 `moment`(WordList.swift:31-32, 「사진에 뭐가 찍혔든 그 때만 말하는 단어」)는 전체 74개, 523 안에 61개.
+Comparison grid:
+| 선택 | 지금 | A | B | C |
+|---|---|---|---|---|
+| R1 후보 기준 | 523개(부정확) | `moment` 74개 + 새 `ambient` 표시를 손으로 골라 150~200개로, 테스트로 조건 검증 | `moment` 74개만 | 523개 그대로 |
+| R2~R4 | 대기 | 대기 | 대기 | 대기 |
+Question D2: (아래 질문과 같음)
+Header: 위젯 말 후보
+Options:
+A) 큐레이션 확장 (recommended) — moment 74개로 시작해 Tabber+Claude가 ambient 표시를 붙여 150~200개로. 표시된 말은 대상 없음·조건 하나 이상을 테스트로 강제. (human ~1일 / CC ~1시간 + Tabber 검토 30분)
+B) moment 74개만 — 바로 쓸 수 있고 가장 정확. 대신 같은 말이 자주 반복돼요.
+C) 523개 그대로 — 가장 다양하지만 찔레꽃·자리끼 같은 틀린 말이 위젯에 떠요.
+State: approved
+Actual answer: A) 큐레이션 확장 (D2, 2026-10-15 Tabber)
+Accepted scope: 위젯·잠금화면·사진 자동 줍기의 후보 = `moment` 74개 + 새 `ambient: true` 표시 말(Tabber+Claude 큐레이션, 목표 150~200개). 테스트: ambient/moment 말은 `subjects` 비어 있고 판정 가능한 조건(시각·해·달·날씨 이름·기온·절기) 하나 이상 — 계절·달(月)만인 말은 ambient 불가. 「단어 데이터 근거」의 523 표현은 「후보 원천」으로 고친다.
+History: —
+
+### R2: 위젯의 날씨 말에 Apple 날씨 표기(로고 + 법적 링크)를 어디에 둘지
+Finding: 2, P1, confidence 6/10, `ColorMoments/App/WeatherLookup.swift:29-30`(「날씨를 보여 주는 곳에 로고와 법적 고지 링크를 둬야 한다」), `Shared/Day/DayPhotoView.swift:230`, reviewer: Claude
+Plan baseline: 문서에 표기 위치 없음 — 원래 제안
+Runtime evidence: 앱은 사진 보기에만 표기. Apple 문서(developer.apple.com/weatherkit/get-started)는 Apple 날씨 데이터를 보여 주면 표기를 요구하지만 위젯 배치는 명시 없음. 포럼 사례: 설정에만 둬서 통과(1건), 크레딧 페이지에만 둬서 반려(1건). 위젯에 직접 넣을 공간은 없다.
+Comparison grid:
+| 선택 | 지금 | A | B |
+|---|---|---|---|
+| R2 표기 위치 | 없음 | 「말」 칸(위젯을 누르면 오는 곳) 맨 아래 + 설정 시트 「위젯 모양」 옆 | 설정 시트에만 |
+| R1 | 승인(A) | 그대로 | 그대로 |
+| R3·R4 | 대기 | 대기 | 대기 |
+Question D3: (아래 질문과 같음)
+Header: 날씨 표기
+Options:
+A) 말 칸 + 설정 (recommended) — 날씨 말 장면 카드가 보이는 「말」 칸 맨 아래와 설정 시트에 Apple 날씨 로고·법적 링크. 위젯 자체엔 넣지 않음. (human ~2시간 / CC ~10분)
+B) 설정에만 — 가장 조용하지만 포럼 반려 사례와 비슷해 심사 위험이 남아요.
+State: approved
+Actual answer: A) 말 칸 + 설정 (D3, 2026-10-15 Tabber)
+Accepted scope: Apple 날씨 로고(다크) + 법적 링크를 「말」 칸 맨 아래와 설정 시트 「위젯 모양」 옆에 둔다. 위젯 자체에는 넣지 않는다. `WeatherService.attribution`은 앱 쪽 기존 호출을 다시 쓴다.
+History: —
+
+### R3: 위젯에서 주운 말과 앱에서 주운 말을 어떻게 한 저장소에 모을지
+Finding: 3, P1, confidence 8/10, `Shared/Day/CoalescingWriter.swift`(앱 프로세스 안에서만 모아 쓰기) + 문서 「줍기 버튼: Button(intent:)」, reviewer: Claude
+Plan baseline: 저장 방식 없음 — 「주운 말에 들어간다」만
+Runtime evidence: 위젯 버튼의 AppIntent는 위젯 확장 프로세스에서 돈다(앱이 꺼져 있어도). 앱은 사진 자동 줍기·생일 말·빼기로 같은 기록을 쓴다. 두 프로세스가 한 파일을 읽고-고치고-쓰면 나중 쓴 쪽이 앞의 줍기를 지운다. 지금 코드에 프로세스 사이 잠금 없음.
+Comparison grid:
+| 선택 | 지금 | A | B |
+|---|---|---|---|
+| R3 저장 방식 | 없음 | 쓰는 쪽마다 따로 덧붙이는 기록(widget.jsonl / app.jsonl, 각 줄 고유 id), 읽을 때 합침, 빼기도 기록으로 | 한 파일 + NSFileCoordinator로 두 프로세스가 차례로 고침 |
+| R1·R2 | 승인 | 그대로 | 그대로 |
+| R4 | 대기 | 대기 | 대기 |
+Question D4: (아래 질문과 같음)
+Header: 저장 방식
+Options:
+A) 따로 덧붙이고 합치기 (recommended) — 위젯은 자기 파일에 한 줄 덧붙이기만, 앱도 자기 파일에. 화면은 둘을 합쳐 그린다. 같은 id는 한 번만. 잠금 없이 잃어버림이 없다. (human ~1일 / CC ~30분, 테스트 포함)
+B) 한 파일 + 파일 조정 — 파일은 하나라 단순하지만 위젯 시간 예산 안에서 잠금 대기가 생기고, 조정을 빠뜨린 쓰기 한 곳이 다시 덮어쓰기를 만든다.
+State: approved
+Actual answer: A) 따로 덧붙이고 합치기 (D4, 2026-10-15 Tabber)
+Accepted scope: App Group에 `picks-widget.jsonl`(위젯 확장만 씀)·`picks-app.jsonl`(앱만 씀). 각 줄 = {id(UUID), 말 글자, words.json id?, 갈래(widget/photo/birthday), 시각, 사진 id?, 종류(pick/unpick)}. 읽을 때 두 파일을 합쳐 id로 중복 제거, unpick이 같은 말·같은 사진 기록을 지운다. 「하루 한 번」은 합친 결과로 판정. 테스트: 두 파일 교차 합치기, 같은 id 두 번, unpick 순서 뒤바뀜, 깨진 줄 건너뛰기.
+History: —
+
+### R4: 위젯이 「그날 이미 뜬 말은 피한다」를 어떻게 기억할지
+Finding: 4, P2, confidence 8/10, 문서 「고르기 규칙(결정)」 ④ + 디자인 리뷰 R3-2(작은 지적), reviewer: Claude + 설계 리뷰어
+Plan baseline: 「바로 앞 엔트리와 같은 말이면 다음 후보로, 그날 이미 뜬 말은 후보가 남는 한 피한다」 — 기억 방식 없음
+Runtime evidence: 타임라인은 3시간마다 앞으로 24시간을 다시 만든다(문서). 저장된 「뜬 말」 목록이 없으면 다시 만들 때 앞 시간 기억이 사라지고, 저장하면 위젯 화면이 실제로 보였는지와 어긋난다(위젯 엔지니어 페르소나 지적).
+Comparison grid:
+| 선택 | 지금 | A | B |
+|---|---|---|---|
+| R4 기억 방식 | 없음 | 저장 없이 계산: 그날 0시부터 그 시각까지를 같은 규칙으로 다시 계산해 「이미 뜬 말」을 구한다(dayKey 씨앗, 순수 함수) | App Group에 날짜별 뜬 말 목록 저장 |
+| R1~R3 | 승인 | 그대로 | 그대로 |
+Question D5: (아래 질문과 같음)
+Header: 반복 피하기
+Options:
+A) 저장 없이 다시 계산 (recommended) — 같은 날·같은 조건이면 언제 다시 만들어도 같은 말. 저장 파일·어긋남 없음. 예보가 바뀌면 지난 시각의 말도 다시 계산될 뿐(이미 지나간 화면이라 문제없음). (human ~2시간 / CC ~10분)
+B) 뜬 말 저장 — 실제 이력에 가깝지만 저장·정리·어긋남을 다뤄야 한다.
+State: approved
+Actual answer: A) 저장 없이 다시 계산 (D5, 2026-10-15 Tabber)
+Accepted scope: `AmbientNow.word(at:)`는 순수 함수 — 그날(새벽 4시 경계 아님, 위젯은 0시 기준 하루) 0시부터 그 시각까지 같은 규칙으로 차례로 계산해 「이미 뜬 말」을 구한다. 씨앗 = dayKey + 시각. 저장 파일 없음. 테스트: 같은 입력이면 같은 24칸, 앞 칸과 같은 말 없음(후보 2개 이상일 때), 하루 안 중복은 후보가 남는 한 없음.
+History: —
+
+### R5: 「말」 칸을 화면 이동 구조(progress) 안에 어떻게 넣을지
+Finding: 5, P1, confidence 9/10, `ColorMoments/App/HomeShell.swift:15`(`@State private var progress: CGFloat = 0`), `:126`·`:133`(카메라 -w / 모은 조약돌 +w 오프셋), `:194`(`PageTabBar(onCollection: progress < -0.5 …)`), reviewer: Claude
+Plan baseline: 탭바 세 번째 칸 「말」(디자인 리뷰 D2) — 들어가는 방식 미정
+Runtime evidence: 화면은 progress 하나로 카메라(1)·홈(0)·모은 조약돌(-1) 세 자리를 옆으로 민다. 탭바는 두 칸(onCollection Bool). 오른쪽 가장자리 쓸기(CollectionSwipe)가 모은 조약돌로 간다. 세 번째 칸 자리는 없다.
+Comparison grid:
+| 선택 | 지금 | A | B |
+|---|---|---|---|
+| R5 말 칸 구조 | 없음 | progress에 -2 자리를 더해 옆으로 밀기(카메라 1 · 홈 0 · 조약돌 -1 · 말 -2), 탭바 세 칸, 조약돌에서 오른쪽 가장자리 쓸면 말 | 말 칸은 옆 페이지가 아니라 탭을 누르면 겹쳐 뜨는 화면(progress 그대로) |
+| R1~R4 | 승인 | 그대로 | 그대로 |
+Question D6: (아래 질문과 같음)
+Header: 말 칸 구조
+Options:
+A) 네 번째 자리로 밀기 (recommended) — 탭바 「누르면 스와이프처럼 옆으로 밀려 넘어간다」 약속(DESIGN §1.4.1)을 그대로 지킨다. progress·탭바·가장자리 쓸기를 일반화하고 실기기 확인 필요. (human ~1.5일 / CC ~1시간)
+B) 겹쳐 뜨는 화면 — 기존 이동 구조를 안 건드려 안전하지만 세 칸 중 하나만 다르게 움직여 어색하다.
+State: approved
+Actual answer: A) 네 번째 자리로 밀기 (D6, 2026-10-15 Tabber)
+Accepted scope: progress 자리 = 카메라 1 · 홈 0 · 조약돌 -1 · 말 -2. `PageTabBar`는 `onCollection: Bool` 대신 현재 칸(홈/조약돌/말)을 받는다. `CollectionSwipe`(오른쪽 가장자리 쓸기)를 「다음 칸」으로 일반화 — 홈→조약돌, 조약돌→말, 오른쪽으로 쓸면 한 칸씩 돌아감. 카메라 쪽 숨김·`holdsArrivals`·`acceptsTaps` 조건을 세 칸 기준으로 다시 쓴다. 테스트: 칸 계산 순수 함수(progress→칸, 끝에서 더 못 감), 실기기(iPhone 13 iOS 18 · 16 Pro)에서 몸짓 확인(모션은 실기기에서만 판정).
+History: —
+
+### Section 1 · 아키텍처
+- [P1] (confidence 10/10) `project.yml:104-105` — 위젯 확장이 `Word/words.json`·`Word/lunar-days.json`을 뺀다(`excludes: [... "Word/words.json", "Word/lunar-days.json"]`). 위젯이 말을 고르려면 둘 다 넣어야 한다(425KB + 41KB). 필수 작업, 선택지 없음.
+- [P1] (confidence 10/10) `ColorMoments/App/WeatherLookup.swift:6`(`enum WeatherLookup` — 앱 타깃에만) · `project.yml:46`(`com.apple.developer.weatherkit: true` — 앱에만) — 위젯이 예보를 직접 받으려면 예보 조회를 Shared(`AmbientNow`)로 옮기고, 위젯 확장 entitlements에 WeatherKit을 더하고, 개발자 사이트에서 위젯 App ID(`com.itlearning.colormoments.control`)에 WeatherKit 능력을 켠다(Tabber 몫). 필수 작업.
+- [P1] (confidence 9/10) 공유 위치 없음(grep 0건) — 앱이 위치를 얻을 때 App Group에 소수 2자리(약 1km)로 깎은 마지막 위치를 적는다. 기기 밖으로 나가지 않는다. 필수 작업(문서 「위치」 줄의 구현).
+- [P2] (confidence 8/10) 위젯 확장에는 PostHog가 없다(`Telemetry.swift`는 앱 타깃). 위젯 줍기는 `picks-widget.jsonl`(R3)에 남고, 앱이 다음에 열릴 때 아직 안 보낸 줄만 `Word.picked(source: widget)`로 보낸다(보낸 id 기억). 필수 작업.
+- 결정: R5(말 칸 = 네 번째 자리).
+
+```
+ 위젯 확장                          앱
+ ─────────                          ──
+ getTimeline ─▶ AmbientNow ◀─────── 앱 열림/위치 갱신
+                 │  예보 캐시(App Group, 3h 재조회, 6h 신선도)
+                 │  마지막 위치(약 1km)
+                 │  word(at:) 순수 함수 ← words.json(moment+ambient) + PhotoContext + WordPicker.judge
+                 ▼
+ 24칸 엔트리 ─▶ SceneView(물빛/판화) ─▶ 홈 위젯 · 잠금화면 3자리
+ 줍기(AppIntent) ─▶ picks-widget.jsonl ──┐
+                                         ├─▶ PickedWords.merged() ─▶ 「말」 칸 · 하루 한 번 판정
+ 사진 담기·생일·빼기 ─▶ picks-app.jsonl ─┘
+```
+
+### Section 2 · 코드 품질
+- 재사용: `PhotoContext`(시각·해·달·날씨·기온, 위치 없으면 서울)와 `WordPicker.judge`를 그대로 쓴다 — 새 판정 코드를 만들지 않는다(`PhotoContext.swift:19-36`, `WordPicker.swift:28`). 사진 단어와 위젯 말이 같은 판정을 쓰므로 둘이 어긋날 수 없다.
+- [P2] (confidence 8/10) `Mongdol-Desk/js/birthday-pick.js:9-10` — `Math.imul`·`>>> 0`·`| 0`의 32비트 정수 연산. Swift 이식은 `&*`·`UInt32`/`Int32` 비트 패턴을 그대로 따라야 같은 순서가 나온다. 문서에 이미 승인된 「고정 열쇠로 웹 JS 결과와 맞추는 테스트」가 이것을 지킨다 — 추가 결정 없음.
+- 오류 처리: 예보 조회 실패·시간 초과(위젯 시간 예산 안, 5초) → 캐시 유지, 계산형 말로 물러남(문서 신선도 규칙). 깨진 jsonl 줄 → 건너뜀(R3 테스트). words.json 디코드 실패 → 위젯은 「아침나절」 같은 고정 대체 말이 아니라 빈 장면 + 「몽돌」만(틀린 말보다 빈 게 낫다) — 필수 작업.
+
+### Section 3 · 테스트
+프레임워크: XCTest(`ColorMomentsTests`, `project.yml:127`). 새 코드는 아직 없으므로 모든 경로는 [GAP] — 아래는 구현과 함께 넣을 테스트.
+
+```
+CODE PATHS                                              USER FLOWS
+[+] AmbientNow (Shared)                                 [+] 첫날
+  ├── word(at:) 후보 = moment+ambient만                    ├── [GAP] 첫 조약돌 → 생일 말 → 주운 말 첫 칸
+  │   ├── [GAP] 장면 말(찔레꽃 등) 절대 안 나옴             ├── [GAP] 생일 건너뛰기 → 다음 장
+  │   ├── [GAP] 예보 6h 안 → 날씨 말 우선                   └── [GAP] 위젯 붙임 감지 → 「붙었어요」
+  │   ├── [GAP] 예보 낡음/없음 → 계산형 말                [+] 위젯
+  │   ├── [GAP] 위치 없음 → 서울 해 높이, 날씨 말 없음        ├── [GAP] 줍기 → 1.5초 → 작은 조약돌
+  │   ├── [GAP] 같은 입력 → 같은 24칸(R4)                   ├── [GAP] 같은 말 하루 두 번 줍기 막힘
+  │   └── [GAP] 앞 칸 반복 없음 · 하루 중복 최소(R4)         └── [GAP] 누르면 「말」 칸
+  ├── 예보 캐시: [GAP] 3h 재조회 · 실패 시 캐시 유지          [+] 「말」 칸
+  └── 위치: [GAP] 약 1km로 깎아 저장                       ├── [GAP] 비었을 때 지금의 말 카드 + 줍기
+[+] PickedWords (Shared)                                    ├── [GAP] 오늘의 한 장 + 철마다 묶음, 빈 철 없음
+  ├── merged(): [GAP] 두 파일 교차 · 같은 id 한 번          └── [GAP] 빼기 → 그 기록만/전부(문서 규칙)
+  ├── [GAP] unpick 순서 뒤바뀜 · 깨진 줄 건너뜀           [+] 칸 이동(R5)
+  ├── [GAP] 같은 글자로 묶기, 생일+words 뜻풀이 우선          └── [GAP] [실기기] 홈↔조약돌↔말 쓸기·탭
+  └── 생일 고르기: [GAP] 고정 열쇠 → 웹 JS와 같은 결과(32비트)
+[+] SceneView: [GAP] 장면마다 글자 자리 대비 4.5:1 · 동작 줄이기 멈춤
+[+] 조사: [GAP] 틀 문장 × (받침/무받침/ㄹ받침)
+[+] 글꼴: [GAP] birthday-words.json·틀 문장 글자 서브셋 포함(FontSubsetTests 확장)
+[+] words.json: [GAP] ambient/moment 말 = subjects 비고 판정 가능 조건 ≥1(R1)
+[+] 칸 계산: [GAP] progress→칸 순수 함수, 끝에서 멈춤(R5)
+[+] 계측: [GAP] Word.picked birthday는 단어 없음 · widget 줄은 한 번만 전송(TelemetryTests 확장)
+
+COVERAGE: 0/27 (새 코드)  |  기존 재사용: PhotoContextTests·WordPickerTests·CelestialTests·FontSubsetTests·TelemetryTests 확장
+GAPS: 27 (실기기 1: 칸 이동 몸짓 · 위젯 줍기 모션)
+```
+회귀 위험(CRITICAL): ① 칸 이동 일반화(R5)가 카메라 쓸기·조약돌 쓸기·`holdsArrivals`를 바꾼다 — 기존 동작(카메라 1/홈 0/조약돌 -1, 카메라 쪽 탭바 숨김, 증정 막힘 조건)을 보존하는 표 테스트를 칸 계산 함수에 둔다. ② 위젯 확장에 words.json을 넣으면 `FontSubsetTests.testExtensionSansCoversExtensionText`의 대상이 늘지 않는지 확인(위젯 문구는 데이터). 둘 다 승인된 범위(R5·문서 글꼴 규칙)의 필수 증거라 추가 결정 없음.
+
+### Section 4 · 성능
+- [P2] (confidence 7/10) 말 칸 장면 카드 동시 애니메이션 — R6.
+- 위젯: words.json 디코드는 확장 프로세스에서 한 번 캐시(static), 하루 8번 남짓 타임라인 — 문제없음 [estimated]. WeatherKit 호출 위젯당 하루 약 8회 — 무료 한도(월 50만) 대비 사용자 수가 작아 문제없음 [estimated].
+
+### R6: 「말」 칸에서 장면 카드 여러 장이 동시에 움직일 때의 성능
+Finding: 6, P2, confidence 7/10, 문서 「말」 칸 — 「카드 배경은 그 말의 장면이 살아 움직인다」, reviewer: Claude
+Plan baseline: 모든 카드 장면이 계속 움직임
+Runtime evidence: 주운 말이 수십 개면 카드마다 SwiftUI `Canvas` + 매 프레임 갱신(`TimelineView(.animation)`)이 돈다. 몽돌은 이미 홈 블러를 프레임 저하로 금지했다(DESIGN §3.1). iPhone 13에서 격자 100개 셰이더는 문제없었다(메모리) — 같은 판단을 장면 카드에 할 측정은 없음 [estimated].
+Comparison grid:
+| 선택 | 지금 | A | B |
+|---|---|---|---|
+| R6 움직임 범위 | 모든 카드 | 화면에 보이는 카드만 움직이고(그 밖은 멈춘 그림), 카드당 입자 상한(빗줄기 30·별 20), 오늘의 한 장만 60fps·나머지 30fps | 모든 카드 그대로, 실기기에서 느리면 그때 줄임 |
+| R1~R5 | 승인 | 그대로 | 그대로 |
+Question D7: (아래 질문과 같음)
+Header: 장면 성능
+Options:
+A) 보이는 카드만 움직이기 (recommended) — 처음부터 프레임·배터리 예산 안에. iPhone 13에서 스크롤 프레임 확인. (human ~0.5일 / CC ~20분)
+B) 일단 전부 — 단순하지만 말이 쌓인 사람일수록 느려지고, 나중에 고치려면 카드 구조를 다시 건드린다.
+State: approved
+Actual answer: A) 보이는 카드만 움직이기 (D7, 2026-10-15 Tabber)
+Accepted scope: 화면에 보이는 카드만 장면을 움직이고 밖은 멈춘 그림. 입자 상한 카드당 빗줄기 30·별 20. 오늘의 한 장 60fps, 나머지 30fps. 화면에 들어올 때 멈춘 그림에서 이어 움직인다. 검증: iPhone 13에서 말 60개 스크롤 프레임 확인(실기기).
+History: —
+
+Approval readiness: PASS — R1(D2) R2(D3) R3(D4) R4(D5) R5(D6) R6(D7), 구조 D1.
+
+### Outside Voice
+Codex 외부 검토 unavailable — 인증 만료(`401 invalid_refresh_token`, `codex login` 필요) + 프롬프트 잘림(UTF-8). 같은 판 대체 리뷰어는 TaskOutput 도구가 없어 실행하지 않음. 빠진 검토이며 통과가 아니다.
+
+### NOT in scope
+- 주운 말 iCloud 동기화 — 디자인 리뷰 8A, 스키마 선배포 뒤 1.2.x.
+- 홈 위젯 중간·큰 크기 — 1.2.x.
+- 대상 말(윤슬 등)의 위젯·자동 줍기 — 단어 모델 학습 뒤.
+- 위젯이 실제로 보였는지 추적 — 확장에 계측 SDK를 넣지 않는다(R3·R4로 필요 없어짐).
+
+### What already exists
+- `PhotoContext` + `WordPicker.judge` — 위젯 말 판정에 그대로 재사용(새 판정 코드 없음).
+- `WordEntry.moment` — R1 후보의 출발점(74개).
+- `WeatherLookup`·`WeatherService.attribution` — Shared로 옮겨 재사용(R2 표기 포함).
+- `PageTabBar`·`HomeShell.progress`·`CollectionSwipe` — R5로 세 칸 일반화.
+- `CoalescingWriter` — 앱 쪽 `picks-app.jsonl` 쓰기에만 재사용(프로세스 사이엔 R3).
+- `FontSubsetTests`·`TelemetryTests`·`PhotoContextTests`·`WordPickerTests` — 확장.
+
+### Failure modes
+| 경로 | 현실적인 실패 | 테스트 | 오류 처리 | 사용자에게 |
+|---|---|---|---|---|
+| 위젯 예보 조회 | WeatherKit 실패·시간 초과·권한 없음 | 낡음/없음 → 계산형 말 | 캐시 유지 | 조용히 계산형 말(틀린 날씨 말 없음) |
+| 위젯 말 고르기 | ambient 큐레이션 실수로 장면 말 섞임 | R1 데이터 테스트 | — | 테스트가 빌드 전에 막음 |
+| 위젯 줍기 | 앱과 동시에 씀 | R3 합치기 테스트 | 줄 단위 덧붙이기 | 사라짐 없음 |
+| 위젯 줍기 | 확장 안에서 파일 쓰기 실패 | — | 다음 탭에 재시도 없음 | **조용한 실패** — 「주웠어요」가 떴는데 기록 없음. 쓰기 성공 뒤에만 「주웠어요」를 보이게 한다(Implementation T3에 포함) |
+| 칸 이동(R5) | iOS 18 제스처 취소로 progress가 중간에 멈춤 | 칸 계산 표 테스트 + 실기기 | 기존 `@GestureState` 패턴 | 실기기에서만 확인 가능 |
+| 생일 말 | Swift 이식이 JS와 다른 순서 | 고정 열쇠 대조 | — | 테스트가 막음 |
+| 장면 카드 | 말이 쌓여 프레임 저하 | iPhone 13 실측 | R6 보이는 카드만 | 실기기 확인 |
+Critical gaps: 0 (조용한 실패 1건은 T3에서 「쓰기 성공 뒤에만 표시」로 막는다 — 승인된 R3 저장 계약의 필수 증거).
+
+### Worktree parallelization
+| 단계 | 모듈 | 의존 |
+|---|---|---|
+| ① 데이터: ambient 큐레이션 + 테스트 | `Shared/Word` | — |
+| ② AmbientNow(예보·위치·word(at:)) | `Shared/Word`, `Shared/Weather` | ① |
+| ③ PickedWords + 생일 고르기 | `Shared/Day`(새 파일) | — |
+| ④ SceneView | `Shared/Design` | — |
+| ⑤ 위젯·잠금화면·PickWordIntent | `ColorMomentsControl`, `project.yml` | ②③④ |
+| ⑥ 말 칸 + 칸 이동(R5) | `ColorMoments/App` | ③④ |
+| ⑦ 온보딩·설정·계측 | `ColorMoments/App`, `Shared/Onboarding` | ③⑤ |
+Lane A: ①→② · Lane B: ③ · Lane C: ④ — 동시에. 합친 뒤 Lane D: ⑤, Lane E: ⑥ 동시(서로 다른 모듈). 마지막 ⑦. 충돌 주의: ⑥과 ⑦이 `ColorMoments/App`을 같이 건드림 → 순서대로.
+
+## Implementation Tasks
+- [ ] **T1 (P1, human ~1일 / CC ~1시간)** — words.json — ambient 표시 큐레이션(150~200) + 데이터 테스트 · Surfaced by: R1 · Files: `Shared/Word/words.json`, `WordList.swift`, `WordListTests.swift` · Verify: 테스트 + Tabber 검토 30분
+- [ ] **T2 (P1, human ~2일 / CC ~1.5시간)** — AmbientNow — 예보 캐시·공유 위치·`word(at:)` 순수 함수(R4), WeatherLookup Shared 이동 · Surfaced by: Section 1, R4 · Files: `Shared/Word/AmbientNow.swift`, `ColorMoments/App/WeatherLookup.swift` · Verify: AmbientNowTests(신선도·위치 없음·결정성·반복)
+- [ ] **T3 (P1, human ~1일 / CC ~40분)** — PickedWords — 두 파일 덧붙이기·합치기, 생일 고르기 Swift 이식, 쓰기 성공 뒤에만 「주웠어요」 · Surfaced by: R3, Section 2 · Files: `Shared/Day/PickedWords.swift` · Verify: 합치기·생일 대조 테스트
+- [ ] **T4 (P1, human ~2일 / CC ~1.5시간)** — SceneView — 장면 갈래·물빛/판화·대비 4.5:1·동작 줄이기, 보이는 카드만 움직임 · Surfaced by: 디자인 리뷰 4A·5A·6A, R6 · Files: `Shared/Design/SceneView.swift` · Verify: 대비 테스트 + iPhone 13 실측
+- [ ] **T5 (P1, human ~2일 / CC ~1.5시간)** — 위젯 — 홈 작은 위젯·잠금화면 3자리·PickWordIntent, project.yml에 words.json·WeatherKit · Surfaced by: Section 1 · Files: `ColorMomentsControl/*`, `project.yml`, entitlements · Verify: 시뮬레이터 + 실기기 잠금화면
+- [ ] **T6 (P1, human ~1.5일 / CC ~1시간)** — 칸 이동 — progress 세 칸 일반화, PageTabBar 세 칸, 가장자리 쓸기 · Surfaced by: R5 · Files: `HomeShell.swift`, `PageTabBar.swift`, `CollectionSwipe.swift` · Verify: 칸 계산 표 테스트(기존 동작 보존) + 실기기
+- [ ] **T7 (P1, human ~1.5일 / CC ~1시간)** — 말 칸 — 오늘의 한 장·철마다 카드·빈 상태·펼친 말·Apple 날씨 표기(R2) · Files: `ColorMoments/App/WordsView.swift` · Verify: 시뮬레이터 레이아웃 + 실기기
+- [ ] **T8 (P2, human ~1일 / CC ~40분)** — 온보딩 8장·업데이트 두 장·설정 「위젯 모양」·계측(Word.picked·Widget.added) · Files: 온보딩, `SettingsSheet.swift`, `Telemetry.swift` · Verify: OnboardingRulesTests·TelemetryTests 확장
+- [ ] **T9 (P2, Tabber)** — 개발자 사이트에서 위젯 App ID에 WeatherKit 능력 켜기 · Verify: 위젯에서 예보 조회 성공 로그
+
+### Completion summary
+- Step 0: Scope Challenge — scope accepted as-is (구조만 Smaller arrangement)
+- Reality rows: 7/7 tier-1 검토, unverified premises 0 (523 주장은 R1에서 반증)
+- Architecture Review: 4 issues found (+ R5)
+- Code Quality Review: 1 issue found
+- Test Review: diagram produced, 27 gaps identified
+- Performance Review: 1 issue found (R6)
+- NOT in scope: written · What already exists: written
+- TODOS.md updates: 0 items proposed (미룬 일은 문서 NOT in scope에)
+- Failure modes: 0 critical gaps flagged
+- Unresolved decisions: 0 in this review
+- Outside voice: codex, unavailable (인증 만료)
+- Parallelization: 5 lanes, 3 parallel / 2 sequential
+- Lake Score: 6/6
+
 ## GSTACK REVIEW REPORT
 
 | Review | Trigger | Why | Runs | Status | Findings |
 |--------|---------|-----|------|--------|----------|
 | CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | — | — |
-| Outside Review | — | Independent 2nd opinion | 0 | skipped | 디자인 외부 의견 단계 생략(진입 경로 시안으로 대신) |
-| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 0 | — | — |
+| Outside Review | codex (`/plan-eng-review` 자동) | Independent 2nd opinion | 1 | unavailable | 인증 만료 — 검토 없음 |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | issues_open | 7 issues, 0 critical gaps |
 | Design Review | `/plan-design-review` | UI/UX gaps | 1 | clean | score: 6/10 → 8/10, 13 decisions |
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
 
-- **OUTSIDE COVERAGE:** design 단계 외부 의견 skipped. 디자이너 도구(OpenAI) unavailable — 「No OpenAI API key found」, 시안 0장.
-- **VERDICT:** 아직 CLEAR된 리뷰 없음 — eng review required.
+- **OUTSIDE COVERAGE:** codex, plan-review, unavailable(`codex login` 필요), findings 없음 — 빠진 검토.
+- **VERDICT:** DESIGN CLEARED. Eng Review는 결정 6개로 모든 발견을 처리했지만 issues_open(고칠 작업이 과제로 남음) — eng review required 상태를 구현 과제로 해소.
 
 NO UNRESOLVED DECISIONS
