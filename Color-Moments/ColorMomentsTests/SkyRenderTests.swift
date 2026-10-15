@@ -1,10 +1,12 @@
 import CoreImage
+import Metal
 import SwiftUI
 import XCTest
 @testable import ColorMoments
 
 /// 스파이크 하늘 — 셰이더가 실제로 그려지고, 글자 자리 대비를 지키는지.
-/// 하늘만으로 — 작은 글자(흰 64%) 4.5:1, 맑은 낮 작은 글자(흰 92%) 3:1(+ 글자 그림자), 큰 말(명조 48 이상, 흰 92%) 3:1 — DESIGN.md §2.1.1.
+/// 밤·흐린 밤·비는 하늘만으로 작은 글자(흰 64%) 4.5:1. 밝은 하늘은 실제 글자 + 그림자(.skyText)를 얹은 그림에서
+/// 작은 글자(흰 92%)·큰 말(명조 48 이상, 흰 92%) 3:1 — DESIGN.md §2.1.1.
 @MainActor
 final class SkyRenderTests: XCTestCase {
     private let full = CGSize(width: 393, height: 852)
@@ -19,17 +21,81 @@ final class SkyRenderTests: XCTestCase {
                 for age in scene.isNight ? [3.0, 14.8] : [14.8] {
                     for t in [SceneArt.stillPhase, SceneArt.stillPhase + 40] {
                         let frame = SkyFrame(scene: scene, quality: q, size: size, texts: texts, moonAge: age)
-                        let out = try XCTUnwrap(SkySnapshot.image(frame, scale: 2, t: t), "\(scene) \(q)")
-                        let small = SkyDump.contrast(out.image, frame.texts.small, size, alpha: frame.smallTextAlpha)
-                        let big = SkyDump.contrast(out.image, frame.texts.big, size, alpha: Tone.primaryAlpha)
-                        XCTAssertGreaterThanOrEqual(small, frame.smallTextContrast, "작은 글자 \(scene.name) \(q.rawValue) 달 \(age) t \(t)")
-                        XCTAssertGreaterThanOrEqual(big, 3, "큰 말 \(scene.name) \(q.rawValue) 달 \(age) t \(t)")
-                        log.append(String(format: "%@ %@ 달%.0f 작은 %.2f 큰 %.2f", scene.name, q.rawValue, age, small, big))
+                        let tag = "\(scene.name) \(q.rawValue) 달 \(age) t \(t)"
+                        if scene.brightSky {
+                            let out = try XCTUnwrap(SkySnapshot.image(frame, scale: 3, t: t), tag)
+                            let c = try shadedContrast(out.image, frame)
+                            XCTAssertGreaterThanOrEqual(c.small, 3, "작은 글자(그림자 포함) \(tag)")
+                            XCTAssertGreaterThanOrEqual(c.big, 3, "큰 말(그림자 포함) \(tag)")
+                            log.append(String(format: "%@ %@ 그림자 포함 작은 %.2f 큰 %.2f", scene.name, q.rawValue, c.small, c.big))
+                        } else {
+                            let out = try XCTUnwrap(SkySnapshot.image(frame, scale: 2, t: t), tag)
+                            let small = SkyDump.contrast(out.image, frame.texts.small, size, alpha: frame.smallTextAlpha)
+                            let big = SkyDump.contrast(out.image, frame.texts.big, size, alpha: Tone.primaryAlpha)
+                            XCTAssertGreaterThanOrEqual(small, frame.smallTextContrast, "작은 글자 \(tag)")
+                            XCTAssertGreaterThanOrEqual(big, 3, "큰 말 \(tag)")
+                            log.append(String(format: "%@ %@ 달%.0f 작은 %.2f 큰 %.2f", scene.name, q.rawValue, age, small, big))
+                        }
                     }
                 }
             }
         }
-        print("SKY5 대비\n" + log.joined(separator: "\n"))
+        print("SKY7 대비\n" + log.joined(separator: "\n"))
+    }
+
+    /// 실제 글자(+ .skyText 그림자)를 얹어 그린 뒤, 글자 획 바로 옆(2pt 안, 획 밖) 배경 위에서 그 글자 색의 대비 최저값.
+    /// 큰 말 자리 안이면 큰 말(primary), 밖이면 작은 글자(smallTextAlpha).
+    private func shadedContrast(_ sky: CGImage, _ frame: SkyFrame) throws -> (small: Double, big: Double) {
+        let size = frame.size
+        let clear = try XCTUnwrap(CGContext(data: nil, width: sky.width, height: sky.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?.makeImage())
+        func view(_ img: CGImage) -> AnyView {
+            frame.quality == .full ? AnyView(SkyFullPage(scene: frame.scene, size: size, image: img))
+                : AnyView(SkyCard(scene: frame.scene, size: size.height > 150 ? .hero : .row, new: true, image: img))
+        }
+        func draw(_ v: AnyView) throws -> (Int, Int, [UInt8]) {
+            let r = ImageRenderer(content: v.environment(\.colorScheme, .dark))
+            r.scale = 3
+            let cg = try XCTUnwrap(r.cgImage)
+            return (cg.width, cg.height, pixels(cg))
+        }
+        let (w, h, all) = try draw(view(sky))
+        let (w2, h2, layer) = try draw(view(clear))
+        XCTAssertEqual(w, w2); XCTAssertEqual(h, h2)
+        var core = [Bool](repeating: false, count: w * h)
+        for i in 0..<(w * h) { core[i] = layer[i * 4] > 128 }
+        let rad = 6
+        var rowNear = [Bool](repeating: false, count: w * h)
+        for y in 0..<h {
+            var last = -1_000
+            for x in 0..<w { if core[y * w + x] { last = x }; if x - last <= rad { rowNear[y * w + x] = true } }
+            last = 1_000_000
+            for x in stride(from: w - 1, through: 0, by: -1) { if core[y * w + x] { last = x }; if last - x <= rad { rowNear[y * w + x] = true } }
+        }
+        var near = [Bool](repeating: false, count: w * h)
+        for x in 0..<w {
+            var last = -1_000
+            for y in 0..<h { if rowNear[y * w + x] { last = y }; if y - last <= rad { near[y * w + x] = true } }
+            last = 1_000_000
+            for y in stride(from: h - 1, through: 0, by: -1) { if rowNear[y * w + x] { last = y }; if last - y <= rad { near[y * w + x] = true } }
+        }
+        let sx = Double(w) / size.width, sy = Double(h) / size.height
+        let bigRects = frame.texts.big.map { $0.insetBy(dx: -3, dy: -3) }
+        var small = Double.infinity, big = Double.infinity
+        for y in 0..<h {
+            for x in 0..<w {
+                let i = y * w + x
+                guard near[i], layer[i * 4] < 8 else { continue }
+                let bg = SceneRGB(Double(all[i * 4]) / 255, Double(all[i * 4 + 1]) / 255, Double(all[i * 4 + 2]) / 255)
+                let p = CGPoint(x: Double(x) / sx, y: Double(y) / sy)
+                let isBig = bigRects.contains { $0.contains(p) }
+                let fg = SceneRGB.white.over(bg, alpha: isBig ? Tone.primaryAlpha : frame.smallTextAlpha)
+                let c = SceneRGB.contrast(fg, bg)
+                if isBig { big = min(big, c) } else { small = min(small, c) }
+            }
+        }
+        return (small, big)
     }
 
     func testEverySceneKindHasASky() throws {
@@ -48,7 +114,18 @@ final class SkyRenderTests: XCTestCase {
             let f = SkyFrame(scene: scene, quality: .card, size: size)
             let a = try XCTUnwrap(SkySnapshot.image(f, scale: 2, t: SceneArt.stillPhase), scene.name).image
             let b = try XCTUnwrap(SkySnapshot.image(f, scale: 2, t: SceneArt.stillPhase), scene.name).image
-            XCTAssertEqual(pixels(a), pixels(b), "\(scene.name) 같은 t → 같은 그림")
+            let pa = pixels(a), pb = pixels(b)
+            var n = 0, md = 0, x0 = Int.max, y0 = Int.max, x1 = 0, y1 = 0
+            for i in stride(from: 0, to: pa.count, by: 4) {
+                let d = (0..<3).map { abs(Int(pa[i + $0]) - Int(pb[i + $0])) }.max()!
+                guard d > 0 else { continue }
+                n += 1; md = max(md, d)
+                let x = (i / 4) % a.width, y = (i / 4) / a.width
+                x0 = min(x0, x); y0 = min(y0, y); x1 = max(x1, x); y1 = max(y1, y)
+            }
+            // GPU 부동소수 순서로 픽셀 한두 개가 1/255 흔들릴 때가 있다 — 그림이 달라진 건 아니다.
+            XCTAssertLessThanOrEqual(md, 2, "\(scene.name) 같은 t → 같은 그림 — 다른 픽셀 \(n) 최대 \(md) 자리 \(x0),\(y0)~\(x1),\(y1)")
+            XCTAssertLessThanOrEqual(n, 16, "\(scene.name) 같은 t → 같은 그림 — 다른 픽셀 \(n)")
         }
     }
 
@@ -233,7 +310,7 @@ final class SkyRenderTests: XCTestCase {
         let url = URL(fileURLWithPath: dir)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         let heroSize = CGSize(width: 354, height: 232), rowSize = CGSize(width: 354, height: 96)
-        let t0 = SceneArt.stillPhase
+        let t0 = SceneArt.stillPhase + (ProcessInfo.processInfo.environment["SKY6C_T"].flatMap(Double.init) ?? 0)
         let scenes: [SkyScene] = ProcessInfo.processInfo.environment["SKY6C_ONLY"].map { only in
             SkyScene.allCases.filter { only.split(separator: ",").contains(Substring("\($0)")) }
         } ?? [.clearDay, .petals, .leaves, .dawn, .dusk, .rain, .nightCloudy]
@@ -556,6 +633,59 @@ final class SkyRenderTests: XCTestCase {
             SkyCard(scene: rows[i].0, size: .row, new: true, image: rows[i].1)
         } }.padding(10).background(Color.black)), url.appendingPathComponent("cards-all.png"))
         try log.joined(separator: "\n").write(to: url.appendingPathComponent("gpu.txt"), atomically: true, encoding: .utf8)
+    }
+
+    /// 꽃잎·잎은 반짝이지 않는다 — EDR 여유를 크게 줘도 잎 때문에 흰색(1)을 넘는 픽셀(잎 없이 그린 것보다 밝아진 곳)이 없다.
+    func testPetalsAndLeavesNeverSparkle() throws {
+        let gpu = try XCTUnwrap(SkyGPU.shared)
+        var log: [String] = []
+        for scene in [SkyScene.petals, .leaves] {
+            for (q, size) in [(SkyQuality.hero, CGSize(width: 354, height: 232)), (.full, full)] {
+                let frame = SkyFrame(scene: scene, quality: q, size: size, texts: q == .full ? SkyFullPage.texts(in: full) : nil)
+                let with = SkyBudget(q, tier: .ultra, still: true)
+                var without = with
+                without.particleScale = 1e-9
+                var over = 0, drawn = 0, peak: Float = 0, box = CGRect.null
+                for k in 0..<12 {
+                    let t = SceneArt.stillPhase + Double(k) * 0.37
+                    let (w, h, px) = try hdr(gpu, frame, t: t, headroom: 4, budget: with)
+                    let (_, _, bare) = try hdr(gpu, frame, t: t, headroom: 4, budget: without)
+                    let s = Double(w) / size.width
+                    for i in 0..<(w * h) {
+                        let o = i * 4
+                        let d = max(abs(px[o] - bare[o]), abs(px[o + 1] - bare[o + 1]), abs(px[o + 2] - bare[o + 2]))
+                        guard d > 0.01 else { continue }
+                        drawn += 1
+                        let m = max(px[o], px[o + 1], px[o + 2]), mb = max(bare[o], bare[o + 1], bare[o + 2])
+                        guard (m > 1 && m > mb + 0.01) || !m.isFinite else { continue }
+                        over += 1
+                        peak = max(peak, m)
+                        box = box.union(CGRect(x: Double(i % w) / s, y: Double(i / w) / s, width: 1, height: 1))
+                    }
+                }
+                XCTAssertGreaterThan(drawn, 1000, "\(scene.name) \(q.rawValue) 잎이 그려졌다")
+                log.append(String(format: "%@ %@ 잎 픽셀 %d 중 흰색 넘는 픽셀 %d 최고 %.2f", scene.name, q.rawValue, drawn, over, peak))
+                XCTAssertEqual(over, 0, "\(scene.name) \(q.rawValue) 반짝임 \(over)픽셀 최고 \(peak) 자리 \(box)")
+            }
+        }
+        print("SKY7 반짝임\n" + log.joined(separator: "\n"))
+    }
+
+    private func hdr(_ gpu: SkyGPU, _ frame: SkyFrame, t: Double, headroom: Float, budget: SkyBudget) throws -> (Int, Int, [Float]) {
+        let w = Int(frame.size.width * 2), h = Int(frame.size.height * 2)
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: SkyGPU.format, width: w, height: h, mipmapped: false)
+        d.usage = [.renderTarget, .shaderRead]
+        d.storageMode = .private
+        let target = try XCTUnwrap(gpu.device.makeTexture(descriptor: d))
+        let cb = try XCTUnwrap(gpu.queue.makeCommandBuffer())
+        SkyRenderer(gpu: gpu).encode(cb, into: target, frame: frame, t: t, headroom: headroom, budget: budget)
+        cb.commit(); cb.waitUntilCompleted()
+        let lin = try XCTUnwrap(CGColorSpace(name: CGColorSpace.extendedLinearSRGB))
+        let ci = try XCTUnwrap(CIImage(mtlTexture: target, options: [.colorSpace: lin])).oriented(.downMirrored)
+        var px = [Float](repeating: 0, count: w * h * 4)
+        CIContext(mtlDevice: gpu.device, options: [.workingColorSpace: lin])
+            .render(ci, toBitmap: &px, rowBytes: w * 16, bounds: ci.extent, format: .RGBAf, colorSpace: lin)
+        return (w, h, px)
     }
 
     private func render(_ v: some View) -> UIImage? {

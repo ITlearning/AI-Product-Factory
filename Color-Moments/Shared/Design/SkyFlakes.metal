@@ -157,7 +157,10 @@ vertex LeafOut skyLeafVertex(uint vid [[vertex_id]], uint iid [[instance_id]], c
     o.T = T; o.B = B; o.N = f.R[2];
     o.center = f.pos;
     float kind = int(u.view.w) == FS_PETALS ? fh(float(iid) * 8.3 + 0.4) : floor(fh(float(iid) * 8.3 + 0.4) * 7.999);
-    o.look = float4(f.alpha * (size > f.size ? f.size / size : 1.0), f.lod, f.haze, kind);
+    // 글자 자리 앞에서 잎마다 통째로 옅어진다 — 조각을 자리 경계에서 자르면 글자 상자 모양이 드러난다.
+    float reach = size * 2.6;
+    float keep = smoothstep(reach, reach + 28.0, fTextDistance(u, f.pos));
+    o.look = float4(f.alpha * (size > f.size ? f.size / size : 1.0) * keep, f.lod, f.haze, kind);
     return o;
 }
 
@@ -186,10 +189,6 @@ static float4 petalSample(float2 l, float aa, float hue, thread float3& nT) {
 fragment float4 skyLeafFragment(LeafOut in [[stage_in]], constant FlakeU& u [[buffer(0)]],
                                 texture2d<float> colTex [[texture(0)]], texture2d<float> nrmTex [[texture(1)]]) {
     bool petal = int(u.view.w) == FS_PETALS;
-    float pxPerPt = u.res.x / u.view.x;
-    float2 pt = in.pos.xy / pxPerPt;
-    float keep = smoothstep(-1.0, 9.0, fTextDistance(u, pt));
-    if (keep <= 0.0) discard_fragment();
     // 아틀라스 칸 여백이 12px — 더 굵은 밉은 옆 칸 잎이 번져 사각 테가 보인다.
     constexpr sampler s(filter::linear, mip_filter::linear, address::clamp_to_edge, lod_clamp(0.0f, 3.0f));
     float lod = in.look.y;
@@ -201,7 +200,7 @@ fragment float4 skyLeafFragment(LeafOut in [[stage_in]], constant FlakeU& u [[bu
     for (int k = 0; k < taps; k++) {
         float2 l = in.local + in.smear * (taps > 1 ? (float(k) / float(taps - 1) - 0.5) : 0.0);
         if (petal) {
-            float3 nt;
+            float3 nt = float3(0.0, 0.0, 1.0);
             float4 c = petalSample(l, aa, in.look.w, nt);
             acc += float4(c.rgb * c.a, c.a);
             nAcc += nt * c.a;
@@ -238,11 +237,16 @@ fragment float4 skyLeafFragment(LeafOut in [[stage_in]], constant FlakeU& u [[bu
     float3 col = alb * (amb * (0.55 + 0.25 * Nw.z) + sunC * dif * 0.55);
     float trans = saturate(dot(-Ng, S)) * nearSun;
     float3 thru = petal ? alb * flin(float3(1.0, 0.86, 0.9)) : alb * alb * 1.5;
-    col += thru * sunC * trans * (petal ? 0.75 : 0.5) * (back ? 0.8 : 1.0);
-    float3 Rf = reflect(-Lf, Nw);
-    col += sunC * pow(saturate(Rf.z), petal ? 12.0 : 28.0) * (petal ? 0.06 : 0.1) * (back ? 0.3 : 1.0);
+    col += thru * sunC * trans * (petal ? 0.35 : 0.4) * (back ? 0.8 : 1.0);
+    if (!petal) {
+        float3 Rf = reflect(-Lf, Nw);
+        col += sunC * pow(saturate(Rf.z), 28.0) * 0.06 * (back ? 0.3 : 1.0);
+    }
     float3 hazeC = petal ? flin(float3(0.78, 0.8, 0.9)) : flin(float3(0.7, 0.62, 0.58));
     col = mix(col, hazeC, in.look.z);
-    a *= in.look.x * keep;
+    // 해를 등진 잎이 뒤집힐 때 흰색을 넘으면 EDR·블룸으로 반짝인다 — 무릎 위는 부드럽게 눌러 0.82 아래로.
+    float mc = max(col.r, max(col.g, col.b));
+    if (mc > 0.62) col *= (0.62 + 0.2 * (1.0 - exp(-(mc - 0.62) / 0.2))) / mc;
+    a *= in.look.x;
     return float4(col * a, a);
 }

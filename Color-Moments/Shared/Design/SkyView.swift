@@ -455,7 +455,8 @@ public struct SkyFrame: Equatable {
     static func textPress(_ scene: SkyScene) -> Float? { scene.brightSky ? nil : 0.07 }
     /// 구름 장면은 글자 둘레 구름의 달빛·빛번짐도 덜어 낸다.
     static func dimsLightNearText(_ scene: SkyScene) -> Bool { scene == .nightCloudy || scene == .rain || scene == .drizzle }
-    /// 밝은 구름 장면은 글자 둘레 구름을 걷는다(0~1) — 흰 구름 위 흰 글자가 묻히지 않게.
+    /// 밝은 구름 장면은 글자 묶음 쪽으로 구름을 옅게 한다(0~1) — 흰 구름 위 흰 글자가 묻히지 않게.
+    /// 글자 모양으로 자르지 않고 화면 크기의 절반 넘게 번진 경사로(셰이더 textLean) 그쪽 구름이 덜 생기게만.
     static func cloudClear(_ scene: SkyScene) -> Float {
         switch scene {
         case .clearDay, .petals, .leaves: 0.97
@@ -468,7 +469,7 @@ public struct SkyFrame: Equatable {
 
     /// 작은 글자의 흰 불투명도 — 밝은 하늘은 primary.
     public var smallTextAlpha: Double { scene.brightSky ? Tone.primaryAlpha : Tone.secondaryAlpha }
-    /// 작은 글자 대비 기준(하늘만으로) — 밝은 하늘은 3:1 에 글자 그림자(.skyText)를 보탠다.
+    /// 작은 글자 대비 기준 — 밝은 하늘은 글자 그림자(.skyText)까지 얹은 그림에서 3:1, 나머지는 하늘만으로 4.5:1.
     public var smallTextContrast: Double { scene.brightSky ? 3 : 4.5 }
 
     /// 22° 햇무리 반지름(pt) — 남극 화면에서 해부터 큰 숫자를 지나는 원(폭의 ≈0.65).

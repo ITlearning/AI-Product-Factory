@@ -16,7 +16,7 @@ struct SkyU {
     float4 blend;     // 구름 두 장 섞기 w, t - tA, tB - t, 구름 흐름 pt/초 — 구운 구름이면 w, 구운 판 pt w, h, 흐름
     float4 sun;       // 햇무리 반지름 pt, 눈부심 길이 pt, 새털구름 옥타브, 햇무리 얼룩(1)
     float4 caps;      // 작은 글자 최대 밝기, 큰 말 최대 밝기(0 = 안 누름), 작은 글자 번짐 pt, 큰 말 번짐 pt
-    float4 extra;     // 글자 둘레 구름 걷기(0~1), 별 층 수(새벽), 눈·꽃잎·잎 수, 덧그림 옥타브
+    float4 extra;     // 글자 쪽 구름 옅게(0~1), 별 층 수(새벽), 눈·꽃잎·잎 수, 덧그림 옥타브
     float4 textBig;   // 글자 자리마다 큰 말(1)/작은 글자(0)
     float4 win;       // 세계 창 pt x, y(구운 구름이면 판 안 자리), 구운 구름 불투명도, 구름 방식(0 실시간 · 1 구운 판 읽기 · 2 굽기)
     float4 text[4];   // 글자 자리 pt x0, y0, x1, y1
@@ -24,7 +24,6 @@ struct SkyU {
 
 constant float WORLD = 320.0;   // pt — 같은 하늘이 카드 크기만큼 잘려 들어가게 모든 무늬를 pt 로 잰다
 constant float SLAB = 0.55;     // 구름층 두께(월드 단위)
-constant float CLOUD_CLEAR_PT = 26.0;   // 작은 글자 둘레 구름을 걷는 폭 — 카드 크기와 상관없이 pt 로
 
 struct VOut { float4 pos [[position]]; float2 uv; };
 
@@ -133,9 +132,23 @@ static float textDistance(constant SkyU& u, float2 pt) {
     return m;
 }
 
-// 구름 걷는 자리 — 작은 글자는 26pt, 큰 말은 48pt 둘레까지.
-static float cloudClearMask(constant SkyU& u, float2 pt) {
-    return max(textMask(u, pt, 1.0, 1, CLOUD_CLEAR_PT), textMask(u, pt, 1.0, 2, 48.0));
+// 글자 묶음 쪽으로 기우는 넓은 덮임 경사(0~1) — 자리마다 화면 크기의 절반 넘게 번진 혹을 부드럽게 겹친다(4제곱 합).
+// 구름을 글자 모양으로 자르지 않고, 글자 쪽엔 애초에 옅게 생기게 한다.
+static float textLean(constant SkyU& u, float2 pt) {
+    int n = int(u.parallax.z);
+    float W = u.view.x, H = u.view.y;
+    float F = min(min(0.5 * max(W, H), min(W, H)), 200.0);
+    float s = 0.0;
+    for (int i = 0; i < n; i++) {
+        float4 r = u.text[i];
+        float2 d = max(r.xy - pt, pt - r.zw);
+        float sd = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+        float x = saturate((sd + 0.15 * F) / (1.15 * F));
+        float c = 1.0 - x * x * (3.0 - 2.0 * x);
+        s += c * c * c * c;
+    }
+    float k = min(sqrt(sqrt(s)), 1.0);
+    return k * k;
 }
 
 // MARK: - 3D 구름 노이즈 굽기 (한 번만)
@@ -457,8 +470,8 @@ static float4 marchLayer(texture3d<float> nz, Layer L, float2 world, float2 ligh
     float2 base = (w + move) * L.scale + L.offset;
     float cov = coverageAt(L, w + move, yfrac);
     float t = te;
-    cov *= 1.0 - clear;
-    L.extinct *= 1.0 - clear;
+    cov -= clear * (0.12 + 0.55 * cov);
+    L.extinct *= 1.0 - 0.45 * clear;
     float dt = 1.0 / float(steps);
     float T = 1.0;
     float3 S = float3(0.0);
@@ -510,7 +523,7 @@ static float4 cloudCore(constant SkyU& u, texture3d<float> nz, float2 uv, float2
     bool detail = u.quality.z > 0.5;
     float3 sky = skyColor(scene, uv, pt, u);
     float shade = 1.0 - 0.8 * u.tone.y * textMask(u, pt, 2.5);
-    float clear = u.extra.x * cloudClearMask(u, pt);
+    float clear = u.extra.x * textLean(u, pt);
     float yfrac = uv.y;
     float4 nearL = marchLayer(nz, layerFor(scene, 1), world, lw, td, te, tilt, steps, lsteps, detail, jitter, shade, yfrac, clear);
     float4 farL = float4(0, 0, 0, 1);
@@ -665,10 +678,11 @@ static float4 bakedAt(constant SkyU& u, texture2d<float> A, texture2d<float> B, 
     bp += float2(sin(bp.y * 0.031 + t * 0.09), sin(bp.x * 0.023 + t * 0.07)) * 1.6;
     float2 buv = bp / u.blend.yz;
     float4 c = mix(A.sample(rs, buv), B.sample(rs, buv), u.blend.x);
-    // 글자 둘레는 옅게 비치게가 아니라 얇은 데부터 걷는다 — 구름이 유령처럼 남지 않고 작아진다.
+    // 글자 쪽은 얇은 데를 조금 걷고 나머지는 옅게 — 걷기만 하면 구름 속이 경사의 등고선(세로줄)을 따라 잘린다.
     float a = 1.0 - c.a;
-    float m = saturate(u.extra.x * cloudClearMask(u, pt) * 1.05);
-    float a2 = saturate((a - m) / max(1.0 - m, 1e-3)) * u.win.z;
+    float m = u.extra.x * textLean(u, pt);
+    float e = 0.4 * m;
+    float a2 = saturate((a - e) / (1.0 - e)) * (1.0 - 0.9 * m) * u.win.z;
     float shade = 1.0 - 0.8 * u.tone.y * textMask(u, pt, 1.0, 0, 40.0);
     return float4(c.rgb * (a2 / max(a, 1e-3)) * shade, 1.0 - a2);
 }
@@ -794,8 +808,8 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         float a = smoothstep(0.5, 0.78, body) * (0.3 + 0.7 * smoothstep(0.35, 0.75, fiber));
         a *= smoothstep(0.25, 0.6, vnoise(pp / (WORLD * 0.7) + float2(t * 0.004, 5.1)));
         a *= 0.5 + 0.5 * smoothstep(0.85, 0.25, in.uv.y);
-        // 글자 자리에선 새털구름만 걷는다 — 하늘색은 그대로라 얼룩이 안 생긴다.
-        a *= 1.0 - 0.92 * textMask(u, pt, 1.6);
+        // 글자 쪽으로 새털구름만 옅어진다 — 하늘색은 그대로라 얼룩이 안 생긴다.
+        a *= 1.0 - 0.85 * textLean(u, pt);
         float lit = 0.62 + 1.6 * exp(-d / (u.sun.y * 0.16));
         c = mix(c, lin(float3(0.92, 0.95, 1.0)) * lit, a * 0.55);
     }
@@ -840,7 +854,7 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     if (scene == S_WIND) {
         // 가는 바람 결 — 두 층(먼 결은 가늘고 느리다)이 비스듬히 흘러간다.
         float2 dir = normalize(float2(1.0, 0.1));
-        float clear = 1.0 - 0.95 * textMask(u, pt, 1.8);
+        float clear = 1.0 - 0.9 * textLean(u, pt);
         float acc = 0.0;
         for (int i = 0; i < 2; i++) {
             float fi = float(i);
