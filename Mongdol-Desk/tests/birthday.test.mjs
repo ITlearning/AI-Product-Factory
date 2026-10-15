@@ -60,13 +60,14 @@ test('페이지 — noindex, 참조 파일이 있다, 생일을 보내지 않고
     assert.match(l, /send\('[a-z_$]+'(\)|, \{ (via|where): |, Object\.assign\(\{$)/, `이벤트 이름 + via/where 만: ${l.trim()}`);
     assert.doesNotMatch(l, /send\([^;]*\b(last|w\.w|w\.m|month\.value|day\.value|seed)\b/, `생일·단어·열쇠를 싣지 않는다: ${l.trim()}`);
   }
-  assert.match(js, /location\.origin \+ '\/birthday\?utm_source=share'/);
+  assert.match(js, /location\.origin \+ '\/birthday\?utm_source=' \+ src/);
+  assert.match(js, /copyLink\('share'\)/);
   assert.match(html, /href="\/get\?utm_source=birthday/);
 });
 
 test('공유 — 글과 주소를 줄을 나눠 text 하나로, 미리보기는 생일 소개 이미지(예시 카드는 그 달의 말)', () => {
   const js = read('js/birthday.js');
-  assert.match(js, /var text = '[^']+\\n' \+ url;/);
+  assert.match(js, /function invite\(src\) \{ return '[^']+\\n' \+ location\.origin/);
   assert.doesNotMatch(js, /navigator\.share\(\{[^}]*url:/, 'url 을 따로 넘기면 글 뒤에 붙는다');
   const html = read('birthday.html');
   assert.match(html, /og:image" content="https:\/\/mongdol-desk\.vercel\.app\/img\/og-birthday\.jpg"/);
@@ -96,10 +97,12 @@ test('열쇠는 브라우저에만 — localStorage 에 두고, 고르기 스크
 
 test('이미지로 저장 — 1080×1350 그림, 페이지 주소를 넣고, 파일 공유가 되면 시트로', () => {
   const js = read('js/birthday.js'), html = read('birthday.html');
-  assert.match(html, /id="image">이미지로 저장</);
+  assert.match(html, /id="share">공유하기</);
+  assert.doesNotMatch(html, /id="image"/);
   assert.match(js, /var W = 1080, H = 1350/);
+  assert.match(js, /c\.height = tall \? 1920 : H;/, '인스타 스토리는 9:16');
   assert.match(js, /mongdol-desk\.vercel\.app\/birthday/);
-  assert.match(js, /navigator\.canShare\({ files: \[file\] }\)/);
+  assert.match(js, /navigator\.canShare\(\{ files: \[f\] \}\)/);
   assert.match(js, /send\('birthday_image', \{ via: 'share' \}\)/);
 });
 
@@ -110,6 +113,12 @@ test('Tabber 기기 표시 — ?internal=1 이면 localStorage 에 남기고 기
     assert.match(s, /q\.get\('internal'\) === '1'\) localStorage\.setItem\('mongdol-internal', '1'\)/, f);
     assert.match(s, /if \(localStorage\.getItem\('mongdol-internal'\)\) base\.internal = true;/, f);
   }
+});
+
+test('실제 주소가 아니면 기록을 보내지 않는다 — 로컬·미리보기 테스트가 실제 통계에 섞이지 않게', () => {
+  const s = read('js/birthday.js');
+  assert.match(s, /var LIVE = location\.hostname === 'mongdol-desk\.vercel\.app';/);
+  assert.match(s, /function send\(event, extra\) \{\n\s*if \(!LIVE\) return;/);
 });
 
 test('안심 문구는 「알아보기」 바로 아래 — 생일·단어를 보내지 않고 누군지 알 수 없다', () => {
@@ -146,7 +155,7 @@ test('이미지 저장 — 결과가 뜰 때 미리 만들고, 시트가 안 되
   assert.match(js, /if \(mobile\) \{ send\('birthday_image', \{ via: 'sheet' \}\); showSheet\(url\); return; \}/);
   assert.doesNotMatch(js, /createObjectURL/, 'blob 내려받기는 앱 안 브라우저에서 「지원하지 않는 형식」');
   assert.match(html, /<div class="bd-sheet" id="sheet" hidden>/);
-  assert.match(html, /이미지를 길게 눌러 저장하거나 공유해 주세요/);
+  assert.match(html, /id="sheetSave" hidden/);
 });
 
 test('결과 데이터(last)는 한 곳에만 — 다른 함수에서 var last 로 다시 선언하면 이미지 저장이 멈춘다', () => {
@@ -178,7 +187,7 @@ test('이미지는 toDataURL 하나로 — toBlob(일부 앱 안 브라우저에
   const js = read('js/birthday.js');
   assert.doesNotMatch(js, /\.toBlob\(/);
   assert.match(js, /res\('timeout'\); \}, 3000\)/);
-  assert.match(js, /alert\('이미지를 만들지 못했어요\. 이 화면을 캡처해 주세요\.'\)/);
+  assert.match(js, /'이미지를 만들지 못했어요\. 이 화면을 캡처해 주세요\.'/);
 });
 
 test('이미지 글꼴 — 그릴 글자를 알려 주고 받는다(조각 글꼴), 못 받으면 font 오류로', () => {
@@ -187,4 +196,47 @@ test('이미지 글꼴 — 그릴 글자를 알려 주고 받는다(조각 글�
   assert.match(js, /document\.fonts\.load\(SANS, sansText\)/);
   assert.match(js, /var serifText = r\.w \+ r\.x\.map/);
   assert.match(js, /var sansText = r\.date \+ '의 우리말' \+ r\.m/);
+});
+
+test('외부 스크립트 오류는 거른다 — 우리 주소의 파일만, iabjs:// 등은 빼고', () => {
+  const js = read('js/birthday.js');
+  const src = js.match(/function ours\(file, stack\) \{[\s\S]*?\n  \}/)[0];
+  const ours = new Function('location', src + '; return ours;')({ origin: 'https://mongdol-desk.vercel.app' });
+  assert.equal(ours('https://mongdol-desk.vercel.app/js/birthday.js', ''), true);
+  assert.equal(ours('', 'Error | at sendDataToNative (iabjs://navigation_performance_logger_android:1:11853)'), false);
+  assert.equal(ours('iabjs://navigation_performance_logger_android', ''), false);
+  assert.equal(ours('', ''), false, 'Script error. — 다른 출처');
+  assert.equal(ours('https://www.instagram.com/static/x.js', ''), false);
+  assert.match(js, /send\('birthday_image', \{ via: 'hold' \}\)/);
+});
+
+test('저장 화면 분기 — 안드로이드 앱 안은 캡처 안내 + 크롬(카톡은 외부 브라우저)으로 같은 결과, 아이폰 앱 안은 길게 누르기, 일반 브라우저는 내려받기', () => {
+  const js = read('js/birthday.js');
+  assert.match(js, /var ANDROID_IN_APP = \/Android\/\.test\(ua\) && base\.browser_app !== 'browser';/);
+  assert.match(js, /'이 화면을 캡처해서 저장해 주세요\./);
+  assert.match(js, /'kakaotalk:\/\/web\/openExternal\?url=' \+ encodeURIComponent\(url\)/);
+  assert.match(js, /package=com\.android\.chrome;S\.browser_fallback_url=/);
+  assert.match(js, /'#m=' \+ last\.mo \+ '&d=' \+ last\.da \+ '&k=' \+ encodeURIComponent\(seed\);/, '생일·열쇠는 # 뒤에 — 서버 접속 기록에 안 남게');
+  assert.doesNotMatch(js, /'\/birthday\?m='/);
+  assert.match(js, /var qm = Number\(h\.get\('m'\)\)/);
+  assert.match(js, /var carried = /);
+  for (const v of ['external', 'download']) assert.match(js, new RegExp(`send\\('birthday_image', \\{ via: '${v}' \\}\\)`), v);
+});
+
+test('공유하기 — 어디로 보낼지 고르는 줄(인스타 스토리·카톡·스레드·저장·링크), 환경마다 길이 다르다', () => {
+  const js = read('js/birthday.js'), html = read('birthday.html');
+  const tos = [...html.matchAll(/data-to="(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual(tos, ['insta', 'kakao', 'threads', 'save', 'link']);
+  for (const t of tos) assert.match(js, new RegExp(`\\n    ${t}: function \\(\\) \\{`), t);
+  assert.match(js, /if \(ANDROID_IN_APP\) \{ send\('birthday_share', \{ via: 'external', to: 'insta' \}\); openInBrowser\('insta'\); return; \}/);
+  assert.match(js, /autoInsta = q\.get\('save'\) === 'insta'/);
+  assert.match(js, /showTargets\('인스타 스토리를 눌러 주세요\.', 'insta'\)/);
+  assert.match(js, /'https:\/\/www\.threads\.net\/intent\/post\?text=' \+ encodeURIComponent\(text\)/);
+  assert.match(js, /'목록에서 Instagram 을 눌러 주세요\.'/);
+});
+
+test('JS 가 찾는 id 는 모두 페이지에 있다 — 하나라도 없으면 결과 화면이 멈춘다', () => {
+  const js = read('js/birthday.js'), html = read('birthday.html');
+  const ids = new Set([...js.matchAll(/\$\('([A-Za-z]+)'\)/g)].map((m) => m[1]));
+  for (const id of ids) assert.match(html, new RegExp(`id="${id}"`), id);
 });
