@@ -62,9 +62,9 @@ final class OnboardingRulesTests: XCTestCase {
 
     func testFullFlow() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true),
-                       [.intro, .firstPebble, .birthday, .arrival, .reminder, .cloud, .howTo, .start])
+                       [.intro, .firstPebble, .birthday, .arrival, .reminder, .cloud, .howTo, .widget, .start])
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true, asksPlace: true),
-                       [.intro, .firstPebble, .birthday, .place, .arrival, .reminder, .cloud, .howTo, .start],
+                       [.intro, .firstPebble, .birthday, .place, .arrival, .reminder, .cloud, .howTo, .widget, .start],
                        "생일 말은 첫 조약돌 선물 바로 다음, 찍은 곳은 그 뒤")
     }
 
@@ -75,12 +75,12 @@ final class OnboardingRulesTests: XCTestCase {
         XCTAssertFalse(OnboardingFlow.skipsFirstPebble(access: .notDetermined, recentCount: nil),
                        "아직 묻지 않았으면 그 단계에서 묻는다")
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: true, asksArrival: true),
-                       [.intro, .birthday, .arrival, .reminder, .cloud, .howTo, .start])
+                       [.intro, .birthday, .arrival, .reminder, .cloud, .howTo, .widget, .start])
     }
 
     func testCloudRecordsReplaceFirstPebbleWithContinuing() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: true, skipsFirstPebble: false, asksArrival: true),
-                       [.intro, .continuing, .birthday, .arrival, .reminder, .howTo, .start])
+                       [.intro, .continuing, .birthday, .arrival, .reminder, .howTo, .widget, .start])
     }
 
     func testArrivalStepOnlyWhenNotAsked() {
@@ -88,21 +88,21 @@ final class OnboardingRulesTests: XCTestCase {
             .contains(.arrival))
     }
 
-    func testEveryFlowEndsWithHowToThenStart() {
+    func testEveryFlowEndsWithHowToWidgetThenStart() {
         for continuing in [false, true] {
             for skips in [false, true] {
                 for asks in [false, true] {
                     let steps = OnboardingFlow.steps(continuing: continuing, skipsFirstPebble: skips, asksArrival: asks)
-                    XCTAssertEqual(Array(steps.suffix(2)), [.howTo, .start],
+                    XCTAssertEqual(Array(steps.suffix(3)), [.howTo, .widget, .start],
                                    "continuing: \(continuing) skips: \(skips) asks: \(asks)")
                     XCTAssertEqual(steps.filter { $0 == .birthday }.count, 1, "생일 장은 어느 길로 와도 한 번")
-                    XCTAssertFalse(steps.contains(.widget), "위젯 장은 플래그가 꺼져 있으면 없다")
+                    XCTAssertEqual(steps.filter { $0 == .widget }.count, 1, "위젯 붙이기 장도 어느 길로 와도 한 번")
                 }
             }
         }
     }
 
-    // MARK: 1.2 — 여덟 장(위젯 장은 플래그 뒤)
+    // MARK: 1.2 — 여덟 장
 
     func testDocumentedOrderWithWidgetStepOn() {
         let steps = OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true, showsWidget: true)
@@ -111,9 +111,11 @@ final class OnboardingRulesTests: XCTestCase {
         XCTAssertEqual(core.count, 8, "몽돌이란 → 첫 조약돌 → 생일 말 → 아침 소식 → iCloud → 찍는 법 → 위젯 → 시작")
     }
 
-    func testWidgetStepOffFlowsSevenSteps() {
-        XCTAssertFalse(OnboardingFlow.showsWidgetStep, "위젯(T5)이 들어오기 전엔 꺼져 있어야 한다")
-        let steps = OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true)
+    func testWidgetStepIsOnAndCanStillBeTurnedOff() {
+        XCTAssertTrue(OnboardingFlow.showsWidgetStep, "「밀려온 말」 위젯(T5)과 함께 켰다")
+        XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true).filter { $0 != .reminder },
+                       [.intro, .firstPebble, .birthday, .arrival, .cloud, .howTo, .widget, .start], "기본 흐름이 문서의 여덟 장")
+        let steps = OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true, showsWidget: false)
         XCTAssertEqual(steps.filter { $0 != .reminder }.count, 7)
         XCTAssertEqual(Array(steps.suffix(2)), [.howTo, .start], "찍는 법에서 바로 시작하기로")
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true,
@@ -123,7 +125,9 @@ final class OnboardingRulesTests: XCTestCase {
 
     func testWidgetAttachNeedsKnownKind() {
         XCTAssertFalse(WidgetAttach.attached(kinds: ["com.itlearning.colormoments.pebble-widget"]),
-                       "아직 알아챌 kind 가 없다 — 조약돌 위젯을 「붙었어요」로 치지 않는다")
+                       "조약돌 위젯을 「붙었어요」로 치지 않는다")
+        XCTAssertTrue(WidgetAttach.attached(kinds: ["com.itlearning.colormoments.pebble-widget", WordWidgetTimeline.kind]))
+        XCTAssertTrue(WidgetAttach.attached(kinds: [WordWidgetTimeline.lockKind]), "잠금화면에만 붙여도 붙은 것")
         XCTAssertTrue(WidgetAttach.attached(kinds: ["a", "word"], wanted: ["word"]))
         XCTAssertFalse(WidgetAttach.attached(kinds: [], wanted: ["word"]))
     }
@@ -229,6 +233,13 @@ final class OnboardingRulesTests: XCTestCase {
                                                    updatePending: !UpdateNotice.pages(defaults).isEmpty), .none)
     }
 
+    func testUpdatingUserGetsWidgetPageWithFlagOn() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "update-on-\(UUID())"))
+        XCTAssertEqual(UpdateNotice.pages(defaults), [.birthday, .widget], "플래그가 켜져 기본값으로 두 번째 장(위젯)이 붙는다")
+        UpdateNotice.markOnboardingFinished(defaults)
+        XCTAssertTrue(UpdateNotice.pages(defaults).isEmpty, "새로 깐 사람은 온보딩에서 위젯 장을 봤다")
+    }
+
     func testUpdateNoticeComesBeforeArrivalAsk() {
         XCTAssertEqual(OnboardingGate.presentation(isLoaded: true, didFinishOnboarding: false, hasRecords: true,
                                                    didAskArrivalNotice: false, updatePending: true), .update)
@@ -244,8 +255,8 @@ final class OnboardingRulesTests: XCTestCase {
                                                    didAskArrivalNotice: false,
                                                    updatePending: !UpdateNotice.pages(defaults).isEmpty), .full,
                        "새 사용자는 온보딩 안에서 생일 장을 본다")
-        UpdateNotice.markOnboardingFinished(defaults)
-        XCTAssertTrue(UpdateNotice.pages(defaults).isEmpty, "온보딩을 마치면 업데이트 장은 뜨지 않는다")
+        UpdateNotice.markOnboardingFinished(defaults, showsWidget: false)
+        XCTAssertTrue(UpdateNotice.pages(defaults, showsWidget: false).isEmpty, "온보딩을 마치면 업데이트 장은 뜨지 않는다")
         XCTAssertEqual(UpdateNotice.pages(defaults, showsWidget: true), [.widget],
                        "위젯 장을 못 본 채 마쳤으면 위젯이 켜진 뒤 그 장만 한 번")
         let shown = try XCTUnwrap(UserDefaults(suiteName: "new-w-\(UUID())"))

@@ -170,15 +170,16 @@ struct WidgetStep: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var attached = false
     @State private var leftApp = false
+    @State private var preview = WidgetPreview.now()
 
     var body: some View {
         OnboardingPage {
             SceneLayout {
-                Color.clear
+                WidgetPreview(model: preview)
             } words: {
                 VStack(alignment: .leading, spacing: 14) {
                     OnboardingText(title: attached ? "붙었어요" : "이제 홈 화면에서 지금 밖에 맞는 말을 알려 줄게요",
-                                   detail: attached ? nil : "홈 화면을 길게 눌러 이 순서로 몽돌을 골라 주세요.")
+                                   detail: attached ? preview.sentence?.plain : "홈 화면을 길게 눌러 이 순서로 몽돌을 골라 주세요.")
                     if !attached {
                         SettingsPath(steps: ["편집", "위젯 추가", "몽돌"])
                     }
@@ -192,9 +193,36 @@ struct WidgetStep: View {
             guard phase == .active, leftApp, !attached else { return }
             Task { @MainActor in
                 let kinds = (try? await WidgetCenter.shared.currentConfigurations())?.map(\.kind) ?? []
-                if WidgetAttach.attached(kinds: kinds) { withAnimation(.easeInOut(duration: 0.35)) { attached = true } }
+                guard WidgetAttach.attached(kinds: kinds) else { return }
+                preview = WidgetPreview.now()
+                WordWidgetSync.sendWidgetAdded(attachedNow: true)
+                withAnimation(.easeInOut(duration: 0.35)) { attached = true }
             }
         }
+    }
+}
+
+/// 위젯 붙이기 장의 장면 — 지금 그 위젯에 뜰 말을 홈 화면 작은 위젯 크기 그대로.
+struct WidgetPreview: View {
+    let model: WordWidgetModel
+
+    static let side: CGFloat = 158
+
+    static func now(_ date: Date = Date()) -> WordWidgetModel {
+        let store = AmbientStore()
+        return WordWidgetTimeline.models(now: date, forecast: store?.forecast(), place: store?.place(),
+                                         picks: PickedWords(writer: .app)?.livePicks() ?? [], justPicked: nil).first ?? .blank(date)
+    }
+
+    var body: some View {
+        WordWidgetSmall(model: model, style: WordWidgetLook.current, drawsBackground: true) { _ in
+            WordPickLabel(WordWidgetText.cached?.pick ?? "")
+        }
+        .frame(width: Self.side, height: Self.side)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.accessibilityText(WordWidgetText.cached) ?? "")
     }
 }
 

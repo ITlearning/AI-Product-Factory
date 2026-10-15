@@ -98,10 +98,10 @@ enum OnboardingFlow {
         return steps
     }
 
-    /// 「밀려온 말」 위젯(T5)이 들어오기 전까지 꺼 둔다 — 켜면 온보딩·업데이트 안내에 위젯 붙이기 장이 붙는다.
-    static let showsWidgetStep = false
-    /// 「붙었어요」를 알아챌 위젯 kind — 위젯이 생기면 그 kind 를 넣는다. 비어 있으면 늘 「안 붙임」.
-    static let wordWidgetKinds: Set<String> = []
+    /// 온보딩·업데이트 안내에 위젯 붙이기 장을 붙인다(T5 「밀려온 말」 위젯과 함께 켰다).
+    static let showsWidgetStep = true
+    /// 「붙었어요」를 알아챌 위젯 kind — 홈 화면 작은 위젯과 잠금화면 위젯. 조약돌 위젯은 치지 않는다.
+    static let wordWidgetKinds: Set<String> = WordWidgetTimeline.kinds
 
     enum PhotoAccess { case notDetermined, allowed, denied }
 
