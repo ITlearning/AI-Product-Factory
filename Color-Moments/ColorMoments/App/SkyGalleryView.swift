@@ -13,6 +13,12 @@ struct SkyGalleryView: View {
     @State private var fullScreen = false
     @State private var dumpStatus: String?
     @AppStorage(FrameMeterBadge.homeKey) private var meter = false
+    @State private var tier = -1
+    @State private var metalFX = 0
+    @State private var moonToday = true
+    @State private var moonAge = Celestial.moonAge(at: Date())
+    @State private var moonScale = 1.0
+    @State private var frequentMeteors = false
 
     var body: some View {
         ScrollView {
@@ -27,6 +33,8 @@ struct SkyGalleryView: View {
                 }
                 .font(Face.caption)
                 Toggle("프레임 계측", isOn: $meter).font(Face.caption)
+                SkyDebugPanel(tier: $tier, metalFX: $metalFX, moonToday: $moonToday, moonAge: $moonAge,
+                              moonScale: $moonScale, frequentMeteors: $frequentMeteors)
                 Button("전체 화면 하늘") { fullScreen = true }
                     .font(Face.guide)
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -110,6 +118,7 @@ struct SkyCardText: View {
         case .nightCloudy: ("달무리", "달 둘레에 둥그렇게 생기는 구름 같은 테")
         case .clearDay: ("햇귀", "해가 처음 솟을 때의 빛, 사방으로 퍼진 햇살")
         case .rain: ("작달비", "굵고 세차게 퍼붓는 비")
+        case .clearNight: ("미리내", "은하수를 이르는 우리말")
         }
     }
 
@@ -308,6 +317,64 @@ enum SkyDump {
             }
         }
         return worst
+    }
+}
+#endif
+
+#if DEBUG
+/// 실기기에서 단계·달·별똥별을 바꿔 보는 칸. 값은 SkyDebug 로 바로 들어간다.
+struct SkyDebugPanel: View {
+    @Binding var tier: Int
+    @Binding var metalFX: Int
+    @Binding var moonToday: Bool
+    @Binding var moonAge: Double
+    @Binding var moonScale: Double
+    @Binding var frequentMeteors: Bool
+
+    private var detected: String {
+        guard let gpu = SkyGPU.shared else { return "-" }
+        return SkyTier.detect(gpu.device, maxFPS: UIScreen.main.maximumFramesPerSecond).name
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                let info = ProcessInfo.processInfo
+                Text("기기 판정 \(detected) · 열 \(info.thermalState.rawValue) · 저전력 \(info.isLowPowerModeEnabled ? "켬" : "끔")\n\(SkyStats.shared.summary)")
+                    .font(.caption2.monospaced()).foregroundStyle(Tone.secondary)
+            }
+            Picker("단계", selection: $tier) {
+                Text("자동").tag(-1)
+                ForEach(SkyTier.allCases.reversed()) { Text($0.name).tag($0.rawValue) }
+            }
+            .pickerStyle(.segmented)
+            Picker("MetalFX", selection: $metalFX) {
+                Text("FX 자동").tag(0); Text("FX 켬").tag(1); Text("FX 끔").tag(2)
+            }
+            .pickerStyle(.segmented)
+            Toggle("오늘 달", isOn: $moonToday)
+            if !moonToday {
+                HStack { Text(String(format: "달 나이 %.1f일", moonAge)); Slider(value: $moonAge, in: 0...29.5) }
+            }
+            HStack { Text(String(format: "달 크기 ×%.2f", moonScale)); Slider(value: $moonScale, in: 0.5...1.6) }
+            Toggle("별똥별 자주(5초)", isOn: $frequentMeteors)
+        }
+        .font(Face.caption)
+        .onAppear(perform: apply)
+        .onChange(of: tier) { apply() }
+        .onChange(of: metalFX) { apply() }
+        .onChange(of: moonToday) { apply() }
+        .onChange(of: moonAge) { apply() }
+        .onChange(of: moonScale) { apply() }
+        .onChange(of: frequentMeteors) { apply() }
+    }
+
+    private func apply() {
+        SkyDebug.tier = tier < 0 ? nil : SkyTier(rawValue: tier)
+        SkyDebug.metalFX = metalFX == 0 ? nil : metalFX == 1
+        SkyDebug.moonAge = moonToday ? nil : moonAge
+        SkyDebug.moonScale = moonScale
+        SkyDebug.frequentMeteors = frequentMeteors
     }
 }
 #endif

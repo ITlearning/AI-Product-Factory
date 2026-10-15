@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-// SkyView.swift 의 SkyUniforms 와 같은 순서·크기(float4 × 11). 하나를 고치면 둘 다 고친다.
+// SkyView.swift 의 SkyUniforms 와 같은 순서·크기(float4 × 15). 하나를 고치면 둘 다 고친다.
 struct SkyU {
     float4 res;       // 그리는 대상 px w, h, 1/w, 1/h
     float4 view;      // pt w, h, 시간 t, 장면
@@ -10,6 +10,10 @@ struct SkyU {
     float4 tone;      // EDR 여유, 글자 자리 최대 밝기, 그레인, 블룸 세기
     float4 parallax;  // 기울기 pt x, y, 글자 자리 수, 글자 자리 번짐 pt
     float4 rays;      // 빛줄기 걸음, 빛줄기 세기, 프레임 번호, 빗방울 수
+    float4 moon;      // 달 나이(일), 명암 경계 기울기(rad), 지구조 세기, 텍스처 있음(1)
+    float4 meteor0;   // 별똥별 머리 pt x, y, 나아가는 방향 x, y
+    float4 meteor1;   // 꼬리 길이 pt, 세기(0 = 없음), 굵기 pt, 별 층 수(1~3)
+    float4 blend;     // 구름 두 장 섞기 w, t - tA, tB - t, 구름 흐름 pt/초
     float4 text[4];   // 글자 자리 pt x0, y0, x1, y1
 };
 
@@ -143,13 +147,20 @@ kernel void skyBakeNoise(texture3d<float, access::write> out [[texture(0)]], uin
 
 // MARK: - 하늘색
 
+static float moonLitFraction(constant SkyU& u) {
+    return 0.5 - 0.5 * cos(u.moon.x * (2.0 * M_PI_F / 29.530589));
+}
+
 static float3 skyColor(int scene, float2 uv, float2 pt, constant SkyU& u) {
     float y = saturate(uv.y);
     float d = distance(pt, u.light.xy) / WORLD;
     float shade = 1.0 - 0.85 * textMask(u, pt, 2.5);
-    if (scene == 0) {
-        float3 c = mix(lin(float3(0.085, 0.09, 0.17)), lin(float3(0.19, 0.205, 0.33)), smoothstep(-0.1, 1.1, y));
-        c += lin(float3(0.62, 0.66, 0.85)) * (0.10 * exp(-d * 2.2) + 0.03 * exp(-d * 0.6)) * shade;
+    if (scene == 0 || scene == 3) {
+        float k = pow(moonLitFraction(u), 1.5);
+        float3 c = scene == 0
+            ? mix(lin(float3(0.085, 0.09, 0.17)), lin(float3(0.19, 0.205, 0.33)), smoothstep(-0.1, 1.1, y))
+            : mix(lin(float3(0.07, 0.08, 0.17)), lin(float3(0.23, 0.24, 0.42)), smoothstep(-0.15, 1.15, y));
+        c += lin(float3(0.62, 0.66, 0.85)) * (0.10 * exp(-d * 2.2) + 0.03 * exp(-d * 0.6)) * shade * (0.15 + 0.85 * k);
         return c;
     }
     if (scene == 1) {
@@ -200,6 +211,11 @@ static Layer layerFor(int scene, int idx) {
         L.sun = lin(float3(1.0, 0.97, 0.92)) * 0.6; L.ambLo = lin(float3(0.55, 0.66, 0.82)); L.ambHi = lin(float3(0.75, 0.82, 0.92));
         L.lightZ = 1.2; L.g = 0.75; L.haze = 0.25; L.depth = 0.3;
         L.coverage = 0.0;
+    } else if (scene == 3) {   // 맑은 밤 — 구름 없음
+        L.scale = float2(0.5); L.zscale = 0.3; L.drift = float2(0.0); L.evolve = 0.0;
+        L.coverage = 0.0; L.extinct = 1.0; L.detail = 0.0;
+        L.sun = float3(0.0); L.ambLo = float3(0.0); L.ambHi = float3(0.0);
+        L.lightZ = 1.0; L.g = 0.0; L.haze = 0.0; L.depth = 0.0;
     } else {
         if (idx == 0) {   // 먼 층 — 거의 덮인 회색
             L.scale = float2(0.5, 0.8); L.zscale = 0.3; L.drift = float2(0.006, 0.0); L.evolve = 0.003;
@@ -279,8 +295,14 @@ static float4 marchLayer(texture3d<float> nz, Layer L, float2 world, float2 ligh
     return float4(S, T);
 }
 
-fragment float4 skyClouds(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
-                          texture3d<float> nz [[texture(0)]]) {
+// 색(앞곱한 산란광)과 투과율을 따로 — MetalFX 업스케일러는 알파를 지키지 않는다.
+struct CloudOut {
+    float4 color [[color(0)]];
+    float trans [[color(1)]];
+};
+
+fragment CloudOut skyClouds(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
+                            texture3d<float> nz [[texture(0)]]) {
     int scene = int(u.view.w);
     float2 pt = in.uv * u.view.xy;
     float2 world = pt / WORLD;
@@ -299,21 +321,23 @@ fragment float4 skyClouds(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         farL = marchLayer(nz, layerFor(scene, 0), world, lw, t, tilt, farSteps, max(lsteps - 1, 1), false, jitter, shade);
         farL.rgb = mix(farL.rgb, sky * (1.0 - farL.a), layerFor(scene, 0).haze);
     }
-    float3 S = nearL.rgb + nearL.a * farL.rgb;
-    float T = nearL.a * farL.a;
-    return float4(S, T);
+    CloudOut o;
+    o.color = float4(nearL.rgb + nearL.a * farL.rgb, 1.0);
+    o.trans = nearL.a * farL.a;
+    return o;
 }
 
 // MARK: - 별
 
-static float3 starField(float2 pt, float t, float pxPerPt, float2 tilt) {
+static float3 starField(float2 pt, float t, float pxPerPt, float2 tilt, int layers) {
     float3 acc = float3(0.0);
-    for (int l = 0; l < 3; l++) {
+    for (int l = 3 - layers; l < 3; l++) {
         float cell = l == 0 ? 7.0 : (l == 1 ? 17.0 : 52.0);
         float prob = l == 0 ? 0.2 : (l == 1 ? 0.3 : 0.5);
         float sizePt = l == 0 ? 0.32 : (l == 1 ? 0.48 : 0.75);
         float bright = l == 0 ? 0.35 : (l == 1 ? 0.9 : 2.6);
-        float2 p = pt + tilt * (0.15 + 0.35 * float(l)) + float2(t * (0.25 + 0.35 * float(l)), 0.0);
+        float speed = 1.15 + 0.15 * float(l);
+        float2 p = pt + tilt * (0.15 + 0.35 * float(l)) + float2(t * speed, 0.0);
         float2 cid = floor(p / cell);
         float2 h = hash22(cid + 17.0 * float(l));
         float pick = hash12(cid * 1.7 + 31.0 * float(l));
@@ -321,9 +345,12 @@ static float3 starField(float2 pt, float t, float pxPerPt, float2 tilt) {
         float2 c = (cid + 0.18 + 0.64 * h) * cell;
         float2 dv = p - c;
         float sz = max(sizePt, 0.7 / pxPerPt);
-        float b = bright * (0.45 + 0.55 * hash12(cid + 5.3)) * (sizePt / sz);
-        float freq = 0.8 + 3.2 * hash12(cid + 9.1);
-        float tw = 0.65 + 0.35 * sin(t * freq * (1.0 + float(l) * 0.4) + h.x * 40.0);
+        float rank = hash12(cid + 5.3);
+        float b = bright * (0.45 + 0.55 * rank) * (sizePt / sz);
+        float period = 5.0 + 5.0 * hash12(cid + 9.1);
+        float breath = 0.5 + 0.5 * sin(t * (6.2831853 / period) + h.x * 40.0);
+        float depth = l == 2 ? mix(0.5, 0.35, rank) : (l == 1 ? 0.6 : 0.85);
+        float tw = 1.0 - depth * breath * breath * (3.0 - 2.0 * breath);
         float s = exp(-dot(dv, dv) / (sz * sz)) * b * tw;
         if (l == 2 && pick < prob * 0.14) {
             float2 a = abs(dv);
@@ -336,36 +363,106 @@ static float3 starField(float2 pt, float t, float pxPerPt, float2 tilt) {
     return acc;
 }
 
+// MARK: - 별똥별
+
+static float3 meteorLight(float2 pt, constant SkyU& u, float pxPerPt) {
+    float a = u.meteor1.y;
+    if (a <= 0.0) return float3(0.0);
+    float2 d = pt - u.meteor0.xy;
+    float2 dir = u.meteor0.zw;
+    float L = u.meteor1.x;
+    float behind = -dot(d, dir);
+    if (behind < -6.0 || behind > L + 6.0) return float3(0.0);
+    float across = abs(d.x * dir.y - d.y * dir.x);
+    float w = max(u.meteor1.z, 0.75 / pxPerPt);
+    float k = saturate(1.0 - behind / L);
+    float wt = w * (0.55 + 0.45 * k);
+    float tail = behind > 0.0 ? exp(-across * across / (wt * wt)) * k * k * k : 0.0;
+    float r2 = dot(d, d);
+    float head = exp(-r2 / (w * w * 2.2)) * 2.4 + exp(-r2 / (w * w * 40.0)) * 0.12;
+    return lin(float3(0.90, 0.94, 1.0)) * (tail * 1.5 + head) * a * (u.meteor1.z / w);
+}
+
+// MARK: - 달 (구 + NASA LRO 앞면 지도 + Lommel–Seeliger + 지구조)
+
+static float3 moonLight(float2 q, float edgePx, constant SkyU& u, texture2d<float> tex, thread float& cover) {
+    float rr = length(q);
+    cover = 1.0 - smoothstep(1.0 - 1.2 / edgePx, 1.0, rr);
+    if (cover <= 0.0) return float3(0.0);
+    float2 qq = q * min(1.0, 0.999 / max(rr, 1e-4));
+    float3 N = float3(qq.x, -qq.y, sqrt(saturate(1.0 - dot(qq, qq))));
+    float v;
+    if (u.moon.w > 0.5) {
+        constexpr sampler ms(filter::linear, mip_filter::linear, address::clamp_to_edge);
+        float2 tuv = float2(0.5 + atan2(N.x, N.z) / M_PI_F, 0.5 - asin(clamp(N.y, -1.0, 1.0)) / M_PI_F);
+        // 지도 바깥 가장자리는 극으로 갈수록 늘어나 흐려진다 — 한 단계 굵은 밉으로 고르게.
+        v = tex.sample(ms, tuv, bias(0.5)).r;
+    } else {
+        float maria = fbm2(qq * 2.3 + 4.0, 4);
+        v = 0.7 - 0.32 * smoothstep(0.45, 0.75, maria) + 0.06 * (vnoise(qq * 18.0) - 0.5);
+    }
+    v = mix(v, 0.66, smoothstep(0.78, 0.97, abs(N.y)));
+    float albedo = 0.12 + 1.1 * pow(v, 1.5);
+    float theta = u.moon.x * (2.0 * M_PI_F / 29.530589);
+    float ct = cos(u.moon.y), st = sin(u.moon.y);
+    float3 L = float3(sin(theta) * ct, sin(theta) * st, -cos(theta));
+    float mu0 = dot(N, L), mu = N.z;
+    float ls = mu0 > 0.0 ? 2.0 * mu0 / (mu0 + mu + 1e-3) : 0.0;
+    float lit = pow(min(ls, 1.35), 0.65) * smoothstep(-0.015, 0.06, mu0);
+    albedo = pow(albedo, 1.0 + 1.4 * (1.0 - smoothstep(0.0, 0.35, mu0)));
+    float k = 0.5 - 0.5 * cos(theta);
+    float3 warm = lin(float3(1.0, 0.95, 0.86));
+    float3 day = warm * albedo * lit * mix(0.8, 1.0, k) * 0.95 * max(1.0, u.tone.x * 0.6);
+    float es = u.moon.z * pow(0.5 + 0.5 * cos(theta), 2.0);
+    float3 earth = lin(float3(0.42, 0.52, 0.72)) * albedo * es * (0.4 + 0.6 * mu) * (1.0 - smoothstep(0.0, 0.12, mu0)) * 0.035;
+    return day + earth;
+}
+
 // MARK: - 하늘 합성 (전체 해상도)
 
-fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
-                           texture2d<float> clouds [[texture(0)]]) {
+static float4 cloudTaps(texture2d<float> col, texture2d<float> tr, float2 uv) {
     constexpr sampler cs(filter::linear, address::clamp_to_edge);
+    float2 ct = 0.6 / float2(tr.get_width(), tr.get_height());
+    float2 cc = 0.6 / float2(col.get_width(), col.get_height());
+    float3 s = (col.sample(cs, uv + cc * float2(-1, -1)).rgb + col.sample(cs, uv + cc * float2(1, -1)).rgb
+              + col.sample(cs, uv + cc * float2(-1, 1)).rgb + col.sample(cs, uv + cc * float2(1, 1)).rgb) * 0.25;
+    float T = (tr.sample(cs, uv + ct * float2(-1, -1)).r + tr.sample(cs, uv + ct * float2(1, -1)).r
+             + tr.sample(cs, uv + ct * float2(-1, 1)).r + tr.sample(cs, uv + ct * float2(1, 1)).r) * 0.25;
+    return float4(s, T);
+}
+
+fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
+                           texture2d<float> colA [[texture(0)]], texture2d<float> trA [[texture(1)]],
+                           texture2d<float> colB [[texture(2)]], texture2d<float> trB [[texture(3)]],
+                           texture2d<float> moonTex [[texture(4)]]) {
     int scene = int(u.view.w);
+    bool night = scene == 0 || scene == 3;
     float2 pt = in.uv * u.view.xy;
     float t = u.view.z;
     float pxPerPt = u.res.x / u.view.x;
     float mask = textMask(u, pt);
     float shade = 1.0 - 0.85 * textMask(u, pt, 2.5);
     float3 c = skyColor(scene, in.uv, pt, u);
-    float2 ct = 0.6 / float2(clouds.get_width(), clouds.get_height());
-    float4 cl = (clouds.sample(cs, in.uv + ct * float2(-1, -1)) + clouds.sample(cs, in.uv + ct * float2(1, -1))
-               + clouds.sample(cs, in.uv + ct * float2(-1, 1)) + clouds.sample(cs, in.uv + ct * float2(1, 1))) * 0.25;
+    float flow = u.blend.w / u.view.x;
+    float4 cl = mix(cloudTaps(colA, trA, in.uv - float2(flow * u.blend.y, 0.0)),
+                    cloudTaps(colB, trB, in.uv + float2(flow * u.blend.z, 0.0)), u.blend.x);
     float T = cl.a;
     float2 lp = u.light.xy + u.parallax.xy * 0.1;
     float d = distance(pt, lp);
     float r = u.light.z;
 
-    if (scene == 0) {
-        c += starField(pt, t, pxPerPt, u.parallax.xy) * T * (1.0 - 0.9 * mask);
+    if (night) {
+        float cover = 0.0;
+        float3 moon = float3(0.0);
+        if (u.light.w > 0.5) moon = moonLight((pt - lp) / r, r * pxPerPt, u, moonTex, cover);
+        c += starField(pt, t, pxPerPt, u.parallax.xy, int(u.meteor1.w)) * (1.0 - 0.9 * mask) * (1.0 - cover);
+        c += meteorLight(pt, u, pxPerPt) * (1.0 - 0.5 * mask) * (1.0 - cover);
         if (u.light.w > 0.5) {
-            float2 q = (pt - lp) / r;
-            float disk = 1.0 - smoothstep(1.0 - 1.2 / (r * pxPerPt), 1.0, length(q));
-            float maria = fbm2(q * 2.3 + 4.0, 4);
-            float limb = sqrt(saturate(1.0 - dot(q, q)));
-            float3 moon = lin(float3(0.98, 0.96, 0.90)) * (0.72 + 0.28 * limb) * (1.0 - 0.32 * smoothstep(0.45, 0.75, maria));
-            c = mix(c, moon * 3.2, disk);
+            float e = d / r;
+            float glow = pow(moonLitFraction(u), 1.2) * (0.13 * exp(-e * e * 0.12) + 0.035 * exp(-e * 0.15));
+            c += lin(float3(0.95, 0.93, 0.88)) * glow * shade;
         }
+        c += moon * cover;
     } else if (scene == 1) {
         if (u.light.w > 0.5) {
             float core = exp(-pow(d / r, 4.0));
@@ -392,8 +489,8 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         c = mix(c, lin(float3(0.86, 0.9, 0.97)) * lit, a * 0.55);
     }
 
-    if (scene == 0 && u.light.w > 0.5) {
-        float thin = saturate((1.0 - T) * T * 4.0);
+    if (night && u.light.w > 0.5) {
+        float thin = saturate((1.0 - T) * T * 4.0) * moonLitFraction(u);
         float k = d / (r * 6.0);
         float3 corona = float3(0.5 + 0.5 * cos(k * 9.0 + float3(0.0, 0.8, 1.6))) * exp(-k * k * 1.5);
         c += (corona * thin * 0.12 + lin(float3(0.8, 0.84, 1.0)) * thin * exp(-d / (r * 3.0)) * 0.5) * shade;
@@ -480,7 +577,7 @@ fragment float4 skyRainFragment(RainOut in [[stage_in]]) {
 // MARK: - 빛줄기 (낮은 해상도)
 
 fragment float4 skyRays(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
-                        texture2d<float> clouds [[texture(0)]]) {
+                        texture2d<float> trans [[texture(0)]]) {
     constexpr sampler cs(filter::linear, address::clamp_to_edge);
     int n = int(u.rays.x);
     if (n <= 0 || u.rays.y <= 0.0) return float4(0.0);
@@ -494,7 +591,7 @@ fragment float4 skyRays(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     s -= delta * j;
     for (int i = 0; i < n; i++) {
         s -= delta;
-        float T = clouds.sample(cs, s).a;
+        float T = trans.sample(cs, s).r;
         float2 dd = (s - lu) * aspect;
         float src = exp(-dot(dd, dd) / (rad * rad));
         illum += T * src * decay;
