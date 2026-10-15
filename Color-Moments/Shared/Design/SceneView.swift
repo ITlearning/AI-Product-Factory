@@ -86,9 +86,6 @@ public enum SceneArt {
     public static let rainCap = 30
     public static let starCap = 20
 
-    /// Text sits on the left; bright marks stay right of this fraction of the width.
-    public static let textZoneFraction: CGFloat = 0.55
-
     /// Scene time used for a still picture (widget, reduce motion) — chosen so drops sit mid-fall.
     public static let stillPhase: Double = 7.3
 
@@ -117,9 +114,9 @@ public enum SceneArt {
             return ScenePalette(sky: stops([(0, "#0E1330"), (0.7, "#272950"), (1, "#34305A")]),
                                 washes: [wash("#968CC8", [(0.55, 0), (1, 0.18)])], accent: accent)
         case .dusk:
-            return ScenePalette(sky: stops([(0, "#2A1E2E"), (0.7, "#482A34"), (1, "#5E3430")]),
-                                washes: [wash("#C7684A", [(0.5, 0), (0.82, 0.26)]),
-                                         wash("#1A1214", [(0.819, 0), (0.82, 1)])], accent: accent)
+            return ScenePalette(sky: stops([(0, "#2A1E2E"), (0.8, "#482A34"), (1, "#5E3430")]),
+                                washes: [wash("#C7684A", [(0.55, 0), (0.95, 0.2)]),
+                                         wash("#1A1214", [(0.949, 0), (0.95, 1)])], accent: accent)
         case .stars:
             return ScenePalette(sky: stops([(0, "#05070F"), (1, "#0E1328")]), washes: [], accent: accent)
         case .moon:
@@ -214,9 +211,8 @@ public enum SceneArt {
         return c
     }
 
-    public static func textZone(in size: CGSize) -> CGRect {
-        CGRect(x: 0, y: 0, width: size.width * textZoneFraction, height: size.height)
-    }
+    /// Where card text sits, per card shape: square/hero = top label + word block; wide = word, date and two corner labels.
+    public static func textRects(in size: CGSize) -> [CGRect] { Frame(size).texts }
 
     // MARK: geometry shared by drawing and bounds
 
@@ -225,37 +221,69 @@ public enum SceneArt {
         var u: CGFloat { min(w, h) }
         init(_ size: CGSize) { w = size.width; h = size.height }
 
-        /// Wide cards carry labels in their right corners — marks step in from the edge.
         var wide: Bool { w > 1.8 * h }
-        func fromRight(_ d: CGFloat) -> CGFloat { w - (wide ? d + 0.62 * u : d) }
+        var hero: Bool { !wide && w > 1.3 * h }
+        var blockRight: CGFloat { (hero ? 0.64 : 0.78) * w }
+        var texts: [CGRect] {
+            if wide {
+                return [CGRect(x: 0, y: 0, width: 0.44 * w, height: 0.6 * h),
+                        CGRect(x: 0, y: 0.6 * h, width: 0.36 * w, height: 0.32 * h),
+                        CGRect(x: 0.78 * w, y: 0, width: 0.22 * w, height: 0.42 * h),
+                        CGRect(x: 0.78 * w, y: 0.6 * h, width: 0.22 * w, height: 0.32 * h)]
+            }
+            return [CGRect(x: 0, y: 0, width: 0.55 * w, height: 0.22 * h),
+                    CGRect(x: 0, y: 0.5 * h, width: blockRight, height: 0.43 * h)]
+        }
+        /// Text-free room for bright marks: the middle column on wide cards, the top right elsewhere.
+        var pane: CGRect {
+            wide ? CGRect(x: 0.46 * w, y: 0, width: 0.3 * w, height: h)
+                 : CGRect(x: 0.58 * w, y: 0, width: 0.42 * w, height: 0.48 * h)
+        }
+        var feather: CGFloat { 0.06 * u }
+        var horizon: CGFloat { 0.95 * h }
 
-        var sun: (c: CGPoint, r: CGFloat) { (CGPoint(x: fromRight(0.12 * u), y: 0.12 * u), 0.3 * u) }
+        /// A mark sitting on the bottom edge: in the pane on wide cards, else right of the word block (shrunk to fit).
+        func bottomMark(_ x: CGFloat, _ r: CGFloat) -> (x: CGFloat, r: CGFloat) {
+            if wide { return (pane.midX, min(r, pane.width / 2)) }
+            let limit = blockRight + 0.02 * w
+            let cx = max(x, limit + r)
+            return cx <= w ? (cx, r) : (w, w - limit)
+        }
+
+        var sun: (c: CGPoint, r: CGFloat) { (CGPoint(x: wide ? pane.midX : w - 0.12 * u, y: 0.12 * u), 0.3 * u) }
         var moon: (c: CGPoint, r: CGFloat, halo: CGFloat) {
-            (CGPoint(x: fromRight(0.24 * u), y: wide ? 0.5 * h : 0.24 * u), 0.12 * u, 0.2 * u)
+            (wide ? CGPoint(x: pane.midX, y: 0.5 * h) : CGPoint(x: w - 0.22 * u, y: 0.24 * u), 0.12 * u, 0.2 * u)
         }
-        var horizon: CGFloat { 0.82 * h }
-        var duskSun: (c: CGPoint, r: CGFloat, glow: CGFloat) { (CGPoint(x: fromRight(0.22 * u), y: horizon), 0.12 * u, 0.2 * u) }
-        var dawnGlow: (c: CGPoint, r: CGFloat) { (CGPoint(x: fromRight(0.2 * u), y: h), 0.22 * u) }
-        var rightPane: CGRect {
-            let x = w * 0.58
-            return CGRect(x: x, y: 0, width: w - x, height: h)
+        var duskSun: (c: CGPoint, r: CGFloat, glow: CGFloat) {
+            let (x, g) = bottomMark(w - 0.12 * u, 0.2 * u)
+            return (CGPoint(x: x, y: horizon), 0.6 * g, g)
         }
+        var dawnGlow: (c: CGPoint, r: CGFloat) {
+            let (x, r) = bottomMark(w - 0.2 * u, 0.22 * u * 1.05)
+            return (CGPoint(x: x, y: h), r / 1.05)
+        }
+        var horizonStart: CGFloat { wide ? pane.minX : 0.58 * w }
         var frostArea: CGRect {
-            let right = wide ? w - 0.62 * u : w * 0.96
-            return CGRect(x: w * 0.6, y: h * 0.5, width: right - w * 0.6, height: h * 0.44)
+            wide ? CGRect(x: pane.minX, y: 0.1 * h, width: pane.width, height: 0.8 * h)
+                 : CGRect(x: 0.62 * w, y: 0.06 * h, width: 0.34 * w, height: 0.4 * h)
         }
+        func paneY(_ k: CGFloat) -> CGFloat { pane.minY + pane.height * k }
     }
 
-    /// Bright marks (sun, moon, glow, light lines) — must stay out of the text zone.
+    /// Bright marks and lines (sun, moon, glow, horizon, wind and fog lines, frost) — must stay out of every text rect.
     public static func brightBounds(_ kind: SceneKind, _ style: SceneStyle, in size: CGSize) -> [CGRect] {
         let f = Frame(size)
         func box(_ c: CGPoint, _ r: CGFloat) -> CGRect { CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r) }
         switch kind {
-        case .sun: return [box(f.sun.c, f.sun.r * 1.04), f.rightPane]
+        case .sun: return [f.pane]
         case .moon: return [box(f.moon.c, f.moon.halo * 1.03)]
-        case .dusk: return [box(f.duskSun.c, f.duskSun.glow), f.rightPane]
-        case .dawn: return [box(f.dawnGlow.c, f.dawnGlow.r * 1.05), f.rightPane]
-        case .wind, .fog: return [f.rightPane]
+        case .dusk:
+            let (c, r, g) = f.duskSun
+            return [CGRect(x: c.x - g, y: c.y - 0.55 * r - g, width: 2 * g, height: 0.55 * r + g),
+                    CGRect(x: f.horizonStart, y: f.horizon - 1, width: f.w - f.horizonStart, height: 2),
+                    CGRect(x: c.x - 1.1 * r, y: f.horizon, width: 2.2 * r, height: f.h - f.horizon)]
+        case .dawn: return [box(f.dawnGlow.c, f.dawnGlow.r * 1.05), CGRect(x: f.w * 0.6, y: f.h - 1, width: f.w * 0.4, height: 1)]
+        case .wind, .fog: return [f.pane]
         case .frost: return [f.frostArea]
         case .stars, .rain, .drizzle, .snow, .petals, .leaves: return []
         }
@@ -270,15 +298,20 @@ public enum SceneArt {
 
     static func frac(_ x: Double) -> Double { x - floor(x) }
 
-    /// Particles passing behind text are softened.
-    static func dim(_ x: CGFloat, _ f: Frame) -> Double {
-        let a = f.w * 0.35, b = f.w * 0.7
-        let t = Double(min(1, max(0, (x - a) / (b - a))))
-        return 0.6 + 0.4 * t * t * (3 - 2 * t)
+    /// Particle opacity factor: 0 when its box touches a text rect, easing to 1 one feather away.
+    static func clear(_ box: CGRect, _ f: Frame) -> Double {
+        let b = box.insetBy(dx: -1, dy: -1)
+        let d = f.texts.map { r -> CGFloat in
+            hypot(max(0, r.minX - b.maxX, b.minX - r.maxX), max(0, r.minY - b.maxY, b.minY - r.maxY))
+        }.min() ?? .infinity
+        let t = Double(min(1, d / f.feather))
+        return t * t * (3 - 2 * t)
     }
 
+    static func dot(_ c: CGPoint, _ r: CGFloat) -> CGRect { CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r) }
+
     public static func draw(_ kind: SceneKind, _ style: SceneStyle, t: Double, tintHex: String? = nil,
-                            in ctx: inout GraphicsContext, size: CGSize) {
+                            marks: Bool = true, in ctx: inout GraphicsContext, size: CGSize) {
         let f = Frame(size)
         let rect = CGRect(origin: .zero, size: size)
         let skyStops = Self.sky(kind, style, tintHex: tintHex)
@@ -291,6 +324,7 @@ public enum SceneArt {
                 Gradient(stops: w.alphas.map { .init(color: w.color.color.opacity($0.y), location: $0.x) }),
                 startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
         }
+        guard marks else { return }
         let print = style == .print
         let ink = SceneRGB.white
         let accent = pal.accent ?? ink
@@ -333,7 +367,7 @@ public enum SceneArt {
         let (c, r) = f.sun
         let k = breathe(t, period: 5, depth: 0.04)
         var clip = ctx
-        clip.clip(to: Path(f.rightPane))
+        clip.clip(to: Path(f.pane))
         if print {
             clip.stroke(circle(c, r * 0.36 * k), with: .color(accent.color), lineWidth: 1.5)
             for i in 0..<6 {
@@ -380,7 +414,7 @@ public enum SceneArt {
         let c = CGPoint(x: c0.x, y: c0.y - r * 0.35 + r * 0.2 * CGFloat(sin(2 * .pi * t / 12)))
         var sky = ctx
         sky.clip(to: Path(CGRect(x: 0, y: 0, width: f.w, height: f.horizon)))
-        let x0 = f.rightPane.minX
+        let x0 = f.horizonStart
         let line = Path { p in p.move(to: CGPoint(x: x0, y: f.horizon)); p.addLine(to: CGPoint(x: f.w, y: f.horizon)) }
         let fade = Gradient(colors: [.clear, .white.opacity(print ? 0.7 : 0.4)])
         if print {
@@ -392,8 +426,9 @@ public enum SceneArt {
         ctx.stroke(line, with: .linearGradient(fade, startPoint: CGPoint(x: x0, y: 0), endPoint: CGPoint(x: f.w * 0.85, y: 0)),
                    lineWidth: 1)
         guard print else { return }
-        for i in 1...3 {
-            let y = f.horizon + CGFloat(i) * (f.h - f.horizon) / 4
+        let step = max(2, (f.h - f.horizon) / 4)
+        for i in 1...3 where f.horizon + CGFloat(i) * step < f.h {
+            let y = f.horizon + CGFloat(i) * step
             let half = r * (1.4 - CGFloat(i) * 0.3)
             var p = Path(); p.move(to: CGPoint(x: c0.x - half, y: y)); p.addLine(to: CGPoint(x: c0.x + half, y: y))
             ctx.stroke(p, with: .color(.white.opacity(0.55 - Double(i) * 0.12)), lineWidth: 1)
@@ -426,25 +461,26 @@ public enum SceneArt {
             let dur = 2 + rnd(i, 8) * 3
             let tw = 0.12 + 0.83 * (0.5 - 0.5 * cos(2 * .pi * (t / dur + rnd(i, 9))))
             let color = i == 0 ? (accentFirst ?? ink) : ink
-            ctx.fill(circle(CGPoint(x: x, y: y), r), with: .color(color.color.opacity(tw * dim(x, f))))
+            ctx.fill(circle(CGPoint(x: x, y: y), r), with: .color(color.color.opacity(tw * clear(dot(CGPoint(x: x, y: y), r), f))))
         }
     }
 
     private static func drawRain(_ f: Frame, _ t: Double, _ n: Int, fine: Bool, _ print: Bool, _ ctx: inout GraphicsContext) {
         let color = print ? SceneRGB.white : SceneRGB(hex: "#BED7EB")
-        let peak = print ? 0.55 : (fine ? 0.55 : 0.7)
+        let peak = print ? (fine ? 0.85 : 0.55) : (fine ? 0.55 : 0.7)
         let slant: CGFloat = 0.06
         for i in 0..<min(n, rainCap) {
             let dur = fine ? 1.6 + rnd(i, 3) * 0.8 : 1.0 + rnd(i, 3) * 0.6
-            let len = f.u * CGFloat(fine ? 0.035 + rnd(i, 2) * 0.03 : 0.07 + rnd(i, 2) * 0.06)
+            let len = f.u * CGFloat(fine ? (print ? 0.05 : 0.035) + rnd(i, 2) * 0.03 : 0.07 + rnd(i, 2) * 0.06)
             let ph = CGFloat(frac(t / dur + rnd(i, 4)))
             let y = -len + ph * (f.h + 2 * len)
             let x = CGFloat(rnd(i, 1)) * (f.w + slant * f.h) - slant * y
             let p0 = CGPoint(x: x, y: y), p1 = CGPoint(x: x - slant * len, y: y + len)
             var p = Path(); p.move(to: p0); p.addLine(to: p1)
-            ctx.stroke(p, with: .linearGradient(Gradient(colors: [color.color.opacity(0), color.color.opacity(peak * dim(x, f))]),
+            let a = peak * clear(CGRect(x: p1.x, y: p0.y, width: p0.x - p1.x, height: len), f)
+            ctx.stroke(p, with: .linearGradient(Gradient(colors: [color.color.opacity(print && fine ? 0.25 * a : 0), color.color.opacity(a)]),
                                                 startPoint: p0, endPoint: p1),
-                       style: StrokeStyle(lineWidth: fine ? 0.8 : 1, lineCap: .round))
+                       style: StrokeStyle(lineWidth: fine ? (print ? 1.2 : 0.8) : 1, lineCap: .round))
         }
     }
 
@@ -456,24 +492,24 @@ public enum SceneArt {
             let y = -4 + ph * (f.h + 8)
             let x = CGFloat(rnd(i, 1)) * f.w + f.u * 0.03 * CGFloat(sin(t * 0.9 + Double(i)))
             let r = CGFloat(0.8 + rnd(i, 2) * 1.2) * scale
-            ctx.fill(circle(CGPoint(x: x, y: y), r), with: .color(.white.opacity((print ? 0.7 : 0.85) * dim(x, f))))
+            ctx.fill(circle(CGPoint(x: x, y: y), r), with: .color(.white.opacity((print ? 0.7 : 0.85) * clear(dot(CGPoint(x: x, y: y), r), f))))
         }
     }
 
     private static func drawFog(_ f: Frame, _ t: Double, _ print: Bool, _ ctx: inout GraphicsContext) {
         var pane = ctx
-        pane.clip(to: Path(f.rightPane))
-        for (i, y) in [0.38, 0.65, 0.92].enumerated() {
+        pane.clip(to: Path(f.pane))
+        for (i, y) in [0.25, 0.55, 0.85].enumerated() {
             let drift = f.u * 0.08 * CGFloat(sin(2 * .pi * t / 9 + Double(i) * 1.7))
-            let cy = f.h * CGFloat(y)
+            let cy = f.paneY(CGFloat(y))
             if print {
-                let x0 = f.rightPane.minX + drift
+                let x0 = f.pane.minX + drift
                 var p = Path(); p.move(to: CGPoint(x: x0, y: cy)); p.addLine(to: CGPoint(x: f.w + f.u * 0.1, y: cy))
                 pane.stroke(p, with: .color(.white.opacity(0.35)),
                             style: StrokeStyle(lineWidth: 1, lineCap: .round, dash: [f.u * 0.08, f.u * 0.05],
                                                dashPhase: CGFloat(t * 6)))
             } else {
-                let c = CGPoint(x: f.w * 0.82 + drift, y: cy)
+                let c = CGPoint(x: f.pane.minX + f.pane.width * 0.6 + drift, y: cy)
                 let r = f.u * 0.3
                 var wisp = pane
                 wisp.scaleBy(x: 1, y: 0.35)
@@ -485,11 +521,11 @@ public enum SceneArt {
 
     private static func drawWind(_ f: Frame, _ t: Double, _ n: Int, _ print: Bool, _ ctx: inout GraphicsContext) {
         var pane = ctx
-        pane.clip(to: Path(f.rightPane))
-        for (i, y) in [0.33, 0.52, 0.7].enumerated() {
+        pane.clip(to: Path(f.pane))
+        for (i, y) in [0.3, 0.58, 0.86].enumerated() {
             let sway = f.w * 0.03 * CGFloat(sin(2 * .pi * t / 5 + Double(i) * 1.2))
-            let p0 = CGPoint(x: f.rightPane.minX + f.u * 0.05 + sway, y: f.h * CGFloat(y))
-            let p1 = CGPoint(x: f.w + f.u * 0.05, y: f.h * CGFloat(y) - f.u * 0.05)
+            let p0 = CGPoint(x: f.pane.minX + f.u * 0.05 + sway, y: f.paneY(CGFloat(y)))
+            let p1 = CGPoint(x: f.pane.maxX + (f.wide ? 0 : f.u * 0.05), y: p0.y - f.u * 0.05)
             var p = Path()
             p.move(to: p0)
             p.addQuadCurve(to: p1, control: CGPoint(x: (p0.x + p1.x) / 2, y: p0.y + f.u * 0.08))
@@ -502,7 +538,7 @@ public enum SceneArt {
             let ph = CGFloat(frac(t / dur + rnd(i, 4)))
             let x = -f.u * 0.05 + ph * (f.w + f.u * 0.1)
             let y = f.h * CGFloat(0.2 + rnd(i, 2) * 0.6) + f.u * 0.04 * CGFloat(sin(Double(ph) * 2 * .pi))
-            ctx.fill(circle(CGPoint(x: x, y: y), 1), with: .color(.white.opacity(0.5 * dim(x, f))))
+            ctx.fill(circle(CGPoint(x: x, y: y), 1), with: .color(.white.opacity(0.5 * clear(dot(CGPoint(x: x, y: y), 1), f))))
         }
     }
 
@@ -527,10 +563,10 @@ public enum SceneArt {
                 shape = Path(ellipseIn: CGRect(x: -size, y: -size * 0.55, width: 2 * size, height: 1.1 * size))
             }
             let placed = shape.applying(CGAffineTransform(rotationAngle: angle).concatenating(CGAffineTransform(translationX: x, y: y)))
-            let d = dim(x, f)
+            let d = clear(placed.boundingRect, f)
             if print {
                 if i == 0 {
-                    ctx.fill(placed, with: .color(accent.color))
+                    ctx.fill(placed, with: .color(accent.color.opacity(d)))
                 } else {
                     ctx.stroke(placed, with: .color(.white.opacity(0.6 * d)), lineWidth: 0.8)
                 }

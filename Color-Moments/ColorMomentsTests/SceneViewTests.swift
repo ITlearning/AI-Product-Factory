@@ -52,17 +52,93 @@ final class SceneViewTests: XCTestCase {
         XCTAssertEqual(SceneArt.sky(.rain, .print, tintHex: "#B12E12"), SceneArt.sky(.rain, .print), "판화엔 사진 색을 섞지 않는다")
     }
 
-    /// 5A — 해·달·노을·빛은 글자 없는 오른쪽에만.
+    /// 5A — 해·달·노을·지평선·빛·바람 줄은 글자 자리(카드 모양별 실제 글자 자리 전체) 밖에만.
     func testBrightMarksStayOutOfTextZone() {
         for size in sizes {
-            let zone = SceneArt.textZone(in: size)
+            let rects = SceneArt.textRects(in: size)
             for kind in SceneKind.allCases {
                 for style in SceneStyle.allCases {
                     for box in SceneArt.brightBounds(kind, style, in: size) {
-                        XCTAssertGreaterThanOrEqual(box.minX, zone.maxX - 0.01, "\(kind)/\(style) \(size) \(box)")
+                        for text in rects {
+                            let hit = box.intersection(text)
+                            XCTAssertTrue(hit.isNull || hit.width < 0.01 || hit.height < 0.01,
+                                          "\(kind)/\(style) \(size) \(box) 가 글자 자리 \(text) 와 겹친다")
+                        }
                     }
                 }
             }
+        }
+    }
+
+    /// 글자 자리 정의가 실제 글자를 다 덮는다 — 눈으로 보기 시트의 세 배치(위젯·목록 카드·오늘의 한 장)를 장면 없이 그려 본다.
+    func testTextRectsCoverRenderedText() throws {
+        Face.ensureRegistered()
+        let layouts: [(String, CGSize, (String, SceneKind) -> AnyView)] = [
+            ("widget158", CGSize(width: 158, height: 158), { w, k in AnyView(self.widget(k, .wash, w, 0, scene: false)) }),
+            ("widget170", CGSize(width: 170, height: 170), { w, k in AnyView(self.widget(k, .wash, w, 0, scene: false, side: 170)) }),
+            ("card", CGSize(width: 354, height: 96), { w, k in AnyView(self.card(k, .wash, w, 0, scene: false)) }),
+            ("hero", CGSize(width: 354, height: 232), { w, k in AnyView(self.hero(k, w, scene: false)) })]
+        for (name, size, make) in layouts {
+            let rects = SceneArt.textRects(in: size)
+            for kind in SceneKind.allCases {
+                let px = try pixels(make(Self.words[kind] ?? "", kind), size)
+                var outside = 0
+                for y in 0..<px.h {
+                    for x in 0..<px.w where px.max(x, y) > 10 {
+                        let p = CGPoint(x: (Double(x) + 0.5) / px.scale, y: (Double(y) + 0.5) / px.scale)
+                        if !rects.contains(where: { $0.contains(p) }) { outside += 1 }
+                    }
+                }
+                XCTAssertEqual(outside, 0, "\(name) \(kind) 글자 픽셀 \(outside)개가 글자 자리 밖")
+            }
+        }
+    }
+
+    /// 5A — 글자 자리 안엔 하늘·띠만: 장면을 다 그린 것과 하늘만 그린 것이 같고, 입자까지 넣어도 secondary 4.5:1.
+    func testNothingDrawnInsideTextRects() throws {
+        var worst = Double.infinity
+        var report: [String] = []
+        for size in sizes {
+            let rects = SceneArt.textRects(in: size)
+            for kind in SceneKind.allCases {
+                for style in SceneStyle.allCases {
+                    let sky = try pixels(canvas(kind, style, SceneArt.stillPhase, marks: false), size)
+                    for t in [SceneArt.stillPhase, SceneArt.stillPhase + 0.6, SceneArt.stillPhase + 2.3] {
+                        let full = try pixels(canvas(kind, style, t, marks: true), size)
+                        var diff = 0, low = Double.infinity
+                        for y in 0..<full.h {
+                            for x in 0..<full.w {
+                                let p = CGPoint(x: (Double(x) + 0.5) / full.scale, y: (Double(y) + 0.5) / full.scale)
+                                guard rects.contains(where: { $0.contains(p) }) else { continue }
+                                diff = max(diff, full.diff(sky, x, y))
+                                let bg = full.rgb(x, y)
+                                low = min(low, SceneRGB.contrast(captionInk.over(bg, alpha: Tone.secondaryAlpha), bg))
+                            }
+                        }
+                        worst = min(worst, low)
+                        if diff > 3 { report.append("\(kind)/\(style) \(Int(size.width))x\(Int(size.height)) t\(t) +\(diff)") }
+                        XCTAssertGreaterThanOrEqual(low, 4.5, "\(kind)/\(style) \(size) t\(t) 글자 자리 대비 \(low)")
+                    }
+                }
+            }
+        }
+        print("SCENE-TEXT-RECT worst contrast \(String(format: "%.2f", worst)); drawn over text: \(report.joined(separator: ", "))")
+        XCTAssertTrue(report.isEmpty, "글자 자리에 그림이 그려졌다: \(report.joined(separator: ", "))")
+    }
+
+    /// 판화 가는 비도 눈에 보인다 — 또렷이 밝은 픽셀이 판화 비의 80% 이상.
+    func testPrintDrizzleIsVisible() throws {
+        for size in sizes {
+            func lit(_ kind: SceneKind) throws -> Int {
+                let full = try pixels(canvas(kind, .print, SceneArt.stillPhase, marks: true), size)
+                let sky = try pixels(canvas(kind, .print, SceneArt.stillPhase, marks: false), size)
+                var n = 0
+                for y in 0..<full.h { for x in 0..<full.w where full.diff(sky, x, y) >= 90 { n += 1 } }
+                return n
+            }
+            let (drizzle, rain) = (try lit(.drizzle), try lit(.rain))
+            print("SCENE-DRIZZLE \(size) drizzle \(drizzle) rain \(rain)")
+            XCTAssertGreaterThanOrEqual(Double(drizzle), 0.8 * Double(rain), "\(size) 판화 가는 비가 안 보인다")
         }
     }
 
@@ -123,9 +199,7 @@ final class SceneViewTests: XCTestCase {
     func testDumpScenesWhenAsked() throws {
         guard let dir = ProcessInfo.processInfo.environment["SCENE_DUMP"] else { throw XCTSkip("SCENE_DUMP 미지정") }
         Face.ensureRegistered()
-        let words: [SceneKind: String] = [.sun: "아침나절", .dawn: "첫새벽", .dusk: "해거름", .stars: "별밤", .moon: "보름달",
-                                          .rain: "는개", .drizzle: "이슬비", .snow: "함박눈", .fog: "안개", .wind: "건들바람",
-                                          .petals: "꽃비", .leaves: "가랑잎", .frost: "무서리"]
+        let words = Self.words
         for style in SceneStyle.allCases {
             for (index, phase) in [SceneArt.stillPhase, SceneArt.stillPhase + 0.6].enumerated() {
                 let sheet = VStack(alignment: .leading, spacing: 14) {
@@ -145,19 +219,8 @@ final class SceneViewTests: XCTestCase {
             }
         }
         let hero = VStack(spacing: 14) {
-            ForEach([SceneKind.rain, .moon, .dusk, .sun], id: \.self) { kind in
-                ZStack(alignment: .topLeading) {
-                    SceneView(kind, phase: SceneArt.stillPhase)
-                    VStack(alignment: .leading) {
-                        Text("오늘 오후 2:10 · 비").font(Face.caption).foregroundStyle(Tone.secondary)
-                        Spacer()
-                        Text(words[kind] ?? "").font(.custom(Face.serifName, size: 48)).foregroundStyle(Tone.primary)
-                        Text("안개보다 굵고 이슬비보다 가는 비").font(Face.caption).foregroundStyle(Tone.secondary)
-                    }
-                    .padding(EdgeInsets(top: 20, leading: 22, bottom: 20, trailing: 22))
-                }
-                .frame(width: 354, height: 232)
-                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            ForEach([SceneKind.rain, .moon, .dusk, .sun, .dawn, .stars], id: \.self) { kind in
+                self.hero(kind, words[kind] ?? "", scene: true)
             }
         }
         .padding(20).background(Tone.base)
@@ -166,9 +229,33 @@ final class SceneViewTests: XCTestCase {
         try XCTUnwrap(r.uiImage?.pngData()).write(to: URL(fileURLWithPath: dir).appendingPathComponent("scene-hero.png"))
     }
 
-    private func widget(_ kind: SceneKind, _ style: SceneStyle, _ word: String, _ phase: Double) -> some View {
+    private static let words: [SceneKind: String] = [
+        .sun: "아침나절", .dawn: "첫새벽", .dusk: "해거름", .stars: "별밤", .moon: "보름달", .rain: "는개", .drizzle: "이슬비",
+        .snow: "함박눈", .fog: "안개", .wind: "건들바람", .petals: "꽃비", .leaves: "가랑잎", .frost: "무서리"]
+
+    @ViewBuilder private func backdrop(_ kind: SceneKind, _ style: SceneStyle, _ phase: Double, _ scene: Bool) -> some View {
+        if scene { SceneView(kind, style: style, phase: phase) } else { Color.black }
+    }
+
+    private func hero(_ kind: SceneKind, _ word: String, scene: Bool) -> some View {
+        ZStack(alignment: .topLeading) {
+            backdrop(kind, .wash, SceneArt.stillPhase, scene)
+            VStack(alignment: .leading) {
+                Text("오늘 오후 2:10 · 비").font(Face.caption).foregroundStyle(Tone.secondary)
+                Spacer()
+                Text(word).font(.custom(Face.serifName, size: 48)).foregroundStyle(Tone.primary)
+                Text("안개보다 굵고 이슬비보다 가는 비").font(Face.caption).foregroundStyle(Tone.secondary)
+            }
+            .padding(EdgeInsets(top: 20, leading: 22, bottom: 20, trailing: 22))
+        }
+        .frame(width: 354, height: 232)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    }
+
+    private func widget(_ kind: SceneKind, _ style: SceneStyle, _ word: String, _ phase: Double,
+                        scene: Bool = true, side: CGFloat = 158) -> some View {
         ZStack(alignment: .bottomLeading) {
-            SceneView(kind, style: style, phase: phase)
+            backdrop(kind, style, phase, scene)
             VStack(alignment: .leading, spacing: 4) {
                 Text(kind.rawValue).font(Face.time).foregroundStyle(Tone.secondary)
                 Spacer()
@@ -177,13 +264,13 @@ final class SceneViewTests: XCTestCase {
             }
             .padding(14)
         }
-        .frame(width: 158, height: 158)
+        .frame(width: side, height: side)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
-    private func card(_ kind: SceneKind, _ style: SceneStyle, _ word: String, _ phase: Double) -> some View {
+    private func card(_ kind: SceneKind, _ style: SceneStyle, _ word: String, _ phase: Double, scene: Bool = true) -> some View {
         ZStack {
-            SceneView(kind, style: style, phase: phase)
+            backdrop(kind, style, phase, scene)
             VStack {
                 HStack(alignment: .top) {
                     Text(word).font(.custom(Face.serifName, size: 28)).foregroundStyle(Tone.primary)
@@ -201,5 +288,33 @@ final class SceneViewTests: XCTestCase {
         }
         .frame(width: 354, height: 96)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    // MARK: pixels
+
+    private struct Pixels {
+        let w: Int, h: Int, scale: Double
+        let bytes: [UInt8]
+        func at(_ x: Int, _ y: Int, _ c: Int) -> Int { Int(bytes[(y * w + x) * 4 + c]) }
+        func max(_ x: Int, _ y: Int) -> Int { Swift.max(at(x, y, 0), at(x, y, 1), at(x, y, 2)) }
+        func diff(_ o: Pixels, _ x: Int, _ y: Int) -> Int { (0..<3).map { abs(at(x, y, $0) - o.at(x, y, $0)) }.max() ?? 0 }
+        func rgb(_ x: Int, _ y: Int) -> SceneRGB { SceneRGB(Double(at(x, y, 0)) / 255, Double(at(x, y, 1)) / 255, Double(at(x, y, 2)) / 255) }
+    }
+
+    private func canvas(_ kind: SceneKind, _ style: SceneStyle, _ t: Double, marks: Bool) -> some View {
+        Canvas(opaque: true) { ctx, size in SceneArt.draw(kind, style, t: t, marks: marks, in: &ctx, size: size) }
+    }
+
+    private func pixels(_ view: some View, _ size: CGSize, scale: Double = 2) throws -> Pixels {
+        let r = ImageRenderer(content: view.frame(width: size.width, height: size.height))
+        r.scale = scale
+        let cg = try XCTUnwrap(r.cgImage)
+        let (w, h) = (cg.width, cg.height)
+        var bytes = [UInt8](repeating: 0, count: w * h * 4)
+        let ctx = try XCTUnwrap(CGContext(data: &bytes, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                          space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        return Pixels(w: w, h: h, scale: scale, bytes: bytes)
     }
 }
