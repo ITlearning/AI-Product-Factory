@@ -240,7 +240,7 @@ public struct SkyMeteor: Equatable, Sendable {
     }
 }
 
-/// 글자 자리 — 작은 글자(secondary 64%, 4.5:1)와 큰 말(명조 48 이상, primary 92%, 3:1)을 나눈다.
+/// 글자 자리 — 작은 글자(secondary 64%, 4.5:1 · 맑은 낮은 primary 3:1 + 그림자)와 큰 말(명조 48 이상, primary 92%, 3:1)을 나눈다.
 public struct SkyTexts: Equatable, Sendable {
     public var small: [CGRect]
     public var big: [CGRect]
@@ -317,7 +317,7 @@ public struct SkyFrame: Equatable {
         let m = Self.moonShrink * CGFloat(moonScale)
         if h > 1.3 * w {
             return night ? (CGPoint(x: 0.84 * w, y: 0.085 * h), 15 * m, true)
-                         : (CGPoint(x: 0.78 * w, y: 0.025 * h), 8, true)
+                         : (CGPoint(x: 0.84 * w, y: 0.0 * h), 8, true)
         }
         let f = SceneArt.Frame(size)
         if f.wide { return (CGPoint(x: f.pane.midX, y: night ? 0.42 * h : 0.12 * h), night ? 0.11 * u * m : 0.07 * u, true) }
@@ -328,15 +328,15 @@ public struct SkyFrame: Equatable {
     /// 밝은 면 비율(0 삭 ~ 1 보름).
     var moonLit: Double { 0.5 - 0.5 * cos(moonAge / Celestial.synodicMonth * 2 * .pi) }
 
-    /// 작은 글자 자리 위 하늘의 최대 상대 휘도 — 흰 64%(secondary) 글자가 4.5:1 을 넘게.
-    static let textLuminanceCap: Float = 0.07
-    /// 큰 말 자리 — 흰 92%(primary) 명조 48 이상이 3:1 을 넘게(맑은 낮만, 다른 장면은 작은 글자와 같게 둔다).
-    static let bigTextLuminanceCap: Float = 0.24
-    /// 맑은 낮 작은 글자 자리 — 밝은 하늘 위 작은 글자는 primary(92%)로 쓰고 4.5:1. secondary 로 4.5 를 내려면 하늘을 3배 넘게 눌러야 해서.
-    static let dayTextLuminanceCap: Float = 0.155
+    /// 글자 자리 하늘을 눌러 맞출 최대 상대 휘도. nil = 누르지 않는다(하늘만으로 기준을 넘는다 — 누르면 글자 뒤에 얼룩이 보인다).
+    static func textPress(_ scene: SkyScene) -> Float? { scene == .clearDay ? nil : 0.07 }
+    /// 구름 장면은 글자 둘레 구름의 달빛·빛번짐도 덜어 낸다.
+    static func dimsLightNearText(_ scene: SkyScene) -> Bool { scene == .nightCloudy || scene == .rain }
 
     /// 작은 글자의 흰 불투명도 — 맑은 낮만 primary.
     public var smallTextAlpha: Double { scene == .clearDay ? Tone.primaryAlpha : Tone.secondaryAlpha }
+    /// 작은 글자 대비 기준(하늘만으로) — 맑은 낮은 3:1 에 글자 그림자(.skyText)를 보탠다.
+    public var smallTextContrast: Double { scene == .clearDay ? 3 : 4.5 }
 
     /// 22° 햇무리 반지름(pt) — 남극 화면에서 해부터 큰 숫자를 지나는 원(폭의 ≈0.65).
     var haloRadius: CGFloat {
@@ -353,14 +353,13 @@ public struct SkyFrame: Equatable {
         u.light = [Float(l.center.x), Float(l.center.y), Float(l.radius), l.drawn ? 1 : 0]
         u.quality = [Float(budget.cloudSteps), Float(budget.lightSteps), budget.detail ? 1 : 0, Float(budget.farSteps)]
         let bloom: Float = scene == .clearDay ? 0.2 : (scene.isNight ? 0.3 : 0.15)
-        u.tone = [headroom, Self.textLuminanceCap, Float(0.6) / 255, bloom]
+        let press = Self.textPress(scene)
+        u.tone = [headroom, Self.dimsLightNearText(scene) ? 1 : 0, Float(0.6) / 255, bloom]
         let small = Array(texts.small.prefix(4)), big = Array(texts.big.prefix(4 - small.count))
         let rects = small + big
         let feather = Float((SceneArt.Frame(size).wide ? 0.45 : 0.18) * min(size.width, size.height))
         u.parallax = [Float(tilt.x), Float(tilt.y), Float(rects.count), feather]
-        let day = scene == .clearDay
-        u.caps = [day ? Self.dayTextLuminanceCap : Self.textLuminanceCap, day ? Self.bigTextLuminanceCap : Self.textLuminanceCap,
-                  day ? 40 : feather, day ? 48 : feather]
+        u.caps = [press ?? 0, press ?? 0, feather, feather]
         for i in 0..<big.count { u.textBig[small.count + i] = 1 }
         let glow = SceneArt.Frame(size).wide ? 1.3 * size.height : max(size.width, min(size.height, 1.2 * size.width))
         u.sun = [Float(haloRadius), Float(glow),
@@ -816,6 +815,19 @@ public enum SkySnapshot {
         }
         return (renderer.cloudRenders, n)
     }
+}
+
+// MARK: - 하늘 위 글자
+
+public extension View {
+    /// 하늘 위 글자 — 하늘은 누르지 않고 글자 윤곽에만 옅은 그림자. 「말」 칸·생일 카드·위젯이 같이 쓴다.
+    func skyText() -> some View { shadow(color: .black.opacity(SkyTextShadow.opacity), radius: SkyTextShadow.radius, x: 0, y: SkyTextShadow.y) }
+}
+
+public enum SkyTextShadow {
+    public static let opacity = 0.22
+    public static let radius: CGFloat = 8
+    public static let y: CGFloat = 1
 }
 
 // MARK: - 기울기 시차

@@ -7,7 +7,7 @@ struct SkyU {
     float4 view;      // pt w, h, 시간 t, 장면
     float4 light;     // 해·달 pt x, y, 원판 반지름 pt, 화면에 그림(1)/안 그림(0)
     float4 quality;   // 구름 걸음, 빛 걸음, 잔결(0/1), 먼 층 걸음
-    float4 tone;      // EDR 여유, 글자 자리 최대 밝기, 그레인, 블룸 세기
+    float4 tone;      // EDR 여유, 글자 둘레 빛 누르기(0~1), 그레인, 블룸 세기
     float4 parallax;  // 기울기 pt x, y, 글자 자리 수, 글자 자리 번짐 pt
     float4 rays;      // 빛줄기 걸음, 빛줄기 세기, 프레임 번호, 빗방울 수
     float4 moon;      // 달 나이(일), 명암 경계 기울기(rad), 지구조 세기, 텍스처 있음(1)
@@ -15,13 +15,14 @@ struct SkyU {
     float4 meteor1;   // 꼬리 길이 pt, 세기(0 = 없음), 굵기 pt, 별 층 수(1~3)
     float4 blend;     // 구름 두 장 섞기 w, t - tA, tB - t, 구름 흐름 pt/초
     float4 sun;       // 햇무리 반지름 pt, 눈부심 길이 pt, 새털구름 옥타브, 햇무리 얼룩(1)
-    float4 caps;      // 작은 글자 최대 밝기, 큰 말 최대 밝기, 작은 글자 번짐 pt, 큰 말 번짐 pt
+    float4 caps;      // 작은 글자 최대 밝기, 큰 말 최대 밝기(0 = 안 누름), 작은 글자 번짐 pt, 큰 말 번짐 pt
     float4 textBig;   // 글자 자리마다 큰 말(1)/작은 글자(0)
     float4 text[4];   // 글자 자리 pt x0, y0, x1, y1
 };
 
 constant float WORLD = 320.0;   // pt — 같은 하늘이 카드 크기만큼 잘려 들어가게 모든 무늬를 pt 로 잰다
 constant float SLAB = 0.55;     // 구름층 두께(월드 단위)
+#define HALO_AMP 0.13
 
 struct VOut { float4 pos [[position]]; float2 uv; };
 
@@ -83,8 +84,7 @@ static float fbm2(float2 p, int oct) {
 }
 
 // which: 0 전부, 1 작은 글자만, 2 큰 말만
-// soft: 글자 자리를 높이 절반만큼 둥글게 부풀린 알약 + 가우시안 꼬리(맑은 낮 — 네모 테두리가 안 보이게)
-static float textMask(constant SkyU& u, float2 pt, float spread = 1.0, int which = 0, float feather = 0.0, bool soft = false) {
+static float textMask(constant SkyU& u, float2 pt, float spread = 1.0, int which = 0, float feather = 0.0) {
     float m = 0.0;
     int n = int(u.parallax.z);
     float f = max((feather > 0.0 ? feather : u.parallax.w) * spread, 1.0);
@@ -94,12 +94,7 @@ static float textMask(constant SkyU& u, float2 pt, float spread = 1.0, int which
         float4 r = u.text[i];
         float2 d = max(r.xy - pt, pt - r.zw);
         float sd = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-        if (soft) {
-            sd -= 0.5 * (r.w - r.y);
-            m = max(m, sd <= 0.0 ? 1.0 : exp(-sd * sd / (f * f)));
-        } else {
-            m = max(m, 1.0 - smoothstep(0.0, f, sd));
-        }
+        m = max(m, 1.0 - smoothstep(0.0, f, sd));
     }
     return m;
 }
@@ -171,18 +166,24 @@ static float moonLitFraction(constant SkyU& u) {
 static float3 skyColor(int scene, float2 uv, float2 pt, constant SkyU& u) {
     float y = saturate(uv.y);
     float d = distance(pt, u.light.xy) / WORLD;
-    float shade = 1.0 - 0.85 * textMask(u, pt, 2.5);
+    float shade = 1.0 - 0.85 * u.tone.y * textMask(u, pt, 2.5);
     if (scene == 0 || scene == 3) {
         float k = pow(moonLitFraction(u), 1.5);
-        float3 c = scene == 0
-            ? mix(lin(float3(0.085, 0.09, 0.17)), lin(float3(0.19, 0.205, 0.33)), smoothstep(-0.1, 1.1, y))
-            : mix(lin(float3(0.07, 0.08, 0.17)), lin(float3(0.23, 0.24, 0.42)), smoothstep(-0.15, 1.15, y));
+        float3 c;
+        if (scene == 0) {
+            c = mix(lin(float3(0.06, 0.07, 0.15)), lin(float3(0.17, 0.205, 0.33)), smoothstep(-0.1, 1.1, y));
+        } else {
+            c = mix(lin(float3(0.03, 0.035, 0.11)), lin(float3(0.115, 0.12, 0.215)), smoothstep(0.0, 0.5, y));
+            c = mix(c, lin(float3(0.18, 0.25, 0.41)), smoothstep(0.4, 1.05, y));
+        }
         c += lin(float3(0.62, 0.66, 0.85)) * (0.10 * exp(-d * 2.2) + 0.03 * exp(-d * 0.6)) * shade * (0.15 + 0.85 * k);
         return c;
     }
     if (scene == 1) {
-        float3 c = mix(lin(float3(0.33, 0.52, 0.76)), lin(float3(0.34, 0.53, 0.75)), smoothstep(0.0, 0.5, y));
-        c = mix(c, lin(float3(0.52, 0.67, 0.84)), smoothstep(0.55, 1.1, y));
+        // 카드는 같은 하늘의 위쪽만 — 짧은 카드 아래가 밝은 지평선 색이 되면 글자가 묻힌다.
+        y = saturate(pt.y / max(u.view.y, 640.0));
+        float3 c = mix(lin(float3(0.25, 0.46, 0.73)), lin(float3(0.27, 0.48, 0.72)), smoothstep(0.0, 0.5, y));
+        c = mix(c, lin(float3(0.5, 0.66, 0.84)), smoothstep(0.55, 1.1, y));
         return c;
     }
     return mix(lin(float3(0.14, 0.165, 0.195)), lin(float3(0.22, 0.255, 0.285)), y);
@@ -331,7 +332,7 @@ fragment CloudOut skyClouds(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]]
     bool detail = u.quality.z > 0.5;
     float3 sky = skyColor(scene, in.uv, pt, u);
 
-    float shade = 1.0 - 0.8 * textMask(u, pt, 2.5);
+    float shade = 1.0 - 0.8 * u.tone.y * textMask(u, pt, 2.5);
     float4 nearL = marchLayer(nz, layerFor(scene, 1), world, lw, t, tilt, steps, lsteps, detail, jitter, shade);
     float4 farL = float4(0, 0, 0, 1);
     if (nearL.a > 0.02) {
@@ -365,20 +366,23 @@ static float3 starField(constant SkyU& u, float2 pt, float t, float pxPerPt, flo
         if (textMask(u, pt - dv, 0.3) > 0.1 + 0.85 * hash12(cid + 7.7 + fl)) continue;
         float rk = hash12(cid + 5.3 + 11.0 * fl);
         float mag = l == 0 ? 0.14 + 0.25 * rk : (l == 1 ? 0.4 + 1.4 * rk * rk * rk : 1.3 + 5.5 * pow(rk, 4.0));
-        float sig = 0.38 + 0.4 * sqrt(mag);
+        float sig = 0.42 + 0.38 * sqrt(min(mag, 4.0)) + 0.3 * smoothstep(0.3, 1.0, mag) + 0.45 * smoothstep(1.0, 2.5, mag);
         // 화면 픽셀보다 작게 그리면 흐를 때 픽셀 사이에서 깜빡인다 — 0.6px 아래로는 넓히고 그만큼 어둡게.
         float sg = max(sig, 0.6 * px);
         float r2 = dot(dv, dv);
         // 밝은 별은 더 밝게가 아니라 더 크게 — 1 을 넘기면 블룸이 별 둘레에 흐린 얼룩을 만든다.
-        float s = min(mag, 0.95) * (sig * sig) / (sg * sg) * exp(-r2 / (sg * sg));
-        if (mag > 0.9) s += min(mag, 3.0) * 0.04 * exp(-r2 / (sig * sig * 6.0));
+        float core = min(mag, 0.95) * (sig * sig) / (sg * sg) * exp(-r2 / (sg * sg));
+        float hr = sig * 3.0;
+        float halo = HALO_AMP * smoothstep(0.3, 2.2, mag) * exp(-r2 / (hr * hr));
         float ph = hash12(cid + 9.1 + 3.0 * fl);
         float x = t / (5.0 + 5.0 * ph) + ph * 37.0;
         float n = 0.55 * tnoise(x) + 0.3 * tnoise(x * 1.93 + 11.0) + 0.15 * tnoise(x * 3.7 + 5.0);
         float depth = l == 0 ? 0.7 : (l == 1 ? mix(0.6, 0.35, rk) : mix(0.35, 0.12, saturate(mag / 3.0)));
-        s *= 1.0 - depth * smoothstep(0.3, 0.75, n);
-        float3 tint = mix(float3(1.0, 0.9, 0.78), float3(0.8, 0.88, 1.0), hash12(cid + 2.2 + fl));
-        acc += s * mix(float3(1.0), tint, 0.4);
+        float tw = 1.0 - depth * smoothstep(0.3, 0.75, n);
+        float hk = hash12(cid + 2.2 + fl);
+        float3 tint = hk < 0.5 ? float3(1.0) : (hk < 0.75 ? float3(0.7, 0.82, 1.0)
+                    : (hk < 0.88 ? float3(1.0, 0.9, 0.76) : float3(1.0, 0.76, 0.84)));
+        acc += (core * mix(float3(1.0), tint, 0.45) + halo * tint) * tw;
     }
     return acc;
 }
@@ -461,7 +465,7 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     float t = u.view.z;
     float pxPerPt = u.res.x / u.view.x;
     float mask = textMask(u, pt);
-    float shade = 1.0 - 0.85 * textMask(u, pt, 2.5);
+    float shade = 1.0 - 0.85 * u.tone.y * textMask(u, pt, 2.5);
     float3 c = skyColor(scene, in.uv, pt, u);
     float flow = u.blend.w / u.view.x;
     float4 cl = mix(cloudTaps(colA, trA, in.uv - float2(flow * u.blend.y, 0.0)),
@@ -490,9 +494,9 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         float x = (d - R) / (R * 0.07);
         float3 ofs = float3(0.0, 0.45, 0.95);
         float3 band = smoothstep(ofs - 0.7, ofs + 0.25, float3(x)) * exp(-max(float3(x) - ofs, 0.0) * float3(0.9, 0.75, 0.55));
-        c += band * float3(0.075, 0.065, 0.07) * patch;
-        float glow = 0.95 * exp(-d / (G * 0.035)) + 0.55 * exp(-d / (G * 0.1)) + 0.26 * exp(-d / (G * 0.26))
-                   + 0.09 * exp(-d / (G * 0.65));
+        c += band * float3(0.055, 0.048, 0.052) * patch;
+        float glow = 0.95 * exp(-d / (G * 0.035)) + 0.55 * exp(-d / (G * 0.1)) + 0.2 * exp(-d / (G * 0.18))
+                   + 0.05 * exp(-d / (G * 0.5));
         float core = exp(-(d * d) / (r * r)) * 9.0 + exp(-d / (r * 1.3)) * 2.5;
         c += lin(float3(1.0, 0.975, 0.93)) * core + lin(float3(0.93, 0.96, 1.0)) * glow;
     }
@@ -510,6 +514,8 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         float a = smoothstep(0.5, 0.78, body) * (0.3 + 0.7 * smoothstep(0.35, 0.75, fiber));
         a *= smoothstep(0.25, 0.6, vnoise(pp / (WORLD * 0.7) + float2(t * 0.004, 5.1)));
         a *= 0.5 + 0.5 * smoothstep(0.85, 0.25, in.uv.y);
+        // 글자 자리에선 새털구름만 걷는다 — 하늘색은 그대로라 얼룩이 안 생긴다.
+        a *= 1.0 - 0.92 * textMask(u, pt, 1.6);
         float lit = 0.62 + 1.6 * exp(-d / (u.sun.y * 0.16));
         c = mix(c, lin(float3(0.92, 0.95, 1.0)) * lit, a * 0.55);
     }
@@ -691,7 +697,7 @@ fragment float4 skyFinal(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     int scene = int(u.view.w);
     float2 pt = in.uv * u.view.xy;
     float3 c = hdr.sample(s, in.uv).rgb;
-    float shade = 1.0 - 0.85 * textMask(u, pt, 2.5, scene == 1 ? 1 : 0);
+    float shade = 1.0 - 0.85 * u.tone.y * textMask(u, pt, 2.5);
     c += (bloom.sample(s, in.uv).rgb * u.tone.w + rays.sample(s, in.uv).rgb) * shade;
 
     if (scene == 1 && u.light.w > 0.5) {
@@ -712,15 +718,14 @@ fragment float4 skyFinal(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     }
 
     for (int k = 1; k <= 2; k++) {
-        float m = textMask(u, pt, 1.0, k, k == 1 ? u.caps.z : u.caps.w, scene == 1);
+        float m = textMask(u, pt, 1.0, k, k == 1 ? u.caps.z : u.caps.w);
         if (m <= 0.0) continue;
         float cap = k == 1 ? u.caps.x : u.caps.y, knee = cap * 0.75;
+        if (cap <= 0.0) continue;
         float L = lum(c);
         float Lc = L < knee ? L : knee + (cap - knee) * (1.0 - exp(-(L - knee) / (cap - knee)));
         float ratio = mix(1.0, Lc / max(L, 1e-6), m);
         c *= ratio;
-        // 낮은 누르면 회색으로 죽는다 — 눌린 만큼 채도를 올려 더 깊은 하늘색으로.
-        if (scene == 1) c = max(lum(c) + (c - lum(c)) * (1.0 + 0.9 * (1.0 - ratio)), 0.0);
     }
     float L;
 
