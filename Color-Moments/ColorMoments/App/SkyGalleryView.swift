@@ -26,7 +26,7 @@ struct SkyGalleryView: View {
                 Picker("장면", selection: $scene) {
                     ForEach(SkyScene.allCases) { Text($0.name).tag($0) }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(.menu)
                 HStack {
                     Toggle("움직임", isOn: $animating)
                     Toggle("지금 장면도", isOn: $showsOld)
@@ -119,11 +119,20 @@ struct SkyCardText: View {
         case .clearDay: ("햇귀", "해가 처음 솟을 때의 빛, 사방으로 퍼진 햇살")
         case .rain: ("작달비", "굵고 세차게 퍼붓는 비")
         case .clearNight: ("미리내", "은하수를 이르는 우리말")
+        case .dawn: ("갓밝이", "날이 막 밝을 무렵")
+        case .dusk: ("해거름", "해가 거의 넘어갈 무렵")
+        case .drizzle: ("는개", "안개보다 굵고 이슬비보다 가는 비")
+        case .snow: ("함박눈", "굵고 탐스럽게 내리는 눈")
+        case .fog: ("물안개", "강이나 호수에 피어오르는 안개")
+        case .wind: ("건들바람", "초가을에 선들선들 부는 바람")
+        case .petals: ("꽃보라", "떨어지며 바람에 흩날리는 꽃잎")
+        case .leaves: ("가랑잎", "말라서 떨어진 넓은 잎")
+        case .frost: ("서리꽃", "유리창에 서린 김이 얼어 생긴 무늬")
         }
     }
 
-    /// 맑은 낮(밝은 하늘) 위 작은 글자는 primary — SkyFrame.smallTextAlpha.
-    static func small(_ s: SkyScene) -> Color { s == .clearDay ? Tone.primary : Tone.secondary }
+    /// 밝은 하늘 위 작은 글자는 primary — SkyFrame.smallTextAlpha.
+    static func small(_ s: SkyScene) -> Color { s.brightSky ? Tone.primary : Tone.secondary }
 
     var body: some View {
         let (word, meaning) = Self.sample(scene)
