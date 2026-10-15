@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-// SkyView.swift 의 SkyUniforms 와 같은 순서·크기(float4 × 15). 하나를 고치면 둘 다 고친다.
+// SkyView.swift 의 SkyUniforms 와 같은 순서·크기(float4 × 18). 하나를 고치면 둘 다 고친다.
 struct SkyU {
     float4 res;       // 그리는 대상 px w, h, 1/w, 1/h
     float4 view;      // pt w, h, 시간 t, 장면
@@ -14,6 +14,9 @@ struct SkyU {
     float4 meteor0;   // 별똥별 머리 pt x, y, 나아가는 방향 x, y
     float4 meteor1;   // 꼬리 길이 pt, 세기(0 = 없음), 굵기 pt, 별 층 수(1~3)
     float4 blend;     // 구름 두 장 섞기 w, t - tA, tB - t, 구름 흐름 pt/초
+    float4 sun;       // 햇무리 반지름 pt, 눈부심 길이 pt, 새털구름 옥타브, 햇무리 얼룩(1)
+    float4 caps;      // 작은 글자 최대 밝기, 큰 말 최대 밝기, 작은 글자 번짐 pt, 큰 말 번짐 pt
+    float4 textBig;   // 글자 자리마다 큰 말(1)/작은 글자(0)
     float4 text[4];   // 글자 자리 pt x0, y0, x1, y1
 };
 
@@ -55,6 +58,11 @@ static float hash11(float p) {
     return fract(p);
 }
 
+static float tnoise(float x) {
+    float i = floor(x), f = fract(x);
+    return mix(hash11(i), hash11(i + 1.0), f * f * (3.0 - 2.0 * f));
+}
+
 static float ign(float2 px) { return fract(52.9829189 * fract(dot(px, float2(0.06711056, 0.00583715)))); }
 
 static float vnoise(float2 p) {
@@ -74,15 +82,24 @@ static float fbm2(float2 p, int oct) {
     return s;
 }
 
-static float textMask(constant SkyU& u, float2 pt, float spread = 1.0) {
+// which: 0 전부, 1 작은 글자만, 2 큰 말만
+// soft: 글자 자리를 높이 절반만큼 둥글게 부풀린 알약 + 가우시안 꼬리(맑은 낮 — 네모 테두리가 안 보이게)
+static float textMask(constant SkyU& u, float2 pt, float spread = 1.0, int which = 0, float feather = 0.0, bool soft = false) {
     float m = 0.0;
     int n = int(u.parallax.z);
-    float f = max(u.parallax.w * spread, 1.0);
+    float f = max((feather > 0.0 ? feather : u.parallax.w) * spread, 1.0);
     for (int i = 0; i < n; i++) {
+        bool big = u.textBig[i] > 0.5;
+        if ((which == 1 && big) || (which == 2 && !big)) continue;
         float4 r = u.text[i];
         float2 d = max(r.xy - pt, pt - r.zw);
         float sd = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-        m = max(m, 1.0 - smoothstep(0.0, f, sd));
+        if (soft) {
+            sd -= 0.5 * (r.w - r.y);
+            m = max(m, sd <= 0.0 ? 1.0 : exp(-sd * sd / (f * f)));
+        } else {
+            m = max(m, 1.0 - smoothstep(0.0, f, sd));
+        }
     }
     return m;
 }
@@ -164,8 +181,8 @@ static float3 skyColor(int scene, float2 uv, float2 pt, constant SkyU& u) {
         return c;
     }
     if (scene == 1) {
-        float3 c = mix(lin(float3(0.06, 0.20, 0.47)), lin(float3(0.16, 0.38, 0.68)), pow(y, 1.3));
-        c += lin(float3(1.0, 0.96, 0.88)) * (0.35 * exp(-d * 6.0) + 0.06 * exp(-d * 1.6)) * shade;
+        float3 c = mix(lin(float3(0.33, 0.52, 0.76)), lin(float3(0.34, 0.53, 0.75)), smoothstep(0.0, 0.5, y));
+        c = mix(c, lin(float3(0.52, 0.67, 0.84)), smoothstep(0.55, 1.1, y));
         return c;
     }
     return mix(lin(float3(0.14, 0.165, 0.195)), lin(float3(0.22, 0.255, 0.285)), y);
@@ -329,36 +346,39 @@ fragment CloudOut skyClouds(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]]
 
 // MARK: - 별
 
-static float3 starField(float2 pt, float t, float pxPerPt, float2 tilt, int layers) {
+static float3 starField(constant SkyU& u, float2 pt, float t, float pxPerPt, float2 tilt, int layers) {
     float3 acc = float3(0.0);
+    float px = 1.0 / pxPerPt;
     for (int l = 3 - layers; l < 3; l++) {
-        float cell = l == 0 ? 7.0 : (l == 1 ? 17.0 : 52.0);
-        float prob = l == 0 ? 0.2 : (l == 1 ? 0.3 : 0.5);
-        float sizePt = l == 0 ? 0.32 : (l == 1 ? 0.48 : 0.75);
-        float bright = l == 0 ? 0.35 : (l == 1 ? 0.9 : 2.6);
-        float speed = 1.15 + 0.15 * float(l);
-        float2 p = pt + tilt * (0.15 + 0.35 * float(l)) + float2(t * speed, 0.0);
+        float fl = float(l);
+        float cell = l == 0 ? 15.0 : (l == 1 ? 31.0 : 71.0);
+        float prob = l == 0 ? 0.1 : (l == 1 ? 0.5 : 0.6);
+        float speed = 1.15 + 0.15 * fl;
+        float2 p = pt + tilt * (0.15 + 0.35 * fl) + float2(t * speed, 0.0);
+        float dens = smoothstep(0.3, 0.72, fbm2(p / 190.0 + 3.7, 2));
         float2 cid = floor(p / cell);
-        float2 h = hash22(cid + 17.0 * float(l));
-        float pick = hash12(cid * 1.7 + 31.0 * float(l));
-        if (pick > prob) continue;
-        float2 c = (cid + 0.18 + 0.64 * h) * cell;
-        float2 dv = p - c;
-        float sz = max(sizePt, 0.7 / pxPerPt);
-        float rank = hash12(cid + 5.3);
-        float b = bright * (0.45 + 0.55 * rank) * (sizePt / sz);
-        float period = 5.0 + 5.0 * hash12(cid + 9.1);
-        float breath = 0.5 + 0.5 * sin(t * (6.2831853 / period) + h.x * 40.0);
-        float depth = l == 2 ? mix(0.5, 0.35, rank) : (l == 1 ? 0.6 : 0.85);
-        float tw = 1.0 - depth * breath * breath * (3.0 - 2.0 * breath);
-        float s = exp(-dot(dv, dv) / (sz * sz)) * b * tw;
-        if (l == 2 && pick < prob * 0.14) {
-            float2 a = abs(dv);
-            float spike = exp(-a.y / 0.18) * exp(-a.x / 4.5) + exp(-a.x / 0.18) * exp(-a.y / 4.5);
-            s += spike * 0.22 * b * tw;
-        }
-        float3 tint = mix(float3(1.0, 0.86, 0.70), float3(0.74, 0.84, 1.0), hash12(cid + 2.2));
-        acc += s * mix(float3(1.0), tint, 0.55);
+        float pick = hash12(cid * 1.7 + 31.0 * fl);
+        if (pick > prob * (0.2 + 1.6 * dens)) continue;
+        float2 h = hash22(cid + 17.0 * fl);
+        float2 dv = p - (cid + 0.12 + 0.76 * h) * cell;
+        // 글자 둘레의 별은 흐리게가 아니라 통째로 뺀다 — 큰 별을 눌러 두면 흐린 얼룩이 된다.
+        if (textMask(u, pt - dv, 0.3) > 0.1 + 0.85 * hash12(cid + 7.7 + fl)) continue;
+        float rk = hash12(cid + 5.3 + 11.0 * fl);
+        float mag = l == 0 ? 0.14 + 0.25 * rk : (l == 1 ? 0.4 + 1.4 * rk * rk * rk : 1.3 + 5.5 * pow(rk, 4.0));
+        float sig = 0.38 + 0.4 * sqrt(mag);
+        // 화면 픽셀보다 작게 그리면 흐를 때 픽셀 사이에서 깜빡인다 — 0.6px 아래로는 넓히고 그만큼 어둡게.
+        float sg = max(sig, 0.6 * px);
+        float r2 = dot(dv, dv);
+        // 밝은 별은 더 밝게가 아니라 더 크게 — 1 을 넘기면 블룸이 별 둘레에 흐린 얼룩을 만든다.
+        float s = min(mag, 0.95) * (sig * sig) / (sg * sg) * exp(-r2 / (sg * sg));
+        if (mag > 0.9) s += min(mag, 3.0) * 0.04 * exp(-r2 / (sig * sig * 6.0));
+        float ph = hash12(cid + 9.1 + 3.0 * fl);
+        float x = t / (5.0 + 5.0 * ph) + ph * 37.0;
+        float n = 0.55 * tnoise(x) + 0.3 * tnoise(x * 1.93 + 11.0) + 0.15 * tnoise(x * 3.7 + 5.0);
+        float depth = l == 0 ? 0.7 : (l == 1 ? mix(0.6, 0.35, rk) : mix(0.35, 0.12, saturate(mag / 3.0)));
+        s *= 1.0 - depth * smoothstep(0.3, 0.75, n);
+        float3 tint = mix(float3(1.0, 0.9, 0.78), float3(0.8, 0.88, 1.0), hash12(cid + 2.2 + fl));
+        acc += s * mix(float3(1.0), tint, 0.4);
     }
     return acc;
 }
@@ -455,7 +475,7 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         float cover = 0.0;
         float3 moon = float3(0.0);
         if (u.light.w > 0.5) moon = moonLight((pt - lp) / r, r * pxPerPt, u, moonTex, cover);
-        c += starField(pt, t, pxPerPt, u.parallax.xy, int(u.meteor1.w)) * (1.0 - 0.9 * mask) * (1.0 - cover);
+        c += starField(u, pt, t, pxPerPt, u.parallax.xy, int(u.meteor1.w)) * (1.0 - cover);
         c += meteorLight(pt, u, pxPerPt) * (1.0 - 0.5 * mask) * (1.0 - cover);
         if (u.light.w > 0.5) {
             float e = d / r;
@@ -463,30 +483,35 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
             c += lin(float3(0.95, 0.93, 0.88)) * glow * shade;
         }
         c += moon * cover;
-    } else if (scene == 1) {
-        if (u.light.w > 0.5) {
-            float core = exp(-pow(d / r, 4.0));
-            c += lin(float3(1.0, 0.97, 0.9)) * core * 6.0;
-            float ang = atan2(pt.y - lp.y, pt.x - lp.x);
-            float burst = pow(abs(cos(ang * 3.0 + 0.3)), 60.0) + 0.6 * pow(abs(cos(ang * 4.0 + 1.1)), 90.0);
-            c += lin(float3(1.0, 0.95, 0.85)) * burst * exp(-d / (r * 4.0)) * 0.55 * shade;
-            float halo = WORLD * 0.42;
-            float ring = (d - halo) / (WORLD * 0.022);
-            float3 hc = float3(exp(-pow(ring + 0.6, 2.0)), exp(-ring * ring), exp(-pow(ring - 0.6, 2.0)));
-            c += hc * 0.045 * smoothstep(WORLD * 0.9, WORLD * 0.2, d) * shade;
-        }
+    } else if (scene == 1 && u.light.w > 0.5) {
+        float R = u.sun.x, G = u.sun.y;
+        float patch = u.sun.w > 0.5 ? 0.45 + 0.9 * vnoise(pt / (R * 0.35) + 2.3) : 0.9;
+        c *= 1.0 - 0.12 * smoothstep(R * 1.0, R * 0.55, d) * smoothstep(R * 0.12, R * 0.45, d);
+        float x = (d - R) / (R * 0.07);
+        float3 ofs = float3(0.0, 0.45, 0.95);
+        float3 band = smoothstep(ofs - 0.7, ofs + 0.25, float3(x)) * exp(-max(float3(x) - ofs, 0.0) * float3(0.9, 0.75, 0.55));
+        c += band * float3(0.075, 0.065, 0.07) * patch;
+        float glow = 0.95 * exp(-d / (G * 0.035)) + 0.55 * exp(-d / (G * 0.1)) + 0.26 * exp(-d / (G * 0.26))
+                   + 0.09 * exp(-d / (G * 0.65));
+        float core = exp(-(d * d) / (r * r)) * 9.0 + exp(-d / (r * 1.3)) * 2.5;
+        c += lin(float3(1.0, 0.975, 0.93)) * core + lin(float3(0.93, 0.96, 1.0)) * glow;
     }
 
     c = c * T + cl.rgb;
 
     if (scene == 1) {
-        float2 q = (pt + u.parallax.xy * 0.3) / WORLD * float2(0.8, 2.6) + float2(t * 0.012, 0.0);
-        float2 warp = float2(fbm2(q * 1.3 + 1.7, 4), fbm2(q * 1.3 + 9.2, 4)) - 0.5;
-        float body = fbm2(q + warp * 1.4, 5);
-        float fiber = fbm2(float2(q.x * 0.7, q.y * 7.0) + warp * 3.0 + 4.1, 5);
-        float a = smoothstep(0.48, 0.8, body) * (0.35 + 0.65 * smoothstep(0.3, 0.75, fiber));
-        float lit = 0.28 + 1.1 * exp(-d / (WORLD * 0.45)) * shade;
-        c = mix(c, lin(float3(0.86, 0.9, 0.97)) * lit, a * 0.55);
+        float2 dir = normalize(float2(1.0, -0.42));
+        float2 pp = pt + u.parallax.xy * 0.3;
+        float2 q = float2(dot(pp, dir), dot(pp, float2(-dir.y, dir.x))) / WORLD * float2(0.7, 2.9) + float2(t * 0.012, 0.0);
+        int oc = int(u.sun.z);
+        float2 warp = float2(fbm2(q * 1.3 + 1.7, oc - 1), fbm2(q * 1.3 + 9.2, oc - 1)) - 0.5;
+        float body = fbm2(q * float2(1.0, 0.8) + warp * 1.2, oc);
+        float fiber = fbm2(float2(q.x * 0.5, q.y * 9.0) + warp * 3.5 + 4.1, oc);
+        float a = smoothstep(0.5, 0.78, body) * (0.3 + 0.7 * smoothstep(0.35, 0.75, fiber));
+        a *= smoothstep(0.25, 0.6, vnoise(pp / (WORLD * 0.7) + float2(t * 0.004, 5.1)));
+        a *= 0.5 + 0.5 * smoothstep(0.85, 0.25, in.uv.y);
+        float lit = 0.62 + 1.6 * exp(-d / (u.sun.y * 0.16));
+        c = mix(c, lin(float3(0.92, 0.95, 1.0)) * lit, a * 0.55);
     }
 
     if (night && u.light.w > 0.5) {
@@ -666,28 +691,38 @@ fragment float4 skyFinal(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     int scene = int(u.view.w);
     float2 pt = in.uv * u.view.xy;
     float3 c = hdr.sample(s, in.uv).rgb;
-    float shade = 1.0 - 0.85 * textMask(u, pt, 2.5);
+    float shade = 1.0 - 0.85 * textMask(u, pt, 2.5, scene == 1 ? 1 : 0);
     c += (bloom.sample(s, in.uv).rgb * u.tone.w + rays.sample(s, in.uv).rgb) * shade;
 
     if (scene == 1 && u.light.w > 0.5) {
         float2 lp = u.light.xy;
         float2 center = u.view.xy * 0.5;
-        float ks[3] = { 0.55, 1.35, 1.75 };
-        float rs[3] = { 0.06, 0.035, 0.11 };
-        float3 tints[3] = { float3(0.6, 0.8, 1.0), float3(1.0, 0.8, 0.6), float3(0.7, 1.0, 0.85) };
+        float ks[3] = { 0.5, 0.82, 1.32 };
+        float rs[3] = { 0.045, 0.08, 0.03 };
+        float as[3] = { 0.022, 0.03, 0.02 };
         for (int i = 0; i < 3; i++) {
             float2 g = lp + (center - lp) * ks[i];
-            float gr = rs[i] * WORLD;
-            float dd = distance(pt, g) / gr;
-            c += lin(tints[i]) * 0.025 * smoothstep(1.0, 0.7, dd) * (0.6 + 0.4 * dd) * shade;
+            float dd = distance(pt, g) / (rs[i] * u.sun.x);
+            if (dd > 1.1) continue;
+            float disk = smoothstep(1.0, 0.9, dd);
+            float rim = exp(-pow((dd - 0.93) / 0.07, 2.0));
+            float3 iri = 0.5 + 0.5 * cos(6.2831853 * (dd * 1.4 + float3(0.0, 0.33, 0.67)));
+            c += (lin(float3(0.86, 0.92, 1.0)) * disk * (0.55 + 0.45 * dd * dd) + mix(float3(1.0), iri, 0.7) * rim * 0.9) * as[i];
         }
     }
 
-    float m = textMask(u, pt);
-    float L = lum(c);
-    float cap = u.tone.y, knee = cap * 0.75;
-    float Lc = L < knee ? L : knee + (cap - knee) * (1.0 - exp(-(L - knee) / (cap - knee)));
-    c *= mix(1.0, Lc / max(L, 1e-6), m);
+    for (int k = 1; k <= 2; k++) {
+        float m = textMask(u, pt, 1.0, k, k == 1 ? u.caps.z : u.caps.w, scene == 1);
+        if (m <= 0.0) continue;
+        float cap = k == 1 ? u.caps.x : u.caps.y, knee = cap * 0.75;
+        float L = lum(c);
+        float Lc = L < knee ? L : knee + (cap - knee) * (1.0 - exp(-(L - knee) / (cap - knee)));
+        float ratio = mix(1.0, Lc / max(L, 1e-6), m);
+        c *= ratio;
+        // 낮은 누르면 회색으로 죽는다 — 눌린 만큼 채도를 올려 더 깊은 하늘색으로.
+        if (scene == 1) c = max(lum(c) + (c - lum(c)) * (1.0 + 0.9 * (1.0 - ratio)), 0.0);
+    }
+    float L;
 
     float head = max(u.tone.x, 1.0);
     float k = 0.8;

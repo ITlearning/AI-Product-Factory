@@ -2,23 +2,33 @@ import SwiftUI
 import XCTest
 @testable import ColorMoments
 
-/// 스파이크 하늘 — 셰이더가 실제로 그려지고, 글자 자리에서 흰 64% 글자가 4.5:1 을 지키는지.
+/// 스파이크 하늘 — 셰이더가 실제로 그려지고, 글자 자리 대비를 지키는지.
+/// 작은 글자(흰 64%) 4.5:1, 큰 말(명조 48 이상, 흰 92%) 3:1 — DESIGN.md §2.1.1.
 @MainActor
 final class SkyRenderTests: XCTestCase {
     private let full = CGSize(width: 393, height: 852)
 
     func testEverySkyKeepsTextContrast() throws {
-        let sizes: [(SkyQuality, CGSize)] = [(.hero, CGSize(width: 354, height: 232)), (.card, CGSize(width: 354, height: 96))]
+        let sizes: [(SkyQuality, CGSize, SkyTexts?)] = [(.hero, CGSize(width: 354, height: 232), nil),
+                                                         (.card, CGSize(width: 354, height: 96), nil),
+                                                         (.full, full, SkyFullPage.texts(in: full))]
+        var log: [String] = []
         for scene in SkyScene.allCases {
-            for (q, size) in sizes {
-                for age in [3.0, 14.8] {
-                    let frame = SkyFrame(scene: scene, quality: q, size: size, moonAge: age)
-                    let out = try XCTUnwrap(SkySnapshot.image(frame, scale: 2, t: SceneArt.stillPhase), "\(scene) \(q)")
-                    let c = SkyDump.contrast(out.image, frame.textRects, size)
-                    XCTAssertGreaterThanOrEqual(c, 4.5, "\(scene.name) \(q.rawValue) 달 \(age)")
+            for (q, size, texts) in sizes {
+                for age in scene.isNight ? [3.0, 14.8] : [14.8] {
+                    for t in [SceneArt.stillPhase, SceneArt.stillPhase + 40] {
+                        let frame = SkyFrame(scene: scene, quality: q, size: size, texts: texts, moonAge: age)
+                        let out = try XCTUnwrap(SkySnapshot.image(frame, scale: 2, t: t), "\(scene) \(q)")
+                        let small = SkyDump.contrast(out.image, frame.texts.small, size, alpha: frame.smallTextAlpha)
+                        let big = SkyDump.contrast(out.image, frame.texts.big, size, alpha: Tone.primaryAlpha)
+                        XCTAssertGreaterThanOrEqual(small, 4.5, "작은 글자 \(scene.name) \(q.rawValue) 달 \(age) t \(t)")
+                        XCTAssertGreaterThanOrEqual(big, 3, "큰 말 \(scene.name) \(q.rawValue) 달 \(age) t \(t)")
+                        log.append(String(format: "%@ %@ 달%.0f 작은 %.2f 큰 %.2f", scene.name, q.rawValue, age, small, big))
+                    }
                 }
             }
         }
+        print("SKY3 대비\n" + log.joined(separator: "\n"))
     }
 
     func testMeteorIsDeterministicAndPaced() throws {
@@ -42,20 +52,20 @@ final class SkyRenderTests: XCTestCase {
         XCTAssertLessThan(mid.direction.dx, 0, "왼쪽으로")
         XCTAssertGreaterThan(mid.direction.dy, 0, "아래로")
 
-        let frame = SkyFrame(scene: .clearNight, quality: .full, size: full, textRects: SkyFullPage.textRects(in: full))
+        let frame = SkyFrame(scene: .clearNight, quality: .full, size: full, texts: SkyFullPage.texts(in: full))
         let at = s + 0.18
         let a = try XCTUnwrap(SkySnapshot.image(frame, scale: 1, t: at, meteors: true)).image
         let b = try XCTUnwrap(SkySnapshot.image(frame, scale: 1, t: at, meteors: true)).image
         let none = try XCTUnwrap(SkySnapshot.image(frame, scale: 1, t: at, meteors: false)).image
         XCTAssertEqual(pixels(a), pixels(b), "같은 t → 같은 그림")
         XCTAssertNotEqual(pixels(a), pixels(none), "별똥별이 보인다")
-        XCTAssertGreaterThanOrEqual(SkyDump.contrast(a, frame.textRects, full), 4.5, "별똥별이 지나가도 글자 대비")
+        XCTAssertGreaterThanOrEqual(SkyDump.contrast(a, frame.texts.small, full), 4.5, "별똥별이 지나가도 글자 대비")
     }
 
     func testMoonPhaseFollowsAge() throws {
         func lit(_ age: Double) throws -> (area: Int, meanX: Double) {
             let size = CGSize(width: 354, height: 232)
-            let frame = SkyFrame(scene: .clearNight, quality: .hero, size: size, textRects: [], moonAge: age, moonScale: 2)
+            let frame = SkyFrame(scene: .clearNight, quality: .hero, size: size, texts: SkyTexts.none, moonAge: age, moonScale: 2)
             let img = try XCTUnwrap(SkySnapshot.image(frame, scale: 2, t: SceneArt.stillPhase)).image
             let l = frame.light
             let px = pixels(img), w = img.width
@@ -111,14 +121,14 @@ final class SkyRenderTests: XCTestCase {
         guard let dir = ProcessInfo.processInfo.environment["SKY2_DIR"] else { throw XCTSkip("SKY2_DIR 없음") }
         let url = URL(fileURLWithPath: dir)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-        let rects = SkyFullPage.textRects(in: full)
+        let rects = SkyFullPage.texts(in: full)
         let phases: [(String, Double)] = [("1-crescent", 3.2), ("2-first-quarter", 7.4), ("3-full", 14.8),
                                           ("4-last-quarter", 22.1), ("5-waning-crescent", 26.3)]
         for (name, age) in phases {
-            let f = SkyFrame(scene: .clearNight, quality: .full, size: full, textRects: rects, moonAge: age)
+            let f = SkyFrame(scene: .clearNight, quality: .full, size: full, texts: rects, moonAge: age)
             let img = try XCTUnwrap(SkySnapshot.image(f, scale: 3, t: SceneArt.stillPhase)).image
             save(render(SkyFullPage(scene: .clearNight, size: full, image: img)), url.appendingPathComponent("moon-\(name).png"))
-            let big = SkyFrame(scene: .clearNight, quality: .full, size: full, textRects: rects, moonAge: age, moonScale: 4)
+            let big = SkyFrame(scene: .clearNight, quality: .full, size: full, texts: rects, moonAge: age, moonScale: 4)
             let bimg = try XCTUnwrap(SkySnapshot.image(big, scale: 3, t: SceneArt.stillPhase)).image
             let l = big.light
             let r = l.radius * 1.35 * 3
@@ -126,7 +136,7 @@ final class SkyRenderTests: XCTestCase {
                 save(UIImage(cgImage: crop), url.appendingPathComponent("moon-close-\(name).png"))
             }
         }
-        let cloudy = SkyFrame(scene: .nightCloudy, quality: .full, size: full, textRects: rects, moonAge: 14.8)
+        let cloudy = SkyFrame(scene: .nightCloudy, quality: .full, size: full, texts: rects, moonAge: 14.8)
         let ci = try XCTUnwrap(SkySnapshot.image(cloudy, scale: 3, t: SceneArt.stillPhase)).image
         save(render(SkyFullPage(scene: .nightCloudy, size: full, image: ci)), url.appendingPathComponent("cloudy-full-moon.png"))
         for i in 0..<2 {
@@ -138,7 +148,7 @@ final class SkyRenderTests: XCTestCase {
                     t += 2
                 } else { t += 1.0 / 60 }
             }
-            let f = SkyFrame(scene: .clearNight, quality: .full, size: full, textRects: rects, moonAge: 10)
+            let f = SkyFrame(scene: .clearNight, quality: .full, size: full, texts: rects, moonAge: 10)
             for (j, dt) in [0.1, 0.2, 0.3].enumerated() {
                 let img = try XCTUnwrap(SkySnapshot.image(f, scale: 3, t: start + dt, meteors: true)).image
                 save(render(SkyFullPage(scene: .clearNight, size: full, image: img)), url.appendingPathComponent("meteor-\(i)-\(j).png"))
@@ -153,6 +163,103 @@ final class SkyRenderTests: XCTestCase {
             save(render(SkyCard(scene: .nightCloudy, size: .hero, new: true, image: img)),
                  url.appendingPathComponent("tier-\(tier.rawValue)-\(tier.name).png"))
         }
+    }
+
+    /// 3차 — 맑은 낮(전체·히어로·카드)과 맑은 밤 별을 Apple 화면과 나란히. SKY3_DIR(출력)·SKY3_REF(참고 폴더).
+    func testDumpSky3() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let dir = env["SKY3_DIR"], let refDir = env["SKY3_REF"] else { throw XCTSkip("SKY3_DIR 없음") }
+        let url = URL(fileURLWithPath: dir)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        let ref = { (name: String) in UIImage(contentsOfFile: refDir + "/" + name) }
+        let texts = SkyFullPage.texts(in: full)
+        let t0 = SceneArt.stillPhase
+        let day = SkyFrame(scene: .clearDay, quality: .full, size: full, texts: texts)
+        let dayImg = try XCTUnwrap(SkySnapshot.image(day, scale: 3, t: t0)).image
+        let dayPage = SkyFullPage(scene: .clearDay, size: full, image: dayImg)
+        save(render(dayPage), url.appendingPathComponent("day-full.png"))
+        save(render(Image(decorative: dayImg, scale: 3)), url.appendingPathComponent("day-full-raw.png"))
+        if let a = ref("ref/day-antarctica.png") {
+            save(render(HStack(spacing: 12) {
+                Image(uiImage: a).resizable().scaledToFill().frame(width: full.width, height: full.height).clipped()
+                dayPage
+            }.padding(12).background(Color.black)), url.appendingPathComponent("compare-day.png"))
+        }
+        let heroSize = CGSize(width: 354, height: 232), rowSize = CGSize(width: 354, height: 96)
+        let h = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: .clearDay, quality: .hero, size: heroSize), scale: 3, t: t0)).image
+        let r = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: .clearDay, quality: .card, size: rowSize), scale: 3, t: t0)).image
+        let cards = VStack(spacing: 12) {
+            SkyCard(scene: .clearDay, size: .hero, new: true, image: h)
+            SkyCard(scene: .clearDay, size: .row, new: true, image: r)
+        }
+        save(render(cards.padding(12).background(Color.black)), url.appendingPathComponent("day-cards.png"))
+        if let c = ref("ref/cards-day.png") {
+            save(render(HStack(alignment: .top, spacing: 12) {
+                Image(uiImage: c).resizable().scaledToFit().frame(height: 760)
+                cards
+            }.padding(12).background(Color.black)), url.appendingPathComponent("compare-cards.png"))
+        }
+        for tier in SkyTier.allCases {
+            let img = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: .clearDay, quality: .hero, size: heroSize), scale: 3, t: t0, tier: tier)).image
+            save(render(SkyCard(scene: .clearDay, size: .hero, new: true, image: img)), url.appendingPathComponent("day-tier-\(tier.rawValue)-\(tier.name).png"))
+        }
+        let night = SkyFrame(scene: .clearNight, quality: .hero, size: heroSize, moonAge: 5)
+        let n = try XCTUnwrap(SkySnapshot.image(night, scale: 3, t: t0)).image
+        save(render(SkyCard(scene: .clearNight, size: .hero, new: true, image: n)), url.appendingPathComponent("night-hero.png"))
+        let nf = SkyFrame(scene: .clearNight, quality: .full, size: full, texts: texts, moonAge: 5)
+        let nfi = try XCTUnwrap(SkySnapshot.image(nf, scale: 3, t: t0)).image
+        let nightPage = SkyFullPage(scene: .clearNight, size: full, image: nfi)
+        if let a = ref("ref/night-stars.png") {
+            save(render(HStack(spacing: 12) {
+                Image(uiImage: a).resizable().scaledToFill().frame(width: full.width, height: full.height).clipped()
+                nightPage
+            }.padding(12).background(Color.black)), url.appendingPathComponent("compare-night.png"))
+        }
+        // 별 확대 — Apple 확대(영상 ≈1.06px/pt, 280×200px ≈ 264×189pt)와 같은 넓이를 전체 화면 밤에서.
+        if let crop = nfi.cropping(to: CGRect(x: 40 * 3, y: 420 * 3, width: 264 * 3, height: 189 * 3)), let a = ref("vid1/c/crop_1.000.png") {
+            save(render(HStack(spacing: 12) {
+                Image(uiImage: a).resizable().interpolation(.high).frame(width: 280 * 2, height: 200 * 2)
+                Image(decorative: crop, scale: 1).resizable().interpolation(.high).frame(width: 280 * 2, height: 200 * 2)
+            }.padding(12).background(Color.black)), url.appendingPathComponent("compare-stars.png"))
+        }
+        var frames: [CGImage] = []
+        for dt in [0.0, 1.5, 3.0] {
+            let img = try XCTUnwrap(SkySnapshot.image(night, scale: 3, t: t0 + dt)).image
+            if let c = img.cropping(to: CGRect(x: 30 * 3, y: 70 * 3, width: 280, height: 200)) { frames.append(c) }
+        }
+        save(render(HStack(spacing: 8) { ForEach(frames.indices, id: \.self) { i in
+            Image(decorative: frames[i], scale: 1).resizable().interpolation(.high).frame(width: 420, height: 300)
+        } }.padding(8).background(Color.black)), url.appendingPathComponent("stars-flow.png"))
+        // 글자 자리 확인 — 실제 글자 위에 작은(초록)·큰(주황) 자리를 겹쳐 그린다.
+        let boxes = ZStack(alignment: .topLeading) {
+            dayPage
+            ForEach(Array(texts.small.enumerated()), id: \.offset) { _, r in
+                Rectangle().stroke(.green, lineWidth: 1).frame(width: r.width, height: r.height).offset(x: r.minX, y: r.minY)
+            }
+            ForEach(Array(texts.big.enumerated()), id: \.offset) { _, r in
+                Rectangle().stroke(.orange, lineWidth: 1).frame(width: r.width, height: r.height).offset(x: r.minX, y: r.minY)
+            }
+        }.frame(width: full.width, height: full.height, alignment: .topLeading)
+        save(render(boxes), url.appendingPathComponent("text-rects-full.png"))
+        let hb = SkyTexts.card(heroSize)
+        save(render(ZStack(alignment: .topLeading) {
+            SkyCard(scene: .clearDay, size: .hero, new: true, image: h)
+            ForEach(Array(hb.small.enumerated()), id: \.offset) { _, r in
+                Rectangle().stroke(.green, lineWidth: 1).frame(width: r.width, height: r.height).offset(x: r.minX, y: r.minY)
+            }
+            ForEach(Array(hb.big.enumerated()), id: \.offset) { _, r in
+                Rectangle().stroke(.orange, lineWidth: 1).frame(width: r.width, height: r.height).offset(x: r.minX, y: r.minY)
+            }
+        }.frame(width: heroSize.width, height: heroSize.height, alignment: .topLeading)), url.appendingPathComponent("text-rects-hero.png"))
+        var gpu: [String] = []
+        for tier in SkyTier.allCases.reversed() {
+            for (name, f) in [("full", day), ("hero", SkyFrame(scene: .clearDay, quality: .hero, size: heroSize)),
+                              ("night-full", nf)] {
+                let ms = try XCTUnwrap(SkySnapshot.image(f, scale: 3, t: t0, repeats: 6, tier: tier)).gpuMilliseconds
+                gpu.append(String(format: "%@ %@ %.2fms", tier.name, name, ms))
+            }
+        }
+        try gpu.joined(separator: "\n").write(to: url.appendingPathComponent("gpu.txt"), atomically: true, encoding: .utf8)
     }
 
     private func render(_ v: some View) -> UIImage? {
