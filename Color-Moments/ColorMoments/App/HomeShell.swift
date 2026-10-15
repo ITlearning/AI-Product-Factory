@@ -11,8 +11,9 @@ struct HomeShell: View {
     // 입양·정리·cloudID·위젯 한 차례 — 온보딩이 넘기는 동안 뒤에서 돌리고 끝나기를 기다린다.
     var prepare: () async -> Void = {}
 
-    /// 0 홈, 1 카메라(왼쪽에서 들어옴), -1 모은 조약돌(오른쪽에서 들어옴).
+    /// ShellPage 자리 — 1 카메라(왼쪽에서 들어옴), 0 홈, -1 조약돌, -2 말(오른쪽에서 들어옴).
     @State private var progress: CGFloat = 0
+    private static let pages = ShellPages.live
     @State private var cameraOpenedAt: Date?
     @State private var shotsSinceOpen = 0
     @State private var dragSide: SwipeSide?
@@ -42,8 +43,6 @@ struct HomeShell: View {
     private static let axisBias: CGFloat = 2.2
     /// 왼쪽으로 끌어 모은 조약돌을 여는 건 오른쪽 가장자리 이 폭 안에서 시작할 때만 — 안쪽은 사진 더미 넘기기(왼쪽 튕기기)가 쓴다.
     private static let edgeZone: CGFloat = 44
-    /// UIKit 팬 속도(pt/s) — SwiftUI 쪽 commitVelocity 는 예상 이동 거리 차이라 단위가 다르다.
-    private static let collectionFlickVelocity: CGFloat = 500
     /// 모은 조약돌 넘기기는 CollectionSwipe(UIKit)가 따로 몬다 — SwiftUI 스와이프의 취소 정리가 건드리지 않게 상태를 나눈다.
     @State private var collectionDragging = false
     @State private var collectionDragStart: CGFloat = 0
@@ -88,7 +87,6 @@ struct HomeShell: View {
     @Environment(\.requestReview) private var requestReview
     private static let onboardingFade = Animation.easeInOut(duration: 0.8)
 
-    private static let commitDistance: CGFloat = 0.42
     private static let commitVelocity: CGFloat = 420
 
     var body: some View {
@@ -107,7 +105,7 @@ struct HomeShell: View {
                          onRequestLibraryPicker: openLibraryPicker,
                          onRequestTodayPicker: openTodayPicker,
                          onScrollMinimize: foldTabBar,
-                         holdsArrivals: progress != 0 || libraryCoverUp || pickingToday != nil || daySheetPresented || keepsakePresented
+                         holdsArrivals: ShellPages.holdsArrivals(progress) || libraryCoverUp || pickingToday != nil || daySheetPresented || keepsakePresented
                              || showingSettings,
                          openDay: $openDayRequest,
                          onOpenSettings: onboarding == .none ? { showingSettings = true } : nil,
@@ -128,9 +126,15 @@ struct HomeShell: View {
                 if collectionLoaded {
                     PebbleCollectionView(store: store, gifts: gifts, closures: closures, embedded: true,
                                          onScrollMinimize: foldTabBar,
-                                         acceptsTaps: progress == -1 && !collectionDragging,
+                                         acceptsTaps: ShellPages.acceptsTaps(.collection, progress: progress,
+                                                                             swiping: collectionDragging),
                                          scrollToTop: collectionToTop)
                         .offset(x: w + progress * w)
+                }
+
+                if Self.pages.words {
+                    Tone.pure.ignoresSafeArea()
+                        .offset(x: 2 * w + progress * w)
                 }
             }
             .contentShape(Rectangle())
@@ -174,7 +178,7 @@ struct HomeShell: View {
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
                  blocksPresentation: daySheetPresented || keepsakePresented || pickingLibrary || libraryCoverUp || pickingToday != nil
-                     || showingSettings || progress != 0 || onboarding != .none,
+                     || showingSettings || ShellPages.holdsArrivals(progress) || onboarding != .none,
                  onboardingGiftDay: onboardingGiftDay,
                  onCeremonyFinished: handleCeremonyFinished)
         .onChange(of: pickingLibrary) { _, up in if up { libraryCoverUp = true } }
@@ -191,11 +195,12 @@ struct HomeShell: View {
         }
         .overlay(alignment: .bottom) {
             if onboarding == .none {
-                PageTabBar(onCollection: progress < -0.5, folded: tabBarFolded, select: selectPage,
-                           camera: openCamera)
-                    .opacity(progress > 0.01 ? 0 : 1)
-                    .allowsHitTesting(progress <= 0.01)
-                    .animation(.easeOut(duration: 0.2), value: progress > 0.01)
+                let shows = ShellPages.showsTabBar(progress)
+                PageTabBar(tabs: Self.pages.tabs, selected: Self.pages.tab(at: progress), folded: tabBarFolded,
+                           select: selectPage, camera: openCamera)
+                    .opacity(shows ? 1 : 0)
+                    .allowsHitTesting(shows)
+                    .animation(.easeOut(duration: 0.2), value: shows)
             }
         }
         .sheet(isPresented: $showingSettings) {
@@ -337,7 +342,7 @@ struct HomeShell: View {
         dragSide = nil
         guard dragging else { return }
         dragging = false
-        progress = progress > 0.5 ? 1 : (progress < -0.5 ? -1 : 0)
+        progress = Self.pages.nearest(progress).progress
     }
 
     private func swipe(width: CGFloat) -> some Gesture {
@@ -370,8 +375,8 @@ struct HomeShell: View {
 
                 let vx = v.predictedEndTranslation.width - v.translation.width
                 let wasHome = dragStart < 0.5
-                let far = wasHome ? progress > Self.commitDistance
-                                  : progress < 1 - Self.commitDistance
+                let far = wasHome ? progress > ShellPages.commitDistance
+                                  : progress < 1 - ShellPages.commitDistance
                 let fast = abs(vx) > Self.commitVelocity && ((vx > 0) == wasHome)
                 let flipped = far || fast
                 let open = wasHome ? flipped : !flipped
@@ -404,26 +409,27 @@ struct HomeShell: View {
         tabBarFolded = folded
     }
 
-    private func selectPage(_ collection: Bool) {
+    private func selectPage(_ page: ShellPage) {
         guard !dragging, !collectionDragging else { return }
         foldTabBar(false)
-        let target: CGFloat = collection ? -1 : 0
-        guard progress != target else {
+        guard progress != page.progress else {
             // 이미 그 칸 — 맨 위로(스크롤 중이든 내려가 있든).
-            if collection { collectionToTop += 1 } else { homeToTop += 1 }
+            switch page {
+            case .home: homeToTop += 1
+            case .collection: collectionToTop += 1
+            case .camera, .words: break
+            }
             return
         }
-        if collection { collectionLoaded = true }
+        // 말로 갈 때도 조약돌을 지나간다 — 빈자리가 스치지 않게 만든다.
+        if page.progress <= ShellPage.collection.progress { collectionLoaded = true }
         Haptics.snapped()
-        progress = target
+        progress = page.progress
     }
 
     private var collectionSwipeMode: CollectionSwipe.Mode {
-        guard onboarding == .none, !dragging else { return .off }
-        if collectionDragging { return collectionDragStart < -0.5 ? .close : .openFromEdge }
-        if progress == 0 { return .openFromEdge }
-        if progress == -1 { return .close }
-        return .off
+        Self.pages.swipeMode(progress: progress, dragStart: collectionDragging ? collectionDragStart : nil,
+                             cameraDragging: dragging, onboardingDone: onboarding == .none)
     }
 
     private func beginCollectionSwipe() {
@@ -434,24 +440,17 @@ struct HomeShell: View {
 
     private func moveCollectionSwipe(_ translation: CGFloat, width: CGFloat) {
         guard collectionDragging, width > 0 else { return }
-        progress = rubberBandedCollection(collectionDragStart + translation / width)
+        progress = Self.pages.rubberBanded(collectionDragStart + translation / width,
+                                           from: Self.pages.nearest(collectionDragStart))
     }
 
     private func endCollectionSwipe(velocity vx: CGFloat) {
         guard collectionDragging else { return }
         collectionDragging = false
-        let wasHome = collectionDragStart > -0.5
-        let far = wasHome ? progress < -Self.commitDistance : progress > -1 + Self.commitDistance
-        let fast = abs(vx) > Self.collectionFlickVelocity && ((vx < 0) == wasHome)
-        let open = wasHome ? (far || fast) : !(far || fast)
-        progress = open ? -1 : 0
-        if open != !wasHome { Haptics.snapped() }
-    }
-
-    private func rubberBandedCollection(_ x: CGFloat) -> CGFloat {
-        if x > 0 { return x * 0.28 }
-        if x < -1 { return -1 + (x + 1) * 0.28 }
-        return x
+        let start = Self.pages.nearest(collectionDragStart)
+        let target = Self.pages.target(from: start, progress: progress, velocity: vx)
+        progress = target.progress
+        if target != start { Haptics.snapped() }
     }
 
     private func rubberBanded(_ x: CGFloat) -> CGFloat {
