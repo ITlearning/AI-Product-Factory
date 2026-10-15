@@ -19,5 +19,7 @@ struct ColorMomentsControlBundle: WidgetBundle {
     var body: some Widget {
         ColorCaptureControl()
         PebbleWidget()
+        WordWidget()
+        WordLockWidget()
     }
 }

@@ -142,11 +142,18 @@ final class WordModelTests: XCTestCase {
         XCTAssertLessThan(s.count, BundledWordSource.cached.count, "한 번도 정답이 아니었던 단어는 빠져야 한다")
     }
 
-    func testExtensionsCarryNoModelOrWordList() throws {
+    func testExtensionsCarryNoModelAndOnlyTheWidgetCarriesWordList() throws {
         let plugins = [Bundle.main.builtInPlugInsURL, Bundle.main.bundleURL.appendingPathComponent("Extensions")].compactMap { $0 }
         for dir in plugins {
             for appex in (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? [] {
-                for name in ["WordEncoder.mlmodelc", "WordHead.json", "WordHead.bin", "words.json", "lunar-days.json"] {
+                // 「밀려온 말」 위젯은 words.json·lunar-days.json 으로 말을 고른다(설계 Section 1) — 모델은 어느 확장에도 없다.
+                let words = appex.lastPathComponent == "ColorMomentsControl.appex" ? [] : ["words.json", "lunar-days.json"]
+                if words.isEmpty {
+                    for name in ["words.json", "lunar-days.json", "widget-words.json"] {
+                        XCTAssertTrue(FileManager.default.fileExists(atPath: appex.appendingPathComponent(name).path), "위젯에 \(name) 이 없다")
+                    }
+                }
+                for name in ["WordEncoder.mlmodelc", "WordHead.json", "WordHead.bin", "birthday-words.json"] + words {
                     XCTAssertFalse(FileManager.default.fileExists(atPath: appex.appendingPathComponent(name).path),
                                    "\(appex.lastPathComponent) 에 \(name) — 확장 크기·메모리")
                 }
