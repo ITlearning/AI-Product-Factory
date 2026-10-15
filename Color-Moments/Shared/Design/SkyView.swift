@@ -59,6 +59,7 @@ public enum SkyQuality: String, CaseIterable, Identifiable, Sendable {
     var detail: Bool { self != .card }
     var rainCap: Int { switch self { case .full: 6000; case .hero: 2400; case .card: 700 } }
     var bloomLevels: Int { switch self { case .full: 6; case .hero: 5; case .card: 4 } }
+    var cirrusOctaves: Int { self == .card ? 4 : 5 }
     var raySamples: Int { switch self { case .full: 48; case .hero: 32; case .card: 0 } }
     public var fps: Int { self == .card ? 30 : 120 }
 }
@@ -109,6 +110,10 @@ public struct SkyBudget: Equatable, Sendable {
     public var raySamples: Int
     public var bloomLevels: Int
     public var starLayers: Int
+    /// 맑은 낮 새털구름 fbm 옥타브(결 몸통·실 각각).
+    public var cirrusOctaves: Int
+    /// 햇무리가 새털구름 따라 얼룩지게(값 노이즈 한 번).
+    public var haloPatches: Bool
     /// 구름 레이마칭을 몇 프레임에 한 번 할지. 0 이면 매 프레임 그 시각 그대로(정지 그림).
     public var cloudEvery: Int
     public var fps: Int
@@ -144,6 +149,8 @@ public struct SkyBudget: Equatable, Sendable {
             bloomLevels = max(q.bloomLevels - 1, 3); starLayers = 2
             cloudEvery = card ? 12 : 8; fps = min(q.fps, 60)
         }
+        cirrusOctaves = max(q.cirrusOctaves - (t == .low ? 2 : (t == .mid ? 1 : 0)), 3)
+        haloPatches = t != .low
         if hot { fps = 30 }
         if lowPower { fps = min(fps, 60) }
         let wantsFX = metalFX ?? (t == .mid || t == .low)
@@ -233,7 +240,30 @@ public struct SkyMeteor: Equatable, Sendable {
     }
 }
 
-/// 셰이더 SkyU 와 같은 배치 — float4 × 15.
+/// 글자 자리 — 작은 글자(secondary 64%, 4.5:1)와 큰 말(명조 48 이상, primary 92%, 3:1)을 나눈다.
+public struct SkyTexts: Equatable, Sendable {
+    public var small: [CGRect]
+    public var big: [CGRect]
+
+    public init(small: [CGRect], big: [CGRect] = []) {
+        self.small = small
+        self.big = big
+    }
+
+    public static let none = SkyTexts(small: [])
+    public var all: [CGRect] { small + big }
+
+    /// 「말」 칸 카드와 같은 배치. 오늘의 한 장만 큰 말(명조 48)이 있다 — 뜻 두 줄(13pt)이 덩어리 아래 42pt.
+    public static func card(_ size: CGSize) -> SkyTexts {
+        let r = SceneArt.textRects(in: size)
+        guard SceneArt.Frame(size).hero, r.count == 2 else { return SkyTexts(small: r) }
+        let block = r[1], meaning: CGFloat = 42
+        return SkyTexts(small: [r[0], CGRect(x: block.minX, y: block.maxY - meaning, width: block.width, height: meaning)],
+                        big: [CGRect(x: block.minX, y: block.minY, width: block.width, height: block.height - meaning)])
+    }
+}
+
+/// 셰이더 SkyU 와 같은 배치 — float4 × 18.
 struct SkyUniforms {
     var res = SIMD4<Float>(repeating: 0)
     var view = SIMD4<Float>(repeating: 0)
@@ -246,9 +276,12 @@ struct SkyUniforms {
     var meteor0 = SIMD4<Float>(repeating: 0)
     var meteor1 = SIMD4<Float>(repeating: 0)
     var blend = SIMD4<Float>(repeating: 0)
+    var sun = SIMD4<Float>(repeating: 0)
+    var caps = SIMD4<Float>(repeating: 0)
+    var textBig = SIMD4<Float>(repeating: 0)
     var text: [SIMD4<Float>] = Array(repeating: .zero, count: 4)
 
-    var floats: [SIMD4<Float>] { [res, view, light, quality, tone, parallax, rays, moon, meteor0, meteor1, blend] + text }
+    var floats: [SIMD4<Float>] { [res, view, light, quality, tone, parallax, rays, moon, meteor0, meteor1, blend, sun, caps, textBig] + text }
 }
 
 /// 장면·크기에서 정해지는 것(픽셀마다 같은 값).
@@ -256,18 +289,19 @@ public struct SkyFrame: Equatable {
     public var scene: SkyScene
     public var quality: SkyQuality
     public var size: CGSize
-    public var textRects: [CGRect]
+    public var texts: SkyTexts
+    public var textRects: [CGRect] { texts.all }
     /// 마지막 삭에서 며칠(Celestial.moonAge). 0 삭 · 7.4 상현 · 14.8 보름 · 22.1 하현.
     public var moonAge: Double
     /// 달 크기 배수(디버그)
     public var moonScale: Double
 
-    public init(scene: SkyScene, quality: SkyQuality, size: CGSize, textRects: [CGRect]? = nil,
+    public init(scene: SkyScene, quality: SkyQuality, size: CGSize, texts: SkyTexts? = nil,
                 moonAge: Double = 10, moonScale: Double = 1) {
         self.scene = scene
         self.quality = quality
         self.size = size
-        self.textRects = textRects ?? SceneArt.textRects(in: size)
+        self.texts = texts ?? SkyTexts.card(size)
         self.moonAge = moonAge
         self.moonScale = moonScale
     }
@@ -283,19 +317,32 @@ public struct SkyFrame: Equatable {
         let m = Self.moonShrink * CGFloat(moonScale)
         if h > 1.3 * w {
             return night ? (CGPoint(x: 0.84 * w, y: 0.085 * h), 15 * m, true)
-                         : (CGPoint(x: 0.84 * w, y: 0.06 * h), 9, true)
+                         : (CGPoint(x: 0.78 * w, y: 0.025 * h), 8, true)
         }
         let f = SceneArt.Frame(size)
-        if f.wide { return (CGPoint(x: f.pane.midX, y: 0.42 * h), night ? 0.11 * u * m : 0.07 * u, true) }
+        if f.wide { return (CGPoint(x: f.pane.midX, y: night ? 0.42 * h : 0.12 * h), night ? 0.11 * u * m : 0.07 * u, true) }
         return night ? (CGPoint(x: w - 0.2 * u, y: 0.2 * u), 0.075 * u * m, true)
-                     : (CGPoint(x: w - 0.17 * u, y: 0.16 * u), 0.036 * u, true)
+                     : (CGPoint(x: w - 0.2 * u, y: 0.07 * u), 0.036 * u, true)
     }
 
     /// 밝은 면 비율(0 삭 ~ 1 보름).
     var moonLit: Double { 0.5 - 0.5 * cos(moonAge / Celestial.synodicMonth * 2 * .pi) }
 
-    /// 글자 자리 위 하늘의 최대 상대 휘도 — 흰 64%(secondary) 글자가 4.5:1 을 넘게.
+    /// 작은 글자 자리 위 하늘의 최대 상대 휘도 — 흰 64%(secondary) 글자가 4.5:1 을 넘게.
     static let textLuminanceCap: Float = 0.07
+    /// 큰 말 자리 — 흰 92%(primary) 명조 48 이상이 3:1 을 넘게(맑은 낮만, 다른 장면은 작은 글자와 같게 둔다).
+    static let bigTextLuminanceCap: Float = 0.24
+    /// 맑은 낮 작은 글자 자리 — 밝은 하늘 위 작은 글자는 primary(92%)로 쓰고 4.5:1. secondary 로 4.5 를 내려면 하늘을 3배 넘게 눌러야 해서.
+    static let dayTextLuminanceCap: Float = 0.155
+
+    /// 작은 글자의 흰 불투명도 — 맑은 낮만 primary.
+    public var smallTextAlpha: Double { scene == .clearDay ? Tone.primaryAlpha : Tone.secondaryAlpha }
+
+    /// 22° 햇무리 반지름(pt) — 남극 화면에서 해부터 큰 숫자를 지나는 원(폭의 ≈0.65).
+    var haloRadius: CGFloat {
+        let f = SceneArt.Frame(size)
+        return f.wide ? min(0.65 * size.width, 1.7 * size.height) : 0.65 * size.width
+    }
 
     func uniforms(pixels: CGSize, t: Double, headroom: Float, tilt: CGPoint, frameIndex: Int, rainCount: Int,
                   budget: SkyBudget, meteor: SkyMeteor?) -> SkyUniforms {
@@ -307,8 +354,17 @@ public struct SkyFrame: Equatable {
         u.quality = [Float(budget.cloudSteps), Float(budget.lightSteps), budget.detail ? 1 : 0, Float(budget.farSteps)]
         let bloom: Float = scene == .clearDay ? 0.2 : (scene.isNight ? 0.3 : 0.15)
         u.tone = [headroom, Self.textLuminanceCap, Float(0.6) / 255, bloom]
-        let rects = Array(textRects.prefix(4))
-        u.parallax = [Float(tilt.x), Float(tilt.y), Float(rects.count), Float((SceneArt.Frame(size).wide ? 0.45 : 0.18) * min(size.width, size.height))]
+        let small = Array(texts.small.prefix(4)), big = Array(texts.big.prefix(4 - small.count))
+        let rects = small + big
+        let feather = Float((SceneArt.Frame(size).wide ? 0.45 : 0.18) * min(size.width, size.height))
+        u.parallax = [Float(tilt.x), Float(tilt.y), Float(rects.count), feather]
+        let day = scene == .clearDay
+        u.caps = [day ? Self.dayTextLuminanceCap : Self.textLuminanceCap, day ? Self.bigTextLuminanceCap : Self.textLuminanceCap,
+                  day ? 40 : feather, day ? 48 : feather]
+        for i in 0..<big.count { u.textBig[small.count + i] = 1 }
+        let glow = SceneArt.Frame(size).wide ? 1.3 * size.height : max(size.width, min(size.height, 1.2 * size.width))
+        u.sun = [Float(haloRadius), Float(glow),
+                 Float(budget.cirrusOctaves), budget.haloPatches ? 1 : 0]
         let rayStrength: Float = scene == .nightCloudy ? 0.5 * Float(moonLit) : 0
         u.rays = [Float(budget.raySamples), l.drawn ? rayStrength : 0, Float(frameIndex % 64), Float(rainCount)]
         u.moon = [Float(moonAge), 0.35, 1, 0]
@@ -797,19 +853,19 @@ public struct SkyView: UIViewRepresentable {
     private let quality: SkyQuality
     private let animating: Bool
     private let phase: Double
-    private let textRects: [CGRect]?
+    private let texts: SkyTexts?
     private let tilts: Bool
     private let moonAge: Double?
 
     /// moonAge nil 이면 오늘 달 나이(Celestial).
     public init(_ scene: SkyScene, quality: SkyQuality = .card, animating: Bool = false,
-                phase: Double = SceneArt.stillPhase, textRects: [CGRect]? = nil, tilts: Bool = false,
+                phase: Double = SceneArt.stillPhase, texts: SkyTexts? = nil, tilts: Bool = false,
                 moonAge: Double? = nil) {
         self.scene = scene
         self.quality = quality
         self.animating = animating
         self.phase = phase
-        self.textRects = textRects
+        self.texts = texts
         self.tilts = tilts
         self.moonAge = moonAge
     }
@@ -838,7 +894,7 @@ public struct SkyView: UIViewRepresentable {
         let running = animating && !context.environment.accessibilityReduceMotion
         c.scene = scene
         c.quality = quality
-        c.textRects = textRects
+        c.texts = texts
         c.moonAge = moonAge
         c.running = running
         c.setTilt(tilts && running)
@@ -859,7 +915,7 @@ public struct SkyView: UIViewRepresentable {
         var renderer: SkyRenderer?
         var scene: SkyScene = .nightCloudy
         var quality: SkyQuality = .card
-        var textRects: [CGRect]?
+        var texts: SkyTexts?
         var moonAge: Double?
         var running = false
         var clock: SceneTime
@@ -891,7 +947,7 @@ public struct SkyView: UIViewRepresentable {
             if view.preferredFramesPerSecond != b.fps { view.preferredFramesPerSecond = b.fps }
             let size = view.bounds.size
             let headroom = Float(min(max(view.window?.windowScene?.screen.currentEDRHeadroom ?? 1, 1), 4))
-            let frame = SkyFrame(scene: scene, quality: quality, size: size, textRects: textRects,
+            let frame = SkyFrame(scene: scene, quality: quality, size: size, texts: texts,
                                  moonAge: SkyDebug.moonAge ?? moonAge ?? Celestial.moonAge(at: Date()),
                                  moonScale: SkyDebug.moonScale)
             renderer.encode(cb, into: drawable.texture, frame: frame, t: clock.time(at: Date()), headroom: headroom,

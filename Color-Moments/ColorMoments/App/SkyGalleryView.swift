@@ -122,16 +122,20 @@ struct SkyCardText: View {
         }
     }
 
+    /// 맑은 낮(밝은 하늘) 위 작은 글자는 primary — SkyFrame.smallTextAlpha.
+    static func small(_ s: SkyScene) -> Color { s == .clearDay ? Tone.primary : Tone.secondary }
+
     var body: some View {
         let (word, meaning) = Self.sample(scene)
+        let small = Self.small(scene)
         if size == .hero {
             ZStack(alignment: .topLeading) {
-                Text("오늘의 말").font(Face.caption).foregroundStyle(Tone.secondary)
+                Text("오늘의 말").font(Face.caption).foregroundStyle(small)
                     .padding(.leading, 20).padding(.top, 18)
                 VStack(alignment: .leading, spacing: 4) {
                     Spacer(minLength: 0)
                     Text(word).font(Face.wordHero).foregroundStyle(Tone.primary).lineLimit(1).minimumScaleFactor(0.5)
-                    Text(meaning).font(Face.wordMeaning).foregroundStyle(Tone.secondary).lineLimit(2)
+                    Text(meaning).font(Face.wordMeaning).foregroundStyle(small).lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(width: 0.64 * w - 20, height: 0.43 * h, alignment: .bottomLeading)
@@ -144,13 +148,13 @@ struct SkyCardText: View {
                 Text(word).font(Face.wordCard).foregroundStyle(Tone.primary).lineLimit(1)
                     .frame(width: 0.44 * w - 18, height: 0.6 * h - 12, alignment: .topLeading)
                     .padding(.leading, 18).padding(.top, 12)
-                Text("10월 15일").font(Face.caption).foregroundStyle(Tone.secondary)
+                Text("10월 15일").font(Face.caption).foregroundStyle(small)
                     .frame(width: 0.36 * w - 18, height: 0.32 * h, alignment: .bottomLeading)
                     .padding(.leading, 18).offset(y: 0.6 * h)
-                Text("3번").font(Face.caption).foregroundStyle(Tone.secondary)
+                Text("3번").font(Face.caption).foregroundStyle(small)
                     .frame(width: 0.22 * w - 16, height: 0.42 * h - 12, alignment: .topTrailing)
                     .padding(.top, 12).offset(x: 0.78 * w)
-                Text(scene.name).font(Face.caption).foregroundStyle(Tone.secondary)
+                Text(scene.name).font(Face.caption).foregroundStyle(small)
                     .frame(width: 0.22 * w - 16, height: 0.32 * h, alignment: .bottomTrailing)
                     .offset(x: 0.78 * w, y: 0.6 * h)
             }
@@ -196,22 +200,28 @@ struct SkyFullPage: View {
     var animating = true
     var image: CGImage?
 
-    static func textRects(in size: CGSize) -> [CGRect] {
-        [CGRect(x: 0.17 * size.width, y: 0.135 * size.height, width: 0.66 * size.width, height: 0.25 * size.height)]
+    /// 「오늘의 말」(작은) · 말 72pt(큰) · 뜻과 장면 이름(작은).
+    static func texts(in size: CGSize) -> SkyTexts {
+        let w = size.width, h = size.height
+        return SkyTexts(small: [CGRect(x: 0.38 * w, y: 0.149 * h, width: 0.24 * w, height: 0.025 * h),
+                                CGRect(x: 0.08 * w, y: 0.271 * h, width: 0.84 * w, height: 0.024 * h),
+                                CGRect(x: 0.36 * w, y: 0.305 * h, width: 0.28 * w, height: 0.025 * h)],
+                        big: [CGRect(x: 0.18 * w, y: 0.176 * h, width: 0.64 * w, height: 0.09 * h)])
     }
 
     var body: some View {
         let (word, meaning) = SkyCardText.sample(scene)
+        let small = SkyCardText.small(scene)
         ZStack(alignment: .top) {
             if let image {
                 Image(decorative: image, scale: 3).resizable()
             } else {
-                SkyView(scene, quality: .full, animating: animating, textRects: Self.textRects(in: size), tilts: true)
+                SkyView(scene, quality: .full, animating: animating, texts: Self.texts(in: size), tilts: true)
             }
             VStack(spacing: 6) {
-                Text("오늘의 말").font(Face.caption).foregroundStyle(Tone.secondary)
+                Text("오늘의 말").font(Face.caption).foregroundStyle(small)
                 Text(word).font(.custom(Face.serifName, size: 72)).foregroundStyle(Tone.primary)
-                Text(meaning).font(Face.wordMeaning).foregroundStyle(Tone.secondary)
+                Text(meaning).font(Face.wordMeaning).foregroundStyle(small)
                 Text(scene.name).font(Face.caption).foregroundStyle(Tone.primary).padding(.top, 4)
             }
             .padding(.top, 0.15 * size.height)
@@ -233,16 +243,17 @@ enum SkyDump {
             for (ti, t) in times.enumerated() {
                 let hero = SkyFrame(scene: s, quality: .hero, size: CGSize(width: 354, height: 232))
                 let row = SkyFrame(scene: s, quality: .card, size: CGSize(width: 354, height: 96))
-                let fullF = SkyFrame(scene: s, quality: .full, size: full, textRects: SkyFullPage.textRects(in: full))
+                let fullF = SkyFrame(scene: s, quality: .full, size: full, texts: SkyFullPage.texts(in: full))
                 let rep = ti == 0 ? 8 : 1
                 guard let h = SkySnapshot.image(hero, scale: 3, t: t, repeats: rep),
                       let r = SkySnapshot.image(row, scale: 3, t: t, repeats: rep),
                       let f = SkySnapshot.image(fullF, scale: 3, t: t, repeats: rep) else { return "그리기 실패" }
                 if ti == 0 {
                     log.append(String(format: "%@ gpu ms hero %.2f card %.2f full %.2f", s.name, h.1, r.1, f.1))
-                    log.append(String(format: "%@ 대비 hero %.2f card %.2f full %.2f", s.name,
-                                      contrast(h.0, hero.textRects, hero.size), contrast(r.0, row.textRects, row.size),
-                                      contrast(f.0, fullF.textRects, fullF.size)))
+                    log.append(String(format: "%@ 대비(작은/큰) hero %.2f/%.2f card %.2f full %.2f/%.2f", s.name,
+                                      contrast(h.0, hero.texts.small, hero.size, alpha: hero.smallTextAlpha), contrast(h.0, hero.texts.big, hero.size, alpha: Tone.primaryAlpha),
+                                      contrast(r.0, row.texts.small, row.size, alpha: row.smallTextAlpha),
+                                      contrast(f.0, fullF.texts.small, fullF.size, alpha: fullF.smallTextAlpha), contrast(f.0, fullF.texts.big, fullF.size, alpha: Tone.primaryAlpha)))
                 }
                 let tag = "\(s.rawValue)-t\(ti)"
                 save(compare(s, hero: h.0, row: r.0), dir.appendingPathComponent("compare-\(tag).png"))
@@ -293,8 +304,8 @@ enum SkyDump {
         if let data = img?.pngData() { try? data.write(to: url) }
     }
 
-    /// 글자 자리 안 가장 밝은 픽셀 위에서 흰 64% 글자의 대비.
-    static func contrast(_ img: CGImage, _ rects: [CGRect], _ size: CGSize) -> Double {
+    /// 글자 자리 안 가장 밝은 픽셀 위에서 흰 alpha(기본 secondary 64%) 글자의 대비. 자리가 없으면 무한대.
+    static func contrast(_ img: CGImage, _ rects: [CGRect], _ size: CGSize, alpha: Double = Tone.secondaryAlpha) -> Double {
         let w = img.width, h = img.height
         var px = [UInt8](repeating: 0, count: w * h * 4)
         guard let ctx = CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
@@ -311,7 +322,7 @@ enum SkyDump {
                 for x in x0..<x1 {
                     let i = (y * w + x) * 4
                     let bg = SceneRGB(Double(px[i]) / 255, Double(px[i + 1]) / 255, Double(px[i + 2]) / 255)
-                    let fg = SceneRGB.white.over(bg, alpha: Tone.secondaryAlpha)
+                    let fg = SceneRGB.white.over(bg, alpha: alpha)
                     worst = min(worst, SceneRGB.contrast(fg, bg))
                 }
             }
