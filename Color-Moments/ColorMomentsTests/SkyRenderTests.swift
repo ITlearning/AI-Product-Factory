@@ -1,3 +1,4 @@
+import CoreImage
 import SwiftUI
 import XCTest
 @testable import ColorMoments
@@ -145,6 +146,176 @@ final class SkyRenderTests: XCTestCase {
         XCTAssertEqual(hot.tier, .high)
         XCTAssertEqual(SkyBudget(.hero, tier: .low).farSteps, 0)
         XCTAssertEqual(SkyBudget(.hero, tier: .low).raySamples, 0)
+    }
+
+    // MARK: - 6차 — 구름 창·구운 판
+
+    /// 구름은 pt 세계 좌표 — 크기가 달라도 같은 창이면 같은 pt 자리는 같은 구름 자리를 본다.
+    func testCardWindowIsWorldSpace() {
+        let origin = CGPoint(x: 1234, y: 150)
+        for flow in [0.0, -7.5] {
+            for t in [0.0, 37.5, 1000] {
+                let a = SkyCloudBank.window(origin, size: CGSize(width: 354, height: 96), shape: .band, flow: flow, t: t)
+                let b = SkyCloudBank.window(origin, size: CGSize(width: 170, height: 170), shape: .band, flow: flow, t: t)
+                let c = SkyCloudBank.window(origin, size: CGSize(width: 354, height: 232), shape: .band, flow: flow, t: t)
+                XCTAssertEqual(a, b)
+                XCTAssertEqual(a, c)
+                XCTAssertGreaterThanOrEqual(a.x, 0)
+                XCTAssertLessThan(a.x, 768)
+            }
+        }
+        let t0 = SkyCloudBank.window(origin, size: CGSize(width: 354, height: 96), shape: .band, flow: -7.5, t: 0)
+        let t1 = SkyCloudBank.window(origin, size: CGSize(width: 354, height: 96), shape: .band, flow: -7.5, t: 2)
+        XCTAssertEqual(t1.x - t0.x, 15, accuracy: 1e-6, "왼쪽으로 7.5pt/초 흐른다 — 판 안 자리는 오른쪽으로")
+        for size in [CGSize(width: 354, height: 96), CGSize(width: 393, height: 300)] {
+            let f = SkyFrame(scene: .rain, quality: .card, size: size, window: origin)
+            let u = f.uniforms(pixels: size, t: 0, headroom: 1, tilt: .zero, frameIndex: 0, rainCount: 0,
+                               budget: SkyBudget(.hero, tier: .ultra, still: true), meteor: nil)
+            XCTAssertEqual(u.win.x, 1234)
+            XCTAssertEqual(u.win.y, 150)
+        }
+        XCTAssertEqual(SkyCloudBank.Shape.fitting(CGSize(width: 354, height: 96)), .band)
+        XCTAssertEqual(SkyCloudBank.Shape.fitting(CGSize(width: 354, height: 232)), .band)
+        XCTAssertEqual(SkyCloudBank.Shape.fitting(CGSize(width: 393, height: 852)), .tall)
+    }
+
+    func testCardWindowSeedsAreDeterministicAndDistinct() throws {
+        XCTAssertEqual(SkyFrame.window(seed: 7), SkyFrame.window(seed: 7))
+        let w = (0..<20).map { SkyFrame.window(seed: $0) }
+        XCTAssertEqual(Set(w.map { "\($0.x),\($0.y)" }).count, 20)
+        let size = CGSize(width: 354, height: 96)
+        func img(_ seed: Int) throws -> [UInt8] {
+            let f = SkyFrame(scene: .petals, quality: .card, size: size, window: SkyFrame.window(seed: seed))
+            return pixels(try XCTUnwrap(SkySnapshot.image(f, scale: 2, t: SceneArt.stillPhase)).image)
+        }
+        let a = try img(1)
+        XCTAssertEqual(a, try img(1), "같은 씨앗 → 같은 카드")
+        XCTAssertNotEqual(a, try img(2), "다른 씨앗 → 다른 구름")
+    }
+
+    func testBakedCloudPlatesFollowVersion() throws {
+        let gpu = try XCTUnwrap(SkyGPU.shared)
+        let bank = SkyCloudBank.shared
+        let saved = SkyCloudBank.version
+        defer { SkyCloudBank.version = saved }
+        let p1 = try XCTUnwrap(bank.plate(.dusk, .band, device: gpu.device))
+        XCTAssertTrue(p1 === bank.plate(.dusk, .band, device: gpu.device), "같은 판 번호면 다시 굽지 않는다")
+        XCTAssertEqual(p1.key.version, SkyCloudBank.version)
+        let before = bank.stripsBaked
+        let cb = try XCTUnwrap(gpu.queue.makeCommandBuffer())
+        bank.advance(p1, cb: cb, gpu: gpu, all: false, now: 1_000_000)
+        bank.advance(p1, cb: cb, gpu: gpu, all: false, now: 1_000_000)
+        XCTAssertEqual(bank.stripsBaked - before, p1.complete ? 0 : 1, "움직이는 화면은 한 프레임에 한 줄")
+        bank.advance(p1, cb: cb, gpu: gpu, all: true)
+        cb.commit(); cb.waitUntilCompleted()
+        XCTAssertTrue(p1.complete)
+        SkyCloudBank.version += 1
+        let p2 = try XCTUnwrap(bank.plate(.dusk, .band, device: gpu.device))
+        XCTAssertFalse(p1 === p2, "판 번호가 바뀌면 새로 굽는다")
+        XCTAssertFalse(p2.complete)
+        XCTAssertEqual(p2.key.version, saved + 1)
+        XCTAssertLessThanOrEqual(bank.bytes, bank.capBytes + p2.bytes)
+    }
+
+    func testCardsNeverMarchClouds() {
+        XCTAssertTrue(SkyTier.allCases.allSatisfy { SkyBudget(.card, tier: $0).bakedClouds })
+        XCTAssertTrue(SkyBudget(.hero, tier: .mid).bakedClouds)
+        XCTAssertTrue(SkyBudget(.full, tier: .low).bakedClouds)
+        XCTAssertFalse(SkyBudget(.hero, tier: .ultra).bakedClouds)
+        XCTAssertNil(SkyBudget(.card, tier: .mid).upscaleTo, "구운 카드엔 MetalFX 를 쓰지 않는다")
+        let frame = SkyFrame(scene: .rain, quality: .card, size: CGSize(width: 354, height: 96))
+        XCTAssertEqual(SkySnapshot.cloudRenders(frame, tier: .ultra, seconds: 1).renders, 0)
+    }
+
+    /// 6차 — 장면별 히어로(최상 실시간 · 중·하 구운 판) + 목록 카드 세 장(창 다름, 최상·중). SKY6C_DIR.
+    func testDumpSky6c() throws {
+        guard let dir = ProcessInfo.processInfo.environment["SKY6C_DIR"] else { throw XCTSkip("SKY6C_DIR 없음") }
+        let url = URL(fileURLWithPath: dir)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        let heroSize = CGSize(width: 354, height: 232), rowSize = CGSize(width: 354, height: 96)
+        let t0 = SceneArt.stillPhase
+        let scenes: [SkyScene] = ProcessInfo.processInfo.environment["SKY6C_ONLY"].map { only in
+            SkyScene.allCases.filter { only.split(separator: ",").contains(Substring("\($0)")) }
+        } ?? [.clearDay, .petals, .leaves, .dawn, .dusk, .rain, .nightCloudy]
+        for scene in scenes {
+            let tag = String(format: "%02d-%@", scene.rawValue, "\(scene)")
+            var heroes: [(String, CGImage)] = []
+            let heroWindow = ProcessInfo.processInfo.environment["SKY6C_WIN"].map { v -> CGPoint in
+                let n = v.split(separator: ",").compactMap { Double($0) }
+                return CGPoint(x: n[0], y: n[1])
+            } ?? .zero
+            for tier in [SkyTier.ultra, .mid, .low] {
+                let f = SkyFrame(scene: scene, quality: .hero, size: heroSize, moonAge: 10, window: heroWindow)
+                heroes.append((tier.name, try XCTUnwrap(SkySnapshot.image(f, scale: 3, t: t0, tier: tier)).image))
+            }
+            var cards: [(String, CGImage)] = []
+            for tier in [SkyTier.ultra, .mid] {
+                for seed in 0..<3 {
+                    let f = SkyFrame(scene: scene, quality: .card, size: rowSize, moonAge: 10, window: SkyFrame.window(seed: seed))
+                    cards.append(("\(tier.name) 창\(seed)", try XCTUnwrap(SkySnapshot.image(f, scale: 3, t: t0, tier: tier)).image))
+                }
+            }
+            save(render(HStack(alignment: .top, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(heroes.indices, id: \.self) { i in
+                        Text("히어로 \(heroes[i].0)").font(.system(size: 11)).foregroundStyle(.white)
+                        SkyCard(scene: scene, size: .hero, new: true, image: heroes[i].1)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(cards.indices, id: \.self) { i in
+                        Text("카드 \(cards[i].0)").font(.system(size: 11)).foregroundStyle(.white)
+                        SkyCard(scene: scene, size: .row, new: true, image: cards[i].1)
+                    }
+                }
+            }.padding(12).background(Color.black)), url.appendingPathComponent("\(tag).png"))
+            if ProcessInfo.processInfo.environment["SKY6C_FULL"] != nil {
+                let texts = SkyFullPage.texts(in: full)
+                var pages: [CGImage] = []
+                for tier in [SkyTier.ultra, .mid, .low] {
+                    let f = SkyFrame(scene: scene, quality: .full, size: full, texts: texts, moonAge: 10)
+                    pages.append(try XCTUnwrap(SkySnapshot.image(f, scale: 3, t: t0, tier: tier)).image)
+                }
+                save(render(HStack(spacing: 10) { ForEach(pages.indices, id: \.self) { i in
+                    SkyFullPage(scene: scene, size: self.full, image: pages[i])
+                } }.padding(10).background(Color.black)), url.appendingPathComponent("full-\(tag).png"))
+            }
+        }
+        var gpu: [String] = []
+        for scene in scenes {
+            let g = try XCTUnwrap(SkyGPU.shared)
+            let bank = SkyCloudBank.shared
+            bank.removeAll()
+            let p = try XCTUnwrap(bank.plate(scene, .band, device: g.device))
+            let cb = try XCTUnwrap(g.queue.makeCommandBuffer())
+            bank.advance(p, cb: cb, gpu: g, all: true)
+            let bakeStart = CACurrentMediaTime()
+            cb.commit(); cb.waitUntilCompleted()
+            let bakeMs = (CACurrentMediaTime() - bakeStart) * 1000
+            if let lin = CGColorSpace(name: CGColorSpace.extendedLinearSRGB), let srgb = CGColorSpace(name: CGColorSpace.sRGB),
+               let ci = CIImage(mtlTexture: p.frames[0], options: [.colorSpace: lin]) {
+                let ctx = CIContext(mtlDevice: g.device)
+                let img = ci.settingAlphaOne(in: ci.extent).oriented(.downMirrored)
+                if let cg = ctx.createCGImage(img, from: img.extent, format: .RGBA8, colorSpace: srgb) {
+                    save(UIImage(cgImage: cg), url.appendingPathComponent(String(format: "plate-%02d.png", scene.rawValue)))
+                }
+                let alpha = ci.applyingFilter("CIColorMatrix", parameters: [
+                    "inputRVector": CIVector(x: 0, y: 0, z: 0, w: 1), "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+                    "inputBVector": CIVector(x: 0, y: 0, z: 0, w: 1), "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+                    "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 1)]).oriented(.downMirrored)
+                if let cg = ctx.createCGImage(alpha, from: img.extent, format: .RGBA8, colorSpace: srgb) {
+                    save(UIImage(cgImage: cg), url.appendingPathComponent(String(format: "plate-T-%02d.png", scene.rawValue)))
+                }
+            }
+            let card = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: scene, quality: .card, size: rowSize), scale: 3, t: t0, repeats: 4, tier: .mid))
+            let heroU = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: scene, quality: .hero, size: heroSize), scale: 3, t: t0, repeats: 4, tier: .ultra))
+            let heroM = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: scene, quality: .hero, size: heroSize), scale: 3, t: t0, repeats: 4, tier: .mid))
+            gpu.append(String(format: "%@ 굽기 %.1fms(판 %.1fMB) · 카드 %.2fms · 히어로 최상 %.2fms · 히어로 중 %.2fms", scene.name,
+                              bakeMs, Double(p.bytes) / 1_048_576, card.gpuMilliseconds,
+                              heroU.gpuMilliseconds, heroM.gpuMilliseconds))
+        }
+        try gpu.joined(separator: "\n").write(to: url.appendingPathComponent("gpu.txt"), atomically: true, encoding: .utf8)
+        print("SKY6C\n" + gpu.joined(separator: "\n"))
     }
 
     // MARK: - 눈으로 보는 PNG (TEST_RUNNER_SKY2_DIR 가 있을 때만)

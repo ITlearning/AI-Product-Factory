@@ -124,6 +124,8 @@ struct PebbleLabView: View {
 /// 프레임 측정 한 줄 — 탭하면 끊김·최악 값을 초기화.
 struct FrameMeterBadge: View {
     static let homeKey = "debugHomeFrameMeter"
+    /// 바뀔 때마다 끊김·최악을 초기화한다.
+    var resetToken = 0
 
     @StateObject private var meter = FrameMeter()
 
@@ -134,6 +136,7 @@ struct FrameMeterBadge: View {
             .padding(.vertical, 4).frame(maxWidth: .infinity)
             .background(.black.opacity(0.6))
             .onTapGesture { meter.reset() }
+            .onChange(of: resetToken) { meter.reset() }
             .onAppear { meter.start() }
             .onDisappear { meter.stop() }
     }
