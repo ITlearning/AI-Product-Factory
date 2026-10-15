@@ -215,6 +215,40 @@ final class OnboardingRulesTests: XCTestCase {
         XCTAssertEqual(model.phase, .ask)
     }
 
+    @MainActor
+    func testBirthdayPassingWordsSkipThePick() throws {
+        let model = birthdayModel(dir: nil)
+        model.day = 14
+        XCTAssertTrue(model.reveal())
+        XCTAssertFalse(model.passing.isEmpty, "굴림 동안 스쳐 갈 말이 있어야 한다")
+        XCTAssertFalse(model.passing.contains("꽃샘"), "고른 말은 스쳐 가지 않는다")
+        XCTAssertLessThanOrEqual(model.passing.count, BirthdayReveal.ticks.count)
+    }
+
+    func testBirthdayRevealBeats() {
+        XCTAssertEqual(BirthdayReveal.land, 1.95, accuracy: 0.001, "웹처럼 0.25초에 굴리기 시작해 1.7초 굴린다")
+        let ticks = BirthdayReveal.ticks
+        XCTAssertEqual(ticks.first, 0)
+        XCTAssertLessThan(ticks.last ?? 9, BirthdayReveal.rollSpan)
+        let gaps = zip(ticks.dropFirst(), ticks).map { $0 - $1 }
+        XCTAssertEqual(gaps, gaps.sorted(), "갈수록 느려진다")
+        XCTAssertNil(BirthdayReveal.tick(at: 0.1, land: BirthdayReveal.land), "카드가 뜨는 동안은 아직 안 굴린다")
+        XCTAssertEqual(BirthdayReveal.tick(at: 0.26, land: BirthdayReveal.land), 0)
+        XCTAssertNil(BirthdayReveal.tick(at: 1.0, land: 0.9), "눌러서 멈추면 그때 내려앉는다")
+        XCTAssertEqual(BirthdayReveal.curve(0), 0, accuracy: 0.001)
+        XCTAssertEqual(BirthdayReveal.curve(1), 1, accuracy: 0.001)
+        XCTAssertGreaterThan(BirthdayReveal.curve(0.3), 0.6, "앞이 빠른 웹 곡선(0.2, 0.8, 0.2, 1)")
+        XCTAssertEqual(BirthdayRevealFollow.shown(t: 0.5, land: BirthdayReveal.land, still: false), 0, "버튼은 내려앉은 뒤에")
+        XCTAssertEqual(BirthdayRevealFollow.shown(t: 5, land: BirthdayReveal.land, still: false), 1, accuracy: 0.001)
+    }
+
+    func testBirthdayCardSkyFollowsBirthMonth() {
+        XCTAssertEqual(BirthdayCardSky.kind(month: 4), .petals)
+        XCTAssertEqual(BirthdayCardSky.kind(month: 7), .sun)
+        XCTAssertEqual(BirthdayCardSky.kind(month: 10), .leaves)
+        XCTAssertEqual(BirthdayCardSky.kind(month: 1), .frost)
+    }
+
     // MARK: 업데이트 안내
 
     func testUpdatingUserSeesNoticeOnce() throws {
