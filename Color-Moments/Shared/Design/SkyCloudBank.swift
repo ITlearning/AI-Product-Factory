@@ -40,12 +40,15 @@ final class SkyCloudBank: @unchecked Sendable {
         let frames: [MTLTexture]
         fileprivate(set) var done = 0
         fileprivate(set) var readyAt: Double?
+        fileprivate var cleared = false
         fileprivate var lastUse: Double
+        let created: Double
 
         init(key: Key, frames: [MTLTexture], now: Double) {
             self.key = key
             self.frames = frames
             lastUse = now
+            created = now
         }
 
         var total: Int { SkyCloudBank.strips * frames.count }
@@ -93,14 +96,17 @@ final class SkyCloudBank: @unchecked Sendable {
         var todo: [Int] = []
         if all {
             todo = Array(p.done..<p.total)
-        } else if !p.complete, now - lastLiveStrip >= 1.0 / 60 {
+        } else if !p.complete, now - lastLiveStrip >= 1.0 / 60, SkyDebug.prepareDelay <= 0 || now - p.created >= SkyDebug.prepareDelay {
             todo = [p.done]
             lastLiveStrip = now
         }
         p.done += todo.count
         stripsBaked += todo.count
         if p.complete, p.readyAt == nil { p.readyAt = all ? -.infinity : now }
+        let fresh = !p.cleared
+        p.cleared = true
         lock.unlock()
+        if fresh { clear(p, cb: cb) }
         for i in todo { encodeStrip(i, of: p, cb: cb, gpu: gpu) }
     }
 
@@ -109,6 +115,18 @@ final class SkyCloudBank: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         guard let r = p.readyAt else { return 0 }
         return Float(min(max((now - r) / 0.6, 0), 1))
+    }
+
+    /// 새 판은 첫 굽기 전에 「구름 없음」(색 0, 투과 1)으로 비운다 — 새 텍스처엔 쓰레기 값이 들어 있다.
+    private func clear(_ p: Plate, cb: MTLCommandBuffer) {
+        for tex in p.frames {
+            let rp = MTLRenderPassDescriptor()
+            rp.colorAttachments[0].texture = tex
+            rp.colorAttachments[0].loadAction = .clear
+            rp.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+            rp.colorAttachments[0].storeAction = .store
+            cb.makeRenderCommandEncoder(descriptor: rp)?.endEncoding()
+        }
     }
 
     private func encodeStrip(_ i: Int, of p: Plate, cb: MTLCommandBuffer, gpu: SkyGPU) {

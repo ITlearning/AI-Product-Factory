@@ -28,16 +28,22 @@ static float rfbm(float2 p) {
     return 0.55 * rnoise(p) + 0.3 * rnoise(p * 2.1 + 5.3) + 0.15 * rnoise(p * 4.3 + 1.7);
 }
 
-static float rTextMask(constant FrostU& u, float2 pt, float feather) {
-    float m = 0.0;
+// SkyShader.metal textLean(wide) 와 같은 넓은 경사 — 글자 쪽에서 1, 화면 절반 넘게 번져 0.
+static float rTextLean(constant FrostU& u, float2 pt) {
     int n = int(u.parallax.z);
+    float W = u.view.x, H = u.view.y;
+    float F = min(0.5 * max(W, H), 200.0);
+    float s = 0.0;
     for (int i = 0; i < n; i++) {
         float4 r = u.text[i];
         float2 d = max(r.xy - pt, pt - r.zw);
         float sd = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-        m = max(m, 1.0 - smoothstep(-2.0, feather, sd));
+        float x = saturate((sd + 0.15 * F) / (1.15 * F));
+        float c = 1.0 - x * x * (3.0 - 2.0 * x);
+        s += c * c * c * c;
     }
-    return m;
+    float k = min(sqrt(sqrt(s)), 1.0);
+    return k * k;
 }
 
 // 귀퉁이 하나 — 결정 결을 귀퉁이에서 화면 가운데 쪽으로 자라게 돌려 읽는다.
@@ -57,7 +63,7 @@ fragment float4 skyFrostOverlay(VOut in [[stage_in]], constant FrostU& u [[buffe
     float m = min(W, H);
     float t = u.view.z;
     float pxPerPt = u.res.x / W;
-    float tm = rTextMask(u, pt, 8.0 + 0.12 * m);
+    float tm = saturate(rTextLean(u, pt) / 0.9);
     if (tm >= 0.999) return float4(0.0);
 
     float2 warp = (float2(rfbm(pt / (0.22 * m)), rfbm(pt / (0.22 * m) + 7.1)) - 0.5) * 0.35 * m;

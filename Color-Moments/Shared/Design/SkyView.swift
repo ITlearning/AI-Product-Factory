@@ -229,6 +229,8 @@ public enum SkyDebug {
     nonisolated(unsafe) public static var frequentMeteors = false
     /// nil 자동 · true 모든 화면 구운 구름 · false 모든 화면 실시간 레이마칭
     nonisolated(unsafe) public static var bakedClouds: Bool?
+    /// 느린 기기 흉내 — GPU 준비와 구운 판 굽기를 이만큼(초) 늦춘다.
+    nonisolated(unsafe) public static var prepareDelay: Double = 0
 }
 
 /// 디버그 계측 — 그리는 쪽에서 쓰고 화면이 읽는다.
@@ -534,7 +536,7 @@ public struct SkyFrame: Equatable {
 
     /// 기기 단계만큼 줄인 입자 수(빗줄기, 눈·꽃잎·잎).
     func particles(_ b: SkyBudget) -> (rain: Int, flakes: Int) {
-        func scaled(_ n: Int) -> Int { n == 0 ? 0 : max(Int((Double(n) * b.particleScale).rounded()), 1) }
+        func scaled(_ n: Int) -> Int { n == 0 || b.particleScale <= 0 ? 0 : max(Int((Double(n) * b.particleScale).rounded()), 1) }
         return (scaled(rainCount()), scaled(flakeCount()))
     }
 }
@@ -577,6 +579,7 @@ final class SkyGPU {
         loading = true
         loadLock.unlock()
         DispatchQueue.global(qos: .userInitiated).async {
+            if SkyDebug.prepareDelay > 0 { Thread.sleep(forTimeInterval: SkyDebug.prepareDelay) }
             let start = CACurrentMediaTime()
             let gpu = try? SkyGPU()
             buildMilliseconds = (CACurrentMediaTime() - start) * 1000

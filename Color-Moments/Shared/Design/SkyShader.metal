@@ -15,7 +15,7 @@ struct SkyU {
     float4 meteor1;   // 꼬리 길이 pt, 세기(0 = 없음), 굵기 pt, 별 층 수(1~3)
     float4 blend;     // 구름 두 장 섞기 w, t - tA, tB - t, 구름 흐름 pt/초 — 구운 구름이면 w, 구운 판 pt w, h, 흐름
     float4 sun;       // 햇무리 반지름 pt, 눈부심 길이 pt, 새털구름 옥타브, 햇무리 얼룩(1)
-    float4 caps;      // 작은 글자 최대 밝기, 큰 말 최대 밝기(0 = 안 누름), 작은 글자 번짐 pt, 큰 말 번짐 pt
+    float4 caps;      // 글자 쪽 최대 밝기(0 = 안 누름, 넓은 경사로 건다), 나머지는 안 씀
     float4 extra;     // 글자 쪽 구름 옅게(0~1), 별 층 수(새벽), 눈·꽃잎·잎 수, 덧그림 옥타브
     float4 textBig;   // 글자 자리마다 큰 말(1)/작은 글자(0)
     float4 win;       // 세계 창 pt x, y(구운 구름이면 판 안 자리), 구운 구름 불투명도, 구름 방식(0 실시간 · 1 구운 판 읽기 · 2 굽기)
@@ -104,40 +104,13 @@ static float fbm2(float2 p, int oct) {
     return s;
 }
 
-// which: 0 전부, 1 작은 글자만, 2 큰 말만
-static float textMask(constant SkyU& u, float2 pt, float spread = 1.0, int which = 0, float feather = 0.0) {
-    float m = 0.0;
-    int n = int(u.parallax.z);
-    float f = max((feather > 0.0 ? feather : u.parallax.w) * spread, 1.0);
-    for (int i = 0; i < n; i++) {
-        bool big = u.textBig[i] > 0.5;
-        if ((which == 1 && big) || (which == 2 && !big)) continue;
-        float4 r = u.text[i];
-        float2 d = max(r.xy - pt, pt - r.zw);
-        float sd = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-        m = max(m, 1.0 - smoothstep(0.0, f, sd));
-    }
-    return m;
-}
-
-// 글자 자리까지 거리(pt, 안쪽은 음수). 자리가 없으면 큰 값.
-static float textDistance(constant SkyU& u, float2 pt) {
-    float m = 1e4;
-    int n = int(u.parallax.z);
-    for (int i = 0; i < n; i++) {
-        float4 r = u.text[i];
-        float2 d = max(r.xy - pt, pt - r.zw);
-        m = min(m, length(max(d, 0.0)) + min(max(d.x, d.y), 0.0));
-    }
-    return m;
-}
-
 // 글자 묶음 쪽으로 기우는 넓은 덮임 경사(0~1) — 자리마다 화면 크기의 절반 넘게 번진 혹을 부드럽게 겹친다(4제곱 합).
 // 구름을 글자 모양으로 자르지 않고, 글자 쪽엔 애초에 옅게 생기게 한다.
-static float textLean(constant SkyU& u, float2 pt) {
+// wide: 목록 카드에서도 짧은 변(96pt)이 아니라 긴 변의 절반까지 번진다 — 빛 덜기·밝기 상한·별·입자처럼 하늘 전체를 바꾸는 쪽.
+static float textLean(constant SkyU& u, float2 pt, bool wide = false) {
     int n = int(u.parallax.z);
     float W = u.view.x, H = u.view.y;
-    float F = min(min(0.5 * max(W, H), min(W, H)), 200.0);
+    float F = min(wide ? 0.5 * max(W, H) : min(0.5 * max(W, H), min(W, H)), 200.0);
     float s = 0.0;
     for (int i = 0; i < n; i++) {
         float4 r = u.text[i];
@@ -149,6 +122,21 @@ static float textLean(constant SkyU& u, float2 pt) {
     }
     float k = min(sqrt(sqrt(s)), 1.0);
     return k * k;
+}
+
+// 별이 글자 쪽에서 빠지는 정도(1 그림, 0 뺌) — 같은 넓은 경사에서. 글자 자리 위(경사 ≥ 0.9)는 0.
+static float textKeep(constant SkyU& u, float2 pt) { return saturate(1.0 - textLean(u, pt, true) / 0.9); }
+
+// 글자 자리까지 거리(pt, 안쪽은 음수) — 입자 하나하나가 글자에 닿기 전에 옅어지게. 하늘 전체를 바꾸는 데엔 쓰지 않는다.
+static float textDistance(constant SkyU& u, float2 pt) {
+    float m = 1e4;
+    int n = int(u.parallax.z);
+    for (int i = 0; i < n; i++) {
+        float4 r = u.text[i];
+        float2 d = max(r.xy - pt, pt - r.zw);
+        m = min(m, length(max(d, 0.0)) + min(max(d.x, d.y), 0.0));
+    }
+    return m;
 }
 
 // MARK: - 3D 구름 노이즈 굽기 (한 번만)
@@ -230,7 +218,7 @@ static float3 grad3(float3 top, float3 mid, float3 bot, float m, float y) {
 static float3 skyColor(int scene, float2 uv, float2 pt, constant SkyU& u) {
     float y = saturate(uv.y);
     float d = distance(pt, u.light.xy) / WORLD;
-    float shade = 1.0 - 0.85 * u.tone.y * textMask(u, pt, 2.5);
+    float shade = 1.0 - 0.85 * u.tone.y * textLean(u, pt, true);
     if (nightScene(scene)) {
         float k = pow(moonLitFraction(u), 1.5);
         float3 c;
@@ -522,7 +510,7 @@ static float4 cloudCore(constant SkyU& u, texture3d<float> nz, float2 uv, float2
     int steps = int(u.quality.x), lsteps = int(u.quality.y), farSteps = int(u.quality.w);
     bool detail = u.quality.z > 0.5;
     float3 sky = skyColor(scene, uv, pt, u);
-    float shade = 1.0 - 0.8 * u.tone.y * textMask(u, pt, 2.5);
+    float shade = 1.0 - 0.8 * u.tone.y * textLean(u, pt, true);
     float clear = u.extra.x * textLean(u, pt);
     float yfrac = uv.y;
     float4 nearL = marchLayer(nz, layerFor(scene, 1), world, lw, td, te, tilt, steps, lsteps, detail, jitter, shade, yfrac, clear);
@@ -578,8 +566,8 @@ static float3 starField(constant SkyU& u, float2 pt, float t, float pxPerPt, flo
         if (pick > prob * (0.2 + 1.6 * dens)) continue;
         float2 h = hash22(cid + 17.0 * fl);
         float2 dv = p - (cid + 0.12 + 0.76 * h) * cell;
-        // 글자 둘레의 별은 흐리게가 아니라 통째로 뺀다 — 큰 별을 눌러 두면 흐린 얼룩이 된다.
-        if (textMask(u, pt - dv, 0.3) > 0.1 + 0.85 * hash12(cid + 7.7 + fl)) continue;
+        // 글자 쪽 별은 흐리게가 아니라 통째로 뺀다 — 넓은 경사를 따라 드문드문 줄어 상자 모양이 남지 않는다.
+        if (textKeep(u, pt - dv) < 0.05 + 0.9 * hash12(cid + 7.7 + fl)) continue;
         float rk = hash12(cid + 5.3 + 11.0 * fl);
         float mag = l == 0 ? 0.14 + 0.25 * rk : (l == 1 ? 0.4 + 1.4 * rk * rk * rk : 1.3 + 5.5 * pow(rk, 4.0));
         float sig = 0.38 + 0.4 * sqrt(mag);
@@ -672,6 +660,8 @@ static float4 cloudTaps(texture2d<float> col, texture2d<float> tr, float2 uv) {
 
 // 구운 판 읽기 — 판 안 자리(win.xy, 흐름은 이미 더해 옴)에서 가로로 끝없이. 아주 약하게 일렁인다.
 static float4 bakedAt(constant SkyU& u, texture2d<float> A, texture2d<float> B, float2 pt) {
+    // 다 구워지기 전(불투명도 0)엔 판을 읽지 않는다 — 덜 구운 판엔 쓰레기 값(NaN)이 있을 수 있다.
+    if (u.win.z <= 0.0) return float4(0.0, 0.0, 0.0, 1.0);
     constexpr sampler rs(filter::linear, s_address::repeat, t_address::clamp_to_edge);
     float t = u.view.z;
     float2 bp = pt + u.win.xy;
@@ -683,7 +673,7 @@ static float4 bakedAt(constant SkyU& u, texture2d<float> A, texture2d<float> B, 
     float m = u.extra.x * textLean(u, pt);
     float e = 0.4 * m;
     float a2 = saturate((a - e) / (1.0 - e)) * (1.0 - 0.9 * m) * u.win.z;
-    float shade = 1.0 - 0.8 * u.tone.y * textMask(u, pt, 1.0, 0, 40.0);
+    float shade = 1.0 - 0.8 * u.tone.y * textLean(u, pt, true);
     return float4(c.rgb * (a2 / max(a, 1e-3)) * shade, 1.0 - a2);
 }
 
@@ -756,8 +746,8 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     float2 pt = in.uv * u.view.xy;
     float t = u.view.z;
     float pxPerPt = u.res.x / u.view.x;
-    float mask = textMask(u, pt);
-    float shade = 1.0 - 0.85 * u.tone.y * textMask(u, pt, 2.5);
+    float lean = textLean(u, pt, true);
+    float shade = 1.0 - 0.85 * u.tone.y * lean;
     float3 c = skyColor(scene, in.uv, pt, u);
     float4 cl = cloudsAt(u, colA, trA, colB, trB, in.uv);
     float T = cl.a;
@@ -770,7 +760,7 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         float3 moon = float3(0.0);
         if (u.light.w > 0.5) moon = moonLight((pt - lp) / r, r * pxPerPt, u, moonTex, cover);
         c += starField(u, pt, t, pxPerPt, u.parallax.xy, int(u.meteor1.w)) * (1.0 - cover);
-        c += meteorLight(pt, u, pxPerPt) * (1.0 - 0.5 * mask) * (1.0 - cover);
+        c += meteorLight(pt, u, pxPerPt) * (1.0 - 0.5 * lean) * (1.0 - cover);
         if (u.light.w > 0.5) {
             float e = d / r;
             float glow = pow(moonLitFraction(u), 1.2) * (0.13 * exp(-e * e * 0.12) + 0.035 * exp(-e * 0.15));
@@ -794,7 +784,7 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         float under = saturate((Tb - T) * 2.2) * (1.0 - T);
         float low = 0.35 + 0.65 * saturate(in.uv.y * 1.2);
         float3 wc = scene == S_DUSK ? lin(float3(1.0, 0.36, 0.16)) : lin(float3(1.0, 0.55, 0.55));
-        c += wc * under * low * (scene == S_DUSK ? 0.55 : 0.3) * (1.0 - 0.8 * textMask(u, pt, 1.6));
+        c += wc * under * low * (scene == S_DUSK ? 0.55 : 0.3) * (1.0 - 0.8 * lean);
     }
 
     if (scene == S_DAY) {
@@ -829,14 +819,14 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         float k = scene == S_RAIN ? 1.0 : (scene == S_DRIZZLE ? 0.85 : 0.6);
         float a = (band * saturate(mist * 1.2 - 0.15) * 0.55 + band * band * 0.12 + mist2 * 0.06) * k;
         float3 mc = scene == S_SNOW ? lin(float3(0.6, 0.63, 0.68)) : (scene == S_DRIZZLE ? lin(float3(0.46, 0.5, 0.53)) : lin(float3(0.42, 0.46, 0.50)));
-        if (scene != S_RAIN) a *= 1.0 - 0.85 * textMask(u, pt, 2.0);
+        if (scene != S_RAIN) a *= 1.0 - 0.85 * lean;
         c = mix(c, mc, saturate(a));
     }
     if (scene == S_FOG) {
         // 천천히 흐르는 안개 층 셋 — 아래로 갈수록 짙고 하얗다. 위 층은 느리고 얇다.
         float W = u.view.x;
         float y = in.uv.y;
-        float clear = 1.0 - 0.97 * textMask(u, pt, 3.0);
+        float clear = 1.0 - 0.97 * lean;
         float acc = 0.0;
         for (int i = 0; i < 3; i++) {
             float fi = float(i);
@@ -934,7 +924,7 @@ vertex RainOut skyRainVertex(uint vid [[vertex_id]], uint iid [[instance_id]],
     RainOut o;
     o.pos = float4(p.x / u.view.x * 2.0 - 1.0, 1.0 - p.y / u.view.y * 2.0, 0.0, 1.0);
     o.local = float2(side, along);
-    o.alpha = b.y * (b.x / w) * (1.0 - 0.92 * textMask(u, p));
+    o.alpha = b.y * (b.x / w) * smoothstep(2.0, 36.0, textDistance(u, p));
     return o;
 }
 
@@ -1181,7 +1171,7 @@ fragment float4 skyFinal(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     int scene = int(u.view.w);
     float2 pt = in.uv * u.view.xy;
     float3 c = hdr.sample(s, in.uv).rgb;
-    float shade = 1.0 - 0.85 * u.tone.y * textMask(u, pt, 2.5);
+    float shade = 1.0 - 0.85 * u.tone.y * textLean(u, pt, true);
     c += (bloom.sample(s, in.uv).rgb * u.tone.w + rays.sample(s, in.uv).rgb) * shade;
 
     if (scene == S_DAY && u.light.w > 0.5) {
@@ -1201,15 +1191,13 @@ fragment float4 skyFinal(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         }
     }
 
-    for (int k = 1; k <= 2; k++) {
-        float m = textMask(u, pt, 1.0, k, k == 1 ? u.caps.z : u.caps.w);
-        if (m <= 0.0) continue;
-        float cap = k == 1 ? u.caps.x : u.caps.y, knee = cap * 0.75;
-        if (cap <= 0.0) continue;
+    // 글자 쪽 밝기 상한 — 상자가 아니라 넓은 경사로 건다.
+    if (u.caps.x > 0.0) {
+        float m = textLean(u, pt, true);
+        float cap = u.caps.x, knee = cap * 0.75;
         float L = lum(c);
         float Lc = L < knee ? L : knee + (cap - knee) * (1.0 - exp(-(L - knee) / (cap - knee)));
-        float ratio = mix(1.0, Lc / max(L, 1e-6), m);
-        c *= ratio;
+        c *= mix(1.0, Lc / max(L, 1e-6), m);
     }
     float L;
 

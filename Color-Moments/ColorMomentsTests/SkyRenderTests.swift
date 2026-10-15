@@ -671,8 +671,272 @@ final class SkyRenderTests: XCTestCase {
         print("SKY7 반짝임\n" + log.joined(separator: "\n"))
     }
 
-    private func hdr(_ gpu: SkyGPU, _ frame: SkyFrame, t: Double, headroom: Float, budget: SkyBudget) throws -> (Int, Int, [Float]) {
+    /// 8차 — 글자 자리 자국 전수조사. 같은 프레임을 글자 자리 없음(z) · 있음(a) · 있음을 (8, 8)pt 민 것(b)으로 그려
+    /// 차이 영상 Da = a − z, Db = b − z(sRGB 8비트 휘도, 3pt 흐림)를 만든다. 글자 쪽 효과가 「세기 m(자리) × 하늘 내용」이면
+    /// |Da − Db| / (8pt · |Da|) ≈ |∇ log m| — 하늘 내용(구름·서리·안개 무늬)과 상관없이 효과 경계가 얼마나 가파른지만 남는다.
+    /// 차이가 뚜렷한 픽셀(최대의 25%·2단계 이상)의 90번째 백분위가 문턱(0.04/pt)을 넘으면 「글자 상자 모양 경계」 — 구름 가장자리처럼
+    /// 드문 곳의 튐은 빼고 상자 둘레 띠 전체를 본다. 실측: 7차 는개 히어로(구운 판, 40pt 번짐) 0.041·맑은 밤 카드 0.053·서리 카드 0.063,
+    /// 화면 절반 넘게 번진 경사(textLean)는 0.03 안팎.
+    /// 기본은 단계 최상·중 × 한 시각, SKY8_ALL 이면 네 단계 × 두 시각 + 입자(16 시각 평균) 두 단계.
+    func testTextZoneLeavesNoBoxEdge() throws {
+        let gpu = try XCTUnwrap(SkyGPU.shared)
+        let env = ProcessInfo.processInfo.environment
+        let every = env["SKY8_ALL"] != nil
+        let limit = Self.boxEdgeLimit
+        let sizes: [(SkyQuality, CGSize, SkyTexts?)] = [(.hero, CGSize(width: 354, height: 232), nil),
+                                                         (.card, CGSize(width: 354, height: 96), nil),
+                                                         (.full, full, SkyFullPage.texts(in: full))]
+        let tiers: [SkyTier] = every ? [.ultra, .high, .mid, .low] : [.ultra, .mid]
+        let times = every ? [SceneArt.stillPhase, SceneArt.stillPhase + 40] : [SceneArt.stillPhase]
+        let only = env["SKY8_ONLY"].map { o in SkyScene.allCases.filter { o.split(separator: ",").contains(Substring("\($0)")) } }
+        var rows: [String] = [], fails: [String] = []
+        var count = 0
+        func check(_ tag: String, _ frame: SkyFrame, _ ts: [Double], _ b: SkyBudget) throws {
+            let e = try boxEdge(gpu, frame, times: ts, budget: b)
+            count += 1
+            rows.append(String(format: "%@ | 가파름 %.3f/pt | 차이 최대 %.1f단계 | %@", tag, e.sharp, e.amp, e.at))
+            if e.sharp > limit { fails.append(String(format: "%@ %.3f %@", tag, e.sharp, e.at)) }
+        }
+        for scene in only ?? SkyScene.allCases {
+            for (q, size, texts) in sizes {
+                for tier in tiers {
+                    for t in times {
+                        var b = SkyBudget(q, tier: tier, still: true)
+                        b.particleScale = 0
+                        let f = SkyFrame(scene: scene, quality: q, size: size, texts: texts, moonAge: 14.8)
+                        try check(String(format: "%@ %@ %@ t+%.0f", scene.name, q.rawValue, tier.name, t - SceneArt.stillPhase), f, [t], b)
+                    }
+                }
+            }
+        }
+        for scene in (only ?? SkyScene.allCases) where [.rain, .drizzle, .snow, .petals, .leaves].contains(scene) {
+            for (q, size, texts) in sizes {
+                for tier in every ? [SkyTier.ultra, .mid] : [.ultra] {
+                    let f = SkyFrame(scene: scene, quality: q, size: size, texts: texts)
+                    try check("\(scene.name) \(q.rawValue) \(tier.name) 입자", f, (0..<16).map { SceneArt.stillPhase + Double($0) * 0.53 },
+                              SkyBudget(q, tier: tier, still: true))
+                }
+            }
+        }
+        let report = "SKY8 글자 자리 자국 — \(count)개 조합, 문턱 \(limit)/pt, 실패 \(fails.count)\n" + rows.joined(separator: "\n")
+            + "\n실패:\n" + fails.joined(separator: "\n")
+        print(report)
+        if let dir = env["SKY8_DIR"] {
+            try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            try report.write(toFile: dir + "/audit-\(env["SKY8_TAG"] ?? "now")\(every ? "-all" : "").txt", atomically: true, encoding: .utf8)
+        }
+        XCTAssertTrue(fails.isEmpty, "글자 상자 모양 경계 \(fails.count)곳:\n" + fails.joined(separator: "\n"))
+    }
+
+    static let boxEdgeLimit = 0.04
+    static let boxShift: CGFloat = 8
+
+    private func shifted(_ texts: SkyTexts, by d: CGFloat) -> SkyTexts {
+        SkyTexts(small: texts.small.map { $0.offsetBy(dx: d, dy: d) }, big: texts.big.map { $0.offsetBy(dx: d, dy: d) })
+    }
+
+    /// 글자 자리 있음 − 없음의 sRGB 휘도 차(0~255 단계, 1pt 한 픽셀). 여러 시각이면 평균.
+    private func lumaDiff(_ gpu: SkyGPU, _ on: SkyFrame, times: [Double], budget: SkyBudget) throws -> (w: Int, h: Int, diff: [Double]) {
+        var acc: [Double] = []
+        var w = 0, h = 0
+        var off = on
+        off.texts = SkyTexts.none
+        for t in times {
+            let a = try hdr(gpu, on, t: t, headroom: 1, budget: budget, scale: 1)
+            let z = try hdr(gpu, off, t: t, headroom: 1, budget: budget, scale: 1)
+            w = a.0; h = a.1
+            if acc.isEmpty { acc = [Double](repeating: 0, count: w * h) }
+            for i in 0..<(w * h) { acc[i] += luma(a.2, i) - luma(z.2, i) }
+        }
+        let n = Double(times.count)
+        return (w, h, acc.map { $0 / n })
+    }
+
+    private func luma(_ px: [Float], _ i: Int) -> Double {
+        func g(_ v: Float) -> Double { pow(Double(min(max(v, 0), 1)), 1 / 2.2) * 255 }
+        return 0.2126 * g(px[i * 4]) + 0.7152 * g(px[i * 4 + 1]) + 0.0722 * g(px[i * 4 + 2])
+    }
+
+    private func blur3(_ src: [Double], w: Int, h: Int) -> [Double] {
+        var d = src
+        let r = 3
+        for _ in 0..<2 {
+            var tmp = d
+            for y in 0..<h {
+                var s = 0.0
+                for x in -r...r { s += d[y * w + min(max(x, 0), w - 1)] }
+                for x in 0..<w {
+                    tmp[y * w + x] = s / Double(2 * r + 1)
+                    s += d[y * w + min(x + r + 1, w - 1)] - d[y * w + max(x - r, 0)]
+                }
+            }
+            for x in 0..<w {
+                var s = 0.0
+                for y in -r...r { s += tmp[min(max(y, 0), h - 1) * w + x] }
+                for y in 0..<h {
+                    d[y * w + x] = s / Double(2 * r + 1)
+                    s += tmp[min(y + r + 1, h - 1) * w + x] - tmp[max(y - r, 0) * w + x]
+                }
+            }
+        }
+        return d
+    }
+
+    /// 효과 경계의 가파름(|∇ log m|, /pt)의 90번째 백분위와 그 자리.
+    private func boxEdge(_ gpu: SkyGPU, _ frame: SkyFrame, times: [Double], budget: SkyBudget) throws -> (sharp: Double, amp: Double, at: String) {
+        var moved = frame
+        moved.texts = shifted(frame.texts, by: Self.boxShift)
+        let a = try lumaDiff(gpu, frame, times: times, budget: budget)
+        let b = try lumaDiff(gpu, moved, times: times, budget: budget)
+        let w = a.w, h = a.h
+        let da = blur3(a.diff, w: w, h: h), db = blur3(b.diff, w: w, h: h)
+
+        let amp = max(da.map(abs).max() ?? 0, db.map(abs).max() ?? 0)
+        let floor = max(2, 0.25 * amp)
+        var vals: [(Double, Int)] = []
+        for i in 0..<(w * h) {
+            let m = max(abs(da[i]), abs(db[i]))
+            guard m >= floor else { continue }
+            vals.append((abs(da[i] - db[i]) / (Double(Self.boxShift) * m), i))
+        }
+        guard !vals.isEmpty else { return (0, amp, "차이 없음") }
+        vals.sort { $0.0 < $1.0 }
+        let p = vals[Int(Double(vals.count - 1) * 0.9)]
+        let sx = frame.size.width / Double(w), sy = frame.size.height / Double(h)
+        let pt = CGPoint(x: (Double(p.1 % w) + 0.5) * sx, y: (Double(p.1 / w) + 0.5) * sy)
+        var near = (0, Double.infinity)
+        for (k, r) in frame.textRects.enumerated() {
+            let dx = max(r.minX - pt.x, pt.x - r.maxX), dy = max(r.minY - pt.y, pt.y - r.maxY)
+            let sd = hypot(max(dx, 0), max(dy, 0)) + min(max(dx, dy), 0)
+            if sd < near.1 { near = (k, sd) }
+        }
+        return (p.0, amp, String(format: "(%.0f, %.0f)pt 자리%d 바깥 %.0fpt", pt.x, pt.y, near.0, near.1))
+    }
+
+    /// 8차 — 구운 판이 아직 안 구워졌을 때(느린 기기) 판 텍스처를 읽지 않는다. 판에 쓰레기(NaN)를 채워도 첫 프레임이
+    /// 깨끗한 판과 같고(분홍 없음), NaN·1 넘는 값이 없다. 새로 만든 판은 첫 굽기 전에 0 으로 비운다.
+    func testUnbakedPlateIsNeverRead() throws {
+        let gpu = try XCTUnwrap(SkyGPU.shared)
+        let bank = SkyCloudBank.shared
+        let savedVersion = SkyCloudBank.version, savedDelay = SkyDebug.prepareDelay
+        defer { SkyCloudBank.version = savedVersion; SkyDebug.prepareDelay = savedDelay }
+        SkyCloudBank.version += 1000
+        SkyDebug.prepareDelay = 2
+        let size = CGSize(width: 354, height: 232)
+        var log: [String] = []
+        for scene in SkyScene.allCases {
+            let frame = SkyFrame(scene: scene, quality: .hero, size: size)
+            let b = SkyBudget(.hero, tier: .mid)
+            XCTAssertTrue(b.bakedClouds)
+            let renderer = SkyRenderer(gpu: gpu)
+            let clean = try progressive(gpu, renderer, frame, budget: b)
+            let plate = try XCTUnwrap(bank.plate(scene, .band, device: gpu.device))
+            XCTAssertFalse(plate.complete, "\(scene.name) 늦춤 중엔 굽지 않는다")
+            for f in plate.frames {
+                let px = try readHalf(gpu, f)
+                XCTAssertTrue(px.indices.allSatisfy { px[$0] == ($0 % 4 == 3 ? 1 : 0) }, "\(scene.name) 새 판은 구름 없음으로 비워 둔다")
+            }
+            try poison(gpu, plate.frames)
+            let dirty = try progressive(gpu, renderer, frame, budget: b)
+            var bad = 0, diff: Float = 0
+            for i in stride(from: 0, to: dirty.count, by: 4) {
+                let r = dirty[i], g = dirty[i + 1], bl = dirty[i + 2]
+                if !(r.isFinite && g.isFinite && bl.isFinite) || max(r, g, bl) > 1.02 { bad += 1 }
+                diff = max(diff, abs(r - clean[i]), abs(g - clean[i + 1]), abs(bl - clean[i + 2]))
+            }
+            log.append(String(format: "%@ 이상 픽셀 %d 깨끗한 첫 프레임과 최대 차 %.4f", scene.name, bad, diff))
+            XCTAssertEqual(bad, 0, "\(scene.name) 덜 구운 판에서 NaN·분홍·1 초과")
+            XCTAssertLessThan(diff, 0.02, "\(scene.name) 덜 구운 판의 쓰레기 값이 그림에 들어갔다")
+        }
+        print("SKY8 덜 구운 판\n" + log.joined(separator: "\n"))
+    }
+
+    private func progressive(_ gpu: SkyGPU, _ renderer: SkyRenderer, _ frame: SkyFrame, budget: SkyBudget) throws -> [Float] {
         let w = Int(frame.size.width * 2), h = Int(frame.size.height * 2)
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: SkyGPU.format, width: w, height: h, mipmapped: false)
+        d.usage = [.renderTarget, .shaderRead]
+        d.storageMode = .private
+        let target = try XCTUnwrap(gpu.device.makeTexture(descriptor: d))
+        let cb = try XCTUnwrap(gpu.queue.makeCommandBuffer())
+        renderer.encode(cb, into: target, frame: frame, t: SceneArt.stillPhase, headroom: 1, budget: budget, progressive: true)
+        cb.commit(); cb.waitUntilCompleted()
+        return try readHalf(gpu, target)
+    }
+
+    private func poison(_ gpu: SkyGPU, _ texs: [MTLTexture]) throws {
+        let cb = try XCTUnwrap(gpu.queue.makeCommandBuffer())
+        for t in texs {
+            let rp = MTLRenderPassDescriptor()
+            rp.colorAttachments[0].texture = t
+            rp.colorAttachments[0].loadAction = .clear
+            rp.colorAttachments[0].clearColor = MTLClearColor(red: .nan, green: .infinity, blue: .nan, alpha: .nan)
+            rp.colorAttachments[0].storeAction = .store
+            cb.makeRenderCommandEncoder(descriptor: rp)?.endEncoding()
+        }
+        cb.commit(); cb.waitUntilCompleted()
+    }
+
+    private func readHalf(_ gpu: SkyGPU, _ tex: MTLTexture) throws -> [Float] {
+        let w = tex.width, h = tex.height, row = w * 8
+        let buf = try XCTUnwrap(gpu.device.makeBuffer(length: row * h, options: .storageModeShared))
+        let cb = try XCTUnwrap(gpu.queue.makeCommandBuffer())
+        let blit = try XCTUnwrap(cb.makeBlitCommandEncoder())
+        blit.copy(from: tex, sourceSlice: 0, sourceLevel: 0, sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+                  sourceSize: MTLSize(width: w, height: h, depth: 1), to: buf, destinationOffset: 0,
+                  destinationBytesPerRow: row, destinationBytesPerImage: row * h)
+        blit.endEncoding()
+        cb.commit(); cb.waitUntilCompleted()
+        let p = buf.contents().bindMemory(to: Float16.self, capacity: w * h * 4)
+        return (0..<(w * h * 4)).map { Float(p[$0]) }
+    }
+
+    /// 8차 대표 PNG — 는개·비·흐린 밤·맑은 밤 히어로·카드(단계 최상·중) + 차이 영상(×8). SKY8_DIR.
+    func testDumpSky8() throws {
+        guard let dir = ProcessInfo.processInfo.environment["SKY8_DIR"] else { throw XCTSkip("SKY8_DIR 없음") }
+        let sub = ProcessInfo.processInfo.environment["SKY8_TAG"] ?? "now"
+        let url = URL(fileURLWithPath: dir).appendingPathComponent(sub)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        let gpu = try XCTUnwrap(SkyGPU.shared)
+        let heroSize = CGSize(width: 354, height: 232), rowSize = CGSize(width: 354, height: 96)
+        let scenes: [SkyScene] = [.drizzle, .rain, .nightCloudy, .clearNight, .snow, .fog, .frost, .dusk]
+        for tier in [SkyTier.mid, .ultra] {
+            for scene in scenes {
+                let hero = SkyFrame(scene: scene, quality: .hero, size: heroSize, moonAge: 14.8)
+                let row = SkyFrame(scene: scene, quality: .card, size: rowSize, moonAge: 14.8)
+                let h = try XCTUnwrap(SkySnapshot.image(hero, scale: 3, t: SceneArt.stillPhase, tier: tier)).image
+                let r = try XCTUnwrap(SkySnapshot.image(row, scale: 3, t: SceneArt.stillPhase, tier: tier)).image
+                var b = SkyBudget(.hero, tier: tier, still: true)
+                b.particleScale = 0
+                let d = try lumaDiff(gpu, hero, times: [SceneArt.stillPhase], budget: b)
+                let diffImg = try diffImage(d.diff, w: d.w, h: d.h)
+                save(render(HStack(alignment: .top, spacing: 8) {
+                    VStack(spacing: 6) {
+                        SkyCard(scene: scene, size: .hero, new: true, image: h)
+                        SkyCard(scene: scene, size: .row, new: true, image: r)
+                    }
+                    Image(decorative: diffImg, scale: 1).resizable().frame(width: 354, height: 232)
+                }.padding(8).background(Color.black)), url.appendingPathComponent(String(format: "%02d-%@-%@.png", scene.rawValue, "\(scene)", tier == .mid ? "mid" : "ultra")))
+            }
+        }
+    }
+
+    /// 차이 영상 — 어두워진 곳 파랑, 밝아진 곳 빨강, 1 단계 = 8 밝기.
+    private func diffImage(_ d: [Double], w: Int, h: Int) throws -> CGImage {
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        for i in 0..<(w * h) {
+            let v = UInt8(min(abs(d[i]) * 8, 255))
+            px[i * 4] = d[i] > 0 ? v : 0
+            px[i * 4 + 2] = d[i] < 0 ? v : 0
+            px[i * 4 + 1] = v / 3
+            px[i * 4 + 3] = 255
+        }
+        let ctx = try XCTUnwrap(CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                          space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        return try XCTUnwrap(ctx.makeImage())
+    }
+
+    private func hdr(_ gpu: SkyGPU, _ frame: SkyFrame, t: Double, headroom: Float, budget: SkyBudget, scale: CGFloat = 2) throws -> (Int, Int, [Float]) {
+        let w = Int(frame.size.width * scale), h = Int(frame.size.height * scale)
         let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: SkyGPU.format, width: w, height: h, mipmapped: false)
         d.usage = [.renderTarget, .shaderRead]
         d.storageMode = .private

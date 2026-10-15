@@ -387,6 +387,7 @@ struct SkyDebugPanel: View {
     @Binding var moonScale: Double
     @Binding var frequentMeteors: Bool
     @Binding var baked: Int
+    @State private var slowPrep = SkyDebug.prepareDelay > 0
 
     private var detected: String {
         guard let gpu = SkyGPU.shared else { return "-" }
@@ -419,6 +420,7 @@ struct SkyDebugPanel: View {
             }
             HStack { Text(String(format: "달 크기 ×%.2f", moonScale)); Slider(value: $moonScale, in: 0.5...1.6) }
             Toggle("별똥별 자주(5초)", isOn: $frequentMeteors)
+            Toggle("준비·굽기 2초 늦춤", isOn: $slowPrep)
         }
         .font(Face.caption)
         .onAppear(perform: apply)
@@ -429,6 +431,7 @@ struct SkyDebugPanel: View {
         .onChange(of: moonScale) { apply() }
         .onChange(of: frequentMeteors) { apply() }
         .onChange(of: baked) { apply() }
+        .onChange(of: slowPrep) { SkyDebug.prepareDelay = slowPrep ? 2 : 0; SkyCloudBank.shared.removeAll() }
     }
 
     private func apply() {
