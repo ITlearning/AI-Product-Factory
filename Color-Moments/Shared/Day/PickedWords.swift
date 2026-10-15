@@ -3,7 +3,8 @@ import Foundation
 /// 주운 말 기록 한 줄. 위젯과 앱이 각자 자기 파일에 덧붙이기만 한다 — 한 파일을 두 프로세스가 고치면 나중 쓴 쪽이 앞 줍기를 지운다.
 public struct PickLine: Codable, Equatable, Sendable {
     public enum Kind: String, Codable, Sendable { case pick, unpick }
-    public enum Source: String, Codable, Sendable { case widget, photo, birthday }
+    /// now = 「말」 칸 빈 상태의 「지금의 말」을 앱 안에서 주운 것.
+    public enum Source: String, Codable, Sendable { case widget, photo, birthday, now }
 
     public let id: UUID
     public let kind: Kind
@@ -188,6 +189,34 @@ public struct PickedWords: Sendable {
         }
         try handle.write(contentsOf: data)
         try handle.synchronize()
+    }
+}
+
+// MARK: - 사진과 함께 주운 말
+
+extension PickedWords {
+
+    /// 사진에 말이 붙거나 바뀌었을 때 — 그 사진으로 주운 옛 기록은 빼고, 새 말이 R1 후보(때·날씨 말)면 줍는다.
+    /// 같은 말은 그 사진의 하루(새벽 4시 경계)에 한 번. 주운 줄을 돌려준다.
+    @discardableResult
+    func photoWordChanged(photoID: String, to word: PhotoWord, at: Date, words: [WordEntry]) throws -> PickLine? {
+        _ = try unpick(photoID: photoID, at: Date())
+        guard let entry = words.first(where: { $0.id == word.wordID }), AmbientNow.isCandidate(entry),
+              !pickedToday(entry.word, now: at) else { return nil }
+        return try pick(entry.word, wordID: entry.id, source: .photo, photoID: photoID, at: at)
+    }
+
+    /// 쓰기 실패는 조용히 넘긴다 — 사진 단어는 이미 붙었고, 주운 말은 다음에 다시 붙일 때 맞춰진다.
+    static func photoWordChanged(_ m: Moment, to word: PhotoWord) {
+        guard let picks = PickedWords(writer: .app),
+              let line = try? picks.photoWordChanged(photoID: m.id.uuidString, to: word, at: m.capturedAt,
+                                                     words: BundledWordSource.cached) else { return }
+        PhotoEnrichment.wordPicked?(line)
+    }
+
+    /// 「몽돌에서 빼기」 — 그 사진으로 주운 기록만 뺀다. 위젯·생일 기록은 남는다.
+    static func photoTakenOut(_ id: Moment.ID) {
+        _ = try? PickedWords(writer: .app)?.unpick(photoID: id.uuidString)
     }
 }
 

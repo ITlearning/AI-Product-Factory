@@ -14,8 +14,8 @@ enum ShellPage: CGFloat, CaseIterable {
 
 /// 칸 이동 계산 — progress 로 어느 칸인지, 놓았을 때 어디로 붙는지.
 struct ShellPages: Equatable {
-    /// 「말」 칸(1.2) — 화면이 생기기 전까지 끈다. 끄면 1.1 과 같은 두 칸.
-    static let wordsTab = false
+    /// 「말」 칸(1.2). 끄면 1.1 과 같은 두 칸.
+    static let wordsTab = true
     static let live = ShellPages(words: wordsTab)
 
     static let commitDistance: CGFloat = 0.42

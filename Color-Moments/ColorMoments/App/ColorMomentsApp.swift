@@ -26,6 +26,7 @@ struct ColorMomentsApp: App {
         Telemetry.apply()
         PhotoEnrichment.wordRejected = { Telemetry.send(.wordRejected($0)) }
         PhotoEnrichment.wordShown = { Telemetry.send(.wordShown($0)) }
+        PhotoEnrichment.wordPicked = { line in Telemetry.WordPick(line).map { Telemetry.send(.wordPicked($0)) } }
         // 인텐트는 첫 화면보다 먼저 올 수 있다 — 홈이 뜨면 이 표시를 보고 카메라를 연다.
         let cameraRequest = CameraRequest()
         _cameraRequest = State(initialValue: cameraRequest)

@@ -50,6 +50,9 @@ struct HomeShell: View {
     @State private var tabBarFolded = false
     @State private var homeToTop = 0
     @State private var collectionToTop = 0
+    @State private var wordsToTop = 0
+    /// 「말」 칸도 처음 갈 때 만든다.
+    @State private var wordsLoaded = false
 
     private enum SwipeSide { case camera }
     @State private var camera: CaptureEngine?
@@ -132,8 +135,11 @@ struct HomeShell: View {
                         .offset(x: w + progress * w)
                 }
 
-                if Self.pages.words {
-                    Tone.pure.ignoresSafeArea()
+                if Self.pages.words, wordsLoaded {
+                    WordsView(store: store, active: progress == ShellPage.words.progress,
+                              onScrollMinimize: foldTabBar,
+                              acceptsTaps: ShellPages.acceptsTaps(.words, progress: progress, swiping: collectionDragging),
+                              scrollToTop: wordsToTop)
                         .offset(x: 2 * w + progress * w)
                 }
             }
@@ -147,6 +153,7 @@ struct HomeShell: View {
                                 onEnded: { _, vx in endCollectionSwipe(velocity: vx) })
             )
             .onChange(of: progress) { old, p in
+                if p < ShellPage.collection.progress, !wordsLoaded { wordsLoaded = true }
                 if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start(); PlaceFinder.shared.warm() }
                 if old < 0.999, p >= 0.999, cameraOpenedAt == nil { cameraOpenedAt = Date(); shotsSinceOpen = 0 }
                 if p <= 0.001, let at = cameraOpenedAt {
@@ -417,12 +424,14 @@ struct HomeShell: View {
             switch page {
             case .home: homeToTop += 1
             case .collection: collectionToTop += 1
-            case .camera, .words: break
+            case .words: wordsToTop += 1
+            case .camera: break
             }
             return
         }
         // 말로 갈 때도 조약돌을 지나간다 — 빈자리가 스치지 않게 만든다.
         if page.progress <= ShellPage.collection.progress { collectionLoaded = true }
+        if page == .words { wordsLoaded = true }
         Haptics.snapped()
         progress = page.progress
     }
