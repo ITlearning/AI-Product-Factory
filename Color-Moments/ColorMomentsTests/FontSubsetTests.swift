@@ -48,6 +48,22 @@ final class FontSubsetTests: XCTestCase {
         XCTAssertGreaterThan(needed.count, 20, "색 구간을 훑었는데 이름이 거의 안 나왔다 — 이 테스트가 헛돌고 있다")
     }
 
+    /// 생일 말(명조)과 뜻풀이(고딕) — words.json 밖의 말도 있다.
+    func testBirthdayWordGlyphsArePresent() throws {
+        let list = try XCTUnwrap(BirthdayWords.load(), "번들에 birthday-words.json 이 없다")
+        Face.ensureRegistered()
+        let serif = try XCTUnwrap(UIFont(name: Face.serifName, size: 20)) as CTFont
+        let sans = try sansFont()
+        let sansMissing = Set(list.flatMap { $0.m.unicodeScalars }).filter { !glyphExists($0, in: sans) }
+        XCTAssertTrue(sansMissing.isEmpty, "고딕에 없는 뜻풀이 글자 \(sansMissing.map(String.init).sorted().joined())")
+        let serifMissing = Set(list.flatMap { $0.w.unicodeScalars }).filter { !glyphExists($0, in: serif) }
+            .map(String.init).sorted()
+        // 서브셋을 다시 구우면 이 기대 실패가 「일어나지 않았다」로 깨진다 — 그때 XCTExpectFailure 를 지울 것.
+        XCTExpectFailure("명조 서브셋에 생일 말 글자가 아직 없다 — README 대로 다시 굽기 전까지")
+        XCTAssertTrue(serifMissing.isEmpty,
+            "명조 서브셋에 없는 생일 말 글자 \(serifMissing.count)개: \(serifMissing.joined()) — Shared/Design/Fonts/README.md 대로 다시 구울 것")
+    }
+
     func testWordListLoads() throws {
         let words = try XCTUnwrap(BundledWordSource.load()?.words)
         XCTAssertGreaterThan(words.count, 0, "단어 목록이 비어 이 검사가 헛돈다")
