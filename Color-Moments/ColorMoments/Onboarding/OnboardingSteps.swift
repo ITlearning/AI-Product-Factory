@@ -658,24 +658,6 @@ private struct PathFlow: Layout {
     }
 }
 
-// MARK: 6. 모은 조약돌
-
-struct CollectionStep: View {
-    let next: () -> Void
-
-    var body: some View {
-        OnboardingPage {
-            SceneLayout {
-                CollectionScene()
-            } words: {
-                OnboardingText(title: "오른쪽 가장자리를 왼쪽으로 쓸면 받은 조약돌을 모아 볼 수 있어요")
-            }
-        } actions: {
-            PrimaryAction(title: "다음", action: next)
-        }
-    }
-}
-
 // MARK: 7. 시작하기
 
 struct StartStep: View {

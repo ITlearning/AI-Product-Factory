@@ -41,9 +41,9 @@ final class ShellPagesTests: XCTestCase {
     private let two = ShellPages(words: false)
     private let three = ShellPages(words: true)
 
-    func testWordsTabIsOffUntilItsScreenShips() {
-        XCTAssertFalse(ShellPages.wordsTab)
-        XCTAssertEqual(ShellPages.live, two)
+    func testWordsTabIsOn() {
+        XCTAssertTrue(ShellPages.wordsTab)
+        XCTAssertEqual(ShellPages.live, three)
     }
 
     func testPagePositions() {

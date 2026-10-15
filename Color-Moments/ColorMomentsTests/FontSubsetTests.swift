@@ -58,8 +58,6 @@ final class FontSubsetTests: XCTestCase {
         XCTAssertTrue(sansMissing.isEmpty, "고딕에 없는 뜻풀이 글자 \(sansMissing.map(String.init).sorted().joined())")
         let serifMissing = Set(list.flatMap { $0.w.unicodeScalars }).filter { !glyphExists($0, in: serif) }
             .map(String.init).sorted()
-        // 서브셋을 다시 구우면 이 기대 실패가 「일어나지 않았다」로 깨진다 — 그때 XCTExpectFailure 를 지울 것.
-        XCTExpectFailure("명조 서브셋에 생일 말 글자가 아직 없다 — README 대로 다시 굽기 전까지")
         XCTAssertTrue(serifMissing.isEmpty,
             "명조 서브셋에 없는 생일 말 글자 \(serifMissing.count)개: \(serifMissing.joined()) — Shared/Design/Fonts/README.md 대로 다시 구울 것")
     }
@@ -177,6 +175,7 @@ final class FontSubsetTests: XCTestCase {
         let root = Self.fontsDir.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let onboardingSteps = try String(contentsOf: root.appendingPathComponent("ColorMoments/Onboarding/OnboardingSteps.swift"), encoding: .utf8)
         let onboardingView = try String(contentsOf: root.appendingPathComponent("ColorMoments/Onboarding/OnboardingView.swift"), encoding: .utf8)
+        let wordSteps = try String(contentsOf: root.appendingPathComponent("ColorMoments/Onboarding/WordSteps.swift"), encoding: .utf8)
 
         func quotedValues(after keyword: String, in text: String) -> [String] {
             let pattern = NSRegularExpression.escapedPattern(for: keyword) + #"\(?\s*"([^"]*)""#
@@ -189,6 +188,8 @@ final class FontSubsetTests: XCTestCase {
 
         var titles = quotedValues(after: "PrimaryAction(title:", in: onboardingSteps)
         titles += quotedValues(after: "SecondaryAction(title:", in: onboardingSteps)
+        titles += quotedValues(after: "PrimaryAction(title:", in: wordSteps)
+        titles += quotedValues(after: "SecondaryAction(title:", in: wordSteps)
         titles += quotedValues(after: "actionTitle:", in: onboardingView)
 
         XCTAssertGreaterThanOrEqual(titles.count, 10, "온보딩 버튼 문구를 못 읽어 이 검사가 헛돈다")

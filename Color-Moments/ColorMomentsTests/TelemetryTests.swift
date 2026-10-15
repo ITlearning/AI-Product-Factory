@@ -52,8 +52,8 @@ final class TelemetryTests: XCTestCase {
         XCTAssertFalse(Telemetry.isEnabled)
     }
 
-    private static let allSteps: [OnboardingStep] = [.intro, .firstPebble, .continuing, .place, .arrival, .reminder,
-                                                     .cloud, .howTo, .cameraButton, .collection, .start]
+    private static let allSteps: [OnboardingStep] = [.intro, .firstPebble, .birthday, .continuing, .place, .arrival,
+                                                     .reminder, .cloud, .howTo, .cameraButton, .widget, .start]
 
     private static var allEvents: [Telemetry.Event] {
         var events: [Telemetry.Event] = allSteps.map { .onboardingStep($0) }
@@ -65,7 +65,9 @@ final class TelemetryTests: XCTestCase {
         events += [.pebbleReceived(.home, lag: .next, photos: .one), .pebbleReceived(.onboarding, lag: .same, photos: .threePlus),
                    .pebbleOpened, .cameraClosed(count: 0, stay: .short), .cameraClosed(count: 3, stay: .long),
                    .appEntered(.icon), .appEntered(.notice), .appEntered(.control), .appEntered(.widget),
-                   .todayShown, .wordShown("yunseul"), .wordRejected("yunseul"), .photoAdded(.today, count: 2)]
+                   .todayShown, .wordShown("yunseul"), .wordRejected("yunseul"), .photoAdded(.today, count: 2),
+                   .wordPicked(.widget("neungae")), .wordPicked(.photo("neungae")), .wordPicked(.now("neungae")),
+                   .wordPicked(.birthday)]
         return events
     }
 
@@ -75,7 +77,7 @@ final class TelemetryTests: XCTestCase {
             "step": Set(Telemetry.stepNames),
             "exit": Set(Telemetry.Exit.allCases.map(\.rawValue)),
             "answer": Set(Telemetry.Answer.allCases.map(\.rawValue)),
-            "source": Set(Telemetry.Source.allCases.map(\.rawValue)),
+            "source": Set(Telemetry.Source.allCases.map(\.rawValue) + Telemetry.WordPick.sources),
             "where": Set(Telemetry.Place.allCases.map(\.rawValue)),
             "path": Set(Telemetry.CameraPath.allCases.map(\.rawValue) + Telemetry.Path.allCases.map(\.rawValue)),
             "lag": Set(Telemetry.Lag.allCases.map(\.rawValue)),
@@ -103,7 +105,7 @@ final class TelemetryTests: XCTestCase {
     /// 「묶음.동작」 한 가지 꼴 — PostHog 의 `$` 이벤트나 앱 수명주기 이벤트(「Application Opened」)와 겹치지 않는다.
     func testEventNamesAreFixedAndConsistent() {
         let names = Set(Self.allEvents.map(\.name))
-        XCTAssertEqual(names.count, 16)
+        XCTAssertEqual(names.count, 17)
         for name in names {
             let parts = name.split(separator: ".")
             XCTAssertEqual(parts.count, 2, name)
@@ -111,6 +113,25 @@ final class TelemetryTests: XCTestCase {
             XCTAssertTrue(parts[0].first?.isUppercase == true, name)
             XCTAssertTrue(parts[1].first?.isLowercase == true, name)
         }
+    }
+
+    /// 생일 말은 기기 밖으로 보내지 않는다 — 생일로 주운 줄엔 단어가 있어도 갈래만.
+    func testWordPickedBirthdayCarriesNoWord() {
+        let birthday = PickLine(kind: .pick, word: "해거름", wordID: "haegeoreum", meaning: "뜻", source: .birthday, at: Date())
+        let pick = Telemetry.WordPick(birthday)
+        XCTAssertEqual(pick, .birthday)
+        XCTAssertEqual(Telemetry.Event.wordPicked(.birthday).parameters, ["source": "birthday"])
+        XCTAssertEqual(Telemetry.Event.wordPicked(.birthday).name, "Word.picked")
+    }
+
+    func testWordPickedCarriesSourceAndID() {
+        let photo = PickLine(kind: .pick, word: "는개", wordID: "neungae", source: .photo, at: Date(), photoID: "p1")
+        XCTAssertEqual(Telemetry.WordPick(photo), .photo("neungae"))
+        XCTAssertEqual(Telemetry.Event.wordPicked(.photo("neungae")).parameters, ["source": "photo", "word": "neungae"])
+        let now = PickLine(kind: .pick, word: "는개", wordID: "neungae", source: .now, at: Date())
+        XCTAssertEqual(Telemetry.WordPick(now), .now("neungae"))
+        XCTAssertNil(Telemetry.WordPick(PickLine(kind: .pick, word: "는개", source: .widget, at: Date())), "id 없는 말은 안 보낸다")
+        XCTAssertEqual(Set(Telemetry.WordPick.sources), Set(["widget", "photo", "now", "birthday"]))
     }
 
     func testOnlyCountedEventsCarryWholeCount() {

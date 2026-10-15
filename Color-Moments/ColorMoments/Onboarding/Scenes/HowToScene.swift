@@ -29,58 +29,6 @@ struct HowToScene: View {
     private var camera: some View { CameraFace() }
 }
 
-/// 모은 조약돌 — 찍는 법의 거울. 손가락이 오른쪽 가장자리를 왼쪽으로 쓸면 조약돌 3열 면이 오른쪽에서 밀려 들어온다.
-struct CollectionScene: View {
-
-    var body: some View {
-        SceneClock { t, moving in
-            let s = SwipeMotion.state(at: t.truncatingRemainder(dividingBy: SwipeMotion.cycle), moving: moving)
-            PhoneSilhouette(width: HowToScene.width) {
-                GeometryReader { geo in
-                    let w = geo.size.width
-                    ZStack(alignment: .trailing) {
-                        MiniHome()
-                        collection
-                            .offset(x: w - w * s.progress)
-                        SwipeFinger()
-                            .offset(x: -2 - (w - 34) * s.progress, y: 0)
-                            .opacity(s.finger)
-                            .frame(maxHeight: .infinity)
-                    }
-                }
-            }
-        }
-        .accessibilityHidden(true)
-    }
-
-    private var collection: some View {
-        ZStack(alignment: .top) {
-            Rectangle().fill(Tone.pure)
-            VStack(alignment: .leading, spacing: 16) {
-                ForEach(0..<2, id: \.self) { month in
-                    VStack(alignment: .leading, spacing: 10) {
-                        Capsule().fill(Tone.hairline).frame(width: 16, height: 4)
-                        ForEach(0..<2, id: \.self) { row in
-                            HStack(spacing: 0) {
-                                ForEach(0..<3, id: \.self) { col in
-                                    MiniPebble(height: 18, fill: Self.tint(month * 6 + row * 3 + col))
-                                        .frame(maxWidth: .infinity)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.top, 26)
-        }
-    }
-
-    private static func tint(_ i: Int) -> Color {
-        Color(hex: Tone.backdropWarm[i % Tone.backdropWarm.count]).opacity(0.8)
-    }
-}
-
 private struct MiniHome: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
