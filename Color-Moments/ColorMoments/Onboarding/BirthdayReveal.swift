@@ -84,16 +84,17 @@ enum BirthdayReveal {
     }
 }
 
-/// 생일 카드 배경 — 태어난 달의 철 하늘. 셰이더 하늘(SkyView)로 바꿀 땐 이 몸통만 고친다.
+/// 생일 카드 배경 — 태어난 달의 철 하늘. 하늘이 있는 철(SkyScene.of)은 셰이더 하늘, 없으면 SceneView.
 struct BirthdayCardSky: View {
     let month: Int
     var animating = true
+    /// 큰 카드 hero, 접힌 주운 말 칸 card.
+    var quality: SkyQuality = .hero
 
     static func kind(month: Int) -> SceneKind { .of(PhotoContext.season(month: month)) }
 
     var body: some View {
-        SceneView(Self.kind(month: month), style: .wash, animating: animating,
-                  frameInterval: SceneView.heroFrameInterval)
+        SceneSky(kind: Self.kind(month: month), quality: quality, animating: animating)
     }
 }
 
@@ -232,7 +233,7 @@ struct BirthdayRevealScene: View {
                 .blendMode(.plusLighter)
                 .allowsHitTesting(false)
             if fold != nil {
-                BirthdayCardSky(month: month, animating: !still)
+                BirthdayCardSky(month: month, animating: !still, quality: .card)
                     .frame(width: w, height: WordSceneCard.rowHeight)
                     .offset(y: (h - WordSceneCard.rowHeight) / 2)
                     .opacity(bigFade)
@@ -281,16 +282,17 @@ struct BirthdayRevealScene: View {
         let x = pad + (18 - pad) * e
         let fade = 1 - textFade
         let meaningTop = wordTop + big * 1.3 + 4 + CGFloat(14 * (1 - rise(BirthdayReveal.meaningAt, BirthdayReveal.meaningSpan)))
+        let tone = BirthdayCardSky.kind(month: month).smallTextTone
         return ZStack(alignment: .topLeading) {
             Text(dateText)
-                .font(Face.caption).foregroundStyle(Tone.secondary)
+                .font(Face.caption).foregroundStyle(tone)
                 .padding(.leading, pad).padding(.top, 18)
                 .opacity(dateOpacity * fade)
             word(size: size)
                 .frame(width: max(blockW, 0.44 * w - 18), alignment: .leading)
                 .offset(x: x, y: wordTop)
             Text(pick.meaning)
-                .font(Face.line).foregroundStyle(Tone.secondary)
+                .font(Face.line).foregroundStyle(tone)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(width: blockW, alignment: .leading)
@@ -298,6 +300,7 @@ struct BirthdayRevealScene: View {
                 .opacity(meaningOpacity * fade)
         }
         .frame(width: w, height: h, alignment: .topLeading)
+        .skyText()
     }
 
     private var dateOpacity: Double {
@@ -356,21 +359,23 @@ struct BirthdayRevealScene: View {
 
     // 주운 말 칸 — WordSceneCard.row 와 같은 자리(말은 큰 카드에서 줄어들며 넘어온다).
     private func rowWords(w: CGFloat, h: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
-            Text("방금").font(Face.caption).foregroundStyle(Tone.secondary)
+        let small = BirthdayCardSky.kind(month: month).smallTextTone
+        return ZStack(alignment: .topLeading) {
+            Text("방금").font(Face.caption).foregroundStyle(small)
                 .frame(width: 0.36 * w - 18, height: 0.32 * h, alignment: .bottomLeading)
                 .padding(.leading, 18)
                 .offset(y: 0.6 * h)
-            Text("생일").font(Face.caption).foregroundStyle(Tone.secondary)
+            Text("생일").font(Face.caption).foregroundStyle(small)
                 .frame(width: 0.22 * w - 16, height: 0.42 * h - 12, alignment: .topTrailing)
                 .padding(.top, 12)
                 .offset(x: 0.78 * w)
-            Text(BirthdayCardSky.kind(month: month).name).font(Face.caption).foregroundStyle(Tone.secondary)
+            Text(BirthdayCardSky.kind(month: month).name).font(Face.caption).foregroundStyle(small)
                 .lineLimit(1).minimumScaleFactor(0.6)
                 .frame(width: 0.22 * w - 16, height: 0.32 * h, alignment: .bottomTrailing)
                 .offset(x: 0.78 * w, y: 0.6 * h)
         }
         .frame(width: w, height: h, alignment: .topLeading)
+        .skyText()
     }
 }
 
