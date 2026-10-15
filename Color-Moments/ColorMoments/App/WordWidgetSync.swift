@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import WidgetKit
 
 /// 앱 쪽 「밀려온 말」 위젯 일 — 위치·예보를 App Group 에 맞추고, 확장에 없는 계측을 대신 보낸다.
@@ -10,6 +11,7 @@ enum WordWidgetSync {
     static func appBecameActive() async {
         sendWidgetPicks()
         sendWidgetAdded()
+        bakeSkies()
         guard let store = AmbientStore() else { return }
         let finder = PlaceFinder.shared
         guard finder.isEnabled, finder.access != .denied else {
@@ -31,7 +33,28 @@ enum WordWidgetSync {
     }
 
     static func reloadWidgets() {
+        bakeSkies()
+        reloadTimelines()
+    }
+
+    private static func reloadTimelines() {
         for kind in WordWidgetTimeline.kinds { WidgetCenter.shared.reloadTimelines(ofKind: kind) }
+    }
+
+    private static var baking = false
+
+    /// 위젯 물빛 배경 하늘 — 판이 바뀌었거나, 없거나, 밤 하늘의 달이 지난날 것일 때만 굽는다(메인 밖에서).
+    static func bakeSkies() {
+        guard !baking else { return }
+        baking = true
+        let scale = UIScreen.main.scale
+        Task.detached(priority: .utility) {
+            let baked = WordWidgetSky.bakeIfNeeded(scale: scale)
+            await MainActor.run {
+                baking = false
+                if baked { reloadTimelines() }
+            }
+        }
     }
 
     // MARK: 계측 — 위젯 확장에는 PostHog 가 없다

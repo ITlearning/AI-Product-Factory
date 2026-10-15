@@ -84,16 +84,17 @@ enum BirthdayReveal {
     }
 }
 
-/// 생일 카드 배경 — 태어난 달의 철 하늘. 셰이더 하늘(SkyView)로 바꿀 땐 이 몸통만 고친다.
+/// 생일 카드 배경 — 태어난 달의 철 하늘. 하늘이 있는 철(SkyScene.of)은 셰이더 하늘, 없으면 SceneView.
 struct BirthdayCardSky: View {
     let month: Int
     var animating = true
+    /// 큰 카드 hero, 접힌 주운 말 칸 card.
+    var quality: SkyQuality = .hero
 
     static func kind(month: Int) -> SceneKind { .of(PhotoContext.season(month: month)) }
 
     var body: some View {
-        SceneView(Self.kind(month: month), style: .wash, animating: animating,
-                  frameInterval: SceneView.heroFrameInterval)
+        SceneSky(kind: Self.kind(month: month), quality: quality, animating: animating)
     }
 }
 
@@ -163,10 +164,17 @@ struct BirthdayRevealScene: View {
         return BirthdayReveal.fold(fold / BirthdayReveal.foldSpan)
     }
 
-    /// 큰 카드 장면이 칸 장면으로 넘어가는 정도 — 거의 다 접힌 뒤에 넘긴다.
+    /// 큰 카드 하늘이 빠지는 정도. 접히는 동안은 큰 하늘 한 장을 카드 모양으로 잘라 줄이고, 다 접힌 뒤(칸과 같은 크기)에만 칸 하늘로 넘긴다.
+    /// 동작 줄이기는 큰 하늘이 다 사라진 뒤 칸 크기로 바뀐다.
     private var bigFade: Double {
         guard let fold else { return 0 }
-        return still ? BirthdayReveal.easeOut(fold / 0.35) : SceneEase.inOut(BirthdayReveal.seg(fold, 0.4, 0.35))
+        return still ? BirthdayReveal.easeOut(fold / 0.35) : SceneEase.inOut(BirthdayReveal.seg(fold, BirthdayReveal.foldSpan, 0.3))
+    }
+
+    /// 칸 하늘이 보이는 정도 — 카드가 칸 크기가 된 뒤에만.
+    private var rowSky: Double {
+        guard let fold else { return 0 }
+        return still ? BirthdayReveal.easeOut((fold - 0.35) / 0.35) : (bigFade > 0 ? 1 : 0)
     }
 
     /// 날짜·뜻이 먼저 빠진다.
@@ -220,10 +228,17 @@ struct BirthdayRevealScene: View {
 
     private func card(w: CGFloat, bigH: CGFloat, h: CGFloat, e: Double) -> some View {
         ZStack(alignment: .topLeading) {
-            // 접히는 동안 장면을 늘려 그리지 않는다 — 큰 그림을 위에 붙여 자르고, 칸 크기 그림으로 넘긴다.
-            BirthdayCardSky(month: month, animating: !still)
-                .frame(width: w, height: bigH)
-                .opacity(1 - bigFade)
+            // 함정: 칸 하늘을 카드보다 작게 겹치면 가로 띠가 보인다 — 칸 하늘은 카드가 칸 크기일 때만, 큰 하늘 아래에.
+            if rowSky > 0 {
+                BirthdayCardSky(month: month, animating: !still, quality: .card)
+                    .frame(width: w, height: WordSceneCard.rowHeight)
+                    .opacity(rowSky)
+            }
+            if bigFade < 1 {
+                BirthdayCardSky(month: month, animating: !still)
+                    .frame(width: w, height: bigH)
+                    .opacity(1 - bigFade)
+            }
             // 웹 카드처럼 가운데 위쪽에 철 빛이 비친다.
             RadialGradient(colors: [BirthdayReveal.glow(month: month).opacity(0.26), .clear],
                            center: UnitPoint(x: 0.5, y: 0.42), startRadius: 0, endRadius: w * 0.75)
@@ -231,12 +246,6 @@ struct BirthdayRevealScene: View {
                 .opacity(glowLevel.opacity / 0.55 * (1 - bigFade))
                 .blendMode(.plusLighter)
                 .allowsHitTesting(false)
-            if fold != nil {
-                BirthdayCardSky(month: month, animating: !still)
-                    .frame(width: w, height: WordSceneCard.rowHeight)
-                    .offset(y: (h - WordSceneCard.rowHeight) / 2)
-                    .opacity(bigFade)
-            }
             sheen(w: w, h: h)
             bigWords(w: w, bigH: bigH, h: h, e: e)
             rowWords(w: w, h: h)
@@ -281,16 +290,17 @@ struct BirthdayRevealScene: View {
         let x = pad + (18 - pad) * e
         let fade = 1 - textFade
         let meaningTop = wordTop + big * 1.3 + 4 + CGFloat(14 * (1 - rise(BirthdayReveal.meaningAt, BirthdayReveal.meaningSpan)))
+        let tone = BirthdayCardSky.kind(month: month).smallTextTone
         return ZStack(alignment: .topLeading) {
             Text(dateText)
-                .font(Face.caption).foregroundStyle(Tone.secondary)
+                .font(Face.caption).foregroundStyle(tone)
                 .padding(.leading, pad).padding(.top, 18)
                 .opacity(dateOpacity * fade)
             word(size: size)
                 .frame(width: max(blockW, 0.44 * w - 18), alignment: .leading)
                 .offset(x: x, y: wordTop)
             Text(pick.meaning)
-                .font(Face.line).foregroundStyle(Tone.secondary)
+                .font(Face.line).foregroundStyle(tone)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(width: blockW, alignment: .leading)
@@ -298,6 +308,7 @@ struct BirthdayRevealScene: View {
                 .opacity(meaningOpacity * fade)
         }
         .frame(width: w, height: h, alignment: .topLeading)
+        .skyText()
     }
 
     private var dateOpacity: Double {
@@ -356,21 +367,23 @@ struct BirthdayRevealScene: View {
 
     // 주운 말 칸 — WordSceneCard.row 와 같은 자리(말은 큰 카드에서 줄어들며 넘어온다).
     private func rowWords(w: CGFloat, h: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
-            Text("방금").font(Face.caption).foregroundStyle(Tone.secondary)
+        let small = BirthdayCardSky.kind(month: month).smallTextTone
+        return ZStack(alignment: .topLeading) {
+            Text("방금").font(Face.caption).foregroundStyle(small)
                 .frame(width: 0.36 * w - 18, height: 0.32 * h, alignment: .bottomLeading)
                 .padding(.leading, 18)
                 .offset(y: 0.6 * h)
-            Text("생일").font(Face.caption).foregroundStyle(Tone.secondary)
+            Text("생일").font(Face.caption).foregroundStyle(small)
                 .frame(width: 0.22 * w - 16, height: 0.42 * h - 12, alignment: .topTrailing)
                 .padding(.top, 12)
                 .offset(x: 0.78 * w)
-            Text(BirthdayCardSky.kind(month: month).name).font(Face.caption).foregroundStyle(Tone.secondary)
+            Text(BirthdayCardSky.kind(month: month).name).font(Face.caption).foregroundStyle(small)
                 .lineLimit(1).minimumScaleFactor(0.6)
                 .frame(width: 0.22 * w - 16, height: 0.32 * h, alignment: .bottomTrailing)
                 .offset(x: 0.78 * w, y: 0.6 * h)
         }
         .frame(width: w, height: h, alignment: .topLeading)
+        .skyText()
     }
 }
 

@@ -70,7 +70,7 @@ public struct WordWidgetSmall<PickControl: View>: View {
                 .lineLimit(1).minimumScaleFactor(0.5)
             if let meaning = model.meaning {
                 Text(meaning).font(Face.wordMeta)
-                    .foregroundStyle(Tone.secondary)
+                    .foregroundStyle(style == .wash ? model.scene?.smallTextTone ?? Tone.secondary : Tone.secondary)
                     .lineLimit(2).minimumScaleFactor(0.8)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -78,24 +78,31 @@ public struct WordWidgetSmall<PickControl: View>: View {
         .frame(width: 0.78 * w - 16, height: 0.43 * h, alignment: .bottomLeading)
         .padding(.leading, 16)
         .offset(y: 0.5 * h)
+        .skyText()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.accessibilityText(text) ?? "")
     }
 }
 
-/// 장면 — 말을 못 읽었으면 바탕만.
+/// 장면 — 물빛은 앱이 구워 둔 하늘(WordWidgetSky)이 있으면 그것, 없으면 멈춘 SceneView. 말을 못 읽었으면 바탕만.
 public struct WordWidgetBackground: View {
     let model: WordWidgetModel
     let style: SceneStyle
+    let skyDirectory: URL?
 
-    public init(model: WordWidgetModel, style: SceneStyle) {
+    public init(model: WordWidgetModel, style: SceneStyle, skyDirectory: URL? = WordWidgetSky.container) {
         self.model = model
         self.style = style
+        self.skyDirectory = skyDirectory
     }
 
     public var body: some View {
         if let scene = model.scene {
-            SceneView(scene, style: style)
+            if style == .wash, let sky = WordWidgetSky.image(for: scene, in: skyDirectory) {
+                Image(uiImage: sky).resizable().scaledToFill().accessibilityHidden(true)
+            } else {
+                SceneView(scene, style: style)
+            }
         } else {
             Tone.base
         }

@@ -142,19 +142,24 @@ struct WordSceneCard: View {
     var animating = false
     /// 오늘의 한 장 왼쪽 위 — 「오늘 저녁 · 가는 비」.
     var heroLabel: String?
+    /// 오늘의 한 장·빈 상태 = hero, 목록 = card. 펼친 말은 hero 크기라 hero.
+    var quality: SkyQuality { size == .hero ? .hero : .card }
+    private var small: Color { model.scene.smallTextTone }
 
     var body: some View {
         let height = size == .hero ? Self.heroHeight : Self.rowHeight
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             ZStack(alignment: .topLeading) {
-                SceneView(model.scene, style: .wash, animating: animating,
-                          frameInterval: size == .hero ? SceneView.heroFrameInterval : SceneView.cardFrameInterval,
-                          tintHex: model.tintHex)
-                switch size {
-                case .hero: hero(w: w, h: h)
-                case .row: row(w: w, h: h)
+                SceneSky(kind: model.scene, quality: quality, animating: animating, tilts: size == .hero,
+                         tintHex: model.tintHex)
+                Group {
+                    switch size {
+                    case .hero: hero(w: w, h: h)
+                    case .row: row(w: w, h: h)
+                    }
                 }
+                .skyText()
             }
         }
         .frame(height: height)
@@ -168,7 +173,7 @@ struct WordSceneCard: View {
     private func hero(w: CGFloat, h: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
             if let heroLabel {
-                Text(heroLabel).font(Face.caption).foregroundStyle(Tone.secondary)
+                Text(heroLabel).font(Face.caption).foregroundStyle(small)
                     .lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: 0.55 * w - 20, alignment: .leading)
                     .padding(.leading, 20).padding(.top, 18)
@@ -178,7 +183,7 @@ struct WordSceneCard: View {
                 Text(model.word).font(Face.wordHero).foregroundStyle(Tone.primary)
                     .lineLimit(1).minimumScaleFactor(0.5)
                 if let meaning = model.meaning {
-                    Text(meaning).font(Face.wordMeaning).foregroundStyle(Tone.secondary)
+                    Text(meaning).font(Face.wordMeaning).foregroundStyle(small)
                         .lineLimit(2).minimumScaleFactor(0.85)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -197,19 +202,19 @@ struct WordSceneCard: View {
                 .lineLimit(1).minimumScaleFactor(0.5)
                 .frame(width: 0.44 * w - 18, height: 0.6 * h - 12, alignment: .topLeading)
                 .padding(.leading, 18).padding(.top, 12)
-            Text(model.when).font(Face.caption).foregroundStyle(Tone.secondary)
+            Text(model.when).font(Face.caption).foregroundStyle(small)
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .frame(width: 0.36 * w - 18, height: 0.32 * h, alignment: .bottomLeading)
                 .padding(.leading, 18)
                 .offset(y: 0.6 * h)
             if let mark = model.mark {
-                Text(mark).font(Face.caption).foregroundStyle(Tone.secondary)
+                Text(mark).font(Face.caption).foregroundStyle(small)
                     .lineLimit(1).minimumScaleFactor(0.6)
                     .frame(width: 0.22 * w - 16, height: 0.42 * h - 12, alignment: .topTrailing)
                     .padding(.top, 12)
                     .offset(x: 0.78 * w)
             }
-            Text(model.scene.name).font(Face.caption).foregroundStyle(Tone.secondary)
+            Text(model.scene.name).font(Face.caption).foregroundStyle(small)
                 .lineLimit(1).minimumScaleFactor(0.6)
                 .frame(width: 0.22 * w - 16, height: 0.32 * h, alignment: .bottomTrailing)
                 .offset(x: 0.78 * w, y: 0.6 * h)
