@@ -17,26 +17,26 @@ final class SkyWireTests: XCTestCase {
 
     // MARK: 대응
 
-    func testMappingCoversTheFourSkiesAndLeavesTheRestToSceneView() {
+    func testEverySceneKindHasASky() {
         XCTAssertEqual(SkyScene.of(.sun), .clearDay)
         XCTAssertEqual(SkyScene.of(.stars), .clearNight)
         XCTAssertEqual(SkyScene.of(.moon), .nightCloudy)
         XCTAssertEqual(SkyScene.of(.rain), .rain)
-        XCTAssertEqual(SkyScene.of(.drizzle), .rain)
-        for k in [SceneKind.dawn, .dusk, .snow, .fog, .wind, .petals, .leaves, .frost] {
-            XCTAssertNil(SkyScene.of(k), k.rawValue)
-        }
+        for k in SceneKind.allCases { XCTAssertNotNil(SkyScene.of(k), k.rawValue) }
         XCTAssertEqual(Set(WordWidgetSky.scenes), Set(SkyScene.allCases), "모든 하늘이 어떤 장면에서든 쓰인다")
     }
 
-    func testSmallTextIsPrimaryOnlyOnClearDay() {
+    func testSmallTextIsPrimaryOnBrightSkies() {
+        for k in SceneKind.allCases {
+            XCTAssertEqual(k.smallTextTone, SkyScene(k).brightSky ? Tone.primary : Tone.secondary, k.rawValue)
+        }
         XCTAssertEqual(SceneKind.sun.smallTextTone, Tone.primary)
-        for k in SceneKind.allCases where k != .sun { XCTAssertEqual(k.smallTextTone, Tone.secondary, k.rawValue) }
+        XCTAssertEqual(SceneKind.rain.smallTextTone, Tone.secondary)
     }
 
     func testBirthdaySeasonsGoThroughTheSameMapping() {
         XCTAssertEqual(SkyScene.of(BirthdayCardSky.kind(month: 7)), .clearDay)
-        XCTAssertNil(SkyScene.of(BirthdayCardSky.kind(month: 10)), "가을 낙엽은 아직 SceneView")
+        XCTAssertEqual(SkyScene.of(BirthdayCardSky.kind(month: 10)), .leaves)
     }
 
     // MARK: 위젯 정지 그림
@@ -89,7 +89,7 @@ final class SkyWireTests: XCTestCase {
 
         let image = try XCTUnwrap(WordWidgetSky.image(for: .drizzle, in: dir))
         XCTAssertEqual(image.size.width, 1)
-        XCTAssertNil(WordWidgetSky.image(for: .frost, in: dir), "하늘 없는 장면은 SceneView")
+        XCTAssertNotNil(WordWidgetSky.image(for: .frost, in: dir), "13장면 모두 구운 그림이 있다")
     }
 
     func testRealBakeIsSmall() throws {
