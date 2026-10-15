@@ -28,9 +28,9 @@ public enum SkyScene: Int, CaseIterable, Identifiable, Sendable {
 
 /// 품질 단계 — 무게는 전부 여기서 조절한다.
 public enum SkyQuality: String, CaseIterable, Identifiable, Sendable {
-    /// 전체 화면 하늘(60fps)
+    /// 전체 화면 하늘(120fps — ProMotion, 아니면 60)
     case full
-    /// 오늘의 한 장(60fps)
+    /// 오늘의 한 장(120fps — ProMotion, 아니면 60)
     case hero
     /// 목록 카드(30fps, 화면 밖은 멈춤)
     case card
@@ -50,7 +50,7 @@ public enum SkyQuality: String, CaseIterable, Identifiable, Sendable {
     var rainCap: Int { switch self { case .full: 6000; case .hero: 2400; case .card: 700 } }
     var bloomLevels: Int { switch self { case .full: 6; case .hero: 5; case .card: 4 } }
     var raySamples: Int { switch self { case .full: 48; case .hero: 32; case .card: 0 } }
-    public var fps: Int { self == .card ? 30 : 60 }
+    public var fps: Int { self == .card ? 30 : 120 }
 }
 
 /// 셰이더 SkyU 와 같은 배치 — float4 × 11.
