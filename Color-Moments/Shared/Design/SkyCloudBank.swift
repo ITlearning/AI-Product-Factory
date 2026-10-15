@@ -147,14 +147,14 @@ final class SkyCloudBank: @unchecked Sendable {
         return u
     }
 
-    /// 판 위 빛 — 대표 화면에서 해·달이 가운데로부터 놓인 방향으로 150pt(구름 뒤 조금 비스듬히).
+    /// 판 위 빛 — 대표 화면에서 해·달이 가운데로부터 놓인 방향으로, 낮은 150pt(구름 뒤 조금 비스듬히)·밤은 520pt(옆에서 비껴 어둑하게).
     static func light(_ scene: SkyScene, _ shape: Shape) -> CGPoint {
         let ref = SkyFrame(scene: scene, quality: .hero, size: shape.reference, texts: .none).light.center
         let dx = ref.x - shape.reference.width / 2, dy = ref.y - shape.reference.height / 2
         let len = max(hypot(dx, dy), 1e-3)
-        return CGPoint(x: dx / len * lightReach, y: dy / len * lightReach)
+        let reach: CGFloat = scene.isNight ? 520 : 150
+        return CGPoint(x: dx / len * reach, y: dy / len * reach)
     }
-    static let lightReach: CGFloat = 150
 
     /// 판 안 창 자리(pt) — 가로는 흐름만큼 밀고 판 폭으로 돈다, 세로는 판 안에 들게.
     static func window(_ origin: CGPoint, size: CGSize, shape: Shape, flow: Double, t: Double) -> CGPoint {
