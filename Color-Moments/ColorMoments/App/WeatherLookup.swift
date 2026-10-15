@@ -25,6 +25,26 @@ enum WeatherLookup {
         }
     }
 
+    /// 지금 날씨 — 「말」 칸의 지금 말. 5초 안에 못 받으면 nil(날씨 말 없이 고른다).
+    static func now(at p: Place) async -> PlaceWeather? {
+        let location = CLLocation(latitude: p.latitude, longitude: p.longitude)
+        return await withTaskGroup(of: PlaceWeather?.self) { group in
+            group.addTask {
+                do {
+                    let now = try await WeatherService.shared.weather(for: location, including: .current)
+                    return PlaceWeather(condition: now.condition.rawValue, celsius: now.temperature.converted(to: .celsius).value)
+                } catch {
+                    log.error("지금 날씨 조회 실패 — \(String(describing: error), privacy: .public)")
+                    return nil
+                }
+            }
+            group.addTask { try? await Task.sleep(nanoseconds: 5_000_000_000); return nil }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+    }
+
     /// Apple 날씨 표기 — 날씨를 보여 주는 곳에 로고와 법적 고지 링크를 둬야 한다.
     static func attribution() async -> PhotoEnrichment.Attribution? {
         do {
