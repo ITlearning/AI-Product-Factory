@@ -143,6 +143,7 @@ struct SkyCardText: View {
                 .offset(y: 0.5 * h)
             }
             .frame(width: w, height: h, alignment: .topLeading)
+            .skyText()
         } else {
             ZStack(alignment: .topLeading) {
                 Text(word).font(Face.wordCard).foregroundStyle(Tone.primary).lineLimit(1)
@@ -159,6 +160,7 @@ struct SkyCardText: View {
                     .offset(x: 0.78 * w, y: 0.6 * h)
             }
             .frame(width: w, height: h, alignment: .topLeading)
+            .skyText()
         }
     }
 }
@@ -225,6 +227,7 @@ struct SkyFullPage: View {
                 Text(scene.name).font(Face.caption).foregroundStyle(Tone.primary).padding(.top, 4)
             }
             .padding(.top, 0.15 * size.height)
+            .skyText()
         }
         .frame(width: size.width, height: size.height)
     }

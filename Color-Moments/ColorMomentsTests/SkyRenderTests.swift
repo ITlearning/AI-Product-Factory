@@ -3,7 +3,7 @@ import XCTest
 @testable import ColorMoments
 
 /// 스파이크 하늘 — 셰이더가 실제로 그려지고, 글자 자리 대비를 지키는지.
-/// 작은 글자(흰 64%) 4.5:1, 큰 말(명조 48 이상, 흰 92%) 3:1 — DESIGN.md §2.1.1.
+/// 하늘만으로 — 작은 글자(흰 64%) 4.5:1, 맑은 낮 작은 글자(흰 92%) 3:1(+ 글자 그림자), 큰 말(명조 48 이상, 흰 92%) 3:1 — DESIGN.md §2.1.1.
 @MainActor
 final class SkyRenderTests: XCTestCase {
     private let full = CGSize(width: 393, height: 852)
@@ -21,14 +21,14 @@ final class SkyRenderTests: XCTestCase {
                         let out = try XCTUnwrap(SkySnapshot.image(frame, scale: 2, t: t), "\(scene) \(q)")
                         let small = SkyDump.contrast(out.image, frame.texts.small, size, alpha: frame.smallTextAlpha)
                         let big = SkyDump.contrast(out.image, frame.texts.big, size, alpha: Tone.primaryAlpha)
-                        XCTAssertGreaterThanOrEqual(small, 4.5, "작은 글자 \(scene.name) \(q.rawValue) 달 \(age) t \(t)")
+                        XCTAssertGreaterThanOrEqual(small, frame.smallTextContrast, "작은 글자 \(scene.name) \(q.rawValue) 달 \(age) t \(t)")
                         XCTAssertGreaterThanOrEqual(big, 3, "큰 말 \(scene.name) \(q.rawValue) 달 \(age) t \(t)")
                         log.append(String(format: "%@ %@ 달%.0f 작은 %.2f 큰 %.2f", scene.name, q.rawValue, age, small, big))
                     }
                 }
             }
         }
-        print("SKY3 대비\n" + log.joined(separator: "\n"))
+        print("SKY4 대비\n" + log.joined(separator: "\n"))
     }
 
     func testMeteorIsDeterministicAndPaced() throws {
@@ -251,6 +251,23 @@ final class SkyRenderTests: XCTestCase {
                 Rectangle().stroke(.orange, lineWidth: 1).frame(width: r.width, height: r.height).offset(x: r.minX, y: r.minY)
             }
         }.frame(width: heroSize.width, height: heroSize.height, alignment: .topLeading)), url.appendingPathComponent("text-rects-hero.png"))
+        var worst: [String] = []
+        for (name, f, img) in [("full", day, dayImg), ("hero", SkyFrame(scene: .clearDay, quality: .hero, size: heroSize), h),
+                               ("card", SkyFrame(scene: .clearDay, quality: .card, size: rowSize), r)] {
+            let px = pixels(img), w = img.width
+            for rect in f.texts.all {
+                var best = (0.0, 0, 0)
+                for y in Int(rect.minY * 3)..<min(Int(rect.maxY * 3), img.height) {
+                    for x in Int(rect.minX * 3)..<min(Int(rect.maxX * 3), w) {
+                        let i = (y * w + x) * 4
+                        let l = SceneRGB(Double(px[i]) / 255, Double(px[i + 1]) / 255, Double(px[i + 2]) / 255).luminance
+                        if l > best.0 { best = (l, x / 3, y / 3) }
+                    }
+                }
+                worst.append(String(format: "%@ rect %.0f,%.0f %.0fx%.0f max L %.3f at %d,%d", name, rect.minX, rect.minY, rect.width, rect.height, best.0, best.1, best.2))
+            }
+        }
+        try worst.joined(separator: "\n").write(to: url.appendingPathComponent("worst.txt"), atomically: true, encoding: .utf8)
         var gpu: [String] = []
         for tier in SkyTier.allCases.reversed() {
             for (name, f) in [("full", day), ("hero", SkyFrame(scene: .clearDay, quality: .hero, size: heroSize)),
