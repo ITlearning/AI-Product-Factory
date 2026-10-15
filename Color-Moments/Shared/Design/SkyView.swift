@@ -112,7 +112,7 @@ public enum SkyQuality: String, CaseIterable, Identifiable, Sendable {
     var detail: Bool { self != .card }
     var rainCap: Int { switch self { case .full: 6000; case .hero: 2400; case .card: 700 } }
     var snowCap: Int { switch self { case .full: 1200; case .hero: 420; case .card: 140 } }
-    var leafCap: Int { switch self { case .full: 160; case .hero: 70; case .card: 28 } }
+    var leafCap: Int { switch self { case .full: 220; case .hero: 110; case .card: 40 } }
     var bloomLevels: Int { switch self { case .full: 6; case .hero: 5; case .card: 4 } }
     var cirrusOctaves: Int { self == .card ? 4 : 5 }
     var raySamples: Int { switch self { case .full: 48; case .hero: 32; case .card: 0 } }
@@ -525,8 +525,8 @@ public struct SkyFrame: Equatable {
         let area = size.width * size.height
         switch scene {
         case .snow: return min(quality.snowCap, Int(area * 0.0026))
-        case .petals: return min(quality.leafCap, Int(area * 0.0008))
-        case .leaves: return min(quality.leafCap, Int(area * 0.00055))
+        case .petals: return min(quality.leafCap, Int(area * 0.0014))
+        case .leaves: return min(quality.leafCap, Int(area * 0.001))
         default: return 0
         }
     }
@@ -965,12 +965,16 @@ final class SkyRenderer {
                 floats.withUnsafeBytes { e.setVertexBytes($0.baseAddress!, length: bytes, index: 1) }
                 e.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4, instanceCount: rainN)
             }
-            if flakeN > 0, let drops {
+            let overlay = SkyOverlayGPU.shared
+            if flakeN > 0, let overlay, overlay.drawsFlakes(frame.scene) {
+                overlay.drawFlakes(e, uniforms: floats, count: flakeN)
+            } else if flakeN > 0, let drops {
                 e.setRenderPipelineState(gpu.flake)
                 e.setVertexBuffer(drops, offset: 0, index: 0)
                 floats.withUnsafeBytes { e.setVertexBytes($0.baseAddress!, length: bytes, index: 1) }
                 e.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4, instanceCount: flakeN)
             }
+            if frame.scene == .frost { overlay?.drawFrost(e, uniforms: floats) }
             e.endEncoding()
         }
 
