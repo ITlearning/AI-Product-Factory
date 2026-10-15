@@ -28,7 +28,39 @@ final class SkyRenderTests: XCTestCase {
                 }
             }
         }
-        print("SKY4 대비\n" + log.joined(separator: "\n"))
+        print("SKY5 대비\n" + log.joined(separator: "\n"))
+    }
+
+    func testEverySceneKindHasASky() throws {
+        XCTAssertEqual(Set(SceneKind.allCases.map { SkyScene($0) }).count, SceneKind.allCases.count)
+        XCTAssertEqual(SkyScene(.sun), .clearDay)
+        XCTAssertEqual(SkyScene(.stars), .clearNight)
+        XCTAssertEqual(SkyScene(.moon), .nightCloudy)
+        XCTAssertEqual(SkyScene(.rain), .rain)
+        for kind in SceneKind.allCases { XCTAssertEqual(SkyScene(kind).legacy, kind) }
+    }
+
+    /// 위젯 — 13 장면 모두 정지 그림(입자는 멈춘 한 장, EDR 없음)이 같은 t 에 같은 그림.
+    func testEverySceneBakesAStillPicture() throws {
+        let size = CGSize(width: 170, height: 170)
+        for scene in SkyScene.allCases {
+            let f = SkyFrame(scene: scene, quality: .card, size: size)
+            let a = try XCTUnwrap(SkySnapshot.image(f, scale: 2, t: SceneArt.stillPhase), scene.name).image
+            let b = try XCTUnwrap(SkySnapshot.image(f, scale: 2, t: SceneArt.stillPhase), scene.name).image
+            XCTAssertEqual(pixels(a), pixels(b), "\(scene.name) 같은 t → 같은 그림")
+        }
+    }
+
+    func testParticlesShrinkWithTier() {
+        let size = CGSize(width: 354, height: 232)
+        for scene in [SkyScene.rain, .drizzle, .snow, .petals, .leaves] {
+            let f = SkyFrame(scene: scene, quality: .hero, size: size)
+            let n = SkyTier.allCases.map { tier -> Int in let p = f.particles(SkyBudget(.hero, tier: tier)); return p.rain + p.flakes }
+            XCTAssertGreaterThan(n[0], 0, scene.name)
+            XCTAssertEqual(n, n.sorted(), "\(scene.name) 하 ≤ 중 ≤ 상 ≤ 최상")
+            XCTAssertLessThan(n[0], n[3], scene.name)
+        }
+        XCTAssertEqual(SkyFrame(scene: .fog, quality: .hero, size: size).particles(SkyBudget(.hero, tier: .ultra)).flakes, 0)
     }
 
     func testMeteorIsDeterministicAndPaced() throws {
@@ -277,6 +309,82 @@ final class SkyRenderTests: XCTestCase {
             }
         }
         try gpu.joined(separator: "\n").write(to: url.appendingPathComponent("gpu.txt"), atomically: true, encoding: .utf8)
+    }
+
+    /// 5차 — 13 장면 히어로(글자 얹은 것)·전체 화면·목록 카드 모음. SKY5_DIR.
+    func testDumpSky5() throws {
+        guard let dir = ProcessInfo.processInfo.environment["SKY5_DIR"] else { throw XCTSkip("SKY5_DIR 없음") }
+        let url = URL(fileURLWithPath: dir)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        let heroSize = CGSize(width: 354, height: 232), rowSize = CGSize(width: 354, height: 96)
+        let t0 = SceneArt.stillPhase
+        let only = ProcessInfo.processInfo.environment["SKY5_ONLY"].map { Set($0.split(separator: ",").map(String.init)) }
+        var rows: [(SkyScene, CGImage)] = []
+        var log: [String] = []
+        for scene in SkyScene.allCases {
+            let r = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: scene, quality: .card, size: rowSize, moonAge: 10), scale: 3, t: t0)).image
+            rows.append((scene, r))
+            if let only, !only.contains("\(scene)") { continue }
+            let tag = String(format: "%02d-%@", scene.rawValue, "\(scene)")
+            let h = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: scene, quality: .hero, size: heroSize, moonAge: 10), scale: 3, t: t0)).image
+            save(render(SkyCard(scene: scene, size: .hero, new: true, image: h)), url.appendingPathComponent("hero-\(tag).png"))
+            let texts = SkyFullPage.texts(in: full)
+            let ff = SkyFrame(scene: scene, quality: .full, size: full, texts: texts, moonAge: 10)
+            let f = try XCTUnwrap(SkySnapshot.image(ff, scale: 3, t: t0)).image
+            save(render(SkyFullPage(scene: scene, size: full, image: f)), url.appendingPathComponent("full-\(tag).png"))
+            if scene.hasFlakes || scene == .wind || scene == .frost {
+                var frames: [CGImage] = []
+                for dt in [0.0, 0.5, 1.0] {
+                    let img = try XCTUnwrap(SkySnapshot.image(ff, scale: 3, t: t0 + dt)).image
+                    if let c = img.cropping(to: CGRect(x: 0, y: 330 * 3, width: 393 * 3, height: 380 * 3)) { frames.append(c) }
+                }
+                save(render(HStack(spacing: 6) { ForEach(frames.indices, id: \.self) { i in
+                    Image(decorative: frames[i], scale: 3).resizable().frame(width: 393, height: 380)
+                } }.background(Color.black)), url.appendingPathComponent("flow-\(tag).png"))
+            }
+            var gpu: [String] = []
+            for tier in SkyTier.allCases.reversed() {
+                let ms = try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: scene, quality: .hero, size: heroSize), scale: 3, t: t0, repeats: 4, tier: tier)).gpuMilliseconds
+                gpu.append(String(format: "%@ %.2f", tier.name, ms))
+            }
+            log.append("\(scene.name) hero ms " + gpu.joined(separator: " · "))
+        }
+        var worst: [String] = []
+        for scene in SkyScene.allCases where scene.brightSky {
+            for (q, size, texts) in [(SkyQuality.hero, heroSize, SkyTexts?.none), (.card, rowSize, nil), (.full, full, SkyFullPage.texts(in: full))] {
+                for t in [t0, t0 + 40] {
+                    let f = SkyFrame(scene: scene, quality: q, size: size, texts: texts)
+                    let img = try XCTUnwrap(SkySnapshot.image(f, scale: 2, t: t)).image
+                    let px = pixels(img), w = img.width
+                    for rect in f.texts.all {
+                        var best = (0.0, 0, 0)
+                        for y in Int(rect.minY * 2)..<min(Int(rect.maxY * 2), img.height) {
+                            for x in Int(rect.minX * 2)..<min(Int(rect.maxX * 2), w) {
+                                let i = (y * w + x) * 4
+                                let l = SceneRGB(Double(px[i]) / 255, Double(px[i + 1]) / 255, Double(px[i + 2]) / 255).luminance
+                                if l > best.0 { best = (l, x / 2, y / 2) }
+                            }
+                        }
+                        if best.0 > 0.2 {
+                            worst.append(String(format: "%@ %@ t%.0f rect %.0f,%.0f %.0fx%.0f max L %.3f at %d,%d rgb %d %d %d", scene.name, q.rawValue, t, rect.minX, rect.minY, rect.width, rect.height, best.0, best.1, best.2,
+                                                px[(best.2 * 2 * w + best.1 * 2) * 4], px[(best.2 * 2 * w + best.1 * 2) * 4 + 1], px[(best.2 * 2 * w + best.1 * 2) * 4 + 2]))
+                        }
+                    }
+                }
+            }
+        }
+        try worst.joined(separator: "\n").write(to: url.appendingPathComponent("worst.txt"), atomically: true, encoding: .utf8)
+        var heroes: [(SkyScene, CGImage)] = []
+        for scene in SkyScene.allCases {
+            heroes.append((scene, try XCTUnwrap(SkySnapshot.image(SkyFrame(scene: scene, quality: .hero, size: heroSize, moonAge: 10), scale: 3, t: t0)).image))
+        }
+        save(render(VStack(alignment: .leading, spacing: 8) { ForEach(0..<5, id: \.self) { r in HStack(spacing: 8) {
+            ForEach(heroes.indices.filter { $0 / 3 == r }, id: \.self) { i in SkyCard(scene: heroes[i].0, size: .hero, new: true, image: heroes[i].1) }
+        } } }.padding(10).background(Color.black)), url.appendingPathComponent("heroes-all.png"))
+        save(render(VStack(spacing: 8) { ForEach(rows.indices, id: \.self) { i in
+            SkyCard(scene: rows[i].0, size: .row, new: true, image: rows[i].1)
+        } }.padding(10).background(Color.black)), url.appendingPathComponent("cards-all.png"))
+        try log.joined(separator: "\n").write(to: url.appendingPathComponent("gpu.txt"), atomically: true, encoding: .utf8)
     }
 
     private func render(_ v: some View) -> UIImage? {

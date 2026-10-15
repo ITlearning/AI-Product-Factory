@@ -5,11 +5,30 @@ import MetalFX
 import MetalKit
 import SwiftUI
 
-/// 스파이크 — Apple 날씨 같은 하늘. 판정 뒤에 SceneView 를 갈아끼운다.
+/// 스파이크 — Apple 날씨 같은 하늘. 판정 뒤에 SceneView 를 갈아끼운다. rawValue 는 셰이더 S_* 와 같다.
 public enum SkyScene: Int, CaseIterable, Identifiable, Sendable {
-    case nightCloudy, clearDay, rain, clearNight
+    case nightCloudy, clearDay, rain, clearNight, dawn, dusk, drizzle, snow, fog, wind, petals, leaves, frost
 
     public var id: Int { rawValue }
+
+    /// 앱 장면 갈래 → 하늘. 달은 흐린 밤(달무리), 별은 맑은 밤.
+    public init(_ kind: SceneKind) {
+        switch kind {
+        case .sun: self = .clearDay
+        case .dawn: self = .dawn
+        case .dusk: self = .dusk
+        case .stars: self = .clearNight
+        case .moon: self = .nightCloudy
+        case .rain: self = .rain
+        case .drizzle: self = .drizzle
+        case .snow: self = .snow
+        case .fog: self = .fog
+        case .wind: self = .wind
+        case .petals: self = .petals
+        case .leaves: self = .leaves
+        case .frost: self = .frost
+        }
+    }
 
     public var name: String {
         switch self {
@@ -17,26 +36,59 @@ public enum SkyScene: Int, CaseIterable, Identifiable, Sendable {
         case .clearDay: "맑은 낮"
         case .rain: "비"
         case .clearNight: "맑은 밤"
+        case .dawn: "새벽"
+        case .dusk: "노을"
+        case .drizzle: "가는 비"
+        case .snow: "눈"
+        case .fog: "안개"
+        case .wind: "바람"
+        case .petals: "꽃잎"
+        case .leaves: "낙엽"
+        case .frost: "서리"
         }
     }
 
     /// 지금 장면에서 가장 가까운 것 — 나란히 비교할 때.
     public var legacy: SceneKind {
         switch self {
-        case .nightCloudy, .clearNight: .moon
+        case .nightCloudy: .moon
+        case .clearNight: .stars
         case .clearDay: .sun
         case .rain: .rain
+        case .dawn: .dawn
+        case .dusk: .dusk
+        case .drizzle: .drizzle
+        case .snow: .snow
+        case .fog: .fog
+        case .wind: .wind
+        case .petals: .petals
+        case .leaves: .leaves
+        case .frost: .frost
         }
     }
 
+    /// 달·별·별똥별이 있는 밤.
     var isNight: Bool { self == .nightCloudy || self == .clearNight }
+
+    /// 밝은 하늘 — 작은 글자를 primary 로 쓰고 3:1 + 글자 그림자. 나머지(밤·비)는 secondary 4.5:1.
+    public var brightSky: Bool { !(isNight || self == .rain || self == .drizzle) }
+
+    /// 입자 — 빗줄기(비·가는 비) 또는 눈·꽃잎·잎.
+    var hasRain: Bool { self == .rain || self == .drizzle }
+    var hasFlakes: Bool { self == .snow || self == .petals || self == .leaves }
 
     /// 가까운 구름층이 흐르는 속도(pt/초, 음수 = 왼쪽). 셰이더 layerFor 의 drift / scale × WORLD.
     var cloudFlow: Float {
         switch self {
         case .nightCloudy: -0.0075 / 0.32 * 320
         case .rain: -0.014 / 0.36 * 320
-        case .clearDay, .clearNight: 0
+        case .drizzle: -0.009 / 0.36 * 320
+        case .snow: -0.006 / 0.34 * 320
+        case .dawn, .dusk: -0.005 / 0.3 * 320
+        case .petals, .leaves: -0.0045 / 0.3 * 320
+        case .wind: -0.036 / 0.17 * 320
+        case .fog: -0.0035 / 0.24 * 320
+        case .clearDay, .clearNight, .frost: 0
         }
     }
 }
@@ -58,6 +110,8 @@ public enum SkyQuality: String, CaseIterable, Identifiable, Sendable {
     var lightSteps: Int { switch self { case .full: 6; case .hero: 5; case .card: 3 } }
     var detail: Bool { self != .card }
     var rainCap: Int { switch self { case .full: 6000; case .hero: 2400; case .card: 700 } }
+    var snowCap: Int { switch self { case .full: 1200; case .hero: 420; case .card: 140 } }
+    var leafCap: Int { switch self { case .full: 160; case .hero: 70; case .card: 28 } }
     var bloomLevels: Int { switch self { case .full: 6; case .hero: 5; case .card: 4 } }
     var cirrusOctaves: Int { self == .card ? 4 : 5 }
     var raySamples: Int { switch self { case .full: 48; case .hero: 32; case .card: 0 } }
@@ -112,6 +166,8 @@ public struct SkyBudget: Equatable, Sendable {
     public var starLayers: Int
     /// 맑은 낮 새털구름 fbm 옥타브(결 몸통·실 각각).
     public var cirrusOctaves: Int
+    /// 입자(비·눈·꽃잎·잎) 수 배수 — 최상 1 · 상 0.8 · 중 0.6 · 하 0.4.
+    public var particleScale: Double
     /// 햇무리가 새털구름 따라 얼룩지게(값 노이즈 한 번).
     public var haloPatches: Bool
     /// 구름 레이마칭을 몇 프레임에 한 번 할지. 0 이면 매 프레임 그 시각 그대로(정지 그림).
@@ -150,6 +206,7 @@ public struct SkyBudget: Equatable, Sendable {
             cloudEvery = card ? 12 : 8; fps = min(q.fps, 60)
         }
         cirrusOctaves = max(q.cirrusOctaves - (t == .low ? 2 : (t == .mid ? 1 : 0)), 3)
+        particleScale = [SkyTier.low: 0.4, .mid: 0.6, .high: 0.8, .ultra: 1][t] ?? 1
         haloPatches = t != .low
         if hot { fps = 30 }
         if lowPower { fps = min(fps, 60) }
@@ -263,7 +320,7 @@ public struct SkyTexts: Equatable, Sendable {
     }
 }
 
-/// 셰이더 SkyU 와 같은 배치 — float4 × 18.
+/// 셰이더 SkyU 와 같은 배치 — float4 × 19.
 struct SkyUniforms {
     var res = SIMD4<Float>(repeating: 0)
     var view = SIMD4<Float>(repeating: 0)
@@ -278,10 +335,11 @@ struct SkyUniforms {
     var blend = SIMD4<Float>(repeating: 0)
     var sun = SIMD4<Float>(repeating: 0)
     var caps = SIMD4<Float>(repeating: 0)
+    var extra = SIMD4<Float>(repeating: 0)
     var textBig = SIMD4<Float>(repeating: 0)
     var text: [SIMD4<Float>] = Array(repeating: .zero, count: 4)
 
-    var floats: [SIMD4<Float>] { [res, view, light, quality, tone, parallax, rays, moon, meteor0, meteor1, blend, sun, caps, textBig] + text }
+    var floats: [SIMD4<Float>] { [res, view, light, quality, tone, parallax, rays, moon, meteor0, meteor1, blend, sun, caps, extra, textBig] + text }
 }
 
 /// 장면·크기에서 정해지는 것(픽셀마다 같은 값).
@@ -309,34 +367,61 @@ public struct SkyFrame: Equatable {
     /// 진짜 달은 하늘에서 작다 — 1차보다 0.78배.
     static let moonShrink: CGFloat = 0.78
 
-    /// 해·달 자리(pt)와 반지름. 비는 위쪽 먼 곳의 흐린 빛(그리지 않음).
+    /// 해·달 자리(pt)와 반지름. 비·눈은 위쪽 먼 곳의 흐린 빛(그리지 않음).
     var light: (center: CGPoint, radius: CGFloat, drawn: Bool) {
         let w = size.width, h = size.height, u = min(w, h)
-        if scene == .rain { return (CGPoint(x: 0.5 * w, y: -2.2 * 320), 0, false) }
+        switch scene {
+        case .rain, .drizzle, .snow: return (CGPoint(x: 0.5 * w, y: -2.2 * 320), 0, false)
+        default: break
+        }
         let night = scene.isNight
         let m = Self.moonShrink * CGFloat(moonScale)
-        if h > 1.3 * w {
-            return night ? (CGPoint(x: 0.84 * w, y: 0.085 * h), 15 * m, true)
-                         : (CGPoint(x: 0.84 * w, y: 0.0 * h), 8, true)
-        }
+        let tall = h > 1.3 * w
         let f = SceneArt.Frame(size)
+        // 지평선 해(노을·새벽) — 글자 아래 오른쪽, 넓은 카드는 가운데 칸 아래.
+        if scene == .dusk || scene == .dawn {
+            let below: CGFloat = scene == .dawn ? 1 : 0
+            let r: CGFloat = tall ? 12 : (f.wide ? 0.09 * u : 0.06 * u)
+            if tall { return (CGPoint(x: 0.68 * w, y: 0.95 * h + below * 2.2 * r), r, true) }
+            if f.wide { return (CGPoint(x: f.pane.midX, y: h * 1.02 + below * 2 * r), r, true) }
+            return (CGPoint(x: w - 0.18 * u, y: 0.97 * h + below * 2.2 * r), r, true)
+        }
+        if scene == .frost {
+            if tall { return (CGPoint(x: 0.8 * w, y: 0.6 * h), 7, true) }
+            if f.wide { return (CGPoint(x: f.pane.midX, y: 0.55 * h), 0.06 * u, true) }
+            return (CGPoint(x: w - 0.2 * u, y: 0.3 * u), 0.034 * u, true)
+        }
+        if tall {
+            if night { return (CGPoint(x: 0.84 * w, y: 0.085 * h), 15 * m, true) }
+            let y: CGFloat = scene == .leaves ? 0.06 : (scene == .fog ? 0.08 : 0)
+            return (CGPoint(x: 0.84 * w, y: y * h), scene == .fog ? 13 : 8, true)
+        }
         if f.wide { return (CGPoint(x: f.pane.midX, y: night ? 0.42 * h : 0.12 * h), night ? 0.11 * u * m : 0.07 * u, true) }
         return night ? (CGPoint(x: w - 0.2 * u, y: 0.2 * u), 0.075 * u * m, true)
-                     : (CGPoint(x: w - 0.2 * u, y: 0.07 * u), 0.036 * u, true)
+                     : (CGPoint(x: w - 0.2 * u, y: 0.07 * u), (scene == .fog ? 0.06 : 0.036) * u, true)
     }
 
     /// 밝은 면 비율(0 삭 ~ 1 보름).
     var moonLit: Double { 0.5 - 0.5 * cos(moonAge / Celestial.synodicMonth * 2 * .pi) }
 
     /// 글자 자리 하늘을 눌러 맞출 최대 상대 휘도. nil = 누르지 않는다(하늘만으로 기준을 넘는다 — 누르면 글자 뒤에 얼룩이 보인다).
-    static func textPress(_ scene: SkyScene) -> Float? { scene == .clearDay ? nil : 0.07 }
+    static func textPress(_ scene: SkyScene) -> Float? { scene.brightSky ? nil : 0.07 }
     /// 구름 장면은 글자 둘레 구름의 달빛·빛번짐도 덜어 낸다.
-    static func dimsLightNearText(_ scene: SkyScene) -> Bool { scene == .nightCloudy || scene == .rain }
+    static func dimsLightNearText(_ scene: SkyScene) -> Bool { scene == .nightCloudy || scene == .rain || scene == .drizzle }
+    /// 밝은 구름 장면은 글자 둘레 구름을 걷는다(0~1) — 흰 구름 위 흰 글자가 묻히지 않게.
+    static func cloudClear(_ scene: SkyScene) -> Float {
+        switch scene {
+        case .wind, .petals, .leaves: 0.9
+        case .dusk, .dawn: 0.7
+        case .fog, .snow: 0.6
+        default: 0
+        }
+    }
 
-    /// 작은 글자의 흰 불투명도 — 맑은 낮만 primary.
-    public var smallTextAlpha: Double { scene == .clearDay ? Tone.primaryAlpha : Tone.secondaryAlpha }
-    /// 작은 글자 대비 기준(하늘만으로) — 맑은 낮은 3:1 에 글자 그림자(.skyText)를 보탠다.
-    public var smallTextContrast: Double { scene == .clearDay ? 3 : 4.5 }
+    /// 작은 글자의 흰 불투명도 — 밝은 하늘은 primary.
+    public var smallTextAlpha: Double { scene.brightSky ? Tone.primaryAlpha : Tone.secondaryAlpha }
+    /// 작은 글자 대비 기준(하늘만으로) — 밝은 하늘은 3:1 에 글자 그림자(.skyText)를 보탠다.
+    public var smallTextContrast: Double { scene.brightSky ? 3 : 4.5 }
 
     /// 22° 햇무리 반지름(pt) — 남극 화면에서 해부터 큰 숫자를 지나는 원(폭의 ≈0.65).
     var haloRadius: CGFloat {
@@ -345,14 +430,14 @@ public struct SkyFrame: Equatable {
     }
 
     func uniforms(pixels: CGSize, t: Double, headroom: Float, tilt: CGPoint, frameIndex: Int, rainCount: Int,
-                  budget: SkyBudget, meteor: SkyMeteor?) -> SkyUniforms {
+                  flakeCount: Int = 0, budget: SkyBudget, meteor: SkyMeteor?) -> SkyUniforms {
         var u = SkyUniforms()
         u.res = [Float(pixels.width), Float(pixels.height), 1 / Float(pixels.width), 1 / Float(pixels.height)]
         u.view = [Float(size.width), Float(size.height), Float(t), Float(scene.rawValue)]
         let l = light
         u.light = [Float(l.center.x), Float(l.center.y), Float(l.radius), l.drawn ? 1 : 0]
         u.quality = [Float(budget.cloudSteps), Float(budget.lightSteps), budget.detail ? 1 : 0, Float(budget.farSteps)]
-        let bloom: Float = scene == .clearDay ? 0.2 : (scene.isNight ? 0.3 : 0.15)
+        let bloom: Float = scene.isNight ? 0.3 : (scene.brightSky ? (scene == .fog || scene == .snow ? 0.12 : 0.2) : 0.15)
         let press = Self.textPress(scene)
         u.tone = [headroom, Self.dimsLightNearText(scene) ? 1 : 0, Float(0.6) / 255, bloom]
         let small = Array(texts.small.prefix(4)), big = Array(texts.big.prefix(4 - small.count))
@@ -364,8 +449,9 @@ public struct SkyFrame: Equatable {
         let glow = SceneArt.Frame(size).wide ? 1.3 * size.height : max(size.width, min(size.height, 1.2 * size.width))
         u.sun = [Float(haloRadius), Float(glow),
                  Float(budget.cirrusOctaves), budget.haloPatches ? 1 : 0]
-        let rayStrength: Float = scene == .nightCloudy ? 0.5 * Float(moonLit) : 0
+        let rayStrength: Float = scene == .nightCloudy ? 0.5 * Float(moonLit) : (scene == .dusk ? 0.45 : (scene == .wind ? 0.25 : 0))
         u.rays = [Float(budget.raySamples), l.drawn ? rayStrength : 0, Float(frameIndex % 64), Float(rainCount)]
+        u.extra = [Self.cloudClear(scene), 1, Float(flakeCount), Float(budget.cirrusOctaves)]
         u.moon = [Float(moonAge), 0.35, 1, 0]
         if let m = meteor, scene.isNight {
             u.meteor0 = [Float(m.head.x), Float(m.head.y), Float(m.direction.dx), Float(m.direction.dy)]
@@ -379,8 +465,27 @@ public struct SkyFrame: Equatable {
     }
 
     func rainCount() -> Int {
-        guard scene == .rain else { return 0 }
-        return min(quality.rainCap, Int(size.width * size.height * 0.014))
+        switch scene {
+        case .rain: min(quality.rainCap, Int(size.width * size.height * 0.014))
+        case .drizzle: min(quality.rainCap / 2, Int(size.width * size.height * 0.006))
+        default: 0
+        }
+    }
+
+    func flakeCount() -> Int {
+        let area = size.width * size.height
+        switch scene {
+        case .snow: return min(quality.snowCap, Int(area * 0.0026))
+        case .petals: return min(quality.leafCap, Int(area * 0.0008))
+        case .leaves: return min(quality.leafCap, Int(area * 0.00055))
+        default: return 0
+        }
+    }
+
+    /// 기기 단계만큼 줄인 입자 수(빗줄기, 눈·꽃잎·잎).
+    func particles(_ b: SkyBudget) -> (rain: Int, flakes: Int) {
+        func scaled(_ n: Int) -> Int { n == 0 ? 0 : max(Int((Double(n) * b.particleScale).rounded()), 1) }
+        return (scaled(rainCount()), scaled(flakeCount()))
     }
 }
 
@@ -393,8 +498,8 @@ final class SkyGPU {
 
     let device: MTLDevice
     let queue: MTLCommandQueue
-    let clouds, compose, rain, rays, final: MTLRenderPipelineState
-    let rainUpdate, prefilter, down, up: MTLComputePipelineState
+    let clouds, compose, rain, flake, rays, final: MTLRenderPipelineState
+    let rainUpdate, flakeUpdate, prefilter, down, up: MTLComputePipelineState
     let noise: MTLTexture
     /// NASA SVS CGI Moon Kit(LRO) 앞면 — 앱 타깃에만 있다. 없으면 셰이더가 무늬를 지어 그린다.
     let moon: MTLTexture
@@ -412,7 +517,7 @@ final class SkyGPU {
             guard let f = lib.makeFunction(name: n) else { throw CocoaError(.featureUnsupported) }
             return f
         }
-        func render(_ frag: String, vertex: String = "skyFullscreen", additive: Bool = false,
+        func render(_ frag: String, vertex: String = "skyFullscreen", additive: Bool = false, over: Bool = false,
                     second: MTLPixelFormat? = nil) throws -> MTLRenderPipelineState {
             let d = MTLRenderPipelineDescriptor()
             d.vertexFunction = try fn(vertex)
@@ -429,15 +534,27 @@ final class SkyGPU {
                 a.sourceAlphaBlendFactor = .zero
                 a.destinationAlphaBlendFactor = .one
             }
+            if over {
+                let a = d.colorAttachments[0]!
+                a.isBlendingEnabled = true
+                a.rgbBlendOperation = .add
+                a.alphaBlendOperation = .add
+                a.sourceRGBBlendFactor = .one
+                a.destinationRGBBlendFactor = .oneMinusSourceAlpha
+                a.sourceAlphaBlendFactor = .zero
+                a.destinationAlphaBlendFactor = .one
+            }
             return try device.makeRenderPipelineState(descriptor: d)
         }
         func compute(_ n: String) throws -> MTLComputePipelineState { try device.makeComputePipelineState(function: fn(n)) }
         clouds = try render("skyClouds", second: Self.transFormat)
         compose = try render("skyCompose")
         rain = try render("skyRainFragment", vertex: "skyRainVertex", additive: true)
+        flake = try render("skyFlakeFragment", vertex: "skyFlakeVertex", over: true)
         rays = try render("skyRays")
         final = try render("skyFinal")
         rainUpdate = try compute("skyRainUpdate")
+        flakeUpdate = try compute("skyFlakeUpdate")
         prefilter = try compute("skyBloomPrefilter")
         down = try compute("skyBloomDown")
         up = try compute("skyBloomUp")
@@ -669,25 +786,26 @@ final class SkyRenderer {
         prepare(w, h, b, frame.scene)
         guard let hdrTex, let raysTex else { return }
         frameIndex += 1
-        let rainN = frame.rainCount()
+        let (rainN, flakeN) = frame.particles(b)
         let meteor = meteors && frame.scene.isNight
             ? SkyMeteor.at(t: t, size: frame.size, every: SkyDebug.frequentMeteors ? 5 : 25) : nil
         var u = frame.uniforms(pixels: CGSize(width: w, height: h), t: t, headroom: headroom, tilt: tilt,
-                               frameIndex: frameIndex, rainCount: rainN, budget: b, meteor: meteor)
+                               frameIndex: frameIndex, rainCount: rainN, flakeCount: flakeN, budget: b, meteor: meteor)
         u.moon.w = gpu.hasMoonMap ? 1 : 0
         guard let (ka, kb, mix) = cloudPair(cb, u, t: t, budget: b) else { return }
         u.blend = [mix.x, mix.y, mix.z, frame.scene.cloudFlow]
         let floats = u.floats
         let bytes = MemoryLayout<SIMD4<Float>>.stride * floats.count
 
-        if rainN > 0 {
-            let need = rainN * 2 * MemoryLayout<SIMD4<Float>>.stride
+        let partN = max(rainN, flakeN)
+        if partN > 0 {
+            let need = partN * 2 * MemoryLayout<SIMD4<Float>>.stride
             if drops == nil || drops!.length < need { drops = gpu.device.makeBuffer(length: need, options: .storageModePrivate) }
             if let drops, let c = cb.makeComputeCommandEncoder() {
-                c.setComputePipelineState(gpu.rainUpdate)
+                c.setComputePipelineState(rainN > 0 ? gpu.rainUpdate : gpu.flakeUpdate)
                 c.setBuffer(drops, offset: 0, index: 0)
                 floats.withUnsafeBytes { c.setBytes($0.baseAddress!, length: bytes, index: 1) }
-                c.dispatchThreadgroups(MTLSize(width: (rainN + 63) / 64, height: 1, depth: 1),
+                c.dispatchThreadgroups(MTLSize(width: (partN + 63) / 64, height: 1, depth: 1),
                                        threadsPerThreadgroup: MTLSize(width: 64, height: 1, depth: 1))
                 c.endEncoding()
             }
@@ -707,6 +825,12 @@ final class SkyRenderer {
                 e.setVertexBuffer(drops, offset: 0, index: 0)
                 floats.withUnsafeBytes { e.setVertexBytes($0.baseAddress!, length: bytes, index: 1) }
                 e.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4, instanceCount: rainN)
+            }
+            if flakeN > 0, let drops {
+                e.setRenderPipelineState(gpu.flake)
+                e.setVertexBuffer(drops, offset: 0, index: 0)
+                floats.withUnsafeBytes { e.setVertexBytes($0.baseAddress!, length: bytes, index: 1) }
+                e.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4, instanceCount: flakeN)
             }
             e.endEncoding()
         }
