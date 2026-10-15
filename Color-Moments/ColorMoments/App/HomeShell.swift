@@ -70,6 +70,8 @@ struct HomeShell: View {
     @AppStorage("didAskArrivalNotice") private var didAskArrivalNotice = false
     // 기록 0개에서 사진첩으로 처음 담았을 때 고른 하루 — 증정 뒤 이 값을 지운다.
     @AppStorage("onboardingGiftDay") private var onboardingGiftDay: String?
+    @AppStorage(UpdateNotice.birthdayKey) private var offeredBirthdayWord = false
+    @AppStorage(UpdateNotice.widgetKey) private var offeredWordWidget = false
     // 온보딩 도중 사진을 담으면 기록이 생겨 판정이 바뀐다 — 한 번 띄웠으면 끝낼 때까지 붙잡는다.
     @State private var onboardingLatched = false
     @State private var noticePermission: ArrivalAsk.Permission?
@@ -230,7 +232,9 @@ struct HomeShell: View {
 
     private var rawOnboarding: OnboardingGate.Presentation {
         OnboardingGate.presentation(isLoaded: store.isLoaded, didFinishOnboarding: didFinishOnboarding,
-                                    hasRecords: !store.dayKeys.isEmpty, didAskArrivalNotice: didAskArrivalNotice)
+                                    hasRecords: !store.dayKeys.isEmpty, didAskArrivalNotice: didAskArrivalNotice,
+                                    updatePending: !UpdateNotice.pages(offeredBirthday: offeredBirthdayWord,
+                                                                       offeredWidget: offeredWordWidget).isEmpty)
     }
 
     private var liveOnboarding: OnboardingGate.Presentation {
@@ -264,6 +268,9 @@ struct HomeShell: View {
         case .arrivalAskOnly:
             ArrivalAskOverlay(store: store, closures: closures, gifts: gifts)
                 .transition(.opacity)
+        case .update:
+            UpdateNoticeOverlay(store: store, gifts: gifts)
+                .transition(.opacity)
         case .undecided, .none:
             EmptyView()
         }
@@ -272,6 +279,7 @@ struct HomeShell: View {
     private func finishOnboarding(_ exit: OnboardingExit) {
         Telemetry.send(.onboardingFinished(Telemetry.Exit(exit)))
         didFinishOnboarding = true
+        UpdateNotice.markOnboardingFinished()
         // 첫 화면에서 고른 모양 — 고르는 순간 바꾸면 iOS 알림이 온보딩 위에 뜬다.
         AppIconStyle.apply(PebbleStyle.current)
         #if DEBUG
