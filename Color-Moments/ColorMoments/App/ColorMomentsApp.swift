@@ -57,6 +57,22 @@ struct ColorMomentsApp: App {
 
     var body: some Scene {
         WindowGroup {
+            #if DEBUG
+            if SkyGalleryView.launchRequested {
+                NavigationStack { SkyGalleryView() }
+            } else {
+                home
+            }
+            #else
+            home
+            #endif
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            handle(newPhase)
+        }
+    }
+
+    private var home: some View {
             HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures, cameraRequest: cameraRequest,
                       prepare: { [catchUp] in await catchUp.run() })
                 .onOpenURL { url in
@@ -94,8 +110,9 @@ struct ColorMomentsApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: .photoAccessRequested)) { _ in
                     reconcilerObserver?.activateIfAllowed()
                 }
-        }
-        .onChange(of: scenePhase) { _, newPhase in
+    }
+
+    private func handle(_ newPhase: ScenePhase) {
             // 사진이 담기는 경로는 여러 곳이라(잠금화면·라이브러리 입양 등) active/background 전환마다
             // 다시 맞춰 둔다 — active 는 입양·정리가 끝난 뒤에 계산해야 방금 들어온 사진이 반영된다.
             switch newPhase {
@@ -124,7 +141,6 @@ struct ColorMomentsApp: App {
             default:
                 break
             }
-        }
     }
 }
 

@@ -14,6 +14,7 @@
 		02B89DF8BE3E0E3688F10090 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		034C0105E7AF9A3FF99CFF6B /* PaletteColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAFDC076AE53EC2C78671FD /* PaletteColor.swift */; };
 		036A5A204DA00E6E1F8E4DB3 /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
+		039C4C2C24AECC1CBE4AAEE4 /* SkyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8094B161BF4E3E88A438BA /* SkyView.swift */; };
 		049B7CECEE196C6D70AC4FA8 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		05C63D0977D0E69B2F01D2CE /* PebbleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39920A44AE81D3E3BD8864A /* PebbleCard.swift */; };
 		0648CE73963D521784C6EDA4 /* SoftPebble.metal in Sources */ = {isa = PBXBuildFile; fileRef = DF4B0D5E183FDB75F36EEB80 /* SoftPebble.metal */; };
@@ -50,6 +51,7 @@
 		162F2D86630458ED10166837 /* WordModelProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = F754A7EA00960930036B5FB4 /* WordModelProbe.swift */; };
 		172DFE11B4A2ABB242240925 /* LibraryImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38C217645C6BE7612CAB2C8 /* LibraryImporter.swift */; };
 		17862587A29EF312EF46CBD3 /* HomeNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160019A37882F81114DE5A27 /* HomeNavigationTests.swift */; };
+		17DC836AF34CE38C0AB8F25E /* SkyShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = 6772D620A0B40FB725E1942E /* SkyShader.metal */; };
 		18E1B879C90631180A0D5B8F /* AsyncGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACCB0D6CE5A9643C54DF3DB /* AsyncGate.swift */; };
 		18E772394B2F6112538961DB /* DayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393BC4FBFF0618B72B4FC4A6 /* DayBadge.swift */; };
 		1996A6A10339037B3A5CCC8F /* DayStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D560E148CF707BADEB351E9 /* DayStoreTests.swift */; };
@@ -113,6 +115,7 @@
 		3CE1625788607AF614E6B418 /* ViewFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C8D64FF056CFF1EAA9F88F /* ViewFinder.swift */; };
 		3D173B20AB9EE2CE573828CB /* DayGradientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001315A7B5573B9974966AF7 /* DayGradientTests.swift */; };
 		404D4FA8C25DF1F932AF9FCA /* LockedPlaceNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464F9A383AAA2B56B16DF13F /* LockedPlaceNote.swift */; };
+		407FB3A0FCA802CE6EFF9BE4 /* SkyShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = 6772D620A0B40FB725E1942E /* SkyShader.metal */; };
 		40B9D26FE9CD8258E04D8053 /* OnboardingGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E2D61EE4428A7AD5857893 /* OnboardingGift.swift */; };
 		41687545DF90B74219157BD5 /* birthday-words.json in Resources */ = {isa = PBXBuildFile; fileRef = F78CD9AC59995E73FE126EE9 /* birthday-words.json */; };
 		4458330F643CB5348A9E73A2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 767BBA28AD8B8BA6D227319C /* PrivacyInfo.xcprivacy */; };
@@ -250,6 +253,7 @@
 		A056B4A2D1980E0BDDB58C53 /* PhotoEnrichmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6AB2D1361C3C488E0CDD56 /* PhotoEnrichmentTests.swift */; };
 		A0B8A4B8063C810E326C4D8C /* PhotoLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFAD57FEE541A2BCBE917E6 /* PhotoLabeler.swift */; };
 		A0E0199642CAE4229702C047 /* PebbleNameLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD2B3D1ED631852A358A28E /* PebbleNameLog.swift */; };
+		A24AC08A96A9A97F4AA8F346 /* SkyGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9E411C3A91731EA58FC6B65 /* SkyGalleryView.swift */; };
 		A268E702D328DA839DB83D0D /* WordImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99481BD7495B587092195002 /* WordImage.swift */; };
 		A2BC0036C17B7BB59748D48B /* DayBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1ED0B6B00F288E843C5C783 /* DayBlock.swift */; };
 		A2ED5B914AD6A2636B7269E4 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */; };
@@ -277,6 +281,7 @@
 		AF90F7725A1C26E4F701BC72 /* HomeShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0539FB03BB33151F171D2BD /* HomeShell.swift */; };
 		AF9767DB806D949E70335A96 /* HorizontalPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */; };
 		B00E12EB9F738811BE917A19 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = D865E82B2669A2984091D3FE /* PostHog */; };
+		B1A6A27FA89A721DB19BE6FA /* SkyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8094B161BF4E3E88A438BA /* SkyView.swift */; };
 		B3358B78B3BA94067A3E02B1 /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD34409978D5C9CDE7304E7 /* WordList.swift */; };
 		B5DB8DA5DC01E0D3A2EF9121 /* Keepsake.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3649A8DB3B4FF16005111AC /* Keepsake.swift */; };
 		B74DE691E2FF8FD1FD32E7D0 /* AsyncGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACCB0D6CE5A9643C54DF3DB /* AsyncGate.swift */; };
@@ -286,6 +291,7 @@
 		B8A1D0774F8ABAB00AB02037 /* WordRejectionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C2CDBEF8EB4E530339545C /* WordRejectionsTests.swift */; };
 		B94A0C22508FD4FB5C2B2D1E /* WordAttempts.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAC08853B31C2783C4F78D30 /* WordAttempts.swift */; };
 		B97C1A8CD64C431D667BB646 /* ISODate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9F715D0CEA993F93E4A7DC /* ISODate.swift */; };
+		B9EF384B91E2568AAE1B0EB6 /* SkyRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4741806484FB8528C329B22 /* SkyRenderTests.swift */; };
 		BAE7838C1DA2D9D4797B4F79 /* CollectionSwipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAF34CDBFF121BBAE3831F91 /* CollectionSwipe.swift */; };
 		BB2A2EFB0C185E4CF5E6A42C /* ArrivalNoticeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16484EB4FEB785459B4C067 /* ArrivalNoticeTests.swift */; };
 		BBA3C897A5072F8F6501382D /* IBMPlexSansKR-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 521ACF63972DD2F709C47DA5 /* IBMPlexSansKR-OFL.txt */; };
@@ -366,6 +372,7 @@
 		E8CE646108990E7853E534A7 /* DayIndexPatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEFA57D488E13A66189B401 /* DayIndexPatchTests.swift */; };
 		E9FF039B8236CAA8424CC6D6 /* DayGift.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE87849E68DBA4048D0AB81 /* DayGift.swift */; };
 		EB1E620E065C68D6A4D9F88C /* CoalescingWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF99FB450EAE23B687B3D6F /* CoalescingWriterTests.swift */; };
+		EC4B70EC15B7179130A77F5C /* SkyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8094B161BF4E3E88A438BA /* SkyView.swift */; };
 		ECB715D7732750F048FB06C6 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5EE0642C2B995E3015E25E /* PerformanceTests.swift */; };
 		ED42EFBB9D0310947F139082 /* CompactDayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A05D62DDA8061828B7EB9 /* CompactDayRow.swift */; };
 		EE50DA6E4E1C4D147112985F /* PhotoContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3096473F3D4F94BAB749AC5 /* PhotoContext.swift */; };
@@ -375,6 +382,7 @@
 		F17EACEED7EE887A5F7FE530 /* PlaceFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E607FA8DB377F42C22222F8 /* PlaceFinder.swift */; };
 		F1CEB3009284EB172D1766E8 /* PebbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE9183C112FFB37E007824 /* PebbleView.swift */; };
 		F1D68387B4C64AE117698805 /* PebbleLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDAA62ACCAFEE5893EDC3F5 /* PebbleLabView.swift */; };
+		F1FBF6FB88AB0A1D9EF41912 /* SkyShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = 6772D620A0B40FB725E1942E /* SkyShader.metal */; };
 		F2AED0EA530722CDA81ECD0C /* PebbleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4228061CA26BCE3FF38B2 /* PebbleWidget.swift */; };
 		F2C689ACD107EA2CD0F669E4 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 36163F479DA433C2CB8744EE /* README.md */; };
 		F317A29590E9991823D148EB /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C434DA6C17F9DEEA2C223CFE /* WidgetSnapshot.swift */; };
@@ -490,6 +498,7 @@
 		2866377FD6579C6D68F4BC91 /* PickedWordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickedWordsTests.swift; sourceTree = "<group>"; };
 		29F5EFAC9CDAD778C4BE9A5F /* Arrivals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arrivals.swift; sourceTree = "<group>"; };
 		2A23E848C6F8A4BEA7AECAD4 /* WordPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordPickerTests.swift; sourceTree = "<group>"; };
+		2A8094B161BF4E3E88A438BA /* SkyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyView.swift; sourceTree = "<group>"; };
 		2B6B7DB6B065C94A4568E524 /* GowunDodum-Hangul.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GowunDodum-Hangul.ttf"; sourceTree = "<group>"; };
 		2C2EBC8CB25323467C3E477B /* ColorCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorCaptureIntent.swift; sourceTree = "<group>"; };
 		2C7A8222A62B20B01D87BCE2 /* button-chars.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "button-chars.txt"; sourceTree = "<group>"; };
@@ -540,6 +549,7 @@
 		657F9EAFA790F8D71D44DA12 /* SoftPebbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoftPebbleView.swift; sourceTree = "<group>"; };
 		65D9C2463F56E1FA771972D9 /* UpdateCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCheck.swift; sourceTree = "<group>"; };
 		662CDEB15BA3A248BA43C279 /* ISODateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ISODateTests.swift; sourceTree = "<group>"; };
+		6772D620A0B40FB725E1942E /* SkyShader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = SkyShader.metal; sourceTree = "<group>"; };
 		68CF7D8E8818E871DBABBDBF /* ColorMomentsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ColorMomentsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		69825FD346FEC03526525AE5 /* SheenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheenTests.swift; sourceTree = "<group>"; };
 		6A766AB692244BED85E278C7 /* RemovedPhotos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemovedPhotos.swift; sourceTree = "<group>"; };
@@ -640,6 +650,7 @@
 		D2300A98000CD64ED5B65BE1 /* ReceivedScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceivedScene.swift; sourceTree = "<group>"; };
 		D39920A44AE81D3E3BD8864A /* PebbleCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleCard.swift; sourceTree = "<group>"; };
 		D3A86BC5B2740C9E64E3D472 /* ColorExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtractor.swift; sourceTree = "<group>"; };
+		D4741806484FB8528C329B22 /* SkyRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyRenderTests.swift; sourceTree = "<group>"; };
 		D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummary.swift; sourceTree = "<group>"; };
 		D562234B79316343C1D670F5 /* ImageRequestBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRequestBridgeTests.swift; sourceTree = "<group>"; };
 		D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentMerge.swift; sourceTree = "<group>"; };
@@ -678,6 +689,7 @@
 		F773E16FB7FC68D0B2B69F77 /* ShotViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotViewer.swift; sourceTree = "<group>"; };
 		F78CD9AC59995E73FE126EE9 /* birthday-words.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "birthday-words.json"; sourceTree = "<group>"; };
 		F941673D190732D3ADB0055C /* ShotThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotThumbnail.swift; sourceTree = "<group>"; };
+		F9E411C3A91731EA58FC6B65 /* SkyGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyGalleryView.swift; sourceTree = "<group>"; };
 		FA4B485E5C1DD2CC51A13EA9 /* WordHead.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = WordHead.bin; sourceTree = "<group>"; };
 		FACCB0D6CE5A9643C54DF3DB /* AsyncGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncGate.swift; sourceTree = "<group>"; };
 		FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiftScheduleTests.swift; sourceTree = "<group>"; };
@@ -863,6 +875,7 @@
 				69825FD346FEC03526525AE5 /* SheenTests.swift */,
 				64124E7CC109015DBCB4BEC8 /* ShotImageGenerationTests.swift */,
 				75C5D16CF875C68C5FD50755 /* ShotImageTests.swift */,
+				D4741806484FB8528C329B22 /* SkyRenderTests.swift */,
 				915E2C36A82446AD4B2298C3 /* SyncPerformanceTests.swift */,
 				453BDAA4450B4629859FEE14 /* SyncRecordsTests.swift */,
 				38A1E3BB45B083CCB0E9847F /* TakeOutTests.swift */,
@@ -976,6 +989,8 @@
 				BDCE9183C112FFB37E007824 /* PebbleView.swift */,
 				BEB5B90C0EA301CBBB8DE2CA /* SceneView.swift */,
 				F941673D190732D3ADB0055C /* ShotThumbnail.swift */,
+				6772D620A0B40FB725E1942E /* SkyShader.metal */,
+				2A8094B161BF4E3E88A438BA /* SkyView.swift */,
 				DF4B0D5E183FDB75F36EEB80 /* SoftPebble.metal */,
 				657F9EAFA790F8D71D44DA12 /* SoftPebbleView.swift */,
 				5B689D73DBFBD16C7B857686 /* Tokens.swift */,
@@ -1066,6 +1081,7 @@
 				8E607FA8DB377F42C22222F8 /* PlaceFinder.swift */,
 				E561A9A5C2873D0707BA873F /* ReviewPrompt.swift */,
 				5175844256F2AE80471F6EE6 /* SettingsSheet.swift */,
+				F9E411C3A91731EA58FC6B65 /* SkyGalleryView.swift */,
 				915F51F76D8105385A924494 /* SpikeView.swift */,
 				19752BA8213A2EB875050A24 /* Telemetry.swift */,
 				65D9C2463F56E1FA771972D9 /* UpdateCheck.swift */,
@@ -1410,6 +1426,8 @@
 				A340EE2C4B3C4B575BB7B632 /* ShotStore.swift in Sources */,
 				CF1B9077022792BE565162B8 /* ShotThumbnail.swift in Sources */,
 				CDD6D930AE9E6FC142AB4E09 /* ShotViewer.swift in Sources */,
+				F1FBF6FB88AB0A1D9EF41912 /* SkyShader.metal in Sources */,
+				B1A6A27FA89A721DB19BE6FA /* SkyView.swift in Sources */,
 				C159EB6BC0E3C0E5D59B45C9 /* SoftPebble.metal in Sources */,
 				0ADBF08E5D7551A81295B7AF /* SoftPebbleView.swift in Sources */,
 				A40D134691DFE93E46471A40 /* Tokens.swift in Sources */,
@@ -1487,6 +1505,7 @@
 				72CB8811A9F1756D47042377 /* SheenTests.swift in Sources */,
 				CE276D188F42B46E00715086 /* ShotImageGenerationTests.swift in Sources */,
 				27C5EAD62A7776F63166FB51 /* ShotImageTests.swift in Sources */,
+				B9EF384B91E2568AAE1B0EB6 /* SkyRenderTests.swift in Sources */,
 				0D19B56D25DAFD794BE542E9 /* SyncPerformanceTests.swift in Sources */,
 				7D72341D340848C9972CBF03 /* SyncRecordsTests.swift in Sources */,
 				F90A1D050D2691DE5F06B74D /* TakeOutTests.swift in Sources */,
@@ -1606,6 +1625,9 @@
 				20BA6C3D955339FFEE5D1C78 /* ShotStore.swift in Sources */,
 				9EB023C629B1882BE6E7995C /* ShotThumbnail.swift in Sources */,
 				866DCC55F52911A6A8BAC243 /* ShotViewer.swift in Sources */,
+				A24AC08A96A9A97F4AA8F346 /* SkyGalleryView.swift in Sources */,
+				407FB3A0FCA802CE6EFF9BE4 /* SkyShader.metal in Sources */,
+				039C4C2C24AECC1CBE4AAEE4 /* SkyView.swift in Sources */,
 				0648CE73963D521784C6EDA4 /* SoftPebble.metal in Sources */,
 				12F83DAC1D00560F28161185 /* SoftPebbleView.swift in Sources */,
 				463BB08804C6196DA3590041 /* SpikeView.swift in Sources */,
@@ -1698,6 +1720,8 @@
 				028B83424DE6D8CE4F416399 /* ShotStore.swift in Sources */,
 				6A09C475C9FE48C8875DC770 /* ShotThumbnail.swift in Sources */,
 				7376A941B553C659D52DAE4A /* ShotViewer.swift in Sources */,
+				17DC836AF34CE38C0AB8F25E /* SkyShader.metal in Sources */,
+				EC4B70EC15B7179130A77F5C /* SkyView.swift in Sources */,
 				9592461D052A0B7821979065 /* SoftPebble.metal in Sources */,
 				FA03B8088C8852CA421B25A3 /* SoftPebbleView.swift in Sources */,
 				936F5FD2B12A592FC1339B20 /* Tokens.swift in Sources */,
