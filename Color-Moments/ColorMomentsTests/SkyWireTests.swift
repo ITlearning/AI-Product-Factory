@@ -168,9 +168,12 @@ final class SkyWireTests: XCTestCase {
         }
         let bd = BirthdayPick(word: "윤슬", meaning: "햇빛이나 달빛에 비쳐 반짝이는 잔물결", extras: [], pool: 1)
         for month in [7, 10] {
-            for (name, t, fold) in [("land", 2.4, nil), ("settled", 6.0, nil), ("fold-mid", 6.0, 0.5), ("fold-end", 6.0, 2.0)] as [(String, Double, Double?)] {
+            var frames: [(String, Double, Double?, Bool)] = [("land", 2.4, nil, false), ("settled", 6.0, nil, false)]
+            for f in [0.15, 0.3, 0.45, 0.6, 0.8, 0.9, 1.0, 1.3] { frames.append(("fold-\(f)", 6.0, f, false)) }
+            for f in [0.2, 0.35, 0.5, 0.8] { frames.append(("still-fold-\(f)", 6.0, f, true)) }
+            for (name, t, fold, still) in frames {
                 let scene = BirthdayRevealScene(pick: bd, month: month, day: 3, passing: ["물비늘", "윤슬"],
-                                                t: t, land: BirthdayReveal.land, fold: fold, still: false)
+                                                t: t, land: BirthdayReveal.land, fold: fold, still: still)
                     .environment(\._accessibilityReduceMotion, true)
                     .frame(width: 350, height: 520)
                     .padding(20)

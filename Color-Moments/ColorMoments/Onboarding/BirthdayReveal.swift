@@ -164,10 +164,17 @@ struct BirthdayRevealScene: View {
         return BirthdayReveal.fold(fold / BirthdayReveal.foldSpan)
     }
 
-    /// 큰 카드 장면이 칸 장면으로 넘어가는 정도 — 거의 다 접힌 뒤에 넘긴다.
+    /// 큰 카드 하늘이 빠지는 정도. 접히는 동안은 큰 하늘 한 장을 카드 모양으로 잘라 줄이고, 다 접힌 뒤(칸과 같은 크기)에만 칸 하늘로 넘긴다.
+    /// 동작 줄이기는 큰 하늘이 다 사라진 뒤 칸 크기로 바뀐다.
     private var bigFade: Double {
         guard let fold else { return 0 }
-        return still ? BirthdayReveal.easeOut(fold / 0.35) : SceneEase.inOut(BirthdayReveal.seg(fold, 0.4, 0.35))
+        return still ? BirthdayReveal.easeOut(fold / 0.35) : SceneEase.inOut(BirthdayReveal.seg(fold, BirthdayReveal.foldSpan, 0.3))
+    }
+
+    /// 칸 하늘이 보이는 정도 — 카드가 칸 크기가 된 뒤에만.
+    private var rowSky: Double {
+        guard let fold else { return 0 }
+        return still ? BirthdayReveal.easeOut((fold - 0.35) / 0.35) : (bigFade > 0 ? 1 : 0)
     }
 
     /// 날짜·뜻이 먼저 빠진다.
@@ -221,10 +228,17 @@ struct BirthdayRevealScene: View {
 
     private func card(w: CGFloat, bigH: CGFloat, h: CGFloat, e: Double) -> some View {
         ZStack(alignment: .topLeading) {
-            // 접히는 동안 장면을 늘려 그리지 않는다 — 큰 그림을 위에 붙여 자르고, 칸 크기 그림으로 넘긴다.
-            BirthdayCardSky(month: month, animating: !still)
-                .frame(width: w, height: bigH)
-                .opacity(1 - bigFade)
+            // 함정: 칸 하늘을 카드보다 작게 겹치면 가로 띠가 보인다 — 칸 하늘은 카드가 칸 크기일 때만, 큰 하늘 아래에.
+            if rowSky > 0 {
+                BirthdayCardSky(month: month, animating: !still, quality: .card)
+                    .frame(width: w, height: WordSceneCard.rowHeight)
+                    .opacity(rowSky)
+            }
+            if bigFade < 1 {
+                BirthdayCardSky(month: month, animating: !still)
+                    .frame(width: w, height: bigH)
+                    .opacity(1 - bigFade)
+            }
             // 웹 카드처럼 가운데 위쪽에 철 빛이 비친다.
             RadialGradient(colors: [BirthdayReveal.glow(month: month).opacity(0.26), .clear],
                            center: UnitPoint(x: 0.5, y: 0.42), startRadius: 0, endRadius: w * 0.75)
@@ -232,12 +246,6 @@ struct BirthdayRevealScene: View {
                 .opacity(glowLevel.opacity / 0.55 * (1 - bigFade))
                 .blendMode(.plusLighter)
                 .allowsHitTesting(false)
-            if fold != nil {
-                BirthdayCardSky(month: month, animating: !still, quality: .card)
-                    .frame(width: w, height: WordSceneCard.rowHeight)
-                    .offset(y: (h - WordSceneCard.rowHeight) / 2)
-                    .opacity(bigFade)
-            }
             sheen(w: w, h: h)
             bigWords(w: w, bigH: bigH, h: h, e: e)
             rowWords(w: w, h: h)
