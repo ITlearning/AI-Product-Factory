@@ -30,6 +30,32 @@ enum Telemetry {
     }
     enum Path: String, CaseIterable { case icon, notice, control, widget }
 
+    /// 주운 말 — 생일은 갈래만 싣는다(생일 말은 기기 밖으로 보내지 않는다).
+    enum WordPick: Equatable {
+        case widget(String), photo(String), now(String), birthday
+
+        static let sources = ["widget", "photo", "now", "birthday"]
+
+        init?(_ line: PickLine) {
+            switch line.source {
+            case .birthday: self = .birthday
+            case .widget: guard let id = line.wordID else { return nil }; self = .widget(id)
+            case .photo: guard let id = line.wordID else { return nil }; self = .photo(id)
+            case .now: guard let id = line.wordID else { return nil }; self = .now(id)
+            case nil: return nil
+            }
+        }
+
+        var parameters: [String: String] {
+            switch self {
+            case .widget(let id): ["source": "widget", "word": id]
+            case .photo(let id): ["source": "photo", "word": id]
+            case .now(let id): ["source": "now", "word": id]
+            case .birthday: ["source": "birthday"]
+            }
+        }
+    }
+
     static func lag(dayKey: String, now: Date) -> Lag {
         let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
         guard let a = f.date(from: dayKey), let b = f.date(from: Moment.dayKey(for: now)) else { return .later }
@@ -54,6 +80,7 @@ enum Telemetry {
         case appEntered(Path)
         case todayShown
         case wordShown(String)
+        case wordPicked(WordPick)
 
         var name: String {
             switch self {
@@ -73,6 +100,7 @@ enum Telemetry {
             case .appEntered: "App.entered"
             case .todayShown: "Today.shown"
             case .wordShown: "Word.shown"
+            case .wordPicked: "Word.picked"
             }
         }
 
@@ -88,6 +116,7 @@ enum Telemetry {
             case .pebbleReceived(let p, let l, let n): ["where": p.rawValue, "lag": l.rawValue, "photos": n.rawValue]
             case .cameraClosed(_, let s): ["stay": s.rawValue]
             case .appEntered(let p): ["path": p.rawValue]
+            case .wordPicked(let p): p.parameters
             case .pebbleOpened, .todayShown: [:]
             }
         }
