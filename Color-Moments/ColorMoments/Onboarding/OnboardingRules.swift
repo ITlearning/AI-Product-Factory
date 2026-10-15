@@ -7,13 +7,16 @@ enum OnboardingGate {
         case undecided
         case full
         case arrivalAskOnly
+        /// 1.2로 업데이트한 사람 — 생일 말(+ 위젯) 안내를 한 번.
+        case update
         case none
     }
 
     static func presentation(isLoaded: Bool, didFinishOnboarding: Bool, hasRecords: Bool,
-                             didAskArrivalNotice: Bool) -> Presentation {
+                             didAskArrivalNotice: Bool, updatePending: Bool = false) -> Presentation {
         guard isLoaded else { return .undecided }
         if !didFinishOnboarding && !hasRecords { return .full }
+        if updatePending { return .update }
         return didAskArrivalNotice ? .none : .arrivalAskOnly
     }
 
@@ -54,6 +57,8 @@ enum ArrivalAsk {
 enum OnboardingStep: Hashable {
     case intro
     case firstPebble
+    /// 생일을 넣으면 그날의 말을 첫 주운 말로 — 첫 조약돌 선물 바로 다음.
+    case birthday
     /// iCloud 로 이미 기록이 들어온 사람 — 첫 조약돌 받기 대신 iCloud 상태를 먼저 보여 주고 이어서 본다.
     case continuing
     /// 찍은 곳·날씨 — 허용하면 사진 보기에 무엇이 붙는지 보여 주고 위치 권한을 묻는다. 이미 정한 기기는 빠진다.
@@ -66,29 +71,37 @@ enum OnboardingStep: Hashable {
     case howTo
     /// 옆면 카메라 컨트롤이 있는 기기만 — 그 버튼으로 몽돌을 여는 설정을 알린다.
     case cameraButton
-    case collection
+    case widget
     case start
 }
 
 enum OnboardingFlow {
 
     static func steps(continuing: Bool, skipsFirstPebble: Bool, asksArrival: Bool,
-                      hasCameraButton: Bool = false, asksPlace: Bool = false) -> [OnboardingStep] {
+                      hasCameraButton: Bool = false, asksPlace: Bool = false,
+                      showsWidget: Bool = showsWidgetStep) -> [OnboardingStep] {
         var steps: [OnboardingStep] = [.intro]
         if continuing {
             steps.append(.continuing)
         } else if !skipsFirstPebble {
             steps.append(.firstPebble)
         }
+        steps.append(.birthday)
         if asksPlace { steps.append(.place) }
         if asksArrival { steps.append(.arrival) }
         steps.append(.reminder)
         if !continuing { steps.append(.cloud) }
         steps.append(.howTo)
         if hasCameraButton { steps.append(.cameraButton) }
-        steps += [.collection, .start]
+        if showsWidget { steps.append(.widget) }
+        steps.append(.start)
         return steps
     }
+
+    /// 「밀려온 말」 위젯(T5)이 들어오기 전까지 꺼 둔다 — 켜면 온보딩·업데이트 안내에 위젯 붙이기 장이 붙는다.
+    static let showsWidgetStep = false
+    /// 「붙었어요」를 알아챌 위젯 kind — 위젯이 생기면 그 kind 를 넣는다. 비어 있으면 늘 「안 붙임」.
+    static let wordWidgetKinds: Set<String> = []
 
     enum PhotoAccess { case notDetermined, allowed, denied }
 
@@ -120,6 +133,37 @@ enum OnboardingFlow {
             return .gift(day)
         }
         return importedDayKeys == [today] ? .todayOnly : .added
+    }
+}
+
+enum UpdatePage: Hashable { case birthday, widget }
+
+/// 1.2로 업데이트한 사람에게 한 번 — 「태어난 날의 말」 → 「잠금화면·홈 화면에 말 붙이기」. 둘 다 건너뛸 수 있고 다시 뜨지 않는다.
+enum UpdateNotice {
+    static let birthdayKey = "didOfferBirthdayWord"
+    static let widgetKey = "didOfferWordWidget"
+
+    static func pages(offeredBirthday: Bool, offeredWidget: Bool,
+                      showsWidget: Bool = OnboardingFlow.showsWidgetStep) -> [UpdatePage] {
+        var pages: [UpdatePage] = []
+        if !offeredBirthday { pages.append(.birthday) }
+        if showsWidget && !offeredWidget { pages.append(.widget) }
+        return pages
+    }
+
+    static func pages(_ defaults: UserDefaults = .standard, showsWidget: Bool = OnboardingFlow.showsWidgetStep) -> [UpdatePage] {
+        pages(offeredBirthday: defaults.bool(forKey: birthdayKey), offeredWidget: defaults.bool(forKey: widgetKey),
+              showsWidget: showsWidget)
+    }
+
+    static func markOffered(_ page: UpdatePage, _ defaults: UserDefaults = .standard) {
+        defaults.set(true, forKey: page == .birthday ? birthdayKey : widgetKey)
+    }
+
+    /// 온보딩을 마친 사람은 그 안에서 이미 봤다 — 위젯 장은 실제로 보였을 때만 본 것으로 친다.
+    static func markOnboardingFinished(_ defaults: UserDefaults = .standard, showsWidget: Bool = OnboardingFlow.showsWidgetStep) {
+        markOffered(.birthday, defaults)
+        if showsWidget { markOffered(.widget, defaults) }
     }
 }
 

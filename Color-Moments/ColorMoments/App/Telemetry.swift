@@ -135,13 +135,14 @@ enum Telemetry {
         }
     }
 
-    static let stepNames = ["intro", "firstPebble", "continuing", "place", "arrival", "reminder", "cloud",
-                            "howTo", "cameraButton", "collection", "start"]
+    static let stepNames = ["intro", "firstPebble", "birthday", "continuing", "place", "arrival", "reminder", "cloud",
+                            "howTo", "cameraButton", "widget", "start"]
 
     static func stepName(_ step: OnboardingStep) -> String {
         switch step {
         case .intro: "intro"
         case .firstPebble: "firstPebble"
+        case .birthday: "birthday"
         case .continuing: "continuing"
         case .place: "place"
         case .arrival: "arrival"
@@ -149,7 +150,7 @@ enum Telemetry {
         case .cloud: "cloud"
         case .howTo: "howTo"
         case .cameraButton: "cameraButton"
-        case .collection: "collection"
+        case .widget: "widget"
         case .start: "start"
         }
     }

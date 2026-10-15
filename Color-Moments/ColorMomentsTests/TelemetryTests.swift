@@ -52,8 +52,8 @@ final class TelemetryTests: XCTestCase {
         XCTAssertFalse(Telemetry.isEnabled)
     }
 
-    private static let allSteps: [OnboardingStep] = [.intro, .firstPebble, .continuing, .place, .arrival, .reminder,
-                                                     .cloud, .howTo, .cameraButton, .collection, .start]
+    private static let allSteps: [OnboardingStep] = [.intro, .firstPebble, .birthday, .continuing, .place, .arrival,
+                                                     .reminder, .cloud, .howTo, .cameraButton, .widget, .start]
 
     private static var allEvents: [Telemetry.Event] {
         var events: [Telemetry.Event] = allSteps.map { .onboardingStep($0) }

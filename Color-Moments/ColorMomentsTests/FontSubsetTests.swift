@@ -177,6 +177,7 @@ final class FontSubsetTests: XCTestCase {
         let root = Self.fontsDir.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let onboardingSteps = try String(contentsOf: root.appendingPathComponent("ColorMoments/Onboarding/OnboardingSteps.swift"), encoding: .utf8)
         let onboardingView = try String(contentsOf: root.appendingPathComponent("ColorMoments/Onboarding/OnboardingView.swift"), encoding: .utf8)
+        let wordSteps = try String(contentsOf: root.appendingPathComponent("ColorMoments/Onboarding/WordSteps.swift"), encoding: .utf8)
 
         func quotedValues(after keyword: String, in text: String) -> [String] {
             let pattern = NSRegularExpression.escapedPattern(for: keyword) + #"\(?\s*"([^"]*)""#
@@ -189,6 +190,8 @@ final class FontSubsetTests: XCTestCase {
 
         var titles = quotedValues(after: "PrimaryAction(title:", in: onboardingSteps)
         titles += quotedValues(after: "SecondaryAction(title:", in: onboardingSteps)
+        titles += quotedValues(after: "PrimaryAction(title:", in: wordSteps)
+        titles += quotedValues(after: "SecondaryAction(title:", in: wordSteps)
         titles += quotedValues(after: "actionTitle:", in: onboardingView)
 
         XCTAssertGreaterThanOrEqual(titles.count, 10, "온보딩 버튼 문구를 못 읽어 이 검사가 헛돈다")
