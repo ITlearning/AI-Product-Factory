@@ -2,9 +2,9 @@
 using namespace metal;
 
 // 서리 — 유리창 귀퉁이에서 안쪽으로 자란 고사리 서리(사진 결정 결) + 뿌연 얼음막 + 결정 끝 반짝임.
-// SkyShader.metal 의 SkyU 와 앞부분 배치가 같아야 한다(float4 × 19).
+// SkyShader.metal 의 SkyU 와 배치가 같아야 한다(float4 × 20) — SkyU 에 필드를 넣으면 여기도.
 struct FrostU {
-    float4 res, view, light, quality, tone, parallax, rays, moon, meteor0, meteor1, blend, sun, caps, extra, textBig;
+    float4 res, view, light, quality, tone, parallax, rays, moon, meteor0, meteor1, blend, sun, caps, extra, textBig, win;
     float4 text[4];
 };
 

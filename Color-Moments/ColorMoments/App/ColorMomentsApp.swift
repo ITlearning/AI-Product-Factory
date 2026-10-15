@@ -20,6 +20,8 @@ struct ColorMomentsApp: App {
         // 첫 화면이 그려지기 전에 꽂아야 첫 프레임부터 에셋 사진이 보인다 — .task 는 첫 렌더 뒤에 돈다.
         ShotImage.assetSource = PhotoAssetSource()
         PhotoEnrichment.weather = WeatherLookup.weather(for:)
+        // 셰이더·노이즈 준비를 첫 하늘이 뜨기 전에 메인 밖에서 — 안 하면 처음 「말」 칸에서 0.5초 멈춘다.
+        SkyView.prewarm()
         PhotoEnrichment.attribution = WeatherLookup.attribution
         WordModel.install()
         BackgroundHold.install()

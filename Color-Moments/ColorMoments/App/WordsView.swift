@@ -152,7 +152,7 @@ struct WordSceneCard: View {
             let w = geo.size.width, h = geo.size.height
             ZStack(alignment: .topLeading) {
                 SceneSky(kind: model.scene, quality: quality, animating: animating, tilts: size == .hero,
-                         tintHex: model.tintHex)
+                         seed: SceneSky.seed(model.word), tintHex: model.tintHex)
                 Group {
                     switch size {
                     case .hero: hero(w: w, h: h)

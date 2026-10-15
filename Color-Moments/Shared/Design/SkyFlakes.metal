@@ -2,9 +2,9 @@
 using namespace metal;
 
 // 꽃잎·낙엽 — 입자 상태를 정점 셰이더에서 시간 t 로 바로 계산한다(버퍼 없음, 같은 t 같은 자리).
-// SkyShader.metal 의 SkyU 와 앞부분 배치가 같아야 한다(float4 × 19).
+// SkyShader.metal 의 SkyU 와 배치가 같아야 한다(float4 × 20) — SkyU 에 필드를 넣으면 여기도.
 struct FlakeU {
-    float4 res, view, light, quality, tone, parallax, rays, moon, meteor0, meteor1, blend, sun, caps, extra, textBig;
+    float4 res, view, light, quality, tone, parallax, rays, moon, meteor0, meteor1, blend, sun, caps, extra, textBig, win;
     float4 text[4];
 };
 
