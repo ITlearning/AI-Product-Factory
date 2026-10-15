@@ -111,4 +111,37 @@ final class WordListTests: XCTestCase {
         let missing = try list().words.flatMap(\.lunar).filter { !inTable.contains($0) }
         XCTAssertTrue(missing.isEmpty, "음력 표에 없는 날: \(missing)")
     }
+
+    /// 계절·달(月)·요일은 사진 없이도 알지만 그것만으론 「지금 밖」을 말하지 못한다(R1).
+    private func nowConditions(_ w: WordEntry) -> Int {
+        [!w.times.isEmpty || !w.hours.isEmpty, w.sunMin != nil || w.sunMax != nil, !w.needs.isEmpty, !w.moonAges.isEmpty,
+         !w.weathers.isEmpty || !w.conditions.isEmpty, w.minCelsius != nil || w.maxCelsius != nil,
+         !w.solar.isEmpty || !w.lunar.isEmpty].filter { $0 }.count
+    }
+
+    func testAmbientWordsNeedNoPhoto() throws {
+        for w in try list().words where w.ambient {
+            XCTAssertTrue(w.subjects.isEmpty && w.with.isEmpty, "\(w.word): 대상이 있으면 장면 말이다")
+            XCTAssertGreaterThanOrEqual(nowConditions(w), 1, "\(w.word): 지금 판정할 조건이 없다")
+            XCTAssertFalse(w.moment, "\(w.word): moment 와 겹친다")
+            XCTAssertFalse(w.rest, "\(w.word): 쉬는 말")
+        }
+    }
+
+    func testWidgetCandidatesAreJudgedNow() throws {
+        let bad = try list().words.filter { ($0.moment || $0.ambient) && !$0.rest && nowConditions($0) == 0 }.map(\.word)
+        XCTAssertTrue(bad.isEmpty, "계절·달만으로 정해지는 후보: \(bad)")
+    }
+
+    func testSceneWordsAreNotAmbient() throws {
+        let words = Dictionary(try list().words.map { ($0.word, $0) }, uniquingKeysWith: { a, _ in a })
+        for name in ["찔레꽃", "찔레꽃가뭄", "자리끼", "회오리", "달그림자", "떠돌이별", "맞바람"] {
+            let w = try XCTUnwrap(words[name], name)
+            XCTAssertFalse(w.ambient, name)
+        }
+    }
+
+    func testAmbientCount() throws {
+        XCTAssertTrue((150...200).contains(try list().words.filter(\.ambient).count))
+    }
 }
