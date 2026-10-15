@@ -19,6 +19,8 @@ struct SkyGalleryView: View {
     @State private var moonAge = Celestial.moonAge(at: Date())
     @State private var moonScale = 1.0
     @State private var frequentMeteors = false
+    @State private var baked = 0
+    @State private var meterReset = 0
 
     var body: some View {
         ScrollView {
@@ -32,9 +34,13 @@ struct SkyGalleryView: View {
                     Toggle("지금 장면도", isOn: $showsOld)
                 }
                 .font(Face.caption)
-                Toggle("프레임 계측", isOn: $meter).font(Face.caption)
+                HStack {
+                    Toggle("프레임 계측", isOn: $meter)
+                    Button("계측 초기화") { resetMeters() }
+                }
+                .font(Face.caption)
                 SkyDebugPanel(tier: $tier, metalFX: $metalFX, moonToday: $moonToday, moonAge: $moonAge,
-                              moonScale: $moonScale, frequentMeteors: $frequentMeteors)
+                              moonScale: $moonScale, frequentMeteors: $frequentMeteors, baked: $baked)
                 Button("전체 화면 하늘") { fullScreen = true }
                     .font(Face.guide)
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -48,7 +54,7 @@ struct SkyGalleryView: View {
                     SkyCard(scene: scene, size: .hero, new: false, animating: animating)
                 }
                 label("목록 카드 — 새 하늘(card 30fps)")
-                ForEach(0..<3, id: \.self) { _ in SkyCard(scene: scene, size: .row, new: true, animating: animating) }
+                ForEach(0..<3, id: \.self) { i in SkyCard(scene: scene, size: .row, new: true, animating: animating, seed: i) }
                 if showsOld {
                     label("지금 장면")
                     SkyCard(scene: scene, size: .row, new: false, animating: animating)
@@ -58,10 +64,15 @@ struct SkyGalleryView: View {
         }
         .background(Color.black)
         .preferredColorScheme(.dark)
-        .overlay(alignment: .bottom) { if meter { FrameMeterBadge().padding(.bottom, 4) } }
+        .overlay(alignment: .bottom) { if meter { FrameMeterBadge(resetToken: meterReset).padding(.bottom, 4) } }
         .fullScreenCover(isPresented: $fullScreen) { SkyFullScreen(start: scene) }
+        .onChange(of: scene) { resetMeters() }
+        .onChange(of: tier) { resetMeters() }
+        .onChange(of: baked) { resetMeters() }
+        .onAppear { SkyView.prewarm() }
         .task {
             if ProcessInfo.processInfo.arguments.contains("-skyFull") { fullScreen = true }
+            if ProcessInfo.processInfo.arguments.contains("-skyCycle") { await cycleScenes() }
             guard Self.dumpRequested else { return }
             dumpStatus = "그리는 중…"
             dumpStatus = await SkyDump.run()
@@ -70,6 +81,27 @@ struct SkyGalleryView: View {
 
     private func label(_ s: String) -> some View {
         Text(s).font(Face.caption).foregroundStyle(Tone.secondary)
+    }
+
+    /// 실행 인자 `-skyCycle` — 장면을 2.5초마다 바꾸며 장면마다 끊김·최악 프레임을 로그(SKYCYCLE)로 남긴다.
+    private func cycleScenes() async {
+        let m = FrameMeter()
+        m.start()
+        try? await Task.sleep(for: .seconds(2))
+        for s in SkyScene.allCases + SkyScene.allCases {
+            m.reset()
+            scene = s
+            try? await Task.sleep(for: .seconds(2.5))
+            NSLog("SKYCYCLE %@ 끊김 %d 최악 %.1fms · %@", s.name, m.hitches, m.worstMs, SkyStats.shared.summary.replacingOccurrences(of: "\n", with: " | "))
+        }
+        m.stop()
+        NSLog("SKYCYCLE done %@", SkyStats.shared.setup)
+    }
+
+    /// 장면·단계를 바꿀 때마다 끊김·최악을 새로 잰다.
+    private func resetMeters() {
+        meterReset += 1
+        SkyStats.shared.reset()
     }
 }
 
@@ -81,6 +113,7 @@ struct SkyCard: View {
     let new: Bool
     var animating = false
     var image: CGImage?
+    var seed: Int?
 
     static let width: CGFloat = 354
     var cardSize: CGSize { CGSize(width: Self.width, height: size == .hero ? 232 : 96) }
@@ -99,7 +132,7 @@ struct SkyCard: View {
         if let image {
             Image(decorative: image, scale: 3).resizable()
         } else if new {
-            SkyView(scene, quality: size == .hero ? .hero : .card, animating: animating, tilts: size == .hero)
+            SkyView(scene, quality: size == .hero ? .hero : .card, animating: animating, tilts: size == .hero, seed: seed)
         } else {
             SceneView(scene.legacy, style: .wash, animating: animating,
                       frameInterval: size == .hero ? SceneView.heroFrameInterval : SceneView.cardFrameInterval)
@@ -353,6 +386,7 @@ struct SkyDebugPanel: View {
     @Binding var moonAge: Double
     @Binding var moonScale: Double
     @Binding var frequentMeteors: Bool
+    @Binding var baked: Int
 
     private var detected: String {
         guard let gpu = SkyGPU.shared else { return "-" }
@@ -363,7 +397,7 @@ struct SkyDebugPanel: View {
         VStack(alignment: .leading, spacing: 10) {
             TimelineView(.periodic(from: .now, by: 0.5)) { _ in
                 let info = ProcessInfo.processInfo
-                Text("기기 판정 \(detected) · 열 \(info.thermalState.rawValue) · 저전력 \(info.isLowPowerModeEnabled ? "켬" : "끔")\n\(SkyStats.shared.summary)")
+                Text("기기 판정 \(detected) · 열 \(info.thermalState.rawValue) · 저전력 \(info.isLowPowerModeEnabled ? "켬" : "끔")\n\(SkyStats.shared.setup)\n\(SkyStats.shared.summary)")
                     .font(.caption2.monospaced()).foregroundStyle(Tone.secondary)
             }
             Picker("단계", selection: $tier) {
@@ -373,6 +407,10 @@ struct SkyDebugPanel: View {
             .pickerStyle(.segmented)
             Picker("MetalFX", selection: $metalFX) {
                 Text("FX 자동").tag(0); Text("FX 켬").tag(1); Text("FX 끔").tag(2)
+            }
+            .pickerStyle(.segmented)
+            Picker("구름", selection: $baked) {
+                Text("구름 자동").tag(0); Text("구운 판").tag(1); Text("실시간").tag(2)
             }
             .pickerStyle(.segmented)
             Toggle("오늘 달", isOn: $moonToday)
@@ -390,6 +428,7 @@ struct SkyDebugPanel: View {
         .onChange(of: moonAge) { apply() }
         .onChange(of: moonScale) { apply() }
         .onChange(of: frequentMeteors) { apply() }
+        .onChange(of: baked) { apply() }
     }
 
     private func apply() {
@@ -398,6 +437,7 @@ struct SkyDebugPanel: View {
         SkyDebug.moonAge = moonToday ? nil : moonAge
         SkyDebug.moonScale = moonScale
         SkyDebug.frequentMeteors = frequentMeteors
+        SkyDebug.bakedClouds = baked == 0 ? nil : baked == 1
     }
 }
 #endif

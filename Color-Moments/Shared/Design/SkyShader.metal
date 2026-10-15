@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-// SkyView.swift 의 SkyUniforms 와 같은 순서·크기(float4 × 19). 하나를 고치면 둘 다 고친다.
+// SkyView.swift 의 SkyUniforms 와 같은 순서·크기(float4 × 20). 하나를 고치면 둘 다 고친다.
 struct SkyU {
     float4 res;       // 그리는 대상 px w, h, 1/w, 1/h
     float4 view;      // pt w, h, 시간 t, 장면
@@ -13,16 +13,18 @@ struct SkyU {
     float4 moon;      // 달 나이(일), 명암 경계 기울기(rad), 지구조 세기, 텍스처 있음(1)
     float4 meteor0;   // 별똥별 머리 pt x, y, 나아가는 방향 x, y
     float4 meteor1;   // 꼬리 길이 pt, 세기(0 = 없음), 굵기 pt, 별 층 수(1~3)
-    float4 blend;     // 구름 두 장 섞기 w, t - tA, tB - t, 구름 흐름 pt/초
+    float4 blend;     // 구름 두 장 섞기 w, t - tA, tB - t, 구름 흐름 pt/초 — 구운 구름이면 w, 구운 판 pt w, h, 흐름
     float4 sun;       // 햇무리 반지름 pt, 눈부심 길이 pt, 새털구름 옥타브, 햇무리 얼룩(1)
     float4 caps;      // 작은 글자 최대 밝기, 큰 말 최대 밝기(0 = 안 누름), 작은 글자 번짐 pt, 큰 말 번짐 pt
     float4 extra;     // 글자 둘레 구름 걷기(0~1), 별 층 수(새벽), 눈·꽃잎·잎 수, 덧그림 옥타브
     float4 textBig;   // 글자 자리마다 큰 말(1)/작은 글자(0)
+    float4 win;       // 세계 창 pt x, y(구운 구름이면 판 안 자리), 구운 구름 불투명도, 구름 방식(0 실시간 · 1 구운 판 읽기 · 2 굽기)
     float4 text[4];   // 글자 자리 pt x0, y0, x1, y1
 };
 
 constant float WORLD = 320.0;   // pt — 같은 하늘이 카드 크기만큼 잘려 들어가게 모든 무늬를 pt 로 잰다
 constant float SLAB = 0.55;     // 구름층 두께(월드 단위)
+constant float CLOUD_CLEAR_PT = 26.0;   // 작은 글자 둘레 구름을 걷는 폭 — 카드 크기와 상관없이 pt 로
 
 struct VOut { float4 pos [[position]]; float2 uv; };
 
@@ -131,6 +133,11 @@ static float textDistance(constant SkyU& u, float2 pt) {
     return m;
 }
 
+// 구름 걷는 자리 — 작은 글자는 26pt, 큰 말은 48pt 둘레까지.
+static float cloudClearMask(constant SkyU& u, float2 pt) {
+    return max(textMask(u, pt, 1.0, 1, CLOUD_CLEAR_PT), textMask(u, pt, 1.0, 2, 48.0));
+}
+
 // MARK: - 3D 구름 노이즈 굽기 (한 번만)
 
 static float3 hash33(float3 p) {
@@ -173,7 +180,9 @@ static float worleyFbm(float3 p, float f) {
     return tileWorley(p * f, f) * 0.625 + tileWorley(p * f * 2.0, f * 2.0) * 0.25 + tileWorley(p * f * 4.0, f * 4.0) * 0.125;
 }
 
-kernel void skyBakeNoise(texture3d<float, access::write> out [[texture(0)]], uint3 gid [[thread_position_in_grid]]) {
+kernel void skyBakeNoise(texture3d<float, access::write> out [[texture(0)]], constant uint& z0 [[buffer(0)]],
+                         uint3 tid [[thread_position_in_grid]]) {
+    uint3 gid = uint3(tid.xy, tid.z + z0);
     uint n = out.get_width();
     if (gid.x >= n || gid.y >= n || gid.z >= n) return;
     float3 p = (float3(gid) + 0.5) / float(n);
@@ -275,12 +284,14 @@ struct Layer {
     float depth;      // 시차 배수
     float2 offset;
     float ybias;      // 화면 아래로 갈수록 덮임을 더한다(안개)
+    int kind;         // 덮임 지도 — 0 넓은 층 · 1 뭉게구름 무리 · 2 길게 늘어진 층운
 };
 
 static Layer layerFor(int scene, int idx) {
     Layer L;
     L.offset = float2(0.0);
     L.ybias = 0.0;
+    L.kind = 0;
     if (scene == 0) {
         if (idx == 0) {   // 먼 층 — 작고 느리고 하늘색에 묻힘
             L.scale = float2(0.55, 0.9); L.zscale = 0.35; L.drift = float2(0.0035, 0.0); L.evolve = 0.0015;
@@ -293,12 +304,12 @@ static Layer layerFor(int scene, int idx) {
             L.sun = lin(float3(0.80, 0.84, 1.0)) * 0.11; L.ambLo = lin(float3(0.09, 0.095, 0.16)); L.ambHi = lin(float3(0.36, 0.37, 0.50));
             L.lightZ = 2.0; L.g = 0.6; L.haze = 0.12; L.depth = 1.0;
         }
-    } else if (scene == 1) {   // 높은 새털구름 — 옆으로 길게
-        L.scale = float2(0.16, 1.1); L.zscale = 0.25; L.drift = float2(0.004, 0.0); L.evolve = 0.001;
-        L.coverage = 0.36; L.extinct = 3.0; L.detail = 0.5;
-        L.sun = lin(float3(1.0, 0.97, 0.92)) * 0.6; L.ambLo = lin(float3(0.55, 0.66, 0.82)); L.ambHi = lin(float3(0.75, 0.82, 0.92));
-        L.lightZ = 1.2; L.g = 0.75; L.haze = 0.25; L.depth = 0.3;
-        L.coverage = 0.0;
+    } else if (scene == 1) {   // 흩어진 작은 뭉게구름 몇 개(새털구름은 합성에서)
+        L.kind = 1;
+        L.scale = float2(0.85, 1.0); L.zscale = 0.3; L.drift = float2(0.0051, 0.0); L.evolve = 0.0015;
+        L.coverage = idx == 1 ? 0.12 : 0.0; L.extinct = 14.0; L.detail = 0.65;
+        L.sun = lin(float3(1.0, 0.98, 0.95)) * 0.42; L.ambLo = lin(float3(0.5, 0.6, 0.76)); L.ambHi = lin(float3(0.84, 0.88, 0.95));
+        L.lightZ = 1.4; L.g = 0.6; L.haze = 0.25; L.depth = 1.0; L.ybias = -0.3; L.offset = float2(0.63, 0.29);
     } else if (scene == 3) {   // 맑은 밤 — 구름 없음
         L.scale = float2(0.5); L.zscale = 0.3; L.drift = float2(0.0); L.evolve = 0.0;
         L.coverage = 0.0; L.extinct = 1.0; L.detail = 0.0;
@@ -311,8 +322,9 @@ static Layer layerFor(int scene, int idx) {
         L.lightZ = 1.0; L.g = 0.0; L.haze = 0.0; L.depth = 0.0;
     } else if (scene == S_DAWN || scene == S_DUSK) {
         bool dusk = scene == S_DUSK;
+        L.kind = 2;
         if (idx == 0) {   // 먼 층 — 옆으로 긴 층구름
-            L.scale = float2(0.22, 1.0); L.zscale = 0.25; L.drift = float2(0.0025, 0.0); L.evolve = 0.0012;
+            L.scale = float2(0.2, 1.3); L.zscale = 0.25; L.drift = float2(0.0023, 0.0); L.evolve = 0.0012;
             L.coverage = dusk ? 0.46 : 0.36; L.extinct = 7.0; L.detail = 0.3;
             L.sun = (dusk ? lin(float3(1.0, 0.45, 0.28)) : lin(float3(1.0, 0.62, 0.62))) * 0.3;
             L.ambLo = dusk ? lin(float3(0.2, 0.11, 0.2)) : lin(float3(0.12, 0.11, 0.24));
@@ -320,18 +332,19 @@ static Layer layerFor(int scene, int idx) {
             L.lightZ = 1.6; L.g = 0.6; L.haze = 0.4; L.depth = 0.3; L.offset = float2(0.41, 0.27); L.ybias = -0.45;
         } else {
             L.ybias = -0.6;
-            L.scale = float2(0.3, 0.6); L.zscale = 0.3; L.drift = float2(0.005, 0.0); L.evolve = 0.0018;
+            L.scale = float2(0.3, 1.1); L.zscale = 0.3; L.drift = float2(0.005, 0.0); L.evolve = 0.0018;
             L.coverage = dusk ? 0.44 : 0.3; L.extinct = 12.0; L.detail = 0.65;
             L.sun = (dusk ? lin(float3(1.0, 0.5, 0.24)) : lin(float3(1.0, 0.64, 0.58))) * (dusk ? 0.55 : 0.38);
             L.ambLo = dusk ? lin(float3(0.15, 0.08, 0.15)) : lin(float3(0.11, 0.1, 0.21));
             L.ambHi = dusk ? lin(float3(0.5, 0.27, 0.34)) : lin(float3(0.4, 0.31, 0.46));
             L.lightZ = 1.3; L.g = 0.65; L.haze = 0.1; L.depth = 1.0;
         }
-    } else if (scene == S_PETALS || scene == S_LEAVES) {   // 듬성한 뭉게구름
+    } else if (scene == S_PETALS || scene == S_LEAVES) {   // 듬성한 뭉게구름 무리
         bool fall = scene == S_LEAVES;
-        L.scale = float2(0.3, 0.5); L.zscale = 0.3; L.drift = float2(0.0045, 0.0); L.evolve = 0.0015;
-        L.coverage = idx == 1 ? 0.3 : 0.0; L.extinct = 14.0; L.detail = 0.7;
-        L.sun = (fall ? lin(float3(1.0, 0.86, 0.62)) : lin(float3(1.0, 0.97, 0.94))) * 0.6;
+        L.kind = 1;
+        L.scale = float2(0.85, 1.0); L.zscale = 0.3; L.drift = float2(0.0128, 0.0); L.evolve = 0.0015;
+        L.coverage = idx == 1 ? 0.36 : 0.0; L.extinct = 14.0; L.detail = 0.65; L.offset = float2(0.17, 0.83);
+        L.sun = (fall ? lin(float3(1.0, 0.86, 0.62)) : lin(float3(1.0, 0.97, 0.94))) * 0.42;
         L.ambLo = fall ? lin(float3(0.62, 0.56, 0.54)) : lin(float3(0.64, 0.7, 0.84));
         L.ambHi = fall ? lin(float3(0.88, 0.8, 0.7)) : lin(float3(0.88, 0.89, 0.95));
         L.lightZ = 1.5; L.g = 0.6; L.haze = 0.2; L.depth = 1.0; L.ybias = -0.35;
@@ -401,11 +414,13 @@ static float density(texture3d<float> nz, float3 p, float z, Layer L, float cov,
     float wf = saturate(remap(n.g * 0.625 + n.b * 0.25 + n.a * 0.125, 0.32, 0.64, 0.0, 1.0));
     base = saturate(remap(base, (1.0 - wf) * 0.4, 1.0, 0.0, 1.0));
     base *= smoothstep(0.0, 0.3, z) * smoothstep(1.0, 0.55, z);
-    float d = saturate(remap(base, 1.0 - cov, 1.0, 0.0, 1.0));
+    // 덮임이 옅은 곳은 문턱이 가팔라져 덮임 등고선을 따라 구름이 잘린다 — 옅은 만큼 묽게.
+    float d = saturate(remap(base, 1.0 - cov, 1.0, 0.0, 1.0)) * smoothstep(0.0, 0.3, cov);
     if (detail && d > 0.0 && d < 0.7) {
         float4 m = nz.sample(s, p * float3(5.5, 4.2, 3.1) + float3(0.31, 0.17, 0.53));
         float df = saturate(remap(m.g * 0.625 + m.b * 0.25 + m.a * 0.125, 0.32, 0.64, 0.0, 1.0));
-        d = saturate(remap(d, df * L.detail, 1.0, 0.0, 1.0));
+        // 진한 속으로 갈수록 덜 깎는다 — 0.7 에서 끊기면 구름이 칼로 자른 듯 잘린다.
+        d = mix(saturate(remap(d, df * L.detail, 1.0, 0.0, 1.0)), d, smoothstep(0.3, 0.7, d));
     }
     return d;
 }
@@ -415,13 +430,33 @@ static float hg(float c, float g) {
     return (1.0 - g2) / pow(max(1.0 + g2 - 2.0 * g * c, 1e-4), 1.5) * 0.0795775;
 }
 
-static float4 marchLayer(texture3d<float> nz, Layer L, float2 world, float2 lightWorld, float t, float2 tilt,
+// 덮임 지도 — 구름이 통째로 흐르게 노이즈와 같은 세계 좌표(wf)로 잰다.
+static float coverageAt(Layer L, float2 wf, float yfrac) {
+    float c;
+    if (L.kind == 1) {
+        float cluster = fbm2(wf * 0.55 + L.offset * 7.0, 3);
+        float cell = fbm2(wf * 1.7 + L.offset * 3.0 + 5.3, 3);
+        c = L.coverage + (cluster - 0.5) * 1.0 + (cell - 0.5) * 1.0;
+    } else if (L.kind == 2) {
+        float band = fbm2(float2(wf.x * 0.3, wf.y * 2.6) + L.offset * 7.0, 3);
+        float brk = fbm2(wf * float2(1.1, 3.0) + L.offset * 3.0 + 2.1, 2);
+        c = L.coverage + (band - 0.5) * 1.6 + (brk - 0.5) * 0.6;
+    } else {
+        c = L.coverage + (fbm2(wf * 0.8 + L.offset * 7.0, 3) - 0.5) * 1.1;
+    }
+    return saturate(c + L.ybias * (yfrac - 0.5));
+}
+
+// td 흐름 시각, te 모양 바뀜 시각 — 실시간은 둘이 같고, 굽기는 흐름 없이 모양만.
+static float4 marchLayer(texture3d<float> nz, Layer L, float2 world, float2 lightWorld, float td, float te, float2 tilt,
                          int steps, int lsteps, bool detail, float jitter, float shade, float yfrac = 0.5, float clear = 0.0) {
     if (L.coverage <= 0.0 || steps <= 0) return float4(0, 0, 0, 1);
     L.sun *= shade;
     float2 w = world + tilt * L.depth;
-    float2 base = w * L.scale + L.drift * t + L.offset;
-    float cov = saturate(L.coverage + (fbm2(w * 0.8 + L.offset * 7.0 + L.drift * t * 1.7, 3) - 0.5) * 1.1 + L.ybias * (yfrac - 0.5));
+    float2 move = L.drift / L.scale * td;
+    float2 base = (w + move) * L.scale + L.offset;
+    float cov = coverageAt(L, w + move, yfrac);
+    float t = te;
     cov *= 1.0 - clear;
     L.extinct *= 1.0 - clear;
     float dt = 1.0 / float(steps);
@@ -441,7 +476,7 @@ static float4 marchLayer(texture3d<float> nz, Layer L, float2 world, float2 ligh
             float3 q = float3(w, z * SLAB) + ld * (ls * (float(j) - 0.5));
             float zz = q.z / SLAB;
             if (zz > 1.0) break;
-            float3 qp = float3(q.xy * L.scale + L.drift * t + L.offset, zz * L.zscale + L.evolve * t);
+            float3 qp = float3((q.xy + move) * L.scale + L.offset, zz * L.zscale + L.evolve * t);
             od += density(nz, qp, zz, L, cov, false) * L.extinct * ls;
         }
         float beer = max(exp(-od), exp(-od * 0.25) * 0.35);
@@ -464,32 +499,53 @@ struct CloudOut {
     float trans [[color(1)]];
 };
 
-fragment CloudOut skyClouds(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
-                            texture3d<float> nz [[texture(0)]]) {
+// 구름 한 점(앞곱한 색, 투과율). 세계 좌표는 pt + 창(win.xy) — 카드는 큰 하늘의 한 조각을 본다.
+static float4 cloudCore(constant SkyU& u, texture3d<float> nz, float2 uv, float2 pt, float jitter, float td, float te) {
     int scene = int(u.view.w);
-    float2 pt = in.uv * u.view.xy;
-    float2 world = pt / WORLD;
-    float2 lw = u.light.xy / WORLD;
-    float t = u.view.z;
+    float2 world = (pt + u.win.xy) / WORLD;
+    // 굽기는 판 어디서나 같은 방향의 빛(light.xy = 빛 쪽 pt 벡터) — 카드마다 창이 달라도 고르게 밝다.
+    float2 lw = u.win.w > 1.5 ? world + u.light.xy / WORLD : (u.light.xy + u.win.xy) / WORLD;
     float2 tilt = u.parallax.xy / WORLD;
-    float jitter = ign(in.pos.xy);
     int steps = int(u.quality.x), lsteps = int(u.quality.y), farSteps = int(u.quality.w);
     bool detail = u.quality.z > 0.5;
-    float3 sky = skyColor(scene, in.uv, pt, u);
-
+    float3 sky = skyColor(scene, uv, pt, u);
     float shade = 1.0 - 0.8 * u.tone.y * textMask(u, pt, 2.5);
-    float clear = u.extra.x * textMask(u, pt, 2.2);
-    float yfrac = in.uv.y;
-    float4 nearL = marchLayer(nz, layerFor(scene, 1), world, lw, t, tilt, steps, lsteps, detail, jitter, shade, yfrac, clear);
+    float clear = u.extra.x * cloudClearMask(u, pt);
+    float yfrac = uv.y;
+    float4 nearL = marchLayer(nz, layerFor(scene, 1), world, lw, td, te, tilt, steps, lsteps, detail, jitter, shade, yfrac, clear);
     float4 farL = float4(0, 0, 0, 1);
     if (nearL.a > 0.02) {
-        farL = marchLayer(nz, layerFor(scene, 0), world, lw, t, tilt, farSteps, max(lsteps - 1, 1), false, jitter, shade, yfrac, clear);
+        farL = marchLayer(nz, layerFor(scene, 0), world, lw, td, te, tilt, farSteps, max(lsteps - 1, 1), false, jitter, shade, yfrac, clear);
         farL.rgb = mix(farL.rgb, sky * (1.0 - farL.a), layerFor(scene, 0).haze);
     }
+    return float4(nearL.rgb + nearL.a * farL.rgb, nearL.a * farL.a);
+}
+
+fragment CloudOut skyClouds(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
+                            texture3d<float> nz [[texture(0)]]) {
+    float2 pt = in.uv * u.view.xy;
+    float4 c = cloudCore(u, nz, in.uv, pt, ign(in.pos.xy), u.view.z, u.view.z);
     CloudOut o;
-    o.color = float4(nearL.rgb + nearL.a * farL.rgb, 1.0);
-    o.trans = nearL.a * farL.a;
+    o.color = float4(c.rgb, 1.0);
+    o.trans = c.a;
     return o;
+}
+
+// 구운 판 — 세계 한 조각을 흐름 없이(모양 시각 view.z) 한 번 그린다. 오른쪽 끝은 왼쪽 끝으로 이어지게 섞어 가로로 끝없이 돈다.
+// 걸음 사이 떨림은 같은 픽셀을 두 번 엇갈려 찍어 평균(구운 판에 떨림 무늬가 덜 남게).
+fragment float4 skyCloudBake(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
+                             texture3d<float> nz [[texture(0)]]) {
+    float2 pt = in.uv * u.view.xy;
+    float W = u.view.x, margin = W * 0.22;
+    float a = smoothstep(W - margin, W, pt.x);
+    float4 acc = float4(0.0);
+    for (int k = 0; k < 2; k++) {
+        float j = fract(ign(in.pos.xy) + float(k) * 0.5);
+        float4 c = cloudCore(u, nz, in.uv, pt, j, 0.0, u.view.z);
+        if (a > 0.001) c = mix(c, cloudCore(u, nz, in.uv, pt - float2(W, 0.0), j, 0.0, u.view.z), a);
+        acc += c;
+    }
+    return acc * 0.5;
 }
 
 // MARK: - 별
@@ -601,6 +657,30 @@ static float4 cloudTaps(texture2d<float> col, texture2d<float> tr, float2 uv) {
     return float4(s, T);
 }
 
+// 구운 판 읽기 — 판 안 자리(win.xy, 흐름은 이미 더해 옴)에서 가로로 끝없이. 아주 약하게 일렁인다.
+static float4 bakedAt(constant SkyU& u, texture2d<float> A, texture2d<float> B, float2 pt) {
+    constexpr sampler rs(filter::linear, s_address::repeat, t_address::clamp_to_edge);
+    float t = u.view.z;
+    float2 bp = pt + u.win.xy;
+    bp += float2(sin(bp.y * 0.031 + t * 0.09), sin(bp.x * 0.023 + t * 0.07)) * 1.6;
+    float2 buv = bp / u.blend.yz;
+    float4 c = mix(A.sample(rs, buv), B.sample(rs, buv), u.blend.x);
+    // 글자 둘레는 옅게 비치게가 아니라 얇은 데부터 걷는다 — 구름이 유령처럼 남지 않고 작아진다.
+    float a = 1.0 - c.a;
+    float m = saturate(u.extra.x * cloudClearMask(u, pt) * 1.05);
+    float a2 = saturate((a - m) / max(1.0 - m, 1e-3)) * u.win.z;
+    float shade = 1.0 - 0.8 * u.tone.y * textMask(u, pt, 1.0, 0, 40.0);
+    return float4(c.rgb * (a2 / max(a, 1e-3)) * shade, 1.0 - a2);
+}
+
+static float4 cloudsAt(constant SkyU& u, texture2d<float> colA, texture2d<float> trA,
+                       texture2d<float> colB, texture2d<float> trB, float2 uv) {
+    if (u.win.w > 0.5) return bakedAt(u, colA, colB, uv * u.view.xy);
+    float flow = u.blend.w / u.view.x;
+    float2 uvA = uv - float2(flow * u.blend.y, 0.0), uvB = uv + float2(flow * u.blend.z, 0.0);
+    return mix(cloudTaps(colA, trA, uvA), cloudTaps(colB, trB, uvB), u.blend.x);
+}
+
 // 해 — 장면마다 색·세기·번짐. 맑은 낮은 4차 값 그대로(햇무리 띠 포함).
 static float3 sunLight(int scene, float2 pt, float d, float r, constant SkyU& u, float3 c) {
     float R = u.sun.x, G = u.sun.y;
@@ -709,9 +789,7 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     float mask = textMask(u, pt);
     float shade = 1.0 - 0.85 * u.tone.y * textMask(u, pt, 2.5);
     float3 c = skyColor(scene, in.uv, pt, u);
-    float flow = u.blend.w / u.view.x;
-    float2 uvA = in.uv - float2(flow * u.blend.y, 0.0), uvB = in.uv + float2(flow * u.blend.z, 0.0);
-    float4 cl = mix(cloudTaps(colA, trA, uvA), cloudTaps(colB, trB, uvB), u.blend.x);
+    float4 cl = cloudsAt(u, colA, trA, colB, trB, in.uv);
     float T = cl.a;
     float2 lp = u.light.xy + u.parallax.xy * 0.1;
     float d = distance(pt, lp);
@@ -742,7 +820,7 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     if (scene == S_DUSK || scene == S_DAWN) {
         // 구름 아랫면이 지평선 빛에 물든다 — 바로 아래가 더 비어 있는 곳.
         float2 dn = float2(0.0, 7.0 / u.view.y);
-        float Tb = mix(cloudTaps(colA, trA, uvA + dn).a, cloudTaps(colB, trB, uvB + dn).a, u.blend.x);
+        float Tb = cloudsAt(u, colA, trA, colB, trB, in.uv + dn).a;
         float under = saturate((Tb - T) * 2.2) * (1.0 - T);
         float low = 0.35 + 0.65 * saturate(in.uv.y * 1.2);
         float3 wc = scene == S_DUSK ? lin(float3(1.0, 0.36, 0.16)) : lin(float3(1.0, 0.55, 0.55));
@@ -1058,7 +1136,7 @@ fragment float4 skyRays(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     s -= delta * j;
     for (int i = 0; i < n; i++) {
         s -= delta;
-        float T = trans.sample(cs, s).r;
+        float T = u.win.w > 0.5 ? bakedAt(u, trans, trans, s * u.view.xy).a : trans.sample(cs, s).r;
         float2 dd = (s - lu) * aspect;
         float src = exp(-dot(dd, dd) / (rad * rad));
         illum += T * src * decay;
