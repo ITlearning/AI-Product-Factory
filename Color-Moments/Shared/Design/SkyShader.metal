@@ -653,50 +653,6 @@ static float3 sunLight(int scene, float2 pt, float d, float r, constant SkyU& u,
 // 비탈진 결 — 안개 띠·바람 결
 static float bandNoise(float2 p, int oct) { return fbm2(p, oct); }
 
-// 보로노이 F1·F2 — 얼음 결정의 곧은 경계
-static float2 voronoi2(float2 p) {
-    float2 i = floor(p), f = fract(p);
-    float d1 = 8.0, d2 = 8.0;
-    for (int y = -1; y <= 1; y++)
-        for (int x = -1; x <= 1; x++) {
-            float2 o = float2(x, y);
-            float2 r = o + hash22(i + o) - f;
-            float d = dot(r, r);
-            if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
-        }
-    return sqrt(float2(d1, d2));
-}
-
-// 서리 — 화면(렌즈) 가장자리에 맺힌 결정과 반짝임. 모서리일수록 깊이 들어온다.
-static float3 frostRim(constant SkyU& u, float2 pt, float t, float pxPerPt) {
-    float W = u.view.x, H = u.view.y;
-    float ex = min(pt.x, W - pt.x), ey = min(pt.y, H - pt.y);
-    float e = min(ex, ey);
-    float reach = 0.05 * min(W, H) + 8.0;
-    float corner = exp(-ex * ey / (reach * reach * 6.0));
-    float warp = fbm2(pt / 34.0 + 3.3, 3);
-    float band = 1.0 - smoothstep(0.0, reach * (1.0 + 1.6 * corner), e + (warp - 0.5) * reach * 1.2);
-    if (band <= 0.001) return float3(0.0);
-    float2 wp = pt + (float2(fbm2(pt / 20.0, 2), fbm2(pt / 20.0 + 5.2, 2)) - 0.5) * 6.0;
-    float2 v1 = voronoi2(wp / 13.0), v2 = voronoi2(wp / 4.5 + 7.7);
-    float px = 1.0 / pxPerPt;
-    float l1 = 1.0 - smoothstep(0.0, 0.05 + px / 13.0, v1.y - v1.x);
-    float l2 = 1.0 - smoothstep(0.0, 0.07 + px / 4.5, v2.y - v2.x);
-    float facet = hash12(floor(wp / 13.0) + floor(v1.x * 3.0)) * 0.5;
-    float crystal = (l1 * 0.6 + l2 * 0.35 * band + facet * 0.15) * band;
-    float2 cell = floor(pt / 6.0);
-    float2 h = hash22(cell + 41.0);
-    float2 dv = pt - (cell + 0.2 + 0.6 * h) * 6.0;
-    float glint = 0.0;
-    if (hash12(cell + 9.4) < 0.18) {
-        float tw = 0.5 + 0.5 * sin(t * (1.2 + 2.0 * h.x) + h.y * 40.0);
-        float sg = max(0.45, 0.6 * px);
-        glint = exp(-dot(dv, dv) / (sg * sg)) * tw * tw * 1.4;
-    }
-    float m = 1.0 - 0.95 * textMask(u, pt, 1.6);
-    return lin(float3(0.86, 0.93, 1.0)) * (crystal * 0.2 + 0.018 * band + glint * band * band) * m;
-}
-
 fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
                            texture2d<float> colA [[texture(0)]], texture2d<float> trA [[texture(1)]],
                            texture2d<float> colB [[texture(2)]], texture2d<float> trB [[texture(3)]],
@@ -823,7 +779,6 @@ fragment float4 skyCompose(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
         }
         c += lin(float3(0.95, 0.97, 1.0)) * acc * clear;
     }
-    if (scene == S_FROST) c += frostRim(u, pt, t, pxPerPt);
     return float4(c, 1.0);
 }
 
