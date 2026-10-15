@@ -58,7 +58,8 @@ final class BirthdayWordModel {
     func keep(at: Date = Date()) -> Bool {
         guard case .shown(let pick) = phase, let picks = picks() else { return false }
         do {
-            _ = try picks.pick(pick.word, meaning: pick.meaning, source: .birthday, at: at)
+            let line = try picks.pick(pick.word, meaning: pick.meaning, source: .birthday, at: at)
+            if let event = Telemetry.WordPick(line) { Telemetry.send(.wordPicked(event)) }
         } catch {
             return false
         }
