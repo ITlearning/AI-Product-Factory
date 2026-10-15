@@ -174,6 +174,7 @@
 		7530F92A893A52BB75953371 /* DayPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E625BC46AAADBEE1D5E1FD7B /* DayPhotoView.swift */; };
 		766DD82652F73D67AD59E40F /* LunarDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36AAB9304A6FFD7612422D3 /* LunarDays.swift */; };
 		76AADA98FD5F2F767CDE36DA /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
+		7801D08DDB81A2485684B13F /* BirthdayReveal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B154D49F75CE96594EEB16 /* BirthdayReveal.swift */; };
 		783DF2F82233D24186514686 /* HandfulView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98A134A4F6BE326D43F6C9AB /* HandfulView.swift */; };
 		79892B07CD9FEEB2A7396CA2 /* WordChooser.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E0BEBF2B202D80309448AD /* WordChooser.swift */; };
 		79D65BD202CFDFFD16EB6354 /* PebbleCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39920A44AE81D3E3BD8864A /* PebbleCard.swift */; };
@@ -473,6 +474,7 @@
 		2F5E3AAFD8006B4A6F71CA04 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2FFD36F8FE22648DF7CF6DBB /* PebbleStopsLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleStopsLog.swift; sourceTree = "<group>"; };
 		304C7385BE84BB76049509D7 /* AmbientNow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientNow.swift; sourceTree = "<group>"; };
+		30B154D49F75CE96594EEB16 /* BirthdayReveal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BirthdayReveal.swift; sourceTree = "<group>"; };
 		311898EF3262DE92643FB442 /* subset-chars.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "subset-chars.txt"; sourceTree = "<group>"; };
 		343D1F9744F120B40EEDE985 /* PebbleName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PebbleName.swift; sourceTree = "<group>"; };
 		349DC3F413BF9EC93E6C0C60 /* DayClosures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayClosures.swift; sourceTree = "<group>"; };
@@ -864,6 +866,7 @@
 		72A219C7C6C24FA690620F65 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
+				30B154D49F75CE96594EEB16 /* BirthdayReveal.swift */,
 				5F6FEDED27EB43CE95CB3F37 /* FirstPebbleModel.swift */,
 				FB9FE6755D9C20776E4A17EB /* OnboardingRules.swift */,
 				99E21CD732894F78DC1A93B8 /* OnboardingSteps.swift */,
@@ -1459,6 +1462,7 @@
 				3B621E81F1788754521FF3EA /* AsyncGate.swift in Sources */,
 				C551F0362332CF997FF491B8 /* BackgroundHold.swift in Sources */,
 				9350B45953F4B84683162C30 /* BadgeCeremony.swift in Sources */,
+				7801D08DDB81A2485684B13F /* BirthdayReveal.swift in Sources */,
 				C5345168432CE41677778207 /* CaptureEngine.swift in Sources */,
 				39421DA397F79B0CEBD66E06 /* CaptureInbox.swift in Sources */,
 				59F0C1E84E0A9E36B6A7FF64 /* CaptureScreen.swift in Sources */,

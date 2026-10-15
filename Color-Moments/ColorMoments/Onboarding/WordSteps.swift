@@ -18,7 +18,8 @@ final class BirthdayWordModel {
     private(set) var phase = Phase.ask
     var month: Int
     var day: Int
-    var meaningShown = false
+    /// 굴림 동안 스쳐 갈 말 — 같은 달 말에서, 고른 말은 빼고.
+    private(set) var passing: [String] = []
 
     @ObservationIgnored private let picks: () -> PickedWords?
     @ObservationIgnored private let seed: () -> String
@@ -36,6 +37,15 @@ final class BirthdayWordModel {
         self.words = words
     }
 
+    var pickedWord: String? {
+        switch phase {
+        case .ask: nil
+        case .shown(let p), .kept(let p): p.word
+        }
+    }
+
+    var isKept: Bool { if case .kept = phase { true } else { false } }
+
     static let daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
     static func days(in month: Int) -> Int { daysInMonth[max(1, min(12, month)) - 1] }
@@ -49,7 +59,8 @@ final class BirthdayWordModel {
     func reveal() -> Bool {
         guard case .ask = phase, let list = words(),
               let pick = BirthdayWords.pick(list, seed: seed(), month: month, day: day) else { return false }
-        meaningShown = false
+        let pool = list.filter { $0.months.contains(month) && $0.w != pick.word }.map(\.w)
+        passing = Array((pool.isEmpty ? list.map(\.w).filter { $0 != pick.word } : pool).shuffled().prefix(BirthdayReveal.ticks.count))
         phase = .shown(pick)
         return true
     }
@@ -73,72 +84,123 @@ struct BirthdayStep: View {
     let next: () -> Void
 
     @Environment(\.onboardingInk) private var ink
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 「말 받기」를 누른 때 — 앞뒤로 넘겨 다시 온 장에선 nil 이라 연출 없이 다 보인 채로.
+    @State private var revealedAt: Date?
+    @State private var land = BirthdayReveal.land
+    @State private var keptAt: Date?
+    @State private var moving = false
+    @State private var buzz: Task<Void, Never>?
 
     var body: some View {
+        TimelineView(.animation(paused: !moving)) { context in
+            let t = revealedAt.map { context.date.timeIntervalSince($0) } ?? 60
+            let fold = keptAt.map { context.date.timeIntervalSince($0) } ?? (model.isKept ? 60 : nil)
+            page(t: t, fold: fold)
+        }
+        .onDisappear { buzz?.cancel() }
+    }
+
+    private func page(t: Double, fold: Double?) -> some View {
         OnboardingPage {
             SceneLayout {
-                scene
+                scene(t: t, fold: fold)
             } words: {
-                words
+                words(t: t, fold: fold)
             }
         } actions: {
             switch model.phase {
             case .ask:
-                PrimaryAction(title: "말 받기") {
-                    withAnimation(.easeInOut(duration: 0.35)) { if !model.reveal() { next() } }
-                }
+                PrimaryAction(title: "말 받기", action: reveal)
                 SecondaryAction(title: "건너뛰기", action: next)
             case .shown:
-                PrimaryAction(title: "주운 말에 담기") {
-                    withAnimation(.easeInOut(duration: 0.35)) { if !model.keep() { next() } }
-                }
+                let shown = BirthdayRevealFollow.shown(t: t, land: land, still: reduceMotion)
+                PrimaryAction(title: "주운 말에 담기", action: keep)
+                    .opacity(shown)
+                    .offset(y: 14 * (1 - shown))
+                    .allowsHitTesting(shown > 0.5)
             case .kept:
+                let shown = BirthdayRevealFollow.kept(fold: fold ?? 60, still: reduceMotion)
                 PrimaryAction(title: "다음", action: next)
+                    .opacity(shown)
+                    .allowsHitTesting(shown > 0.5)
             }
         }
     }
 
     @ViewBuilder
-    private var scene: some View {
+    private func scene(t: Double, fold: Double?) -> some View {
         switch model.phase {
         case .ask:
             BirthdayWheel(model: model)
         case .shown(let pick), .kept(let pick):
-            Button {
-                withAnimation(.easeInOut(duration: 0.3)) { model.meaningShown.toggle() }
-            } label: {
-                VStack(spacing: 14) {
-                    Text("\(model.month)월 \(model.day)일")
-                        .font(Face.caption).foregroundStyle(ink.secondary)
-                    Text(pick.word)
-                        .font(Face.nameCeremony).foregroundStyle(ink.primary)
-                    Text(model.meaningShown ? pick.meaning : "눌러서 뜻 보기")
-                        .font(model.meaningShown ? Face.line : Face.caption)
-                        .foregroundStyle(ink.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            BirthdayRevealScene(pick: pick, month: model.month, day: model.day, passing: model.passing,
+                                t: t, land: land, fold: fold, still: reduceMotion)
                 .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(model.meaningShown ? "\(pick.word). \(pick.meaning)" : pick.word)
-            .accessibilityHint(model.meaningShown ? "" : "눌러서 뜻 보기")
+                // 굴리는 동안 누르면 바로 멈춘다(웹과 같이).
+                .onTapGesture { if BirthdayReveal.tick(at: t, land: land) != nil, !reduceMotion { landNow(t) } }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(model.month)월 \(model.day)일의 말, \(pick.word). \(pick.meaning)")
         }
     }
 
     @ViewBuilder
-    private var words: some View {
+    private func words(t: Double, fold: Double?) -> some View {
         switch model.phase {
         case .ask:
             OnboardingText(title: "태어난 날의 말",
                            detail: "생일을 알려 주면 그날의 말을 첫 「주운 말」로 드려요. 생일은 이 기기 밖으로 나가지 않아요.")
         case .shown:
+            let shown = BirthdayRevealFollow.shown(t: t, land: land, still: reduceMotion)
             OnboardingText(title: "태어난 날의 말이에요")
+                .opacity(shown)
+                .offset(y: 14 * (1 - shown))
         case .kept:
+            let shown = BirthdayRevealFollow.kept(fold: fold ?? 60, still: reduceMotion)
             OnboardingText(title: "주웠어요", detail: "주운 말에 첫 말로 담았어요.")
+                .opacity(shown)
+                .offset(y: reduceMotion ? 0 : 10 * (1 - shown))
+        }
+    }
+
+    private func reveal() {
+        Haptics.prepare()
+        guard model.reveal() else { return next() }
+        revealedAt = Date()
+        land = BirthdayReveal.land
+        play(for: BirthdayReveal.settled(wordLength: model.pickedWord?.count ?? 0, land: land))
+        buzz?.cancel()
+        let at = reduceMotion ? 0.3 : land
+        buzz = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(at))
+            guard !Task.isCancelled else { return }
+            Haptics.snapped()
+        }
+    }
+
+    private func landNow(_ t: Double) {
+        buzz?.cancel()
+        land = t
+        Haptics.snapped()
+        play(for: BirthdayReveal.settled(wordLength: model.pickedWord?.count ?? 0, land: land) - t)
+    }
+
+    private func keep() {
+        // 디스크에 닿은 뒤에만 접는다 — 실패하면 받았다고 하지 않고 다음 장으로.
+        guard model.keep() else { return next() }
+        keptAt = Date()
+        play(for: BirthdayReveal.keptWordsAt + 0.7)
+    }
+
+    @State private var stopper: Task<Void, Never>?
+
+    private func play(for seconds: Double) {
+        moving = true
+        stopper?.cancel()
+        stopper = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(max(0, seconds) + 0.1))
+            guard !Task.isCancelled else { return }
+            moving = false
         }
     }
 }
