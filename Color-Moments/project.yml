@@ -77,7 +77,7 @@ targets:
     sources:
       - ColorMomentsCapture
       - path: Shared
-        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf", "Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf", "Word/words.json", "Word/lunar-days.json", "Word/birthday-words.json", "Widget/widget-words.json"]  # 확장엔 쓰는 글자만 담은 Mini 판, 버튼 없어 세미볼드 제외
+        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf", "Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf", "Word/words.json", "Word/lunar-days.json", "Word/birthday-words.json", "Widget/widget-words.json", "Design/MoonNear.jpg"]  # 확장엔 쓰는 글자만 담은 Mini 판, 버튼 없어 세미볼드 제외
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.itlearning.colormoments.capture
@@ -103,7 +103,7 @@ targets:
     sources:
       - ColorMomentsControl
       - path: Shared
-        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf", "Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf", "Word/birthday-words.json"]  # 위젯엔 버튼 없어 세미볼드 제외, 「밀려온 말」이 words.json·lunar-days.json 으로 고른다
+        excludes: ["Design/Fonts/GowunDodum-Hangul.ttf", "Design/Fonts/IBMPlexSansKR-SemiBold-Subset.ttf", "Word/birthday-words.json", "Design/MoonNear.jpg"]  # 위젯엔 버튼 없어 세미볼드 제외, 「밀려온 말」이 words.json·lunar-days.json 으로 고른다
     dependencies:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework

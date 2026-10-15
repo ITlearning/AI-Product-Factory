@@ -145,6 +145,7 @@
 		59C0863D1780E02E5DB75392 /* WordWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4592632FBFC35919A3A6301C /* WordWidget.swift */; };
 		59F0C1E84E0A9E36B6A7FF64 /* CaptureScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEFD2DEB60289395B339A44 /* CaptureScreen.swift */; };
 		5C0D02522CD31F51FC2F28B5 /* RemovedPhotos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A766AB692244BED85E278C7 /* RemovedPhotos.swift */; };
+		5C2141D3982ED5D5313DD396 /* MoonNear.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 5E9788BCBE3C26A26A639384 /* MoonNear.jpg */; };
 		5C29105D2A0725C7D23010AB /* WordWidgetText.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDE1BFF9B2D026B26EC9F9B /* WordWidgetText.swift */; };
 		5C46EE00CA3DADB1F2965E39 /* GiftScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0AED55BDEEC2F0F1FBDBC9 /* GiftScheduleTests.swift */; };
 		5D9A1CD34D9C0E0CEBDF2AF6 /* DayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAEDFD6FE3EFBBB38A7951F3 /* DayStore.swift */; };
@@ -542,6 +543,7 @@
 		5CBB395572BC633F2D0F5BA0 /* widget-words.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "widget-words.json"; sourceTree = "<group>"; };
 		5CCF588BE1445AEF867823F0 /* TelemetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryTests.swift; sourceTree = "<group>"; };
 		5CD42333123CE8EF25CBE12A /* WordWidgetTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordWidgetTimeline.swift; sourceTree = "<group>"; };
+		5E9788BCBE3C26A26A639384 /* MoonNear.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = MoonNear.jpg; sourceTree = "<group>"; };
 		5F6FEDED27EB43CE95CB3F37 /* FirstPebbleModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstPebbleModel.swift; sourceTree = "<group>"; };
 		604BD37E9AF9CB6CA3A8BC06 /* PhotoAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAssets.swift; sourceTree = "<group>"; };
 		613CC2B68F4FC778DC2CD902 /* WordModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordModelTests.swift; sourceTree = "<group>"; };
@@ -986,6 +988,7 @@
 				1782AA90AE018A879A1B0885 /* HomeNavigation.swift */,
 				D4F3D42AF21DAC3B06B76C0F /* HomeSummary.swift */,
 				70AD555AD811A9F3BF2ADD98 /* HorizontalPan.swift */,
+				5E9788BCBE3C26A26A639384 /* MoonNear.jpg */,
 				BDCE9183C112FFB37E007824 /* PebbleView.swift */,
 				BEB5B90C0EA301CBBB8DE2CA /* SceneView.swift */,
 				F941673D190732D3ADB0055C /* ShotThumbnail.swift */,
@@ -1320,6 +1323,7 @@
 				DED65CAA379D66577F6413A0 /* GowunDodum-OFL.txt in Resources */,
 				BBA3C897A5072F8F6501382D /* IBMPlexSansKR-OFL.txt in Resources */,
 				7517B2B90478A7F2893B1D58 /* IBMPlexSansKR-SemiBold-Subset.ttf in Resources */,
+				5C2141D3982ED5D5313DD396 /* MoonNear.jpg in Resources */,
 				A04EF57D2A1465EF307A3BA8 /* NOTICE in Resources */,
 				C6135A6F1A86908A2F109AE0 /* NanumMyeongjo-OFL.txt in Resources */,
 				304C4D029F8CB37B61C85F48 /* NanumMyeongjo-Subset.ttf in Resources */,
