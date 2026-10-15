@@ -126,20 +126,25 @@ final class FontSubsetTests: XCTestCase {
 
     func testExtensionSansCoversExtensionText() throws {
         let data = try Data(contentsOf: Self.fontsDir.appendingPathComponent("GowunDodum-Mini.ttf"))
-        XCTAssertLessThan(data.count, 150_000, "확장용 판이 \(data.count / 1024)KB — 한글 전체가 들어간 것 같다")
+        XCTAssertLessThan(data.count, 250_000, "확장용 판이 \(data.count / 1024)KB — 한글 전체가 들어간 것 같다")
         let provider = try XCTUnwrap(CGDataProvider(data: data as CFData))
         let font = CTFontCreateWithGraphicsFont(try XCTUnwrap(CGFont(provider)), 20, nil, nil)
         let root = Self.fontsDir.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let sources = ["Shared/Capture/CaptureScreen.swift", "Shared/Capture/ShotViewer.swift",
                        "Shared/Capture/CaptureEngine.swift", "ColorMomentsControl/PebbleWidget.swift",
                        "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift",
-                       "Shared/Capture/ZoomLadder.swift"]
+                       "Shared/Capture/ZoomLadder.swift", "ColorMomentsControl/WordWidget.swift",
+                       "Shared/Widget/widget-words.json"]
         var needed = Set<Unicode.Scalar>()
         for path in sources {
             let text = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
             needed.formUnion(text.unicodeScalars.filter { (0xAC00...0xD7A3).contains($0.value) })
         }
         XCTAssertGreaterThan(needed.count, 20, "소스를 못 읽어 이 검사가 헛돈다")
+        // 잠금화면 네모 칸이 위젯 후보 말의 뜻풀이를 고딕으로 그린다(말 자체는 명조).
+        let candidates = (BundledWordSource.load()?.words ?? []).filter(AmbientNow.isCandidate)
+        XCTAssertGreaterThan(candidates.count, 50, "위젯 후보 말을 못 읽어 이 검사가 헛돈다")
+        for w in candidates { needed.formUnion(w.meaning.unicodeScalars.filter { (0xAC00...0xD7A3).contains($0.value) }) }
         let missing = needed.filter { !glyphExists($0, in: font) }.map(String.init).sorted()
         XCTAssertTrue(missing.isEmpty,
             "확장용 판에 없는 글자 \(missing.joined()) — Shared/Design/Fonts/README.md 대로 다시 구울 것")
