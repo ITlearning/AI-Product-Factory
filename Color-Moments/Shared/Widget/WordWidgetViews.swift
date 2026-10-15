@@ -68,8 +68,8 @@ public struct WordWidgetSmall<PickControl: View>: View {
             Spacer(minLength: 0)
             Text(model.word ?? "").font(Face.word).foregroundStyle(Tone.primary)
                 .lineLimit(1).minimumScaleFactor(0.5)
-            if let s = model.sentence {
-                (Text(s.before).font(Face.wordMeta) + Text(s.word).font(Face.wordSentence) + Text(s.after).font(Face.wordMeta))
+            if let meaning = model.meaning {
+                Text(meaning).font(Face.wordMeta)
                     .foregroundStyle(Tone.secondary)
                     .lineLimit(2).minimumScaleFactor(0.8)
                     .fixedSize(horizontal: false, vertical: true)
