@@ -60,7 +60,10 @@ struct ColorMomentsApp: App {
             HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures, cameraRequest: cameraRequest,
                       prepare: { [catchUp] in await catchUp.run() })
                 .onOpenURL { url in
-                    if url.scheme == "mongdol", url.host == "widget" { EntryPath.shared.mark(.widget) }
+                    if url.scheme == "mongdol", url.host == "widget" {
+                        EntryPath.shared.mark(.widget)
+                        if url.path == WordWidgetTimeline.url.path { cameraRequest.wordsPending = true }
+                    }
                 }
                 .task {
                     Task(priority: .userInitiated) { await SoftPebbleView.precompile() }
@@ -100,6 +103,7 @@ struct ColorMomentsApp: App {
                 // 설정 앱에서 사진 권한을 켜고 돌아온 경우.
                 reconcilerObserver?.activateIfAllowed()
                 if entryGate.didBecomeActive() { EntryPath.shared.sendAfterGrace() }
+                Task { await WordWidgetSync.appBecameActive() }
                 Task {
                     await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()
@@ -128,6 +132,14 @@ struct ColorMomentsApp: App {
 @Observable
 final class CameraRequest {
     var pending = false
+    /// 「밀려온 말」 위젯을 눌러 들어왔을 때 — 홈이 「말」 칸을 연다.
+    var wordsPending = false
+
+    func takeWords() -> Bool {
+        guard wordsPending else { return false }
+        wordsPending = false
+        return true
+    }
 
     /// 한 번만 연다 — 온보딩 단계와 상관없이(카메라가 안내 위에 뜬다).
     func take() -> Bool {

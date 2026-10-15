@@ -183,6 +183,9 @@ struct HomeShell: View {
             makeCamera()
             progress = 1
         }
+        // 위젯을 눌러 들어오면 「말」 칸 — 안내가 깔려 있으면 끝난 뒤에.
+        .onChange(of: cameraRequest.wordsPending, initial: true) { _, _ in openWordsIfAsked() }
+        .onChange(of: onboarding == .none) { _, _ in openWordsIfAsked() }
         // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
@@ -417,6 +420,12 @@ struct HomeShell: View {
         #else
         nil
         #endif
+    }
+
+    private func openWordsIfAsked() {
+        guard onboarding == .none, cameraRequest.takeWords() else { return }
+        PresentedScreens.dismissAll()
+        selectPage(.words)
     }
 
     private func foldTabBar(_ folded: Bool) {

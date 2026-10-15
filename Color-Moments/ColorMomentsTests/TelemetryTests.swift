@@ -67,7 +67,7 @@ final class TelemetryTests: XCTestCase {
                    .appEntered(.icon), .appEntered(.notice), .appEntered(.control), .appEntered(.widget),
                    .todayShown, .wordShown("yunseul"), .wordRejected("yunseul"), .photoAdded(.today, count: 2),
                    .wordPicked(.widget("neungae")), .wordPicked(.photo("neungae")), .wordPicked(.now("neungae")),
-                   .wordPicked(.birthday)]
+                   .wordPicked(.birthday), .widgetAdded(.same), .widgetAdded(.later)]
         return events
     }
 
@@ -105,7 +105,7 @@ final class TelemetryTests: XCTestCase {
     /// 「묶음.동작」 한 가지 꼴 — PostHog 의 `$` 이벤트나 앱 수명주기 이벤트(「Application Opened」)와 겹치지 않는다.
     func testEventNamesAreFixedAndConsistent() {
         let names = Set(Self.allEvents.map(\.name))
-        XCTAssertEqual(names.count, 17)
+        XCTAssertEqual(names.count, 18)
         for name in names {
             let parts = name.split(separator: ".")
             XCTAssertEqual(parts.count, 2, name)
@@ -132,6 +132,52 @@ final class TelemetryTests: XCTestCase {
         XCTAssertEqual(Telemetry.WordPick(now), .now("neungae"))
         XCTAssertNil(Telemetry.WordPick(PickLine(kind: .pick, word: "는개", source: .widget, at: Date())), "id 없는 말은 안 보낸다")
         XCTAssertEqual(Set(Telemetry.WordPick.sources), Set(["widget", "photo", "now", "birthday"]))
+    }
+
+    // MARK: 위젯 — 확장엔 PostHog 가 없어 앱이 대신 보낸다
+
+    /// 위젯에서 주운 줄은 앱이 열릴 때 한 번씩만 — 다시 열어도 같은 줄을 또 보내지 않는다.
+    @MainActor
+    func testWidgetPicksAreSentOnce() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "widget-picks-\(UUID())"))
+        let a = PickLine(kind: .pick, word: "는개", wordID: "neungae", source: .widget, at: Date())
+        let b = PickLine(kind: .pick, word: "해거름", wordID: "haegeoreum", source: .widget, at: Date())
+        let photo = PickLine(kind: .pick, word: "는개", wordID: "neungae", source: .photo, at: Date(), photoID: "p")
+        let out = PickLine(kind: .unpick, word: "는개", source: .widget, at: Date(), targets: [a.id])
+        var sent: [Telemetry.Event] = []
+        WordWidgetSync.sendWidgetPicks(lines: [a, photo, out], defaults: defaults) { sent.append($0) }
+        XCTAssertEqual(sent, [.wordPicked(.widget("neungae"))], "위젯 줄만, 빼기 줄은 보내지 않는다")
+        WordWidgetSync.sendWidgetPicks(lines: [a, photo, out, b], defaults: defaults) { sent.append($0) }
+        XCTAssertEqual(sent, [.wordPicked(.widget("neungae")), .wordPicked(.widget("haegeoreum"))], "새 줄만 한 번 더")
+        WordWidgetSync.sendWidgetPicks(lines: [a, photo, out, b], defaults: defaults) { sent.append($0) }
+        XCTAssertEqual(sent.count, 2)
+    }
+
+    @MainActor
+    func testWidgetAddedIsSentOnceWithLag() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "widget-added-\(UUID())"))
+        var sent: [Telemetry.Event] = []
+        let now = Date()
+        WordWidgetSync.sendWidgetAdded(firstTimelineAt: nil, now: now, defaults: defaults) { sent.append($0) }
+        XCTAssertTrue(sent.isEmpty, "위젯이 아직 안 불렸으면 보내지 않는다")
+        WordWidgetSync.sendWidgetAdded(firstTimelineAt: now.addingTimeInterval(-3 * 86_400), now: now, defaults: defaults) { sent.append($0) }
+        XCTAssertEqual(sent, [.widgetAdded(.later)])
+        WordWidgetSync.sendWidgetAdded(firstTimelineAt: now, attachedNow: true, now: now, defaults: defaults) { sent.append($0) }
+        XCTAssertEqual(sent.count, 1, "한 번만")
+        XCTAssertEqual(Telemetry.Event.widgetAdded(.same).name, "Widget.added")
+        XCTAssertEqual(Telemetry.Event.widgetAdded(.same).parameters, ["lag": "same"], "시각 자체는 싣지 않는다")
+
+        let fresh = try XCTUnwrap(UserDefaults(suiteName: "widget-added-attach-\(UUID())"))
+        WordWidgetSync.sendWidgetAdded(firstTimelineAt: nil, attachedNow: true, now: now, defaults: fresh) { sent.append($0) }
+        XCTAssertEqual(sent.last, .widgetAdded(.same), "위젯 붙이기 장에서 붙은 걸 알아챈 순간에도")
+    }
+
+    func testWidgetMarksFirstTimelineOnce() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "widget-first-\(UUID())"))
+        let first = Date(timeIntervalSince1970: 1_760_000_000)
+        WordWidgetAdded.mark(now: first, defaults)
+        WordWidgetAdded.mark(now: first.addingTimeInterval(3600), defaults)
+        XCTAssertEqual(WordWidgetAdded.firstTimelineAt(defaults), first)
     }
 
     func testOnlyCountedEventsCarryWholeCount() {

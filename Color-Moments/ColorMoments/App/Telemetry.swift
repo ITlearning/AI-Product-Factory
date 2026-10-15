@@ -81,6 +81,8 @@ enum Telemetry {
         case todayShown
         case wordShown(String)
         case wordPicked(WordPick)
+        /// 「밀려온 말」 위젯이 처음 붙은 뒤 앱이 열린 때 — 붙인 날과 같은 날·다음 날·그 뒤.
+        case widgetAdded(Lag)
 
         var name: String {
             switch self {
@@ -101,6 +103,7 @@ enum Telemetry {
             case .todayShown: "Today.shown"
             case .wordShown: "Word.shown"
             case .wordPicked: "Word.picked"
+            case .widgetAdded: "Widget.added"
             }
         }
 
@@ -117,6 +120,7 @@ enum Telemetry {
             case .cameraClosed(_, let s): ["stay": s.rawValue]
             case .appEntered(let p): ["path": p.rawValue]
             case .wordPicked(let p): p.parameters
+            case .widgetAdded(let l): ["lag": l.rawValue]
             case .pebbleOpened, .todayShown: [:]
             }
         }

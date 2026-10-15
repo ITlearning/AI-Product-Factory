@@ -310,11 +310,20 @@ struct WordsView: View {
         return m.colorHex
     }
 
-    /// 앱이 가진 위치·날씨로 지금의 말 — 위치가 없으면 서울, 날씨를 못 받으면 계산형 말.
+    /// 위젯과 같은 말 — 같은 예보 캐시·같은 하루 24칸. 위치가 없으면 서울, 예보가 없거나 낡았으면 계산형 말.
     private func lookNow() async {
         let place = await PlaceFinder.shared.current()
-        let weather: PlaceWeather? = if let place { await WeatherLookup.now(at: place) } else { nil }
+        if let place { WordWidgetSync.share(place) }
         let date = Date()
+        if let store = AmbientStore() {
+            let forecast = await AmbientNow.refresh(now: date, store: store, source: WeatherKitForecast())
+            let slot = AmbientNow.slots(from: date, count: 1, forecast: forecast, place: store.place()).first
+            nowWord = slot?.word
+            nowLooked = true
+            if slot?.knewWeather == true, attribution == nil { attribution = await PhotoEnrichment.attribution?() }
+            return
+        }
+        let weather: PlaceWeather? = if let place { await WeatherLookup.now(at: place) } else { nil }
         let ctx = AmbientNow.context(at: date, weather: weather, coordinate: place.map { ($0.latitude, $0.longitude) })
         nowWord = AmbientNow.word(at: date, context: ctx)
         nowLooked = true
@@ -328,6 +337,7 @@ struct WordsView: View {
         guard let line = try? picks.pick(entry.word, wordID: entry.id, source: .now) else { return }
         Haptics.snapped()
         if let pick = Telemetry.WordPick(line) { Telemetry.send(.wordPicked(pick)) }
+        WordWidgetSync.reloadWidgets()
         withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.8)) { picked = true }
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 1_400_000_000)
@@ -338,6 +348,7 @@ struct WordsView: View {
 
     private func remove(_ card: WordCardModel) {
         guard let picks, (try? picks.unpick(word: card.word)) != nil else { return }
+        WordWidgetSync.reloadWidgets()
         opened = nil
         nowLooked = false
         withAnimation(.easeOut(duration: 0.3)) { reload() }
