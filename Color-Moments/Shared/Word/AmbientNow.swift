@@ -13,17 +13,84 @@ public enum AmbientNow {
     }
 
     /// 앞 갈래만 남긴다(날씨 > 기온 > 달 > 해·시각 > 철), 그 안에선 조건이 많은 말, 그래도 여럿이면 씨앗.
+    /// 그 한 시각만 본다 — 하루 안 반복 피하기는 dayWords.
     static func word(at date: Date, context ctx: PhotoContext,
                             in words: [WordEntry] = BundledWordSource.cached) -> WordEntry? {
+        ordered(ctx, in: words).first
+    }
+
+    /// 그 시각에 맞는 후보 전부를 고르는 순서대로 — 갈래, 좁은 조건, 씨앗(dayKey + 시각).
+    static func ordered(_ ctx: PhotoContext, in words: [WordEntry]) -> [WordEntry] {
         let pool = candidates(ctx, in: words)
         let plain = pool.filter { !$0.fallback }
         let use = plain.isEmpty ? pool : plain
-        guard let top = use.map(rank).min() else { return nil }
-        let front = use.filter { rank($0) == top }
-        let most = front.map(WordPicker.specificity).max() ?? 0
         let seed = "\(ctx.dateKey)#\(ctx.hour)"
-        return front.filter { WordPicker.specificity($0) == most }
-            .min { (WordPicker.fnv1a(seed + ":" + $0.id), $0.id) < (WordPicker.fnv1a(seed + ":" + $1.id), $1.id) }
+        return use.map { (w: $0, rank: rank($0), spec: -WordPicker.specificity($0), hash: WordPicker.fnv1a(seed + ":" + $0.id)) }
+            .sorted { ($0.rank, $0.spec, $0.hash, $0.w.id) < ($1.rank, $1.spec, $1.hash, $1.w.id) }
+            .map(\.w)
+    }
+
+    // MARK: 하루 24칸 (R4) — 저장 없이 그날 0시부터 다시 계산한다
+
+    /// 그날(0시 기준) 한 시간마다의 말 — 앞 칸과 같은 말은 피하고, 그날 이미 뜬 말은 후보가 남는 한 피한다.
+    /// 같은 날·같은 날씨면 언제 다시 만들어도 같은 24칸.
+    static func dayWords(on day: Date, weather: (Date) -> PlaceWeather?,
+                         coordinate: (latitude: Double, longitude: Double)?,
+                         in words: [WordEntry], calendar: Calendar = PhotoContext.korea) -> [WordEntry?] {
+        let pool = words.filter(isCandidate)
+        let start = calendar.startOfDay(for: day)
+        var shown = Set<String>()
+        var previous: String?
+        var out: [WordEntry?] = []
+        for hour in 0..<24 {
+            let at = hourMiddle(start, hour, calendar)
+            let ctx = context(at: at, weather: weather(at), coordinate: coordinate, calendar: calendar)
+            let list = ordered(ctx, in: pool)
+            let pick = list.first { $0.id != previous && !shown.contains($0.id) }
+                ?? list.first { $0.id != previous } ?? list.first
+            if let pick { shown.insert(pick.id) }
+            previous = pick?.id
+            out.append(pick)
+        }
+        return out
+    }
+
+    /// 한 시간 칸의 대표 시각 — 몇 분에 다시 만들어도 같은 해 높이·같은 말.
+    static func hourMiddle(_ dayStart: Date, _ hour: Int, _ calendar: Calendar) -> Date {
+        (calendar.date(byAdding: .hour, value: hour, to: dayStart) ?? dayStart).addingTimeInterval(1800)
+    }
+
+    /// 위젯 한 칸.
+    public struct Slot: Equatable, Sendable {
+        public let date: Date
+        public let word: WordEntry?
+        public let scene: SceneKind?
+        public let moonAge: Double
+        /// 그 칸을 고를 때 날씨를 알았는지 — 모르면 계산형 말.
+        public let knewWeather: Bool
+    }
+
+    /// now 부터 한 시간 단위 count 칸 — 첫 칸은 now, 다음 칸부터 정시. 위치가 없으면 서울 해 높이에 날씨 말 없음.
+    static func slots(from now: Date, count: Int = 24, forecast: ForecastCache?, place: SharedPlace?,
+                      in words: [WordEntry] = BundledWordSource.cached,
+                      calendar: Calendar = PhotoContext.korea) -> [Slot] {
+        let usable = place.flatMap { p in forecast.flatMap { $0.isNear(p) ? $0 : nil } }
+        let weather: (Date) -> PlaceWeather? = { usable?.weather(at: $0) }
+        let hourStart = calendar.dateInterval(of: .hour, for: now)?.start ?? now
+        var days: [Date: [WordEntry?]] = [:]
+        return (0..<count).map { i in
+            let date = i == 0 ? now : hourStart.addingTimeInterval(Double(i) * 3600)
+            let dayStart = calendar.startOfDay(for: date)
+            let hour = calendar.component(.hour, from: date)
+            if days[dayStart] == nil {
+                days[dayStart] = dayWords(on: dayStart, weather: weather, coordinate: place?.coordinate, in: words, calendar: calendar)
+            }
+            let list = days[dayStart] ?? []
+            let word = list.indices.contains(hour) ? list[hour] : nil
+            let middle = hourMiddle(dayStart, hour, calendar)
+            return Slot(date: date, word: word, scene: word.map(SceneKind.of),
+                        moonAge: Celestial.moonAge(at: middle), knewWeather: weather(middle) != nil)
+        }
     }
 
     static func rank(_ w: WordEntry) -> Int {
