@@ -48,33 +48,19 @@ final class WordWidgetPebbleTests: XCTestCase {
         XCTAssertGreaterThan((lum.max() ?? 0) - (lum.min() ?? 0), 40, "돌에 빛·그늘 결이 있어야 한다(납작한 타원이 아니라)")
     }
 
-    func testRebakesOnlyWhatIsMissingAndPrefersToday() throws {
-        let key = Moment.dayKey(for: Date())
-        let stops: [Float] = [0, 0.8, 0.4, 0.3, 1, 0.3, 0.2, 0.5]
+    func testBakesOneWhitePebblePerSceneOnlyOnce() throws {
         var renders = 0
         func count(_ s: [Float], _ shape: SoftPebbleShape, _ scale: CGFloat) -> CGImage? {
             renders += 1
+            XCTAssertEqual(s, WordWidgetPebble.whiteStops, "조약돌은 흰빛 한 가지")
             return WordWidgetPebble.render(s, shape, 1)
         }
-        XCTAssertTrue(WordWidgetPebble.bakeIfNeeded(today: .init(dayKey: key, stops: stops), in: dir, render: count))
-        XCTAssertEqual(renders, SceneKind.allCases.count + 1)
-        XCTAssertFalse(WordWidgetPebble.bakeIfNeeded(today: .init(dayKey: key, stops: stops), in: dir, render: count))
-        XCTAssertEqual(renders, SceneKind.allCases.count + 1, "있는 건 다시 굽지 않는다")
-
-        let day = try XCTUnwrap(WordWidgetPebble.image(for: model(.rain, .justPicked), in: dir)?.pngData())
-        let scene = try XCTUnwrap(UIImage(contentsOfFile: dir.appendingPathComponent(WordWidgetPebble.sceneFile(.rain)).path)?.pngData())
-        XCTAssertNotEqual(day, scene, "오늘 찍은 색이 있으면 그날 조약돌")
-
-        var more = stops
-        more[1] = 0.1
-        XCTAssertTrue(WordWidgetPebble.bakeIfNeeded(today: .init(dayKey: key, stops: more), in: dir, render: count))
-        XCTAssertEqual(files().filter { $0.hasPrefix("pebble-day-") }, [WordWidgetPebble.dayFile(key, stops: more)], "정지점이 바뀌면 새로, 옛것은 지운다")
-
-        XCTAssertFalse(WordWidgetPebble.bakeIfNeeded(today: nil, in: dir, render: count), "오늘을 모르는 자리에선 날 조약돌을 두고 간다")
-        XCTAssertTrue(WordWidgetPebble.bakeIfNeeded(today: .init(dayKey: key, stops: []), in: dir, render: count))
-        XCTAssertTrue(files().filter { $0.hasPrefix("pebble-day-") }.isEmpty, "오늘 찍은 게 없으면 장면 조약돌로")
-        let yesterday = Date().addingTimeInterval(-86_400 * 2)
-        XCTAssertNotNil(WordWidgetPebble.image(for: model(.rain, .picked, date: yesterday), in: dir))
+        XCTAssertTrue(WordWidgetPebble.bakeIfNeeded(today: nil, in: dir, render: count))
+        XCTAssertEqual(renders, SceneKind.allCases.count)
+        XCTAssertFalse(WordWidgetPebble.bakeIfNeeded(today: nil, in: dir, render: count))
+        XCTAssertEqual(renders, SceneKind.allCases.count, "있는 건 다시 굽지 않는다")
+        XCTAssertTrue(files().filter { $0.hasPrefix("pebble-day-") }.isEmpty, "그날 색 조약돌은 굽지 않는다")
+        XCTAssertNotNil(WordWidgetPebble.image(for: model(.rain, .picked, date: Date().addingTimeInterval(-86_400 * 2)), in: dir))
     }
 
     func testStaleEditionsAreRemoved() {
@@ -89,10 +75,9 @@ final class WordWidgetPebbleTests: XCTestCase {
         XCTAssertNil(WordWidgetPebble.image(for: model(.rain, .picked), in: nil))
     }
 
-    func testSceneColorsAreDistinct() {
-        let all = SceneKind.allCases.map { WordWidgetPebble.sceneStops($0) }
-        XCTAssertEqual(Set(all.map { $0.map { Int($0 * 255) } }).count, all.count)
-        for s in all { XCTAssertEqual(s.count, 12) }
+    func testEverySceneUsesTheSameWhite() {
+        for k in SceneKind.allCases { XCTAssertEqual(WordWidgetPebble.sceneStops(k), WordWidgetPebble.whiteStops, k.rawValue) }
+        XCTAssertEqual(WordWidgetPebble.whiteStops.count, 12)
     }
 
     // MARK: 눈으로 보기 — SKY9B_DIR(+SKY9B_TAG)

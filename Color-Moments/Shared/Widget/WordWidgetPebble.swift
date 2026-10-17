@@ -3,10 +3,10 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// 위젯 「주웠어요」 옆 조약돌 — 위젯 확장은 셰이더 조약돌을 믿고 돌릴 수 없어, 앱이 진짜 조약돌(SoftPebbleView)을 작은 PNG 로
-/// 구워 App Group 에 둔다. 장면마다 한 장(그 장면 색), 오늘 찍은 색이 있으면 오늘 한 장(그날 조약돌 색·모양). 위젯은 오늘 것을 먼저.
+/// 구워 App Group 에 둔다. 색은 하나 — 예전 타원과 같은 흰빛(Tone.secondary 결)만, 장면·그날 색은 싣지 않는다(2026-10-17 Tabber).
 public enum WordWidgetPebble {
     /// 조약돌 그림이 바뀌면 올린다.
-    public static let edition = 1
+    public static let edition = 2
     static let folder = "WidgetPebble"
     /// 돌 지름(pt) — 위젯은 이보다 작게 줄여 쓴다.
     public static let stoneHeight: CGFloat = 20
@@ -38,15 +38,14 @@ public enum WordWidgetPebble {
         return String(h & 0xFFFF_FFFF, radix: 16)
     }
 
-    /// 장면 색 — 인쇄 모양의 강조색이 있으면 그것, 없으면 장면 하늘의 밝은 쪽 색. 위가 밝고 아래가 짙게 세 칸.
-    public static func sceneStops(_ kind: SceneKind) -> [Float] {
-        let base = SceneRGB(hex: SceneArt.accentHex(kind) ?? quietHex(kind))
-        func mix(_ c: SceneRGB, _ to: SceneRGB, _ k: Double) -> SceneRGB {
-            SceneRGB(c.r + (to.r - c.r) * k, c.g + (to.g - c.g) * k, c.b + (to.b - c.b) * k)
-        }
-        let light = mix(base, .white, 0.28), dark = mix(base, SceneRGB(0, 0, 0), 0.22)
-        return [(0.0, light), (0.5, base), (1.0, dark)].flatMap { [Float($0.0), Float($0.1.r), Float($0.1.g), Float($0.1.b)] }
-    }
+    /// 흰빛 조약돌 — 위가 밝고 아래가 조금 짙게, 어느 하늘에서나 같은 색.
+    public static func sceneStops(_ kind: SceneKind) -> [Float] { whiteStops }
+
+    static let whiteStops: [Float] = [
+        0.0, 0.96, 0.96, 0.97,
+        0.5, 0.84, 0.85, 0.87,
+        1.0, 0.68, 0.69, 0.72,
+    ]
 
     static func quietHex(_ kind: SceneKind) -> String {
         switch kind {
@@ -67,12 +66,6 @@ public enum WordWidgetPebble {
     /// 위젯 — 그날 조약돌이 있으면 그것, 없으면 주운 말 장면의 조약돌. 둘 다 없으면 nil(아무것도 안 그린다).
     public static func image(for model: WordWidgetModel, in dir: URL? = container) -> UIImage? {
         guard let dir else { return nil }
-        let prefix = dayPrefix(Moment.dayKey(for: model.date)), suffix = "-e\(edition).png"
-        if let name = ((try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? [])
-            .first(where: { $0.hasPrefix(prefix) && $0.hasSuffix(suffix) }),
-           let img = UIImage(contentsOfFile: dir.appendingPathComponent(name).path) {
-            return img
-        }
         guard let kind = model.scene else { return nil }
         return UIImage(contentsOfFile: dir.appendingPathComponent(sceneFile(kind)).path)
     }

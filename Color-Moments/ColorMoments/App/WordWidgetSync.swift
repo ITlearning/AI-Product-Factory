@@ -58,7 +58,7 @@ enum WordWidgetSync {
         }
     }
 
-    /// 위젯 「주웠어요」 조약돌 — 장면마다 한 장, 오늘 찍은 색이 있으면 오늘 한 장. 없거나 판·정지점이 바뀐 것만 굽는다.
+    /// 위젯 「주웠어요」 조약돌 — 흰빛 한 가지, 장면마다 모양만 다르다. 없거나 판이 바뀐 것만 굽는다.
     /// today 가 nil 이면 오늘 조약돌은 그대로 둔다(가게를 모르는 자리에서 부를 때).
     static func bakePebbles(today: WordWidgetPebble.Today?) {
         let scale = UIScreen.main.scale
@@ -68,10 +68,9 @@ enum WordWidgetSync {
         }
     }
 
+    /// 조약돌은 흰빛 한 가지라 그날 색을 굽지 않는다.
     static func bakePebbles(store: DayStore, now: Date = Date()) {
-        let key = Moment.dayKey(for: now)
-        let stops = SoftPebbleView.floats(DayGradient.pebbleStops(for: store.pebbleMoments(on: key)))
-        bakePebbles(today: WordWidgetPebble.Today(dayKey: key, stops: stops))
+        bakePebbles(today: nil)
     }
 
     // MARK: 계측 — 위젯 확장에는 PostHog 가 없다
