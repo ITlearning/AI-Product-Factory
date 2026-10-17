@@ -3,15 +3,15 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// 위젯 「주웠어요」 옆 조약돌 — 위젯 확장은 셰이더 조약돌을 믿고 돌릴 수 없어, 앱이 진짜 조약돌(SoftPebbleView)을 작은 PNG 로
-/// 구워 App Group 에 둔다. 색은 하나 — 예전 타원과 같은 흰빛(Tone.secondary 결)만, 장면·그날 색은 싣지 않는다(2026-10-17 Tabber).
+/// 구워 App Group 에 둔다. 위젯은 이 그림의 윤곽만 써서 잠금화면처럼 반투명 흰빛(Tone.secondary)으로 칠한다(2026-10-17 Tabber).
 public enum WordWidgetPebble {
     /// 조약돌 그림이 바뀌면 올린다.
-    public static let edition = 2
+    public static let edition = 4
     static let folder = "WidgetPebble"
     /// 돌 지름(pt) — 위젯은 이보다 작게 줄여 쓴다.
     public static let stoneHeight: CGFloat = 20
-    /// 접지 그림자만 — 후광은 투명 위에 더하는 빛이라 PNG 알파에 남지 않는다.
-    static let glow: SoftPebbleView.Glow = .bare
+    /// 위젯은 알파를 윤곽으로만 쓴다(template) — 후광·그림자가 조금이라도 섞이면 돌 둘레에 네모가 비친다.
+    static let glow: SoftPebbleView.Glow = .silhouette
     /// 그림 한 변(pt) — 돌 둘레로 그림자 자리가 있다.
     public static var canvas: CGFloat { stoneHeight * glow.canvas }
 

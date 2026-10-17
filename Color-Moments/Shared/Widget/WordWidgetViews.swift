@@ -160,7 +160,7 @@ extension View {
     }
 }
 
-/// 주운 자리에 남는 작은 조약돌 — 앱이 구운 진짜 조약돌(WordWidgetPebble). stone 은 돌 지름(pt), 둘레 그림자 자리는 겹쳐 둔다.
+/// 주운 자리에 남는 작은 조약돌 — 진짜 조약돌 윤곽만 빌려 잠금화면처럼 반투명 흰빛 한 가지로 칠한다. stone 은 돌 지름(pt).
 public struct WordPebbleMark: View {
     let image: UIImage
     let stone: CGFloat
@@ -172,7 +172,8 @@ public struct WordPebbleMark: View {
 
     public var body: some View {
         let side = stone * WordWidgetPebble.canvas / WordWidgetPebble.stoneHeight
-        Image(uiImage: image).resizable().interpolation(.high)
+        Image(uiImage: image).renderingMode(.template).resizable().interpolation(.high)
+            .foregroundStyle(Tone.secondary)
             .frame(width: side, height: side)
             .padding(-(side - stone) / 2)
             .accessibilityHidden(true)

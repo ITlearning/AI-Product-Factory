@@ -22,7 +22,7 @@ final class WordWidgetPebbleTests: XCTestCase {
 
     private func files() -> Set<String> { Set((try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []) }
 
-    func testBakesRealPebbleWithShadowAndTransparentCorners() throws {
+    func testBakesRealPebbleSilhouetteWithTransparentCorners() throws {
         XCTAssertTrue(WordWidgetPebble.bakeIfNeeded(today: nil, in: dir))
         XCTAssertEqual(files().count, SceneKind.allCases.count)
         let img = try XCTUnwrap(WordWidgetPebble.image(for: model(.leaves, .picked), in: dir)?.cgImage)
