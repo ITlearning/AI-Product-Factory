@@ -2,7 +2,8 @@ import MetalKit
 import SwiftUI
 
 /// 카드 배경 하나 — 하늘이 있는 장면(SkyScene.of)은 셰이더 하늘, 없으면 SceneView.
-/// 움직일 때만 SkyView(MTKView)를 띄우고, 멈춘 동안(화면 밖·다른 칸·동작 줄이기)은 구운 한 장(SkyStills)을 깐다.
+/// 구운 한 장(SkyStills)을 늘 깔고, 움직일 때만 그 위에 SkyView(풀에서 빌린 MTKView)를 띄운다 — 같은 t·같은 판이라 이어진다.
+/// 스크롤 중(SkyScroll.moving)엔 움직이지 않는다 — 스크롤하는 동안 MTKView 를 만들지 않게. 펼친 말(live)은 예외.
 /// 한 장은 메인 밖에서 굽는다 — 스크롤 중 새 카드가 들어올 때 메인이 막히지 않게. 굽는 동안은 같은 장면의 다른 카드 한 장.
 struct SceneSky: View {
     let kind: SceneKind
@@ -25,12 +26,17 @@ struct SceneSky: View {
         GeometryReader { geo in
             if let sky = SkyScene.of(kind) {
                 let texts = SkyTexts.card(geo.size)
-                if animating, !reduceMotion {
-                    SkyView(sky, quality: quality, animating: true, texts: texts, tilts: tilts, seed: seed, live: live)
-                } else if let still = still(sky, geo.size) {
-                    Image(decorative: still, scale: displayScale).resizable()
-                } else {
-                    SkyView(sky, quality: quality, animating: false, texts: texts, seed: seed, live: live)
+                let moves = animating && !reduceMotion && (live == true || !SkyScroll.shared.holds)
+                let still = still(sky, geo.size)
+                ZStack {
+                    if let still {
+                        Image(decorative: still, scale: displayScale).resizable()
+                    }
+                    if moves {
+                        SkyView(sky, quality: quality, animating: true, texts: texts, tilts: tilts, seed: seed, live: live)
+                    } else if still == nil {
+                        SkyView(sky, quality: quality, animating: false, texts: texts, seed: seed, live: live)
+                    }
                 }
             } else {
                 SceneView(kind, style: .wash, animating: animating,
@@ -74,13 +80,17 @@ final class SkyStills: @unchecked Sendable {
         tier = device.map { SkyTier.detect($0, maxFPS: UIScreen.main.maximumFramesPerSecond) } ?? .mid
     }
 
-    static func key(_ scene: SkyScene, quality: SkyQuality, size: CGSize, scale: CGFloat, moonDay: Int, seed: Int? = nil) -> String {
-        "\(scene.key)-\(quality.rawValue)-\(Int(size.width.rounded()))x\(Int(size.height.rounded()))@\(Int(scale))-m\(scene.showsMoon ? moonDay : 0)-s\(seed ?? 0)"
+    static func key(_ scene: SkyScene, quality: SkyQuality, size: CGSize, scale: CGFloat, moonDay: Int, seed: Int? = nil,
+                    tier: SkyTier? = nil) -> String {
+        "\(scene.key)-\(quality.rawValue)-\(Int(size.width.rounded()))x\(Int(size.height.rounded()))@\(Int(scale))-m\(scene.showsMoon ? moonDay : 0)-s\(seed ?? 0)-t\(tier?.rawValue ?? -1)"
     }
+
+    /// 움직이는 하늘과 같은 판 — 디버그로 단계를 바꾸면 한 장도 그 단계로.
+    private var currentTier: SkyTier { SkyDebug.tier ?? tier }
 
     func cached(_ scene: SkyScene, quality: SkyQuality, size: CGSize, scale: CGFloat, seed: Int? = nil, now: Date = Date()) -> CGImage? {
         guard size.width >= 1, size.height >= 1 else { return nil }
-        let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(Celestial.moonAge(at: now)), seed: seed)
+        let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(Celestial.moonAge(at: now)), seed: seed, tier: currentTier)
         return cache.object(forKey: k as NSString)
     }
 
@@ -88,7 +98,7 @@ final class SkyStills: @unchecked Sendable {
     func request(_ scene: SkyScene, quality: SkyQuality, size: CGSize, scale: CGFloat, seed: Int? = nil,
                  done: @escaping @MainActor () -> Void) {
         guard size.width >= 1, size.height >= 1 else { return }
-        let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(Celestial.moonAge(at: Date())), seed: seed)
+        let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(Celestial.moonAge(at: Date())), seed: seed, tier: currentTier)
         lock.lock()
         let first = pending[k] == nil
         pending[k, default: []].append(done)
@@ -106,7 +116,8 @@ final class SkyStills: @unchecked Sendable {
     func image(_ scene: SkyScene, quality: SkyQuality, size: CGSize, scale: CGFloat, seed: Int? = nil, now: Date = Date()) -> CGImage? {
         guard size.width >= 1, size.height >= 1 else { return nil }
         let age = Celestial.moonAge(at: now)
-        let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(age), seed: seed) as NSString
+        let tier = currentTier
+        let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(age), seed: seed, tier: tier) as NSString
         if let hit = cache.object(forKey: k) { return hit }
         let start = CACurrentMediaTime()
         defer {

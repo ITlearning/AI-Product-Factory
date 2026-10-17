@@ -13,6 +13,8 @@ final class SkyCloudBank: @unchecked Sendable {
     static let morphPeriod = 90.0
     /// 판 하나를 몇 줄로 나눠 굽는가 — 움직이는 화면은 한 프레임에 한 줄씩.
     static let strips = 10
+    /// 이 안에 쓴 판은 「쓰는 중」 — 메모리 상한을 넘어도 내보내지 않는다.
+    static let inUse = 2.0
 
     enum Shape: Hashable, Sendable {
         /// 카드·히어로 — 폭 768 × 높이 400pt
@@ -113,7 +115,8 @@ final class SkyCloudBank: @unchecked Sendable {
         plates[key] = p
         var total = plates.values.reduce(0) { $0 + $1.bytes }
         let cap = cap(tier)
-        for old in plates.values.sorted(by: { $0.lastUse < $1.lastUse }) where total > cap && old !== p {
+        // 방금(2초 안) 쓴 판은 내보내지 않는다 — 한 화면 장면이 상한보다 많으면 판끼리 밀어내며 매 프레임 새로 만들었다.
+        for old in plates.values.sorted(by: { $0.lastUse < $1.lastUse }) where total > cap && old !== p && now - old.lastUse > Self.inUse {
             plates[old.key] = nil
             total -= old.bytes
         }
