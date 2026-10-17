@@ -22,6 +22,10 @@ struct SkyGalleryView: View {
     @State private var frequentMeteors = false
     @State private var baked = 0
     @State private var meterReset = 0
+    @State private var heroScaleDown = SkyDebug.heroScaleDown
+    @State private var heroBloomLite = SkyDebug.heroBloomLite
+    @State private var passTiming = SkyDebug.passTiming
+    @State private var passesOff = SkyDebug.off
 
     var body: some View {
         ScrollView {
@@ -42,6 +46,24 @@ struct SkyGalleryView: View {
                 .font(Face.caption)
                 Toggle("하늘 정지(정지 그림만, MTKView 없음)", isOn: Binding(get: { SkyScroll.shared.frozen }, set: { SkyDebug.frozen = $0 }))
                     .font(Face.caption)
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("hero 내부 해상도 2/3", isOn: $heroScaleDown)
+                    Toggle("hero 블룸 줄이기(1/4부터 한 단계 덜)", isOn: $heroBloomLite)
+                    Toggle("패스별 GPU 계측", isOn: $passTiming)
+                    HStack {
+                        Text("패스 끔")
+                        ForEach(SkyPass.switchable, id: \.self) { p in
+                            Toggle(p.rawValue, isOn: Binding(get: { passesOff.contains(p) },
+                                                             set: { on in if on { passesOff.insert(p) } else { passesOff.remove(p) } }))
+                                .toggleStyle(.button)
+                        }
+                    }
+                }
+                .font(Face.caption)
+                .onChange(of: heroScaleDown) { SkyDebug.heroScaleDown = heroScaleDown; resetMeters() }
+                .onChange(of: heroBloomLite) { SkyDebug.heroBloomLite = heroBloomLite; resetMeters() }
+                .onChange(of: passTiming) { SkyDebug.passTiming = passTiming }
+                .onChange(of: passesOff) { SkyDebug.off = passesOff; resetMeters() }
                 SkyDebugPanel(tier: $tier, metalFX: $metalFX, moonToday: $moonToday, moonAge: $moonAge,
                               moonScale: $moonScale, frequentMeteors: $frequentMeteors, baked: $baked)
                 Button("전체 화면 하늘") { fullScreen = true }
@@ -419,7 +441,7 @@ struct SkyDebugPanel: View {
         VStack(alignment: .leading, spacing: 10) {
             TimelineView(.periodic(from: .now, by: 0.5)) { _ in
                 let info = ProcessInfo.processInfo
-                Text("기기 판정 \(detected) · 열 \(info.thermalState.rawValue) · 저전력 \(info.isLowPowerModeEnabled ? "켬" : "끔")\n\(SkyStats.shared.setup)\n\(SkyStats.shared.summary)")
+                Text("기기 판정 \(detected) · 열 \(info.thermalState.rawValue) · 저전력 \(info.isLowPowerModeEnabled ? "켬" : "끔")\n\(SkyStats.shared.setup)\n\(SkyStats.shared.summary)\n패스(장당 ms) \(SkyScrollTest.Result.passes(SkyStats.shared.counters))")
                     .font(.caption2.monospaced()).foregroundStyle(Tone.secondary)
             }
             Picker("단계", selection: $tier) {

@@ -117,6 +117,27 @@ public enum SkyQuality: String, CaseIterable, Identifiable, Sendable {
     var cirrusOctaves: Int { self == .card ? 4 : 5 }
     var raySamples: Int { switch self { case .full: 48; case .hero: 32; case .card: 0 } }
     public var fps: Int { self == .card ? 30 : 120 }
+    /// 카드는 SDR(bgra8 sRGB, EDR 끔) — 오늘의 한 장·전체 화면만 EDR.
+    public var sdr: Bool { self == .card }
+
+    /// MTKView·정지 그림 배율 — 카드는 화면 배율의 2/3(@3x → 2).
+    public func renderScale(_ screen: CGFloat) -> CGFloat {
+        switch self {
+        case .card: screen * 2 / 3
+        case .hero: SkyDebug.heroScaleDown ? screen * 2 / 3 : screen
+        case .full: screen
+        }
+    }
+
+    /// 블룸 첫 단계 해상도 분모 — 카드(와 hero 블룸 줄임 스위치)는 1/4 부터.
+    var bloomStart: Int { self == .card || (self == .hero && SkyDebug.heroBloomLite) ? 4 : 2 }
+}
+
+/// GPU 패스 — 패스별 GPU 시간 계측과 끄기(차감 측정) 스위치.
+public enum SkyPass: String, CaseIterable, Sendable {
+    case bake = "판굽기", clouds = "구름", particles = "입자", compose = "합성", rays = "빛줄기", bloom = "블룸", final = "마무리"
+    /// 끌 수 있는 패스 — 나머지는 끄면 그림이 없다.
+    public static let switchable: [SkyPass] = [.particles, .rays, .bloom]
 }
 
 /// 기기 단계 — GPU 세대 × 화면 최대 주사율로 판정한다(칩 이름은 보지 않는다).
@@ -164,6 +185,8 @@ public struct SkyBudget: Equatable, Sendable {
     public var detail: Bool
     public var raySamples: Int
     public var bloomLevels: Int
+    /// 블룸 첫 단계 해상도 분모(2 · 4).
+    public var bloomStart = 2
     public var starLayers: Int
     /// 맑은 낮 새털구름 fbm 옥타브(결 몸통·실 각각).
     public var cirrusOctaves: Int
@@ -215,6 +238,8 @@ public struct SkyBudget: Equatable, Sendable {
         cirrusOctaves = max(q.cirrusOctaves - (t == .low ? 2 : (t == .mid ? 1 : 0)), 3)
         particleScale = [SkyTier.low: 0.4, .mid: 0.6, .high: 0.8, .ultra: 1][t] ?? 1
         haloPatches = t != .low
+        bloomStart = q.bloomStart
+        if bloomStart == 4 { bloomLevels = max(bloomLevels - 1, 2) }
         if hot { fps = 30 }
         if lowPower { fps = min(fps, 60) }
         let live = live ?? (q == .full || (SkyDebug.liveInScroll && !card))
@@ -238,6 +263,21 @@ public enum SkyDebug {
     nonisolated(unsafe) public static var prepareDelay: Double = 0
     /// 8차까지의 구조 흉내(전후 비교) — 스크롤하는 히어로도 상·최상은 실시간 레이마칭, 스크롤 중에도 늦추지 않는다.
     nonisolated(unsafe) public static var liveInScroll = false
+    /// hero 내부 해상도 2/3(기본 끔, 실기기 눈·GPU 비교용).
+    nonisolated(unsafe) public static var heroScaleDown = false
+    /// hero 블룸을 1/4 해상도부터 한 단계 덜(기본 끔).
+    nonisolated(unsafe) public static var heroBloomLite = false
+    /// 끈 패스(SkyPass.switchable) — 차감 측정용.
+    nonisolated(unsafe) public static var off: Set<SkyPass> = []
+    /// 패스별 GPU 시간(MTLCounterSampleBuffer, 뷰마다 16프레임에 한 번).
+    nonisolated(unsafe) public static var passTiming = false
+
+    /// 결과 줄에 남기는 스위치 상태.
+    public static var switches: String {
+        let off = SkyPass.switchable.filter { Self.off.contains($0) }.map(\.rawValue)
+        return "hero2/3 \(heroScaleDown ? "켬" : "끔"), hero블룸줄임 \(heroBloomLite ? "켬" : "끔"), 패스끔 \(off.isEmpty ? "없음" : off.joined(separator: "+"))"
+    }
+
     /// 「하늘 정지」 대조 — 모든 하늘이 정지 그림만 쓰고 MTKView 를 띄우지 않는다.
     @MainActor public static var frozen: Bool {
         get { SkyScroll.shared.frozen }
@@ -341,6 +381,13 @@ public final class SkyStats: @unchecked Sendable {
         public var gpuFrames = 0
         /// 새로 만든 구운 구름 판
         public var platesMade = 0
+        /// 쓰임새별 GPU ms 합·프레임 수.
+        public var gpuUse: [SkyQuality: Double] = [:]
+        public var gpuUseFrames: [SkyQuality: Int] = [:]
+        /// 쓰임새별 패스 GPU ms 합(표본 프레임만)과 표본 수. nil 이면 기기가 패스 계측을 못 한다.
+        public var passMs: [SkyQuality: [SkyPass: Double]] = [:]
+        public var passFrames: [SkyQuality: Int] = [:]
+        public var passSupported: Bool?
     }
     private var c = Counters()
 
@@ -348,7 +395,7 @@ public final class SkyStats: @unchecked Sendable {
 
     public func resetCounters() {
         lock.lock(); defer { lock.unlock() }
-        c = Counters(alive: c.alive, maxAlive: c.alive)
+        c = Counters(alive: c.alive, maxAlive: c.alive, passSupported: c.passSupported)
     }
 
     func count(_ f: (inout Counters) -> Void) {
@@ -363,7 +410,21 @@ public final class SkyStats: @unchecked Sendable {
         rows[q, default: Row()].gpu = g == 0 ? gpuMs : g * 0.9 + gpuMs * 0.1
         c.gpuMs += gpuMs
         c.gpuFrames += 1
+        c.gpuUse[q, default: 0] += gpuMs
+        c.gpuUseFrames[q, default: 0] += 1
         win.gpuMs += gpuMs
+    }
+
+    /// 한 표본 프레임의 패스별 GPU ms.
+    func passes(_ q: SkyQuality, _ ms: [SkyPass: Double]) {
+        lock.lock(); defer { lock.unlock() }
+        for (p, v) in ms { c.passMs[q, default: [:]][p, default: 0] += v }
+        c.passFrames[q, default: 0] += 1
+    }
+
+    func passSupport(_ on: Bool) {
+        lock.lock(); defer { lock.unlock() }
+        c.passSupported = on
     }
 
     func tick(_ q: SkyQuality, now: Double, cloudRendered: Int, label: String) {
@@ -647,6 +708,8 @@ public struct SkyFrame: Equatable {
 /// 장치·파이프라인·구운 노이즈·달 지도 — 앱 전체에 하나. 만들기(셰이더 컴파일·노이즈 굽기·달 지도 읽기)는 메인 밖에서.
 final class SkyGPU {
     static let format: MTLPixelFormat = .rgba16Float
+    /// 카드(SDR) drawable — 셰이더는 선형 값을 내고 sRGB 인코딩은 포맷이 한다.
+    static let sdrFormat: MTLPixelFormat = .bgra8Unorm_srgb
     static let transFormat: MTLPixelFormat = .r16Float
     static let noiseSize = 128
     static let systemDevice: MTLDevice? = MTLCreateSystemDefaultDevice()
@@ -697,7 +760,9 @@ final class SkyGPU {
 
     let device: MTLDevice
     let queue: MTLCommandQueue
-    let clouds, cloudBake, compose, rain, flake, rays, final: MTLRenderPipelineState
+    let clouds, cloudBake, compose, rain, flake, rays, final, finalSDR: MTLRenderPipelineState
+    /// 패스별 GPU 시간 표본(MTLCounterSampleBuffer) — 기기가 못 하면 nil.
+    let timestamps: MTLCounterSet?
     let rainUpdate, flakeUpdate, prefilter, down, up: MTLComputePipelineState
     let noise: MTLTexture
     /// NASA SVS CGI Moon Kit(LRO) 앞면 — 앱 타깃에만 있다. 없으면 셰이더가 무늬를 지어 그린다.
@@ -717,11 +782,11 @@ final class SkyGPU {
             return f
         }
         func render(_ frag: String, vertex: String = "skyFullscreen", additive: Bool = false, over: Bool = false,
-                    second: MTLPixelFormat? = nil) throws -> MTLRenderPipelineDescriptor {
+                    second: MTLPixelFormat? = nil, format: MTLPixelFormat = Self.format) throws -> MTLRenderPipelineDescriptor {
             let d = MTLRenderPipelineDescriptor()
             d.vertexFunction = try fn(vertex)
             d.fragmentFunction = try fn(frag)
-            d.colorAttachments[0].pixelFormat = Self.format
+            d.colorAttachments[0].pixelFormat = format
             if let second { d.colorAttachments[1].pixelFormat = second }
             if additive {
                 let a = d.colorAttachments[0]!
@@ -748,7 +813,7 @@ final class SkyGPU {
         let descs = [try render("skyClouds", second: Self.transFormat), try render("skyCloudBake"), try render("skyCompose"),
                      try render("skyRainFragment", vertex: "skyRainVertex", additive: true),
                      try render("skyFlakeFragment", vertex: "skyFlakeVertex", over: true),
-                     try render("skyRays"), try render("skyFinal")]
+                     try render("skyRays"), try render("skyFinal"), try render("skyFinal", format: Self.sdrFormat)]
         let kernels = ["skyRainUpdate", "skyFlakeUpdate", "skyBloomPrefilter", "skyBloomDown", "skyBloomUp", "skyBakeNoise"].map { lib.makeFunction(name: $0) }
         // 셰이더 컴파일이 가장 오래 걸린다 — 한꺼번에 나눠 만든다.
         let box = PipelineBox(renders: descs.count, computes: kernels.count)
@@ -760,7 +825,9 @@ final class SkyGPU {
             }
         }
         guard let r = box.allRenders, let c = box.allComputes else { throw CocoaError(.featureUnsupported) }
-        clouds = r[0]; cloudBake = r[1]; compose = r[2]; rain = r[3]; flake = r[4]; rays = r[5]; final = r[6]
+        clouds = r[0]; cloudBake = r[1]; compose = r[2]; rain = r[3]; flake = r[4]; rays = r[5]; final = r[6]; finalSDR = r[7]
+        timestamps = device.supportsCounterSampling(.atStageBoundary)
+            ? device.counterSets?.first { $0.name == MTLCommonCounterSet.timestamp.rawValue } : nil
         rainUpdate = c[0]; flakeUpdate = c[1]; prefilter = c[2]; down = c[3]; up = c[4]
 
         let nd = MTLTextureDescriptor()
@@ -853,10 +920,68 @@ private final class CloudKey {
     var shown: MTLTexture { upscaled ?? color }
 }
 
+/// 한 프레임의 패스별 GPU 시간 — 패스 시작·끝 타임스탬프를 표본 버퍼에 받는다.
+final class SkyPassClock: @unchecked Sendable {
+    private static let capacity = 32
+    private let buffer: MTLCounterSampleBuffer
+    private var marks: [(pass: SkyPass, index: Int)] = []
+
+    init?(_ gpu: SkyGPU) {
+        guard let set = gpu.timestamps else { return nil }
+        let d = MTLCounterSampleBufferDescriptor()
+        d.counterSet = set
+        d.storageMode = .shared
+        d.sampleCount = Self.capacity
+        guard let b = try? gpu.device.makeCounterSampleBuffer(descriptor: d) else { return nil }
+        buffer = b
+    }
+
+    private func next(_ p: SkyPass) -> Int? {
+        let i = marks.count * 2
+        guard i + 1 < Self.capacity else { return nil }
+        marks.append((p, i))
+        return i
+    }
+
+    func attach(_ d: MTLRenderPassDescriptor, _ p: SkyPass) {
+        guard let i = next(p), let a = d.sampleBufferAttachments[0] else { return }
+        a.sampleBuffer = buffer
+        a.startOfVertexSampleIndex = i
+        a.endOfVertexSampleIndex = MTLCounterDontSample
+        a.startOfFragmentSampleIndex = MTLCounterDontSample
+        a.endOfFragmentSampleIndex = i + 1
+    }
+
+    func compute(_ cb: MTLCommandBuffer, _ p: SkyPass) -> MTLComputeCommandEncoder? {
+        let d = MTLComputePassDescriptor()
+        if let i = next(p), let a = d.sampleBufferAttachments[0] {
+            a.sampleBuffer = buffer
+            a.startOfEncoderSampleIndex = i
+            a.endOfEncoderSampleIndex = i + 1
+        }
+        return cb.makeComputeCommandEncoder(descriptor: d)
+    }
+
+    /// 패스 시간 비율로 커맨드 버퍼 GPU 시간을 나눈다 — 타임스탬프 단위가 기기마다 달라도 ms 로 맞는다.
+    func resolve(totalMs: Double) -> [SkyPass: Double] {
+        guard !marks.isEmpty, let data = try? buffer.resolveCounterRange(0..<marks.count * 2) else { return [:] }
+        let ts = data.withUnsafeBytes { Array($0.bindMemory(to: MTLCounterResultTimestamp.self)) }
+        var ticks: [SkyPass: Double] = [:]
+        for (p, i) in marks where i + 1 < ts.count {
+            let a = ts[i].timestamp, b = ts[i + 1].timestamp
+            guard a != MTLCounterErrorValue, b != MTLCounterErrorValue, b > a else { continue }
+            ticks[p, default: 0] += Double(b - a)
+        }
+        let sum = ticks.values.reduce(0, +)
+        guard sum > 0 else { return [:] }
+        return ticks.mapValues { $0 / sum * totalMs }
+    }
+}
+
 /// 한 장면을 그리는 패스 묶음. 대상 크기·무게가 바뀔 때만 중간 텍스처를 다시 만든다.
 final class SkyRenderer {
     let gpu: SkyGPU
-    private struct Key: Equatable { var w, h: Int; var scale: Double; var bloom: Int; var up: Double?; var scene: SkyScene; var baked: Bool }
+    private struct Key: Equatable { var w, h: Int; var scale: Double; var bloom: Int; var bloomStart: Int; var up: Double?; var scene: SkyScene; var baked: Bool }
     private var key: Key?
     private var keys: [CloudKey] = []
     #if canImport(MetalFX)
@@ -876,10 +1001,39 @@ final class SkyRenderer {
     /// 구운 판이 아직 덜 구워졌거나 나타나는 중 — 멈춘 화면도 다시 그려야 한다.
     private(set) var wantsRedraw = false
     private var bytes = 0
+    /// 지금 쓰는 구운 판 — 쥐고 있는 동안 SkyCloudBank 가 버리지 않는다.
+    private var pinned: SkyCloudBank.Plate?
 
     init(gpu: SkyGPU) { self.gpu = gpu }
 
-    deinit { SkyStats.shared.renderer(-bytes) }
+    deinit {
+        if let pinned { SkyCloudBank.shared.unpin(pinned) }
+        SkyStats.shared.renderer(-bytes)
+    }
+
+    /// 쉬는 동안 중간 텍스처·버퍼와 쥔 판을 놓는다. 다음 그리기에서 다시 만든다.
+    func release() {
+        key = nil
+        keys = []
+        scaler = nil
+        hdrTex = nil; raysTex = nil
+        downTex = []; upTex = []
+        drops = nil
+        recount()
+        if let p = pinned { pinned = nil; SkyCloudBank.shared.unpin(p) }
+    }
+
+    private func hold(_ p: SkyCloudBank.Plate) {
+        guard p !== pinned else { return }
+        SkyCloudBank.shared.pin(p)
+        if let old = pinned { SkyCloudBank.shared.unpin(old) }
+        pinned = p
+    }
+
+    /// 밝은 광원(해·달·EDR 빛)이 없는 장면은 블룸이 거의 0 — 패스를 건너뛴다.
+    static func blooms(_ scene: SkyScene) -> Bool { !noBloom.contains(scene) }
+    static let skipsBloom: Set<SkyScene> = [.nightCloudy, .rain, .drizzle, .snow, .fog]
+    nonisolated(unsafe) static var noBloom = skipsBloom
 
     private func recount() {
         var ts: [MTLTexture?] = [hdrTex, raysTex] + downTex + upTex
@@ -898,10 +1052,10 @@ final class SkyRenderer {
         return gpu.device.makeTexture(descriptor: d)
     }
 
-    private func prepare(_ w: Int, _ h: Int, _ b: SkyBudget, _ scene: SkyScene) {
-        let k = Key(w: w, h: h, scale: b.cloudScale, bloom: b.bloomLevels, up: b.upscaleTo, scene: scene, baked: b.bakedClouds)
+    private func prepare(_ w: Int, _ h: Int, _ b: SkyBudget, _ scene: SkyScene, bloom: Int) {
+        let k = Key(w: w, h: h, scale: b.cloudScale, bloom: bloom, bloomStart: b.bloomStart, up: b.upscaleTo, scene: scene, baked: b.bakedClouds)
         guard key != k else { return }
-        let sizeChanged = key.map { $0.w != w || $0.h != h || $0.scale != b.cloudScale || $0.bloom != b.bloomLevels || $0.up != b.upscaleTo || $0.baked != b.bakedClouds } ?? true
+        let sizeChanged = key.map { $0.w != w || $0.h != h || $0.scale != b.cloudScale || $0.bloom != bloom || $0.bloomStart != b.bloomStart || $0.up != b.upscaleTo || $0.baked != b.bakedClouds } ?? true
         key = k
         keys.forEach { $0.slot = nil }
         guard sizeChanged else { return }
@@ -935,8 +1089,8 @@ final class SkyRenderer {
         hdrTex = texture(w, h, usage: rt)
         raysTex = texture(w / 4, h / 4, usage: rt)
         downTex = []; upTex = []
-        var bw = w / 2, bh = h / 2
-        for _ in 0..<b.bloomLevels where bw >= 2 && bh >= 2 {
+        var bw = w / b.bloomStart, bh = h / b.bloomStart
+        for _ in 0..<bloom where bw >= 2 && bh >= 2 {
             if let d = texture(bw, bh, usage: [.shaderRead, .shaderWrite]),
                let u = texture(bw, bh, usage: [.shaderRead, .shaderWrite]) {
                 downTex.append(d); upTex.append(u)
@@ -946,8 +1100,10 @@ final class SkyRenderer {
         recount()
     }
 
-    private func pass(_ cb: MTLCommandBuffer, _ target: MTLTexture, load: MTLLoadAction = .dontCare) -> MTLRenderCommandEncoder? {
+    private func pass(_ cb: MTLCommandBuffer, _ target: MTLTexture, load: MTLLoadAction = .dontCare,
+                      clock: SkyPassClock? = nil, _ p: SkyPass = .compose) -> MTLRenderCommandEncoder? {
         let d = MTLRenderPassDescriptor()
+        clock?.attach(d, p)
         d.colorAttachments[0].texture = target
         d.colorAttachments[0].loadAction = load
         d.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
@@ -960,7 +1116,7 @@ final class SkyRenderer {
         enc.dispatchThreadgroups(MTLSize(width: (w + 7) / 8, height: (h + 7) / 8, depth: 1), threadsPerThreadgroup: tg)
     }
 
-    private func renderClouds(_ cb: MTLCommandBuffer, into k: CloudKey, uniforms: SkyUniforms, at time: Double) {
+    private func renderClouds(_ cb: MTLCommandBuffer, into k: CloudKey, uniforms: SkyUniforms, at time: Double, clock: SkyPassClock?) {
         var lowU = uniforms
         lowU.res = [Float(k.color.width), Float(k.color.height), 1 / Float(k.color.width), 1 / Float(k.color.height)]
         lowU.view.z = Float(time)
@@ -972,6 +1128,7 @@ final class SkyRenderer {
         d.colorAttachments[1].texture = k.trans
         d.colorAttachments[1].loadAction = .dontCare
         d.colorAttachments[1].storeAction = .store
+        clock?.attach(d, .clouds)
         guard let e = cb.makeRenderCommandEncoder(descriptor: d) else { return }
         e.setRenderPipelineState(gpu.clouds)
         floats.withUnsafeBytes { e.setFragmentBytes($0.baseAddress!, length: $0.count, index: 0) }
@@ -992,12 +1149,12 @@ final class SkyRenderer {
     }
 
     /// 구름 두 장(tA ≤ t < tB)과 섞는 값. 정지 그림(cloudEvery 0)은 t 그대로 한 장.
-    private func cloudPair(_ cb: MTLCommandBuffer, _ u: SkyUniforms, t: Double, budget: SkyBudget)
+    private func cloudPair(_ cb: MTLCommandBuffer, _ u: SkyUniforms, t: Double, budget: SkyBudget, clock: SkyPassClock?)
         -> (CloudKey, CloudKey, SIMD3<Float>)? {
         guard keys.count == 2 else { return nil }
         guard budget.cloudEvery > 0 else {
             keys[0].slot = nil
-            renderClouds(cb, into: keys[0], uniforms: u, at: t)
+            renderClouds(cb, into: keys[0], uniforms: u, at: t, clock: clock)
             return (keys[0], keys[0], .zero)
         }
         let dt = Double(budget.cloudEvery) / Double(max(budget.fps, 1))
@@ -1005,7 +1162,7 @@ final class SkyRenderer {
         func ensure(_ slot: Int, avoid: Int) -> CloudKey {
             if let k = keys.first(where: { $0.slot == slot }) { return k }
             let k = keys.first(where: { $0.slot != avoid }) ?? keys[0]
-            renderClouds(cb, into: k, uniforms: u, at: Double(slot) * dt)
+            renderClouds(cb, into: k, uniforms: u, at: Double(slot) * dt, clock: clock)
             k.slot = slot
             return k
         }
@@ -1017,19 +1174,24 @@ final class SkyRenderer {
 
     /// progressive: 구운 판을 한 프레임에 한 줄씩(화면). false 면 한 번에 다 굽는다(정지 그림·테스트).
     func encode(_ cb: MTLCommandBuffer, into target: MTLTexture, frame: SkyFrame, t: Double, headroom: Float,
-                tilt: CGPoint = .zero, budget: SkyBudget? = nil, meteors: Bool = false, progressive: Bool = false) {
+                tilt: CGPoint = .zero, budget: SkyBudget? = nil, meteors: Bool = false, progressive: Bool = false,
+                clock: SkyPassClock? = nil) {
         let w = target.width, h = target.height
         guard w > 0, h > 0, frame.size.width > 0, frame.size.height > 0 else { return }
         let b = budget ?? SkyBudget(frame.quality, tier: .ultra, still: true)
-        prepare(w, h, b, frame.scene)
+        let off = SkyDebug.off
+        let bloomOn = Self.blooms(frame.scene) && !off.contains(.bloom)
+        prepare(w, h, b, frame.scene, bloom: bloomOn ? b.bloomLevels : 0)
         guard let hdrTex, let raysTex else { return }
         frameIndex += 1
-        let (rainN, flakeN) = frame.particles(b)
+        let (rainN, flakeN) = off.contains(.particles) ? (0, 0) : frame.particles(b)
         let meteor = meteors && frame.scene.isNight
             ? SkyMeteor.at(t: t, size: frame.size, every: SkyDebug.frequentMeteors ? 5 : 25) : nil
         var u = frame.uniforms(pixels: CGSize(width: w, height: h), t: t, headroom: headroom, tilt: tilt,
                                frameIndex: frameIndex, rainCount: rainN, flakeCount: flakeN, budget: b, meteor: meteor)
         u.moon.w = gpu.hasMoonMap ? 1 : 0
+        if !bloomOn { u.tone.w = 0 }
+        if off.contains(.rays) { u.rays.y = 0 }
         let texA, trA, texB, trB: MTLTexture
         let mixX: Float
         usingBaked = b.bakedClouds
@@ -1037,7 +1199,8 @@ final class SkyRenderer {
             let bank = SkyCloudBank.shared
             let shape = SkyCloudBank.Shape.fitting(frame.size)
             guard let plate = bank.plate(frame.scene, shape, tier: b.plateTier, device: gpu.device) else { return }
-            bank.advance(plate, cb: cb, gpu: gpu, all: !progressive)
+            hold(plate)
+            bank.advance(plate, cb: cb, gpu: gpu, all: !progressive, clock: clock)
             let flow = Double(frame.scene.cloudFlow)
             let win = SkyCloudBank.window(frame.window, size: frame.size, shape: shape, flow: flow, t: t)
             let w = SkyCloudBank.morph(t)
@@ -1048,7 +1211,8 @@ final class SkyRenderer {
             texA = plate.frames[0]; trA = plate.frames[0]; texB = plate.frames[1]; trB = plate.frames[1]
             mixX = w
         } else {
-            guard let (ka, kb, mix) = cloudPair(cb, u, t: t, budget: b) else { return }
+            if let p = pinned { pinned = nil; SkyCloudBank.shared.unpin(p) }
+            guard let (ka, kb, mix) = cloudPair(cb, u, t: t, budget: b, clock: clock) else { return }
             u.blend = [mix.x, mix.y, mix.z, frame.scene.cloudFlow]
             texA = ka.shown; trA = ka.trans; texB = kb.shown; trB = kb.trans
             mixX = mix.x
@@ -1061,7 +1225,7 @@ final class SkyRenderer {
         if partN > 0 {
             let need = partN * 2 * MemoryLayout<SIMD4<Float>>.stride
             if drops == nil || drops!.length < need { drops = gpu.device.makeBuffer(length: need, options: .storageModePrivate); recount() }
-            if let drops, let c = cb.makeComputeCommandEncoder() {
+            if let drops, let c = clock?.compute(cb, .particles) ?? cb.makeComputeCommandEncoder() {
                 c.setComputePipelineState(rainN > 0 ? gpu.rainUpdate : gpu.flakeUpdate)
                 c.setBuffer(drops, offset: 0, index: 0)
                 floats.withUnsafeBytes { c.setBytes($0.baseAddress!, length: bytes, index: 1) }
@@ -1071,7 +1235,7 @@ final class SkyRenderer {
             }
         }
 
-        if let e = pass(cb, hdrTex) {
+        if let e = pass(cb, hdrTex, clock: clock, .compose) {
             e.setRenderPipelineState(gpu.compose)
             floats.withUnsafeBytes { e.setFragmentBytes($0.baseAddress!, length: bytes, index: 0) }
             e.setFragmentTexture(texA, index: 0)
@@ -1099,7 +1263,7 @@ final class SkyRenderer {
             e.endEncoding()
         }
 
-        if let e = pass(cb, raysTex, load: .clear) {
+        if let e = pass(cb, raysTex, load: .clear, clock: u.rays.x > 0 && u.rays.y > 0 ? clock : nil, .rays) {
             if u.rays.x > 0, u.rays.y > 0 {
                 var ru = u
                 ru.res = [Float(raysTex.width), Float(raysTex.height), 0, 0]
@@ -1111,7 +1275,7 @@ final class SkyRenderer {
             e.endEncoding()
         }
 
-        if !downTex.isEmpty, let c = cb.makeComputeCommandEncoder() {
+        if !downTex.isEmpty, let c = clock?.compute(cb, .bloom) ?? cb.makeComputeCommandEncoder() {
             var p = SIMD4<Float>(1.1, 0.5, 0, 0)
             c.setComputePipelineState(gpu.prefilter)
             c.setTexture(hdrTex, index: 0)
@@ -1136,8 +1300,8 @@ final class SkyRenderer {
         }
         let bloomTex = downTex.count > 1 ? upTex[0] : (downTex.first ?? raysTex)
 
-        if let e = pass(cb, target) {
-            e.setRenderPipelineState(gpu.final)
+        if let e = pass(cb, target, clock: clock, .final) {
+            e.setRenderPipelineState(target.pixelFormat == SkyGPU.sdrFormat ? gpu.finalSDR : gpu.final)
             floats.withUnsafeBytes { e.setFragmentBytes($0.baseAddress!, length: bytes, index: 0) }
             e.setFragmentTexture(hdrTex, index: 0)
             e.setFragmentTexture(bloomTex, index: 1)
@@ -1187,6 +1351,27 @@ public enum SkySnapshot {
         let flipped = ci.oriented(.downMirrored)
         guard let cg = ctx.createCGImage(flipped, from: flipped.extent, format: .RGBA8, colorSpace: srgb) else { return nil }
         return (cg, ms)
+    }
+
+    /// 움직이는 카드와 같은 SDR 길(bgra8 sRGB drawable, headroom 1)로 그린 한 장 — 정지 그림과 색을 맞춰 보는 시험용.
+    public static func sdrImage(_ frame: SkyFrame, scale: CGFloat, t: Double, tier: SkyTier = .ultra) -> CGImage? {
+        guard let gpu = SkyGPU.shared else { return nil }
+        let w = Int(frame.size.width * scale), h = Int(frame.size.height * scale)
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: SkyGPU.sdrFormat, width: w, height: h, mipmapped: false)
+        d.usage = [.renderTarget, .shaderRead]
+        d.storageMode = .shared
+        guard let target = gpu.device.makeTexture(descriptor: d), let cb = gpu.queue.makeCommandBuffer() else { return nil }
+        let renderer = SkyRenderer(gpu: gpu)
+        renderer.encode(cb, into: target, frame: frame, t: t, headroom: 1, budget: SkyBudget(frame.quality, tier: tier, still: true))
+        cb.commit()
+        cb.waitUntilCompleted()
+        var bytes = [UInt8](repeating: 0, count: w * h * 4)
+        target.getBytes(&bytes, bytesPerRow: w * 4, from: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0)
+        guard let srgb = CGColorSpace(name: CGColorSpace.sRGB),
+              let provider = CGDataProvider(data: Data(bytes) as CFData) else { return nil }
+        let info = CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        return CGImage(width: w, height: h, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: w * 4, space: srgb,
+                       bitmapInfo: info, provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
     }
 
     /// 움직이는 하늘처럼 프레임을 이어 그려 구름 레이마칭 횟수를 센다(GPU 결과는 버린다).
@@ -1321,13 +1506,15 @@ public final class SkyScroll {
 /// 움직이는 하늘(MTKView)을 돌려 쓴다 — 스크롤이 멈출 때마다 새로 만들고(CAMetalLayer·드로어블) 버리지 않게.
 @MainActor
 public enum SkyViewPool {
-    /// 쉬는 뷰 상한 — 한 화면에 움직이는 카드 수(히어로 + 줄 카드 여덟)를 넘지 않는다.
-    public static let cap = 8
+    /// 쉬는 뷰 상한 — 동시에 움직이는 하늘 상한(오늘의 한 장 + 카드 넷, D2)과 같다.
+    public static let cap = 5
+    /// 모든 하늘 레이어의 drawable 수.
+    public static let drawableCount = 2
     private static var idle: [MTKView] = []
     public static var idleCount: Int { idle.count }
     private static let all = NSHashTable<MTKView>.weakObjects()
 
-    /// drawable 메모리 추정 — 뷰마다 크기 × 픽셀 바이트 × maximumDrawableCount. 쉬는 뷰는 따로.
+    /// drawable 메모리 추정 — 뷰마다 크기 × 픽셀 바이트 × maximumDrawableCount. 쉬는 뷰는 놓았으니 0.
     public struct Drawables: Sendable {
         public var active = 0, activeViews = 0, idle = 0, idleViews = 0
     }
@@ -1338,7 +1525,8 @@ public enum SkyViewPool {
             let s = v.drawableSize
             let count = (v.layer as? CAMetalLayer)?.maximumDrawableCount ?? 3
             let bytes = Int(s.width) * Int(s.height) * pixelBytes(v.colorPixelFormat) * count
-            if idle.contains(where: { $0 === v }) { d.idle += bytes; d.idleViews += 1 } else { d.active += bytes; d.activeViews += 1 }
+            // 쉬는 뷰는 give 에서 drawable 을 놓았다.
+            if idle.contains(where: { $0 === v }) { d.idleViews += 1 } else { d.active += bytes; d.activeViews += 1 }
         }
         return d
     }
@@ -1353,35 +1541,64 @@ public enum SkyViewPool {
         }
     }
 
-    static func take() -> MTKView {
+    static func take(_ q: SkyQuality = .card, screen: CGFloat = 3) -> MTKView {
         if let v = idle.popLast() {
             SkyStats.shared.count { $0.reused += 1 }
+            configure(v, q, screen: screen)
             return v
         }
-        let v = MTKView(frame: .zero, device: SkyGPU.systemDevice)
-        v.colorPixelFormat = SkyGPU.format
+        let v = SkyMTKView(frame: .zero, device: SkyGPU.systemDevice)
         v.framebufferOnly = true
         v.isOpaque = true
         v.backgroundColor = .black
         v.autoResizeDrawable = true
-        if let layer = v.layer as? CAMetalLayer {
-            layer.wantsExtendedDynamicRangeContent = true
-            layer.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
-        }
         v.isAccessibilityElement = false
+        configure(v, q, screen: screen)
         all.add(v)
         SkyStats.shared.count { $0.made += 1 }
         return v
+    }
+
+    /// 쓰임새마다 — 카드는 SDR bgra8 sRGB·2/3 배율, hero·전체 화면은 rgba16F·EDR. 모두 drawable 2장.
+    /// 풀에서 빌린 뷰는 drawable 을 놓은 채라 포맷을 바꿔도 이전 그림이 남지 않고, 첫 그림 전엔 숨어 있다(SkyHost).
+    static func configure(_ v: MTKView, _ q: SkyQuality, screen: CGFloat) {
+        let format = q.sdr ? SkyGPU.sdrFormat : SkyGPU.format
+        if v.colorPixelFormat != format { v.colorPixelFormat = format }
+        if let layer = v.layer as? CAMetalLayer {
+            if layer.maximumDrawableCount != drawableCount { layer.maximumDrawableCount = drawableCount }
+            if layer.wantsExtendedDynamicRangeContent == q.sdr || layer.colorspace == nil {
+                layer.wantsExtendedDynamicRangeContent = !q.sdr
+                layer.colorspace = CGColorSpace(name: q.sdr ? CGColorSpace.sRGB : CGColorSpace.extendedLinearSRGB)
+            }
+        }
+        let scale = q.renderScale(screen)
+        (v as? SkyMTKView)?.fixedScale = scale
+        if v.contentScaleFactor != scale {
+            v.contentScaleFactor = scale
+            let b = v.bounds.size
+            if b.width > 0, b.height > 0 { v.drawableSize = CGSize(width: (b.width * scale).rounded(), height: (b.height * scale).rounded()) }
+        }
     }
 
     static func give(_ v: MTKView) {
         v.isPaused = true
         v.delegate = nil
         v.removeFromSuperview()
+        v.releaseDrawables()
         if idle.count < cap, !idle.contains(where: { $0 === v }) { idle.append(v) }
     }
 
     public static func drain() { idle.removeAll() }
+}
+
+/// 배율을 고정한 MTKView — 창에 들어갈 때 UIKit 이 화면 배율로 되돌리지 못하게.
+final class SkyMTKView: MTKView {
+    var fixedScale: CGFloat?
+
+    override var contentScaleFactor: CGFloat {
+        get { super.contentScaleFactor }
+        set { super.contentScaleFactor = fixedScale ?? newValue }
+    }
 }
 
 /// SkyView 의 자리 — 풀에서 빌린 MTKView 를 품는다. 새 카드의 첫 그림이 화면에 나갈 때까지 숨겨 밑의 정지 그림이 보이게.
@@ -1438,7 +1655,7 @@ public struct SkyView: UIViewRepresentable {
     public func makeCoordinator() -> Coordinator { Coordinator(phase: phase) }
 
     public func makeUIView(context: Context) -> SkyHost {
-        let host = SkyHost(SkyViewPool.take())
+        let host = SkyHost(SkyViewPool.take(quality, screen: context.environment.displayScale))
         host.mtk.delegate = context.coordinator
         context.coordinator.attach(host.mtk)
         let moving = SkyScroll.shared.moving
@@ -1451,6 +1668,7 @@ public struct SkyView: UIViewRepresentable {
         let c = context.coordinator
         let running = animating && !context.environment.accessibilityReduceMotion
         SkyStats.shared.count { $0.updates += 1 }
+        SkyViewPool.configure(v, quality, screen: context.environment.displayScale)
         c.scene = scene
         c.quality = quality
         c.live = live
@@ -1469,6 +1687,7 @@ public struct SkyView: UIViewRepresentable {
 
     public static func dismantleUIView(_ host: SkyHost, coordinator: Coordinator) {
         coordinator.setTilt(false)
+        coordinator.renderer?.release()
         SkyViewPool.give(host.mtk)
         SkyStats.shared.count { $0.alive -= 1 }
     }
@@ -1530,7 +1749,8 @@ public struct SkyView: UIViewRepresentable {
             guard let renderer else { return }
             // 이 뷰의 앞 프레임 둘이 아직 GPU 에 있으면 건너뛴다 — 드로어블을 기다리며 메인이 막히지 않게.
             inFlight.removeAll { $0.status == .completed || $0.status == .error }
-            if running, inFlight.count >= 2 { SkyStats.shared.skip(quality); return }
+            // drawable 이 2장 — 앞 프레임이 GPU 에 있으면 currentDrawable 이 막힐 수 있다.
+            if running, inFlight.count >= SkyViewPool.drawableCount - 1 { SkyStats.shared.skip(quality); return }
             let drawStart = CACurrentMediaTime()
             if running, inScroll, let cap = SkyScroll.shared.cap(now: drawStart),
                cap == 0 || drawStart - lastPresent < 1 / Double(cap) - 0.003 {
@@ -1542,12 +1762,13 @@ public struct SkyView: UIViewRepresentable {
             let b = budget(for: view)
             if view.preferredFramesPerSecond != b.fps { view.preferredFramesPerSecond = b.fps }
             let size = view.bounds.size
-            let headroom = Float(min(max(view.window?.windowScene?.screen.currentEDRHeadroom ?? 1, 1), 4))
+            let headroom: Float = quality.sdr ? 1 : Float(min(max(view.window?.windowScene?.screen.currentEDRHeadroom ?? 1, 1), 4))
+            let passClock = sampleClock(renderer)
             let frame = SkyFrame(scene: scene, quality: quality, size: size, texts: texts,
                                  moonAge: SkyDebug.moonAge ?? moonAge ?? Celestial.moonAge(at: Date()),
                                  moonScale: SkyDebug.moonScale, window: window)
             renderer.encode(cb, into: drawable.texture, frame: frame, t: clock.time(at: Date()), headroom: headroom,
-                            tilt: tilting ? SkyTilt.shared.offset : .zero, budget: b, meteors: running, progressive: true)
+                            tilt: tilting ? SkyTilt.shared.offset : .zero, budget: b, meteors: running, progressive: true, clock: passClock)
             do {
                 let q = quality
                 let rendered = renderer.cloudRenders - lastRenders
@@ -1555,7 +1776,9 @@ public struct SkyView: UIViewRepresentable {
                 let label = "\(b.tier.name)\(b.hot ? "(발열)" : "")\(renderer.usingBaked ? " · 구운 구름" : "")\(renderer.usingMetalFX ? " · MetalFX" : "")"
                 SkyStats.shared.tick(q, now: CACurrentMediaTime(), cloudRendered: rendered, label: label)
                 cb.addCompletedHandler { cb in
-                    SkyStats.shared.frame(q, gpuMs: (cb.gpuEndTime - cb.gpuStartTime) * 1000)
+                    let ms = (cb.gpuEndTime - cb.gpuStartTime) * 1000
+                    SkyStats.shared.frame(q, gpuMs: ms)
+                    if let passClock { SkyStats.shared.passes(q, passClock.resolve(totalMs: ms)) }
                 }
             }
             if !revealed, !renderer.wantsRedraw {
@@ -1572,8 +1795,25 @@ public struct SkyView: UIViewRepresentable {
             inFlight.append(cb)
             lastPresent = drawStart
             SkyStats.shared.draw(quality, ms: (CACurrentMediaTime() - drawStart) * 1000)
-            // 구운 판이 막 나타나는 동안은 멈춘 화면도 몇 번 더 그린다.
-            if !running, renderer.wantsRedraw { DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 30) { view.setNeedsDisplay() } }
+            // 구운 판이 막 나타나는 동안은 멈춘 화면도 몇 번 더 그린다. 다 나타났으면 중간 텍스처를 놓는다.
+            if !running {
+                if renderer.wantsRedraw {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 30) { view.setNeedsDisplay() }
+                } else {
+                    renderer.release()
+                }
+            }
+        }
+
+        private var sampled = 0
+        /// 패스별 GPU 계측 — 켜져 있으면 16프레임에 한 번.
+        private func sampleClock(_ renderer: SkyRenderer) -> SkyPassClock? {
+            guard SkyDebug.passTiming else { return nil }
+            sampled += 1
+            guard sampled % 16 == 1 else { return nil }
+            let clock = SkyPassClock(renderer.gpu)
+            SkyStats.shared.passSupport(clock != nil)
+            return clock
         }
     }
 }

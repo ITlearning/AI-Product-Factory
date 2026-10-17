@@ -104,21 +104,7 @@ final class SkyScrollTests: XCTestCase {
         SkyViewPool.drain()
     }
 
-    /// 한 화면에 장면이 여덟 가지여도 판끼리 밀어내지 않는다 — 쓰는 중(2초 안)인 판은 상한을 넘어도 둔다.
-    func testPlatesInUseAreNotEvicted() throws {
-        let gpu = try XCTUnwrap(SkyGPU.shared)
-        let bank = SkyCloudBank.shared
-        bank.removeAll()
-        defer { bank.removeAll() }
-        let scenes = Array(SkyScene.allCases.prefix(9))
-        let first = try scenes.map { try XCTUnwrap(bank.plate($0, .band, tier: .mid, device: gpu.device, now: 100)) }
-        XCTAssertGreaterThan(bank.bytes, bank.cap(.mid), "상한보다 많은 판")
-        for (scene, p) in zip(scenes, first) {
-            XCTAssertTrue(p === bank.plate(scene, .band, tier: .mid, device: gpu.device, now: 100.5), "\(scene.name) 다시 만들지 않는다")
-        }
-        _ = bank.plate(.rain, .band, tier: .low, device: gpu.device, now: 110)
-        XCTAssertLessThanOrEqual(bank.bytes, bank.cap(.mid) + SkyCloudBank.bytes(.band, .low), "안 쓰는 판은 상한까지 내보낸다")
-    }
+    /// 한 화면 8장면(10차 회귀) — 이젠 시간 유예 대신 판 참조 고정: SkyBudgetTests.testPinnedPlatesSurviveStillBakes.
 
     /// 결과는 Documents/sky/scroll.txt 에 덧붙는다(기기 모델·시각 포함).
     func testScrollResultFileAppends() throws {
@@ -191,7 +177,8 @@ final class SkyScrollTests: XCTestCase {
     func testResultLineFieldsAreFixed() {
         let fixed = ["시험", "단계", "하늘", "시간", "프레임", "놓침", "끊김", "최악", "하늘 프레임", "GPU", "동시 뷰", "풀 쉼",
                      "하늘 그리기", "쉼", "레이마칭", "하늘 갱신", "카드 계산", "MTKView 생성", "스크롤 중 생성", "풀 재사용", "최대",
-                     "정지 그림", "정지 그림 조회", "구운 판", "drawable 활성", "drawable 쉼", "중간 텍스처", "하늘 GPU 합", "정지 그림 캐시", "발열"]
+                     "정지 그림", "정지 그림 조회", "구운 판", "drawable 활성", "drawable 쉼", "중간 텍스처", "하늘 GPU 합", "정지 그림 캐시", "발열",
+                     "GPU 쓰임새", "GPU 패스", "스위치"]
         XCTAssertEqual(SkyScrollTest.fieldNames, fixed)
         var r = SkyScrollTest.Result(name: "최상", kind: "유휴", frozen: true)
         r.sample.thermal = [(0, .nominal), (10, .fair)]
@@ -218,6 +205,10 @@ final class SkyScrollTests: XCTestCase {
         XCTAssertGreaterThan(on.memory.drawables.active, 0, "drawable 메모리")
         XCTAssertGreaterThan(on.memory.renderer, 0, "중간 텍스처")
         XCTAssertGreaterThan(on.memory.gpu, 0)
+        XCTAssertGreaterThan(on.counters.gpuUseFrames[.card] ?? 0, 0, "쓰임새별 GPU — 카드")
+        XCTAssertGreaterThan(on.counters.gpuUseFrames[.hero] ?? 0, 0, "쓰임새별 GPU — 오늘의 한 장")
+        XCTAssertNotNil(on.counters.passSupported, "패스 계측을 시도했다")
+        XCTAssertTrue(on.line.contains("GPU 쓰임새 hero "), on.line)
         XCTAssertFalse(on.sample.thermal.isEmpty)
         XCTAssertEqual(on.sample.thermal.first?.at, 0)
         XCTAssertFalse(skyHosts(in: window).isEmpty)
@@ -262,7 +253,10 @@ final class SkyScrollTests: XCTestCase {
         XCTAssertTrue(SkyScroll.shared.moving)
         XCTAssertTrue(skyHosts(in: window).isEmpty, "스크롤 중엔 정지 그림만")
         let still = shot(window)
-        for _ in 0..<80 where !(SkyScroll.shared.moving == false && !skyHosts(in: window).isEmpty
+        let t0 = CACurrentMediaTime()
+        defer { print(String(format: "SKYM2 멈춘 뒤 모두 보이기까지 %.2f초", CACurrentMediaTime() - t0)) }
+        // 판 참조 고정 뒤엔 정지 그림만 쓰던 판을 바로 버린다 — 움직이기 시작한 카드는 판을 다시 구울 수 있다(그동안 정지 그림).
+        for _ in 0..<200 where !(SkyScroll.shared.moving == false && !skyHosts(in: window).isEmpty
                                 && skyHosts(in: window).allSatisfy { $0.mtk.alpha == 1 }) {
             try await Task.sleep(for: .milliseconds(50))
         }

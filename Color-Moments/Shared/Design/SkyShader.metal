@@ -1137,7 +1137,9 @@ kernel void skyBloomPrefilter(texture2d<float> src [[texture(0)]], texture2d<flo
                               constant float4& p [[buffer(0)]], uint2 gid [[thread_position_in_grid]]) {
     if (gid.x >= dst.get_width() || gid.y >= dst.get_height()) return;
     float2 uv = (float2(gid) + 0.5) / float2(dst.get_width(), dst.get_height());
-    float3 c = down13(src, uv, 1.0 / float2(src.get_width(), src.get_height()));
+    // 1/4 부터 시작해도 원본 픽셀을 빠짐없이 덮는다(1/2 이면 그대로).
+    float2 ts = max(1.0 / float2(src.get_width(), src.get_height()), 0.5 / float2(dst.get_width(), dst.get_height()));
+    float3 c = down13(src, uv, ts);
     c = min(c, float3(64.0));
     float br = max(c.r, max(c.g, c.b));
     float knee = p.y;

@@ -280,8 +280,9 @@ final class SkyRenderTests: XCTestCase {
         XCTAssertEqual(p1.key.version, SkyCloudBank.version)
         let before = bank.stripsBaked
         let cb = try XCTUnwrap(gpu.queue.makeCommandBuffer())
-        bank.advance(p1, cb: cb, gpu: gpu, all: false, now: 1_000_000)
-        bank.advance(p1, cb: cb, gpu: gpu, all: false, now: 1_000_000)
+        let later = CACurrentMediaTime() + 1000
+        bank.advance(p1, cb: cb, gpu: gpu, all: false, now: later)
+        bank.advance(p1, cb: cb, gpu: gpu, all: false, now: later)
         XCTAssertEqual(bank.stripsBaked - before, p1.complete ? 0 : 1, "움직이는 화면은 한 프레임에 한 줄")
         bank.advance(p1, cb: cb, gpu: gpu, all: true)
         cb.commit(); cb.waitUntilCompleted()

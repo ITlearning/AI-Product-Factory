@@ -13,8 +13,6 @@ final class SkyCloudBank: @unchecked Sendable {
     static let morphPeriod = 90.0
     /// 판 하나를 몇 줄로 나눠 굽는가 — 움직이는 화면은 한 프레임에 한 줄씩.
     static let strips = 10
-    /// 이 안에 쓴 판은 「쓰는 중」 — 메모리 상한을 넘어도 내보내지 않는다.
-    static let inUse = 2.0
 
     enum Shape: Hashable, Sendable {
         /// 카드·히어로 — 폭 768 × 높이 400pt
@@ -65,6 +63,8 @@ final class SkyCloudBank: @unchecked Sendable {
         fileprivate(set) var readyAt: Double?
         fileprivate var cleared = false
         fileprivate var lastUse: Double
+        /// 쥐고 있는 렌더러 수(움직이는 뷰·굽는 중인 정지 그림) — 0 보다 크면 상한을 넘어도 버리지 않는다.
+        fileprivate(set) var pins = 0
         let created: Double
 
         init(key: Key, frames: [MTLTexture], now: Double) {
@@ -82,10 +82,12 @@ final class SkyCloudBank: @unchecked Sendable {
     private let lock = NSLock()
     private var plates: [Key: Plate] = [:]
     private var lastLiveStrip = -1.0
-    /// 메모리 상한 — 넘으면 오래 안 쓴 판부터 버린다. 단계가 높아 판이 크면 띠 판 여섯 장까지는 둔다.
+    /// 메모리 상한 — 넘으면 쥔 렌더러가 없는 판을 오래 안 쓴 것부터 버린다. 띠 판 아홉 장(한 화면 8장면 + 굽는 정지 그림 하나)까지는 둔다.
+    /// 판 단계(plateTier)로 정해 발열로 바뀌지 않는다.
     var capBytes = 40 << 20
+    private var capTier: SkyTier = .mid
 
-    func cap(_ tier: SkyTier) -> Int { max(capBytes, 6 * Self.bytes(.band, tier)) }
+    func cap(_ tier: SkyTier) -> Int { max(capBytes, 9 * Self.bytes(.band, tier)) }
 
     static func bytes(_ shape: Shape, _ tier: SkyTier) -> Int {
         let (w, h) = shape.pixels(Grade(tier))
@@ -114,19 +116,37 @@ final class SkyCloudBank: @unchecked Sendable {
         let p = Plate(key: key, frames: frames, now: now)
         plates[key] = p
         SkyStats.shared.count { $0.platesMade += 1 }
+        capTier = tier
+        trim(keeping: p)
+        return p
+    }
+
+    func pin(_ p: Plate) {
+        lock.lock(); defer { lock.unlock() }
+        p.pins += 1
+    }
+
+    func unpin(_ p: Plate) {
+        lock.lock(); defer { lock.unlock() }
+        p.pins = max(p.pins - 1, 0)
+        trim(keeping: nil)
+    }
+
+    /// 상한까지 — 쥔 판(움직이는 뷰가 쓰는 판)은 두고 나머지를 오래 안 쓴 것부터. lock 안에서.
+    private func trim(keeping keep: Plate?) {
         var total = plates.values.reduce(0) { $0 + $1.bytes }
-        let cap = cap(tier)
-        // 방금(2초 안) 쓴 판은 내보내지 않는다 — 한 화면 장면이 상한보다 많으면 판끼리 밀어내며 매 프레임 새로 만들었다.
-        for old in plates.values.sorted(by: { $0.lastUse < $1.lastUse }) where total > cap && old !== p && now - old.lastUse > Self.inUse {
+        let cap = cap(capTier)
+        guard total > cap else { return }
+        for old in plates.values.sorted(by: { $0.lastUse < $1.lastUse }) where total > cap && old !== keep && old.pins == 0 {
             plates[old.key] = nil
             total -= old.bytes
         }
-        return p
     }
 
     /// 덜 구운 판을 이어 굽는다. all 이면 남은 줄 전부(정지 그림), 아니면 앱 전체에서 한 프레임(1/60초)에 한 줄.
     /// 나타나기(readyAt)는 GPU 가 마지막 줄을 다 그린 뒤 — 정지 그림을 메인 밖에서 구우므로 다른 커맨드 버퍼가 아직 그리는 중일 수 있다.
-    func advance(_ p: Plate, cb: MTLCommandBuffer, gpu: SkyGPU, all: Bool, now: Double = CACurrentMediaTime()) {
+    func advance(_ p: Plate, cb: MTLCommandBuffer, gpu: SkyGPU, all: Bool, now: Double = CACurrentMediaTime(),
+                 clock: SkyPassClock? = nil) {
         lock.lock()
         var todo: [Int] = []
         if all {
@@ -144,7 +164,7 @@ final class SkyCloudBank: @unchecked Sendable {
         lock.unlock()
         if others { waitFinished(p, before) }
         if fresh { clear(p, cb: cb) }
-        for i in todo { encodeStrip(i, of: p, cb: cb, gpu: gpu) }
+        for i in todo { encodeStrip(i, of: p, cb: cb, gpu: gpu, clock: clock) }
         guard fresh || !todo.isEmpty else { return }
         let n = todo.count
         cb.addCompletedHandler { [weak self] _ in self?.finish(p, n, all: all) }
@@ -185,13 +205,14 @@ final class SkyCloudBank: @unchecked Sendable {
         }
     }
 
-    private func encodeStrip(_ i: Int, of p: Plate, cb: MTLCommandBuffer, gpu: SkyGPU) {
+    private func encodeStrip(_ i: Int, of p: Plate, cb: MTLCommandBuffer, gpu: SkyGPU, clock: SkyPassClock?) {
         let k = i / Self.strips, row = i % Self.strips
         let tex = p.frames[k]
         let rp = MTLRenderPassDescriptor()
         rp.colorAttachments[0].texture = tex
         rp.colorAttachments[0].loadAction = .load
         rp.colorAttachments[0].storeAction = .store
+        clock?.attach(rp, .bake)
         guard let e = cb.makeRenderCommandEncoder(descriptor: rp) else { return }
         let h = tex.height, y0 = h * row / Self.strips, y1 = h * (row + 1) / Self.strips
         e.setScissorRect(MTLScissorRect(x: 0, y: y0, width: tex.width, height: y1 - y0))

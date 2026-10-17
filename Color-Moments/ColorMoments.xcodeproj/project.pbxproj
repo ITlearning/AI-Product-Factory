@@ -66,6 +66,7 @@
 		1C168A0124D91CA852713BBF /* AssetReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08DC1AC8E491F5D81CA2D80E /* AssetReconcilerTests.swift */; };
 		1CC5449DA7CB344D2AC45E80 /* Moment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEE28AD42D812B8F599EBC /* Moment.swift */; };
 		1D2767C95B157B92C97CF81B /* DayGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA4609189EEBA41333EE662 /* DayGradient.swift */; };
+		1D4DE92DB023CA1130DBA54E /* SkyBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B955EBE487664A55A9DDC2A4 /* SkyBudgetTests.swift */; };
 		1D6EBAE2993999F474A7B34A /* ZoomLadder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 281063CAE0EA0440EE2AA560 /* ZoomLadder.swift */; };
 		1DD1FF00D5EDCFB073D97FBE /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE23645FDB97CD310372A0F9 /* CaptureEngine.swift */; };
 		1EA8EE22FEEAA7E8B7FA0118 /* MomentMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63D774C55EFBE110A6BFE3D /* MomentMerge.swift */; };
@@ -670,6 +671,7 @@
 		B6059A219A2BEA73B11E1619 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		B7A571B3502388E791F90524 /* AssetDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDiagnostics.swift; sourceTree = "<group>"; };
 		B801BBBCB1178424D102539A /* WeatherLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherLookup.swift; sourceTree = "<group>"; };
+		B955EBE487664A55A9DDC2A4 /* SkyBudgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyBudgetTests.swift; sourceTree = "<group>"; };
 		BAC08853B31C2783C4F78D30 /* WordAttempts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordAttempts.swift; sourceTree = "<group>"; };
 		BAF662D31EB9F8A7EFA710F8 /* SceneViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneViewTests.swift; sourceTree = "<group>"; };
 		BB6AB2D1361C3C488E0CDD56 /* PhotoEnrichmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoEnrichmentTests.swift; sourceTree = "<group>"; };
@@ -927,6 +929,7 @@
 				69825FD346FEC03526525AE5 /* SheenTests.swift */,
 				64124E7CC109015DBCB4BEC8 /* ShotImageGenerationTests.swift */,
 				75C5D16CF875C68C5FD50755 /* ShotImageTests.swift */,
+				B955EBE487664A55A9DDC2A4 /* SkyBudgetTests.swift */,
 				7B1C829BA34FA94569BA6C40 /* SkyFlakesTests.swift */,
 				D4741806484FB8528C329B22 /* SkyRenderTests.swift */,
 				4055656A7F42D943A3D79F40 /* SkyScrollTests.swift */,
@@ -1584,6 +1587,7 @@
 				72CB8811A9F1756D47042377 /* SheenTests.swift in Sources */,
 				CE276D188F42B46E00715086 /* ShotImageGenerationTests.swift in Sources */,
 				27C5EAD62A7776F63166FB51 /* ShotImageTests.swift in Sources */,
+				1D4DE92DB023CA1130DBA54E /* SkyBudgetTests.swift in Sources */,
 				4FD4D1FF831C5253662F9E27 /* SkyFlakesTests.swift in Sources */,
 				B9EF384B91E2568AAE1B0EB6 /* SkyRenderTests.swift in Sources */,
 				3FF0A05BA6A2507FFA9963EE /* SkyScrollTests.swift in Sources */,

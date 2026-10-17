@@ -31,7 +31,7 @@ struct SceneSky: View {
                 let still = still(sky, geo.size)
                 ZStack {
                     if let still {
-                        Image(decorative: still, scale: displayScale).resizable()
+                        Image(decorative: still, scale: quality.renderScale(displayScale)).resizable()
                     }
                     if moves {
                         SkyView(sky, quality: quality, animating: true, texts: texts, tilts: tilts, seed: seed, live: live)
@@ -48,16 +48,18 @@ struct SceneSky: View {
         .accessibilityHidden(true)
     }
 
+    /// 움직이는 카드와 같은 배율(카드 2/3)로 굽는다 — 이어질 때 선명도가 바뀌지 않게.
     private func still(_ sky: SkyScene, _ size: CGSize) -> CGImage? {
         _ = baked
         let stills = SkyStills.shared
-        if let hit = stills.cached(sky, quality: quality, size: size, scale: displayScale, seed: seed) {
+        let scale = quality.renderScale(displayScale)
+        if let hit = stills.cached(sky, quality: quality, size: size, scale: scale, seed: seed) {
             SkyStats.shared.count { $0.stillHits += 1 }
             return hit
         }
         SkyStats.shared.count { $0.stillMisses += 1 }
-        stills.request(sky, quality: quality, size: size, scale: displayScale, seed: seed) { baked += 1 }
-        return stills.cached(sky, quality: quality, size: size, scale: displayScale, seed: nil)
+        stills.request(sky, quality: quality, size: size, scale: scale, seed: seed) { baked += 1 }
+        return stills.cached(sky, quality: quality, size: size, scale: scale, seed: nil)
     }
 
     /// 실행마다 같아야 한다 — String.hashValue 는 실행마다 바뀐다.
@@ -69,31 +71,72 @@ struct SceneSky: View {
 }
 
 /// 멈춘 하늘 한 장 — 장면·쓰임새·크기·배율·달 나이(날)마다 한 번 굽고 메모리에 둔다.
-final class SkyStills: NSObject, NSCacheDelegate, @unchecked Sendable {
+/// 상한은 카드 크기로 정하고(SkyStills.cap), 넘치면 오래 안 본 것(화면에서 먼 카드)부터 버린다.
+final class SkyStills: @unchecked Sendable {
     static let shared = SkyStills()
 
-    private let cache = NSCache<NSString, CGImage>()
     private let tier: SkyTier
+    private let capBytes: Int
 
     private let queue = DispatchQueue(label: "mongdol.sky.stills", qos: .userInitiated)
     private let lock = NSLock()
     private var pending: [String: [@MainActor () -> Void]] = [:]
+    private var entries: [String: (image: CGImage, cost: Int, used: UInt64)] = [:]
+    private var tick: UInt64 = 0
     private var held = (count: 0, bytes: 0)
+    private var warning: NSObjectProtocol?
 
     /// 캐시에 든 정지 그림 장수·바이트(CPU 메모리, 계측).
     var memory: (count: Int, bytes: Int) { lock.lock(); defer { lock.unlock() }; return held }
 
-    override init() {
+    init(capBytes: Int? = nil) {
         let device = MTLCreateSystemDefaultDevice()
         tier = device.map { SkyTier.detect($0, maxFPS: UIScreen.main.maximumFramesPerSecond) } ?? .mid
-        super.init()
-        cache.totalCostLimit = 64 << 20
-        cache.delegate = self
+        self.capBytes = capBytes ?? Self.cap(width: UIScreen.main.bounds.width, screen: UIScreen.main.scale)
+        warning = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil,
+                                                         queue: nil) { [weak self] _ in self?.removeAll() }
+    }
+
+    /// 「말」 칸 두 화면 남짓 — 줄 카드 48장(2/3 배율) + 오늘의 한 장 크기 4장.
+    static func cap(width: CGFloat, screen: CGFloat) -> Int {
+        func bytes(_ h: CGFloat, _ q: SkyQuality) -> Int {
+            let s = q.renderScale(screen)
+            return Int((width * s).rounded()) * Int((h * s).rounded()) * 4
+        }
+        return 48 * bytes(96, .card) + 4 * bytes(232, .hero)
+    }
+
+    func removeAll() {
+        lock.lock(); defer { lock.unlock() }
+        entries = [:]
+        held = (0, 0)
     }
 
     static func key(_ scene: SkyScene, quality: SkyQuality, size: CGSize, scale: CGFloat, moonDay: Int, seed: Int? = nil,
                     tier: SkyTier? = nil) -> String {
-        "\(scene.key)-\(quality.rawValue)-\(Int(size.width.rounded()))x\(Int(size.height.rounded()))@\(Int(scale))-m\(scene.showsMoon ? moonDay : 0)-s\(seed ?? 0)-t\(tier?.rawValue ?? -1)"
+        "\(scene.key)-\(quality.rawValue)-\(Int(size.width.rounded()))x\(Int(size.height.rounded()))@\(Int((scale * 100).rounded()))-m\(scene.showsMoon ? moonDay : 0)-s\(seed ?? 0)-t\(tier?.rawValue ?? -1)"
+    }
+
+    private func lookup(_ k: String) -> CGImage? {
+        lock.lock(); defer { lock.unlock() }
+        guard let e = entries[k] else { return nil }
+        tick += 1
+        entries[k]?.used = tick
+        return e.image
+    }
+
+    private func store(_ img: CGImage, _ k: String) {
+        let cost = img.bytesPerRow * img.height
+        lock.lock(); defer { lock.unlock() }
+        tick += 1
+        if let old = entries[k] { held.count -= 1; held.bytes -= old.cost }
+        entries[k] = (img, cost, tick)
+        held.count += 1; held.bytes += cost
+        guard held.bytes > capBytes else { return }
+        for (key, e) in entries.sorted(by: { $0.value.used < $1.value.used }) where held.bytes > capBytes && key != k {
+            entries[key] = nil
+            held.count -= 1; held.bytes -= e.cost
+        }
     }
 
     /// 움직이는 하늘과 같은 판 — 디버그로 단계를 바꾸면 한 장도 그 단계로.
@@ -102,7 +145,7 @@ final class SkyStills: NSObject, NSCacheDelegate, @unchecked Sendable {
     func cached(_ scene: SkyScene, quality: SkyQuality, size: CGSize, scale: CGFloat, seed: Int? = nil, now: Date = Date()) -> CGImage? {
         guard size.width >= 1, size.height >= 1 else { return nil }
         let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(Celestial.moonAge(at: now)), seed: seed, tier: currentTier)
-        return cache.object(forKey: k as NSString)
+        return lookup(k)
     }
 
     /// 메인 밖에서 굽고 다 되면 메인에서 done. 같은 한 장을 여럿이 부르면 한 번만 굽는다.
@@ -128,8 +171,8 @@ final class SkyStills: NSObject, NSCacheDelegate, @unchecked Sendable {
         guard size.width >= 1, size.height >= 1 else { return nil }
         let age = Celestial.moonAge(at: now)
         let tier = currentTier
-        let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(age), seed: seed, tier: tier) as NSString
-        if let hit = cache.object(forKey: k) { return hit }
+        let k = Self.key(scene, quality: quality, size: size, scale: scale, moonDay: Int(age), seed: seed, tier: tier)
+        if let hit = lookup(k) { return hit }
         let start = CACurrentMediaTime()
         defer {
             let ms = (CACurrentMediaTime() - start) * 1000
@@ -138,15 +181,7 @@ final class SkyStills: NSObject, NSCacheDelegate, @unchecked Sendable {
         let frame = SkyFrame(scene: scene, quality: quality, size: size, texts: SkyTexts.card(size), moonAge: age,
                              window: seed.map(SkyFrame.window(seed:)) ?? .zero)
         guard let img = SkySnapshot.image(frame, scale: scale, t: SceneArt.stillPhase, tier: tier)?.image else { return nil }
-        let cost = img.bytesPerRow * img.height
-        lock.lock(); held.count += 1; held.bytes += cost; lock.unlock()
-        cache.setObject(img, forKey: k, cost: cost)
+        store(img, k)
         return img
-    }
-
-    func cache(_ cache: NSCache<AnyObject, AnyObject>, willEvictObject obj: Any) {
-        guard CFGetTypeID(obj as CFTypeRef) == CGImage.typeID else { return }
-        let img = obj as! CGImage
-        lock.lock(); held.count -= 1; held.bytes -= img.bytesPerRow * img.height; lock.unlock()
     }
 }

@@ -9,7 +9,8 @@ enum SkyScrollTest {
     /// 결과 줄 필드 — 이름은 바꾸지 않는다(기기 결과 파일끼리 비교).
     static let fieldNames = ["시험", "단계", "하늘", "시간", "프레임", "놓침", "끊김", "최악", "하늘 프레임", "GPU", "동시 뷰", "풀 쉼",
                              "하늘 그리기", "쉼", "레이마칭", "하늘 갱신", "카드 계산", "MTKView 생성", "스크롤 중 생성", "풀 재사용", "최대",
-                             "정지 그림", "정지 그림 조회", "구운 판", "drawable 활성", "drawable 쉼", "중간 텍스처", "하늘 GPU 합", "정지 그림 캐시", "발열"]
+                             "정지 그림", "정지 그림 조회", "구운 판", "drawable 활성", "drawable 쉼", "중간 텍스처", "하늘 GPU 합", "정지 그림 캐시", "발열",
+                             "GPU 쓰임새", "GPU 패스", "스위치"]
 
     struct Result {
         var name: String
@@ -24,10 +25,13 @@ enum SkyScrollTest {
         var sample = SkySampler.Run()
         var memory = SkyMemory()
         var idleEnd = 0
+        var switches = SkyDebug.switches
 
         var fields: [(String, String)] {
             let c = counters, m = memory, d = m.drawables, s = max(seconds, 0.001)
             let lookups = c.stillHits + c.stillMisses
+            let drawAvg: Double = c.draws > 0 ? c.drawMs / Double(c.draws) : 0
+            let hitRate: Double = lookups > 0 ? Double(c.stillHits) * 100 / Double(lookups) : 0
             return [
                 ("시험", kind), ("단계", name), ("하늘", frozen ? "정지" : "켬"),
                 ("시간", String(format: "%.1fs", seconds)),
@@ -36,11 +40,11 @@ enum SkyScrollTest {
                 ("GPU", String(format: "%.0fms(%.1fms/초, %d장)", c.gpuMs, c.gpuMs / s, c.gpuFrames)),
                 ("동시 뷰", String(format: "최대 %d 평균 %.1f", sample.viewsMax, sample.viewsAvg)),
                 ("풀 쉼", String(format: "최대 %d 끝 %d", sample.idleMax, idleEnd)),
-                ("하늘 그리기", String(format: "평균 %.2f 최악 %.1fms(%d번)", c.draws > 0 ? c.drawMs / Double(c.draws) : 0, c.worstDrawMs, c.draws)),
+                ("하늘 그리기", String(format: "평균 %.2f 최악 %.1fms(%d번)", drawAvg, c.worstDrawMs, c.draws)),
                 ("쉼", "\(c.rests)"), ("레이마칭", "\(c.marches)"), ("하늘 갱신", "\(c.updates)"), ("카드 계산", "\(c.bodies)"),
                 ("MTKView 생성", "\(c.made)"), ("스크롤 중 생성", "\(c.madeInScroll)"), ("풀 재사용", "\(c.reused)"), ("최대", "\(c.maxAlive)"),
                 ("정지 그림", String(format: "%d장 %.0fms(최악 %.1f)", c.stills, c.stillMs, c.worstStillMs)),
-                ("정지 그림 조회", String(format: "적중 %d 실패 %d(%.0f%%)", c.stillHits, c.stillMisses, lookups > 0 ? Double(c.stillHits) * 100 / Double(lookups) : 0)),
+                ("정지 그림 조회", String(format: "적중 %d 실패 %d(%.0f%%)", c.stillHits, c.stillMisses, hitRate)),
                 ("구운 판", String(format: "%d장 %.1fMB 새로 %d", m.plates, mb(m.plateBytes), c.platesMade)),
                 ("drawable 활성", String(format: "%.1fMB(%d뷰)", mb(d.active), d.activeViews)),
                 ("drawable 쉼", String(format: "%.1fMB(%d뷰)", mb(d.idle), d.idleViews)),
@@ -48,7 +52,30 @@ enum SkyScrollTest {
                 ("하늘 GPU 합", String(format: "%.1fMB", mb(m.gpu))),
                 ("정지 그림 캐시", String(format: "%.1fMB(%d장, CPU)", mb(m.stillBytes), m.stills)),
                 ("발열", sample.thermal.last.map { $0.state.name } ?? "-"),
+                ("GPU 쓰임새", Self.uses(c, seconds: s)),
+                ("GPU 패스", Self.passes(c)),
+                ("스위치", switches),
             ]
+        }
+
+        /// 쓰임새별 — 「hero 120.0ms/초(장당 1.10ms, 1090장), card …」.
+        static func uses(_ c: SkyStats.Counters, seconds s: Double) -> String {
+            let parts = SkyQuality.allCases.compactMap { q -> String? in
+                guard let n = c.gpuUseFrames[q], n > 0, let ms = c.gpuUse[q] else { return nil }
+                return String(format: "%@ %.1fms/초(장당 %.2fms, %d장)", q.rawValue, ms / s, ms / Double(n), n)
+            }
+            return parts.isEmpty ? "-" : parts.joined(separator: ", ")
+        }
+
+        /// 패스별 장당 GPU ms(표본 프레임 평균) — 「card(표본 40) 합성 0.80 블룸 0.20 …」. 계측을 못 하는 기기는 「지원 안 함」.
+        static func passes(_ c: SkyStats.Counters) -> String {
+            if c.passSupported == false { return "지원 안 함" }
+            let parts = SkyQuality.allCases.compactMap { q -> String? in
+                guard let n = c.passFrames[q], n > 0, let ms = c.passMs[q] else { return nil }
+                let each = SkyPass.allCases.compactMap { p in ms[p].map { String(format: "%@ %.2f", p.rawValue, $0 / Double(n)) } }
+                return "\(q.rawValue)(표본 \(n)) " + each.joined(separator: " ")
+            }
+            return parts.isEmpty ? "-" : parts.joined(separator: ", ")
         }
 
         var line: String { fields.map { "\($0.0) \($0.1)" }.joined(separator: " · ") }
@@ -118,6 +145,7 @@ enum SkyScrollTest {
 
     /// 계측을 비우고 1초 표본·발열 시계열을 시작한다.
     private static func begin() -> Double {
+        SkyDebug.passTiming = true
         SkyStats.shared.reset()
         SkyStats.shared.resetCounters()
         SkySampler.shared.begin()
@@ -130,6 +158,7 @@ enum SkyScrollTest {
         r.sample = SkySampler.shared.end()
         r.memory = SkyMemory.now
         r.idleEnd = SkyViewPool.idleCount
+        r.switches = SkyDebug.switches
     }
 
     /// 한 구성(단계·옛 구조·하늘 정지)을 잰다 — 먼저 한 번 훑어 판·정지 그림을 굽고, 계측을 비운 뒤 느리게·빠르게 위아래로.
