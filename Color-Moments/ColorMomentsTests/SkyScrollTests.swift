@@ -187,6 +187,71 @@ final class SkyScrollTests: XCTestCase {
         XCTAssertLessThan(jump, 0.03, "정지 그림에서 움직이는 하늘로 튀지 않는다")
     }
 
+    /// 결과 줄 필드 이름은 고정 — 기기 결과 파일끼리 비교한다.
+    func testResultLineFieldsAreFixed() {
+        let fixed = ["시험", "단계", "하늘", "시간", "프레임", "놓침", "끊김", "최악", "하늘 프레임", "GPU", "동시 뷰", "풀 쉼",
+                     "하늘 그리기", "쉼", "레이마칭", "하늘 갱신", "카드 계산", "MTKView 생성", "스크롤 중 생성", "풀 재사용", "최대",
+                     "정지 그림", "정지 그림 조회", "구운 판", "drawable 활성", "drawable 쉼", "중간 텍스처", "하늘 GPU 합", "정지 그림 캐시", "발열"]
+        XCTAssertEqual(SkyScrollTest.fieldNames, fixed)
+        var r = SkyScrollTest.Result(name: "최상", kind: "유휴", frozen: true)
+        r.sample.thermal = [(0, .nominal), (10, .fair)]
+        XCTAssertEqual(r.fields.map(\.0), fixed)
+        let parts = r.line.components(separatedBy: " · ")
+        XCTAssertEqual(parts.count, fixed.count)
+        for (part, name) in zip(parts, fixed) { XCTAssertTrue(part.hasPrefix(name + " "), part) }
+        XCTAssertTrue(r.line.hasPrefix("시험 유휴 · 단계 최상 · 하늘 정지 · "))
+        XCTAssertEqual(r.thermalLine, "발열 시계열 · 시험 유휴 · 단계 최상 · 하늘 정지 · 0s nominal · 10s fair")
+        XCTAssertEqual(r.lines.count, 2)
+    }
+
+    /// 계측이 실제로 쌓이고(하늘 켬), 「하늘 정지」면 MTKView 도 그린 프레임도 없다.
+    func testSpendProbeAndFrozenSwitch() async throws {
+        let (window, scroll) = try await openList()
+        defer { window.isHidden = true; SkyDebug.tier = nil; SkyDebug.frozen = false }
+
+        let on = await SkyScrollTest.idle(scroll, tier: .mid, frozen: false, seconds: 3.5)
+        print("SKYM1 " + on.lines.joined(separator: "\nSKYM1 "))
+        XCTAssertGreaterThan(on.counters.presented, 0, "그린 하늘 프레임")
+        XCTAssertGreaterThan(on.counters.gpuFrames, 0, "GPU 시간 받은 프레임")
+        XCTAssertGreaterThan(on.sample.viewsMax, 0, "동시 뷰")
+        XCTAssertGreaterThan(on.sample.seconds, 0)
+        XCTAssertGreaterThan(on.memory.drawables.active, 0, "drawable 메모리")
+        XCTAssertGreaterThan(on.memory.renderer, 0, "중간 텍스처")
+        XCTAssertGreaterThan(on.memory.gpu, 0)
+        XCTAssertFalse(on.sample.thermal.isEmpty)
+        XCTAssertEqual(on.sample.thermal.first?.at, 0)
+        XCTAssertFalse(skyHosts(in: window).isEmpty)
+
+        let scrolled = await SkyScrollTest.run(scroll, tier: .mid, legacy: false, speeds: [2600])
+        XCTAssertGreaterThan(scrolled.counters.stillHits + scrolled.counters.stillMisses, 0, "정지 그림 조회")
+        XCTAssertGreaterThan(scrolled.memory.stillBytes, 0, "정지 그림 캐시")
+        XCTAssertGreaterThan(scrolled.memory.plates, 0, "구운 판")
+
+        for r in [await SkyScrollTest.idle(scroll, tier: .mid, frozen: true, seconds: 2.5),
+                  await SkyScrollTest.run(scroll, tier: .mid, legacy: false, frozen: true, speeds: [2600])] {
+            print("SKYM1 " + r.lines.joined(separator: "\nSKYM1 "))
+            XCTAssertTrue(r.frozen)
+            XCTAssertEqual(r.counters.made, 0, "\(r.kind) 하늘 정지 — MTKView 생성")
+            XCTAssertEqual(r.counters.reused, 0, "\(r.kind) 하늘 정지 — 풀에서 빌림")
+            XCTAssertEqual(r.counters.presented, 0, "\(r.kind) 하늘 정지 — 그린 프레임")
+            XCTAssertEqual(r.sample.viewsMax, 0)
+        }
+        SkyDebug.frozen = true
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertTrue(skyHosts(in: window).isEmpty, "하늘 정지 — 떠 있는 MTKView 없음")
+    }
+
+    private func openList() async throws -> (UIWindow, UIScrollView) {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        var found: UIScrollView?
+        window.rootViewController = UIHostingController(rootView: SkyScrollList { found = $0 })
+        window.makeKeyAndVisible()
+        for _ in 0..<50 where found == nil { try await Task.sleep(for: .milliseconds(100)) }
+        return (window, try XCTUnwrap(found))
+    }
+
     /// 스크롤을 조금 움직였다 멈추고 — 멈추기 직전(정지 그림)과 움직이는 하늘이 뜬 직후를 찍는다.
     private func settleShots(_ window: UIWindow) async throws -> (still: UIImage, live: UIImage) {
         let scroll = try XCTUnwrap(findScroll(window))

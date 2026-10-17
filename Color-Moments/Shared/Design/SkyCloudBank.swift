@@ -113,6 +113,7 @@ final class SkyCloudBank: @unchecked Sendable {
         guard frames.count == 2 else { return nil }
         let p = Plate(key: key, frames: frames, now: now)
         plates[key] = p
+        SkyStats.shared.count { $0.platesMade += 1 }
         var total = plates.values.reduce(0) { $0 + $1.bytes }
         let cap = cap(tier)
         // 방금(2초 안) 쓴 판은 내보내지 않는다 — 한 화면 장면이 상한보다 많으면 판끼리 밀어내며 매 프레임 새로 만들었다.

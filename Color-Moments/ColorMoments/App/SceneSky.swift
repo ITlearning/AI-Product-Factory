@@ -26,7 +26,8 @@ struct SceneSky: View {
         GeometryReader { geo in
             if let sky = SkyScene.of(kind) {
                 let texts = SkyTexts.card(geo.size)
-                let moves = animating && !reduceMotion && (live == true || !SkyScroll.shared.holds)
+                let frozen = SkyScroll.shared.frozen
+                let moves = !frozen && animating && !reduceMotion && (live == true || !SkyScroll.shared.holds)
                 let still = still(sky, geo.size)
                 ZStack {
                     if let still {
@@ -34,7 +35,7 @@ struct SceneSky: View {
                     }
                     if moves {
                         SkyView(sky, quality: quality, animating: true, texts: texts, tilts: tilts, seed: seed, live: live)
-                    } else if still == nil {
+                    } else if still == nil, !frozen {
                         SkyView(sky, quality: quality, animating: false, texts: texts, seed: seed, live: live)
                     }
                 }
@@ -50,7 +51,11 @@ struct SceneSky: View {
     private func still(_ sky: SkyScene, _ size: CGSize) -> CGImage? {
         _ = baked
         let stills = SkyStills.shared
-        if let hit = stills.cached(sky, quality: quality, size: size, scale: displayScale, seed: seed) { return hit }
+        if let hit = stills.cached(sky, quality: quality, size: size, scale: displayScale, seed: seed) {
+            SkyStats.shared.count { $0.stillHits += 1 }
+            return hit
+        }
+        SkyStats.shared.count { $0.stillMisses += 1 }
         stills.request(sky, quality: quality, size: size, scale: displayScale, seed: seed) { baked += 1 }
         return stills.cached(sky, quality: quality, size: size, scale: displayScale, seed: nil)
     }
@@ -64,7 +69,7 @@ struct SceneSky: View {
 }
 
 /// 멈춘 하늘 한 장 — 장면·쓰임새·크기·배율·달 나이(날)마다 한 번 굽고 메모리에 둔다.
-final class SkyStills: @unchecked Sendable {
+final class SkyStills: NSObject, NSCacheDelegate, @unchecked Sendable {
     static let shared = SkyStills()
 
     private let cache = NSCache<NSString, CGImage>()
@@ -73,11 +78,17 @@ final class SkyStills: @unchecked Sendable {
     private let queue = DispatchQueue(label: "mongdol.sky.stills", qos: .userInitiated)
     private let lock = NSLock()
     private var pending: [String: [@MainActor () -> Void]] = [:]
+    private var held = (count: 0, bytes: 0)
 
-    init() {
-        cache.totalCostLimit = 64 << 20
+    /// 캐시에 든 정지 그림 장수·바이트(CPU 메모리, 계측).
+    var memory: (count: Int, bytes: Int) { lock.lock(); defer { lock.unlock() }; return held }
+
+    override init() {
         let device = MTLCreateSystemDefaultDevice()
         tier = device.map { SkyTier.detect($0, maxFPS: UIScreen.main.maximumFramesPerSecond) } ?? .mid
+        super.init()
+        cache.totalCostLimit = 64 << 20
+        cache.delegate = self
     }
 
     static func key(_ scene: SkyScene, quality: SkyQuality, size: CGSize, scale: CGFloat, moonDay: Int, seed: Int? = nil,
@@ -127,7 +138,15 @@ final class SkyStills: @unchecked Sendable {
         let frame = SkyFrame(scene: scene, quality: quality, size: size, texts: SkyTexts.card(size), moonAge: age,
                              window: seed.map(SkyFrame.window(seed:)) ?? .zero)
         guard let img = SkySnapshot.image(frame, scale: scale, t: SceneArt.stillPhase, tier: tier)?.image else { return nil }
-        cache.setObject(img, forKey: k, cost: img.bytesPerRow * img.height)
+        let cost = img.bytesPerRow * img.height
+        lock.lock(); held.count += 1; held.bytes += cost; lock.unlock()
+        cache.setObject(img, forKey: k, cost: cost)
         return img
+    }
+
+    func cache(_ cache: NSCache<AnyObject, AnyObject>, willEvictObject obj: Any) {
+        guard CFGetTypeID(obj as CFTypeRef) == CGImage.typeID else { return }
+        let img = obj as! CGImage
+        lock.lock(); held.count -= 1; held.bytes -= img.bytesPerRow * img.height; lock.unlock()
     }
 }

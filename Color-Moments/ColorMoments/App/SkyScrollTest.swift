@@ -2,24 +2,67 @@
 import SwiftUI
 import UIKit
 
-/// 디버그 — 「말」 칸과 같은 목록(WordsPage)을 자동으로 위아래로 스크롤하며 놓친 프레임·최악 간격·하늘 계측을 잰다.
+/// 디버그 — 「말」 칸과 같은 목록(WordsPage)을 자동으로 위아래로 스크롤하며(또는 손 안 대고 두며) 놓친 프레임·최악 간격·하늘 계측을 잰다.
+/// 「하늘 정지」(SkyDebug.frozen)로 같은 시험을 한 번 더 돌려 하늘 몫을 가른다.
 @MainActor
 enum SkyScrollTest {
+    /// 결과 줄 필드 — 이름은 바꾸지 않는다(기기 결과 파일끼리 비교).
+    static let fieldNames = ["시험", "단계", "하늘", "시간", "프레임", "놓침", "끊김", "최악", "하늘 프레임", "GPU", "동시 뷰", "풀 쉼",
+                             "하늘 그리기", "쉼", "레이마칭", "하늘 갱신", "카드 계산", "MTKView 생성", "스크롤 중 생성", "풀 재사용", "최대",
+                             "정지 그림", "정지 그림 조회", "구운 판", "drawable 활성", "drawable 쉼", "중간 텍스처", "하늘 GPU 합", "정지 그림 캐시", "발열"]
+
     struct Result {
         var name: String
+        var kind = "스크롤"
+        var frozen = false
+        var seconds = 0.0
         var frames = 0
         var missed = 0
         var hitches = 0
         var worstMs = 0.0
         var counters = SkyStats.Counters()
+        var sample = SkySampler.Run()
+        var memory = SkyMemory()
+        var idleEnd = 0
 
-        var line: String {
-            let c = counters
-            return String(format: "%@ · 프레임 %d · 놓침 %d · 끊김 %d · 최악 %.1fms · 하늘 그리기 평균 %.2f 최악 %.1fms(%d번) · 쉼 %d · 레이마칭 %d · 하늘 갱신 %d · 카드 계산 %d · MTKView 생성 %d · 스크롤 중 생성 %d · 풀 재사용 %d · 최대 %d · 정지 그림 %d장 %.0fms(최악 %.1f)",
-                          name, frames, missed, hitches, worstMs, c.draws > 0 ? c.drawMs / Double(c.draws) : 0, c.worstDrawMs, c.draws,
-                          c.rests, c.marches, c.updates, c.bodies, c.made, c.madeInScroll, c.reused, c.maxAlive, c.stills, c.stillMs, c.worstStillMs)
+        var fields: [(String, String)] {
+            let c = counters, m = memory, d = m.drawables, s = max(seconds, 0.001)
+            let lookups = c.stillHits + c.stillMisses
+            return [
+                ("시험", kind), ("단계", name), ("하늘", frozen ? "정지" : "켬"),
+                ("시간", String(format: "%.1fs", seconds)),
+                ("프레임", "\(frames)"), ("놓침", "\(missed)"), ("끊김", "\(hitches)"), ("최악", String(format: "%.1fms", worstMs)),
+                ("하늘 프레임", String(format: "%d(%.1f/초)", c.presented, Double(c.presented) / s)),
+                ("GPU", String(format: "%.0fms(%.1fms/초, %d장)", c.gpuMs, c.gpuMs / s, c.gpuFrames)),
+                ("동시 뷰", String(format: "최대 %d 평균 %.1f", sample.viewsMax, sample.viewsAvg)),
+                ("풀 쉼", String(format: "최대 %d 끝 %d", sample.idleMax, idleEnd)),
+                ("하늘 그리기", String(format: "평균 %.2f 최악 %.1fms(%d번)", c.draws > 0 ? c.drawMs / Double(c.draws) : 0, c.worstDrawMs, c.draws)),
+                ("쉼", "\(c.rests)"), ("레이마칭", "\(c.marches)"), ("하늘 갱신", "\(c.updates)"), ("카드 계산", "\(c.bodies)"),
+                ("MTKView 생성", "\(c.made)"), ("스크롤 중 생성", "\(c.madeInScroll)"), ("풀 재사용", "\(c.reused)"), ("최대", "\(c.maxAlive)"),
+                ("정지 그림", String(format: "%d장 %.0fms(최악 %.1f)", c.stills, c.stillMs, c.worstStillMs)),
+                ("정지 그림 조회", String(format: "적중 %d 실패 %d(%.0f%%)", c.stillHits, c.stillMisses, lookups > 0 ? Double(c.stillHits) * 100 / Double(lookups) : 0)),
+                ("구운 판", String(format: "%d장 %.1fMB 새로 %d", m.plates, mb(m.plateBytes), c.platesMade)),
+                ("drawable 활성", String(format: "%.1fMB(%d뷰)", mb(d.active), d.activeViews)),
+                ("drawable 쉼", String(format: "%.1fMB(%d뷰)", mb(d.idle), d.idleViews)),
+                ("중간 텍스처", String(format: "%.1fMB", mb(m.renderer))),
+                ("하늘 GPU 합", String(format: "%.1fMB", mb(m.gpu))),
+                ("정지 그림 캐시", String(format: "%.1fMB(%d장, CPU)", mb(m.stillBytes), m.stills)),
+                ("발열", sample.thermal.last.map { $0.state.name } ?? "-"),
+            ]
         }
+
+        var line: String { fields.map { "\($0.0) \($0.1)" }.joined(separator: " · ") }
+
+        /// 시험 시작부터 10초마다 발열 상태 — 한 줄.
+        var thermalLine: String {
+            "발열 시계열 · 시험 \(kind) · 단계 \(name) · 하늘 \(frozen ? "정지" : "켬") · "
+                + sample.thermal.map { "\($0.at)s \($0.state.name)" }.joined(separator: " · ")
+        }
+
+        var lines: [String] { [line, thermalLine] }
     }
+
+    nonisolated static func mb(_ b: Int) -> Double { Double(b) / 1_048_576 }
 
     /// 결과를 Documents/sky/scroll.txt 에 덧붙인다 — 기기에서 devicectl 로 꺼내 본다.
     @discardableResult
@@ -31,7 +74,7 @@ enum SkyScrollTest {
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let stamp = f.string(from: now)
-        let text = lines.map { "\(stamp) · \(model) · \($0)\n" }.joined()
+        let text = lines.map { "\(stamp) · \(model) · \(os) · \($0)\n" }.joined()
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             if let h = try? FileHandle(forWritingTo: url) {
@@ -56,6 +99,8 @@ enum SkyScrollTest {
         return withUnsafeBytes(of: &u.machine) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
     }
 
+    static var os: String { "iOS \(UIDevice.current.systemVersion)" }
+
     /// 열세 장면을 돌아가며 — 오늘의 한 장 + 철 묶음 여섯에 여섯 장씩.
     static func shelf() -> WordShelf {
         let kinds = SceneKind.allCases
@@ -69,36 +114,211 @@ enum SkyScrollTest {
         return WordShelf(hero: card(0), seasons: seasons, count: 37)
     }
 
-    /// 한 구성(단계·옛 구조)을 잰다 — 먼저 한 번 훑어 판을 굽고, 계측을 비운 뒤 느리게·빠르게 위아래로.
-    static func run(_ scroll: UIScrollView, tier: SkyTier?, legacy: Bool, speeds: [Double] = [900, 2600]) async -> Result {
+    private static func name(_ tier: SkyTier?, legacy: Bool) -> String { "\(tier?.name ?? "자동")\(legacy ? " 옛 구조" : "")" }
+
+    /// 계측을 비우고 1초 표본·발열 시계열을 시작한다.
+    private static func begin() -> Double {
+        SkyStats.shared.reset()
+        SkyStats.shared.resetCounters()
+        SkySampler.shared.begin()
+        return CACurrentMediaTime()
+    }
+
+    private static func finish(_ r: inout Result, start: Double) {
+        r.seconds = CACurrentMediaTime() - start
+        r.counters = SkyStats.shared.counters
+        r.sample = SkySampler.shared.end()
+        r.memory = SkyMemory.now
+        r.idleEnd = SkyViewPool.idleCount
+    }
+
+    /// 한 구성(단계·옛 구조·하늘 정지)을 잰다 — 먼저 한 번 훑어 판·정지 그림을 굽고, 계측을 비운 뒤 느리게·빠르게 위아래로.
+    static func run(_ scroll: UIScrollView, tier: SkyTier?, legacy: Bool, frozen: Bool = false,
+                    speeds: [Double] = [900, 2600]) async -> Result {
         SkyDebug.tier = tier
         SkyDebug.liveInScroll = legacy
-        defer { SkyDebug.liveInScroll = false }
+        SkyDebug.frozen = frozen
+        defer { SkyDebug.liveInScroll = false; SkyDebug.frozen = false }
         scroll.setContentOffset(.zero, animated: false)
         try? await Task.sleep(for: .seconds(1))
         _ = await ScrollDriver(scroll, speeds: [2000]).run()
         try? await Task.sleep(for: .seconds(0.8))
-        SkyStats.shared.reset()
-        SkyStats.shared.resetCounters()
+        let start = begin()
         var r = await ScrollDriver(scroll, speeds: speeds).run()
-        r.counters = SkyStats.shared.counters
-        r.name = "\(tier?.name ?? "자동")\(legacy ? " 옛 구조" : "")"
+        r.name = name(tier, legacy: legacy)
+        r.frozen = frozen
+        finish(&r, start: start)
         return r
+    }
+
+    /// 유휴 시험 — 목록 맨 위를 띄운 채 손 안 대고 seconds 초. 프레임 간격은 재지 않는다(재는 디스플레이 링크가 화면을 깨운다).
+    static func idle(_ scroll: UIScrollView, tier: SkyTier?, frozen: Bool, seconds: Double = 120) async -> Result {
+        SkyDebug.tier = tier
+        SkyDebug.frozen = frozen
+        defer { SkyDebug.frozen = false }
+        scroll.setContentOffset(.zero, animated: false)
+        try? await Task.sleep(for: .seconds(2))
+        let start = begin()
+        try? await Task.sleep(for: .seconds(seconds))
+        var r = Result(name: name(tier, legacy: false), kind: "유휴", frozen: frozen)
+        finish(&r, start: start)
+        return r
+    }
+
+    private static func record(_ r: Result, into lines: inout [String]) {
+        lines += r.lines
+        NSLog("SKYSCROLL %@", r.line)
+        NSLog("SKYSCROLL %@", r.thermalLine)
+    }
+
+    /// 한 단계를 하늘 켬·정지로 — 결과 넷 줄(켬·발열·정지·발열).
+    static func pair(_ scroll: UIScrollView, tier: SkyTier?, idleSeconds: Double? = nil,
+                     progress: (String) -> Void = { _ in }) async -> String {
+        let saved = SkyDebug.tier
+        defer { SkyDebug.tier = saved }
+        var lines: [String] = []
+        for frozen in [false, true] {
+            let what = "\(name(tier, legacy: false)) 하늘 \(frozen ? "정지" : "켬")"
+            if let idleSeconds {
+                progress("유휴 \(what) \(Int(idleSeconds))초…")
+                record(await idle(scroll, tier: tier, frozen: frozen, seconds: idleSeconds), into: &lines)
+            } else {
+                progress("스크롤 \(what) 재는 중…")
+                record(await run(scroll, tier: tier, legacy: false, frozen: frozen), into: &lines)
+            }
+        }
+        save(lines)
+        return lines.joined(separator: "\n")
     }
 
     static func runAll(_ scroll: UIScrollView, progress: (String) -> Void = { _ in }) async -> String {
         let saved = SkyDebug.tier
         defer { SkyDebug.tier = saved }
         var lines: [String] = []
-        let plan: [(SkyTier, Bool)] = [(.ultra, true), (.high, true), (.ultra, false), (.high, false), (.mid, false), (.low, false)]
-        for (tier, legacy) in plan {
-            progress("\(tier.name)\(legacy ? " 옛 구조" : "") 재는 중…")
-            let r = await run(scroll, tier: tier, legacy: legacy)
-            lines.append(r.line)
-            NSLog("SKYSCROLL %@", r.line)
+        let plan: [(SkyTier?, Bool, Bool)] = [(.ultra, true, false), (.high, true, false), (.ultra, false, false), (.high, false, false),
+                                              (.mid, false, false), (.low, false, false), (nil, false, true)]
+        for (tier, legacy, frozen) in plan {
+            progress("\(name(tier, legacy: legacy))\(frozen ? " 하늘 정지" : "") 재는 중…")
+            record(await run(scroll, tier: tier, legacy: legacy, frozen: frozen), into: &lines)
         }
         save(lines)
         return lines.joined(separator: "\n")
+    }
+}
+
+/// 1초마다 — 그린 하늘 프레임·GPU·동시에 그린 뷰·풀의 쉬는 뷰. 시험 중엔 10초마다 발열도.
+@MainActor
+final class SkySampler {
+    static let shared = SkySampler()
+
+    struct Run {
+        var seconds = 0
+        var viewsMax = 0
+        var viewsSum = 0
+        var idleMax = 0
+        var thermal: [(at: Int, state: ProcessInfo.ThermalState)] = []
+        var viewsAvg: Double { seconds > 0 ? Double(viewsSum) / Double(seconds) : 0 }
+    }
+
+    private(set) var last = SkyStats.Second()
+    private var timer: Timer?
+    private var users = 0
+    private var run: Run?
+    private var runStart = 0.0
+
+    func start() {
+        users += 1
+        guard timer == nil else { return }
+        restart()
+    }
+
+    func stop() {
+        users = max(users - 1, 0)
+        guard users == 0 else { return }
+        timer?.invalidate()
+        timer = nil
+    }
+
+    func begin() {
+        users += 1
+        restart()
+        runStart = CACurrentMediaTime()
+        run = Run(thermal: [(0, ProcessInfo.processInfo.thermalState)])
+    }
+
+    func end() -> Run {
+        var r = run ?? Run()
+        let at = Int((CACurrentMediaTime() - runStart).rounded())
+        if r.thermal.last?.at != at { r.thermal.append((at, ProcessInfo.processInfo.thermalState)) }
+        run = nil
+        stop()
+        return r
+    }
+
+    private func restart() {
+        timer?.invalidate()
+        _ = SkyStats.shared.roll()
+        let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.tick() } }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
+    }
+
+    private func tick() {
+        last = SkyStats.shared.roll()
+        guard var r = run else { return }
+        r.seconds += 1
+        r.viewsMax = max(r.viewsMax, last.views)
+        r.viewsSum += last.views
+        r.idleMax = max(r.idleMax, SkyViewPool.idleCount)
+        if r.seconds % 10 == 0 { r.thermal.append((r.seconds, ProcessInfo.processInfo.thermalState)) }
+        run = r
+    }
+}
+
+/// 하늘 메모리 추정 — GPU(drawable·렌더러 중간 텍스처·구운 판)와 CPU(정지 그림 캐시).
+struct SkyMemory {
+    var drawables = SkyViewPool.Drawables()
+    var renderer = 0
+    var plates = 0
+    var plateBytes = 0
+    var stills = 0
+    var stillBytes = 0
+    var gpu: Int { drawables.active + drawables.idle + renderer + plateBytes }
+
+    @MainActor static var now: SkyMemory {
+        let bank = SkyCloudBank.shared, held = SkyStills.shared.memory
+        return SkyMemory(drawables: SkyViewPool.drawables, renderer: SkyStats.shared.rendererMemory, plates: bank.count,
+                         plateBytes: bank.bytes, stills: held.count, stillBytes: held.bytes)
+    }
+}
+
+extension ProcessInfo.ThermalState {
+    var name: String {
+        switch self {
+        case .nominal: "nominal"
+        case .fair: "fair"
+        case .serious: "serious"
+        case .critical: "critical"
+        @unknown default: "unknown"
+        }
+    }
+}
+
+/// 갤러리 계측 한 줄 — 초당 하늘 프레임·GPU ms·동시 뷰·풀 쉼·발열·메모리.
+struct SkySpendBadge: View {
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            let s = SkySampler.shared.last, m = SkyMemory.now
+            Text(String(format: "하늘 %d장/초 · GPU %.1fms/초 · 동시 %d · 쉼 %d · 열 %@ · GPU %.0fMB(+정지 %.0fMB)",
+                        s.frames, s.gpuMs, s.views, SkyViewPool.idleCount, ProcessInfo.processInfo.thermalState.name,
+                        SkyScrollTest.mb(m.gpu), SkyScrollTest.mb(m.stillBytes)))
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.white)
+                .padding(.vertical, 3).frame(maxWidth: .infinity)
+                .background(.black.opacity(0.6))
+        }
+        .onAppear { SkySampler.shared.start() }
+        .onDisappear { SkySampler.shared.stop() }
     }
 }
 
@@ -198,13 +418,23 @@ struct ScrollViewFinder: UIViewRepresentable {
     func updateUIView(_ v: Probe, context: Context) { v.found = found }
 }
 
-/// 갤러리에서 여는 화면 — 단계별(옛 구조 포함)로 차례로 재고 표를 보인다.
+/// 갤러리에서 여는 화면 — 단계별(옛 구조 포함)로 차례로 재고 표를 보인다. 한 단계를 고르면 하늘 켬·정지 둘.
+/// 실행 인자: `-skyScroll`(스크롤 시험 자동) `-skyIdle`(유휴 시험 자동, 스크롤 뒤) `-skyTier 0~3`(단계) `-skyIdleSeconds 120`.
 struct SkyScrollTestScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var scroll: UIScrollView?
     @State private var status = "준비 중…"
     @State private var running = false
-    @State private var tier = -1
+    @State private var tier = Self.argTier ?? -1
+
+    private static var argTier: Int? {
+        UserDefaults.standard.object(forKey: "skyTier") == nil ? nil : UserDefaults.standard.integer(forKey: "skyTier")
+    }
+
+    private static var idleSeconds: Double {
+        let s = UserDefaults.standard.double(forKey: "skyIdleSeconds")
+        return s > 0 ? s : 120
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -212,16 +442,16 @@ struct SkyScrollTestScreen: View {
             VStack(alignment: .leading, spacing: 8) {
                 ScrollView { Text(status).font(.caption2.monospaced()).foregroundStyle(.white).frame(maxWidth: .infinity, alignment: .leading) }
                     .frame(maxHeight: 180)
+                Picker("단계", selection: $tier) {
+                    Text("전부").tag(-1)
+                    ForEach(SkyTier.allCases.reversed()) { Text($0.name).tag($0.rawValue) }
+                }
+                .pickerStyle(.segmented)
                 HStack {
                     Button("닫기") { dismiss() }
                     Spacer()
-                    Picker("단계", selection: $tier) {
-                        Text("전부").tag(-1)
-                        ForEach(SkyTier.allCases.reversed()) { Text($0.name).tag($0.rawValue) }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 210)
-                    Button(running ? "재는 중" : "시작") { start() }.disabled(running || scroll == nil)
+                    Button(running ? "재는 중" : "스크롤 시험") { Task { await scrollTest() } }.disabled(running || scroll == nil)
+                    Button("유휴 \(Int(Self.idleSeconds))초") { Task { await idleTest() } }.disabled(running || scroll == nil)
                 }
                 .font(Face.caption)
             }
@@ -231,29 +461,32 @@ struct SkyScrollTestScreen: View {
         .preferredColorScheme(.dark)
         .onAppear { SkyView.prewarm() }
         .task(id: scroll == nil) {
-            guard scroll != nil, ProcessInfo.processInfo.arguments.contains("-skyScroll"), !running else { return }
+            let args = ProcessInfo.processInfo.arguments
+            guard scroll != nil, args.contains("-skyScroll") || args.contains("-skyIdle"), !running else { return }
             try? await Task.sleep(for: .seconds(1.5))
-            start()
+            if args.contains("-skyScroll") { await scrollTest() }
+            if args.contains("-skyIdle") { await idleTest() }
+            NSLog("SKYSCROLL 끝")
         }
     }
 
-    private func start() {
-        guard let scroll else { return }
+    private func scrollTest() async {
+        guard let scroll, !running else { return }
         running = true
-        Task {
-            if let t = SkyTier(rawValue: tier) {
-                status = "\(t.name) 재는 중…"
-                let saved = SkyDebug.tier
-                let r = await SkyScrollTest.run(scroll, tier: t, legacy: false)
-                SkyDebug.tier = saved
-                NSLog("SKYSCROLL %@", r.line)
-                SkyScrollTest.save([r.line])
-                status = r.line
-            } else {
-                status = await SkyScrollTest.runAll(scroll) { status = $0 }
-            }
-            running = false
+        defer { running = false }
+        if let t = SkyTier(rawValue: tier) {
+            status = await SkyScrollTest.pair(scroll, tier: t) { status = $0 }
+        } else {
+            status = await SkyScrollTest.runAll(scroll) { status = $0 }
         }
+    }
+
+    /// 단계 「전부」면 기기 자동 단계로.
+    private func idleTest() async {
+        guard let scroll, !running else { return }
+        running = true
+        defer { running = false }
+        status = await SkyScrollTest.pair(scroll, tier: SkyTier(rawValue: tier), idleSeconds: Self.idleSeconds) { status = $0 }
     }
 }
 #endif

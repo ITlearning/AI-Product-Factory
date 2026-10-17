@@ -238,6 +238,11 @@ public enum SkyDebug {
     nonisolated(unsafe) public static var prepareDelay: Double = 0
     /// 8차까지의 구조 흉내(전후 비교) — 스크롤하는 히어로도 상·최상은 실시간 레이마칭, 스크롤 중에도 늦추지 않는다.
     nonisolated(unsafe) public static var liveInScroll = false
+    /// 「하늘 정지」 대조 — 모든 하늘이 정지 그림만 쓰고 MTKView 를 띄우지 않는다.
+    @MainActor public static var frozen: Bool {
+        get { SkyScroll.shared.frozen }
+        set { SkyScroll.shared.frozen = newValue }
+    }
 }
 
 /// 디버그 계측 — 그리는 쪽에서 쓰고 화면이 읽는다.
@@ -246,6 +251,42 @@ public final class SkyStats: @unchecked Sendable {
     private let lock = NSLock()
     private struct Row { var gpu = 0.0; var renders: [Double] = []; var frames: [Double] = []; var label = ""; var worstDraw = 0.0; var skipped = 0 }
     private var rows: [SkyQuality: Row] = [:]
+    private var win = Second()
+    private var rendererBytes = 0
+
+    /// 한 구간(보통 1초)에 그린 하늘 프레임·GPU ms·그린 뷰 수.
+    public struct Second: Sendable {
+        public var frames = 0
+        public var gpuMs = 0.0
+        public var views = 0
+        fileprivate var ids = Set<ObjectIdentifier>()
+    }
+
+    /// 화면에 낸 하늘 프레임 하나.
+    func presented(_ view: ObjectIdentifier) {
+        lock.lock(); defer { lock.unlock() }
+        c.presented += 1
+        win.frames += 1
+        win.ids.insert(view)
+    }
+
+    /// 지난 roll 뒤 구간을 돌려주고 비운다.
+    public func roll() -> Second {
+        lock.lock(); defer { lock.unlock() }
+        var s = win
+        s.views = s.ids.count
+        s.ids = []
+        win = Second()
+        return s
+    }
+
+    /// 살아 있는 렌더러(SkyRenderer)의 중간 텍스처·버퍼 바이트 합.
+    public var rendererMemory: Int { lock.lock(); defer { lock.unlock() }; return rendererBytes }
+
+    func renderer(_ delta: Int) {
+        lock.lock(); defer { lock.unlock() }
+        rendererBytes += delta
+    }
 
     /// 메인 스레드에서 한 번 그리는 데 걸린 시간(ms) — 드로어블을 기다리며 막히면 여기서 보인다.
     func draw(_ q: SkyQuality, ms: Double) {
@@ -291,6 +332,15 @@ public final class SkyStats: @unchecked Sendable {
         public var stills = 0
         public var stillMs = 0.0
         public var worstStillMs = 0.0
+        /// 정지 그림 캐시 조회 — 카드 자기 한 장(seed)이 있었나.
+        public var stillHits = 0
+        public var stillMisses = 0
+        /// 화면에 낸 하늘 프레임(모든 뷰)과 그 GPU 시간 합.
+        public var presented = 0
+        public var gpuMs = 0.0
+        public var gpuFrames = 0
+        /// 새로 만든 구운 구름 판
+        public var platesMade = 0
     }
     private var c = Counters()
 
@@ -311,6 +361,9 @@ public final class SkyStats: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         let g = rows[q, default: Row()].gpu
         rows[q, default: Row()].gpu = g == 0 ? gpuMs : g * 0.9 + gpuMs * 0.1
+        c.gpuMs += gpuMs
+        c.gpuFrames += 1
+        win.gpuMs += gpuMs
     }
 
     func tick(_ q: SkyQuality, now: Double, cloudRendered: Int, label: String) {
@@ -822,8 +875,20 @@ final class SkyRenderer {
     private(set) var usingBaked = false
     /// 구운 판이 아직 덜 구워졌거나 나타나는 중 — 멈춘 화면도 다시 그려야 한다.
     private(set) var wantsRedraw = false
+    private var bytes = 0
 
     init(gpu: SkyGPU) { self.gpu = gpu }
+
+    deinit { SkyStats.shared.renderer(-bytes) }
+
+    private func recount() {
+        var ts: [MTLTexture?] = [hdrTex, raysTex] + downTex + upTex
+        for k in keys { ts += [k.color, k.trans, k.upscaled] }
+        let n = ts.compactMap { $0 }.reduce(0) { $0 + max($1.allocatedSize, $1.width * $1.height * SkyViewPool.pixelBytes($1.pixelFormat)) }
+            + max(drops?.allocatedSize ?? 0, drops?.length ?? 0)
+        SkyStats.shared.renderer(n - bytes)
+        bytes = n
+    }
 
     private func texture(_ w: Int, _ h: Int, format: MTLPixelFormat = SkyGPU.format, usage: MTLTextureUsage) -> MTLTexture? {
         let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: format, width: max(w, 1),
@@ -878,6 +943,7 @@ final class SkyRenderer {
             }
             bw /= 2; bh /= 2
         }
+        recount()
     }
 
     private func pass(_ cb: MTLCommandBuffer, _ target: MTLTexture, load: MTLLoadAction = .dontCare) -> MTLRenderCommandEncoder? {
@@ -994,7 +1060,7 @@ final class SkyRenderer {
         let partN = max(rainN, flakeN)
         if partN > 0 {
             let need = partN * 2 * MemoryLayout<SIMD4<Float>>.stride
-            if drops == nil || drops!.length < need { drops = gpu.device.makeBuffer(length: need, options: .storageModePrivate) }
+            if drops == nil || drops!.length < need { drops = gpu.device.makeBuffer(length: need, options: .storageModePrivate); recount() }
             if let drops, let c = cb.makeComputeCommandEncoder() {
                 c.setComputePipelineState(rainN > 0 ? gpu.rainUpdate : gpu.flakeUpdate)
                 c.setBuffer(drops, offset: 0, index: 0)
@@ -1199,6 +1265,8 @@ public final class SkyScroll {
     static let rest = 0.25
     /// 스크롤 중 — 카드는 구운 한 장만, MTKView 를 만들지 않는다.
     public private(set) var moving = false
+    /// 디버그 「하늘 정지」(SkyDebug.frozen) — 출시엔 늘 false.
+    public var frozen = false
     /// moving 이고 옛 구조 흉내(SkyDebug.liveInScroll)가 아닐 때 — 카드가 움직임을 멈춘다.
     public var holds: Bool { moving && !SkyDebug.liveInScroll }
     @ObservationIgnored private var lastY: CGFloat = 0
@@ -1257,6 +1325,33 @@ public enum SkyViewPool {
     public static let cap = 8
     private static var idle: [MTKView] = []
     public static var idleCount: Int { idle.count }
+    private static let all = NSHashTable<MTKView>.weakObjects()
+
+    /// drawable 메모리 추정 — 뷰마다 크기 × 픽셀 바이트 × maximumDrawableCount. 쉬는 뷰는 따로.
+    public struct Drawables: Sendable {
+        public var active = 0, activeViews = 0, idle = 0, idleViews = 0
+    }
+
+    public static var drawables: Drawables {
+        var d = Drawables()
+        for v in all.allObjects {
+            let s = v.drawableSize
+            let count = (v.layer as? CAMetalLayer)?.maximumDrawableCount ?? 3
+            let bytes = Int(s.width) * Int(s.height) * pixelBytes(v.colorPixelFormat) * count
+            if idle.contains(where: { $0 === v }) { d.idle += bytes; d.idleViews += 1 } else { d.active += bytes; d.activeViews += 1 }
+        }
+        return d
+    }
+
+    nonisolated static func pixelBytes(_ f: MTLPixelFormat) -> Int {
+        switch f {
+        case .rgba16Float, .rgba16Unorm: 8
+        case .rgba32Float: 16
+        case .r16Float, .r8Unorm_srgb: 2
+        case .r8Unorm: 1
+        default: 4
+        }
+    }
 
     static func take() -> MTKView {
         if let v = idle.popLast() {
@@ -1274,6 +1369,7 @@ public enum SkyViewPool {
             layer.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
         }
         v.isAccessibilityElement = false
+        all.add(v)
         SkyStats.shared.count { $0.made += 1 }
         return v
     }
@@ -1472,6 +1568,7 @@ public struct SkyView: UIViewRepresentable {
             }
             cb.present(drawable)
             cb.commit()
+            SkyStats.shared.presented(ObjectIdentifier(self))
             inFlight.append(cb)
             lastPresent = drawStart
             SkyStats.shared.draw(quality, ms: (CACurrentMediaTime() - drawStart) * 1000)

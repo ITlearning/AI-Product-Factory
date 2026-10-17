@@ -40,6 +40,8 @@ struct SkyGalleryView: View {
                     Button("계측 초기화") { resetMeters() }
                 }
                 .font(Face.caption)
+                Toggle("하늘 정지(정지 그림만, MTKView 없음)", isOn: Binding(get: { SkyScroll.shared.frozen }, set: { SkyDebug.frozen = $0 }))
+                    .font(Face.caption)
                 SkyDebugPanel(tier: $tier, metalFX: $metalFX, moonToday: $moonToday, moonAge: $moonAge,
                               moonScale: $moonScale, frequentMeteors: $frequentMeteors, baked: $baked)
                 Button("전체 화면 하늘") { fullScreen = true }
@@ -69,7 +71,15 @@ struct SkyGalleryView: View {
         }
         .background(Color.black)
         .preferredColorScheme(.dark)
-        .overlay(alignment: .bottom) { if meter { FrameMeterBadge(resetToken: meterReset).padding(.bottom, 4) } }
+        .overlay(alignment: .bottom) {
+            if meter {
+                VStack(spacing: 0) {
+                    SkySpendBadge()
+                    FrameMeterBadge(resetToken: meterReset)
+                }
+                .padding(.bottom, 4)
+            }
+        }
         .fullScreenCover(isPresented: $fullScreen) { SkyFullScreen(start: scene) }
         .fullScreenCover(isPresented: $scrollTest) { SkyScrollTestScreen() }
         .onChange(of: scene) { resetMeters() }
@@ -78,7 +88,7 @@ struct SkyGalleryView: View {
         .onAppear { SkyView.prewarm() }
         .task {
             if ProcessInfo.processInfo.arguments.contains("-skyFull") { fullScreen = true }
-            if ProcessInfo.processInfo.arguments.contains("-skyScroll") { scrollTest = true }
+            if ProcessInfo.processInfo.arguments.contains("-skyScroll") || ProcessInfo.processInfo.arguments.contains("-skyIdle") { scrollTest = true }
             if ProcessInfo.processInfo.arguments.contains("-skyCycle") { await cycleScenes() }
             guard Self.dumpRequested else { return }
             dumpStatus = "그리는 중…"
@@ -138,6 +148,8 @@ struct SkyCard: View {
     @ViewBuilder private var backdrop: some View {
         if let image {
             Image(decorative: image, scale: 3).resizable()
+        } else if new, SkyScroll.shared.frozen {
+            SceneSky(kind: scene.legacy, quality: size == .hero ? .hero : .card, animating: animating, seed: seed)
         } else if new {
             SkyView(scene, quality: size == .hero ? .hero : .card, animating: animating, tilts: size == .hero, seed: seed)
         } else {
@@ -266,6 +278,8 @@ struct SkyFullPage: View {
         ZStack(alignment: .top) {
             if let image {
                 Image(decorative: image, scale: 3).resizable()
+            } else if SkyScroll.shared.frozen {
+                SceneSky(kind: scene.legacy, quality: .full, animating: animating)
             } else {
                 SkyView(scene, quality: .full, animating: animating, texts: Self.texts(in: size), tilts: true)
             }
