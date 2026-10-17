@@ -6,7 +6,7 @@ public extension SkyScene {
     static func of(_ kind: SceneKind) -> SkyScene? { SkyScene(kind) }
 
     /// 하늘 판 번호 — 셰이더 그림이 바뀌면 올린다(위젯 정지 그림을 다시 굽는다).
-    static let edition = 5
+    static let edition = 6
 
     /// 파일 이름·캐시 열쇠.
     var key: String { String(describing: self) }
