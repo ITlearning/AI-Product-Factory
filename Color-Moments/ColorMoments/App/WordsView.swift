@@ -514,6 +514,7 @@ struct WordsPage: View {
 }
 
 /// 카드 한 칸 — 화면에 보이는지는 칸이 스스로 들고 있다. 카드 하나가 들고 날 때 목록 전체가 다시 계산되지 않게.
+/// 스크롤 중엔 seen 이 바뀌어도 카드 입력은 그대로(animating false) — 하늘까지 다시 계산이 내려가지 않는다.
 struct WordCardSlot: View {
     let model: WordCardModel
     let size: WordSceneCard.Size
@@ -525,7 +526,8 @@ struct WordCardSlot: View {
     @State private var seen = false
 
     var body: some View {
-        let card = WordSceneCard(model: model, size: size, animating: active && (seen || shown), heroLabel: heroLabel)
+        let card = WordSceneCard(model: model, size: size, animating: active && (seen || shown) && !SkyScroll.shared.holds,
+                                 heroLabel: heroLabel)
         Group {
             if let open {
                 Button { open(model) } label: { card }

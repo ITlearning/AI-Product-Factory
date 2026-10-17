@@ -273,7 +273,11 @@ public final class SkyStats: @unchecked Sendable {
         public var updates = 0
         /// SceneSky body 계산
         public var bodies = 0
+        /// 새로 만든 MTKView(풀에서 빌린 건 reused)
         public var made = 0
+        public var reused = 0
+        /// 스크롤 중(SkyScroll.moving)에 띄운 SkyView — 0 이어야 한다.
+        public var madeInScroll = 0
         public var alive = 0
         public var maxAlive = 0
         /// 구름 실시간 레이마칭
@@ -1183,17 +1187,26 @@ final class SkyTilt {
 // MARK: - 스크롤
 
 /// 스크롤 속도 — 스크롤 뷰가 위치를 알려 주고(onScrollGeometryChange), 하늘이 그리기 전에 읽는다.
-/// SwiftUI 상태가 아니다: 매 프레임 바뀌어도 화면을 다시 계산하게 만들지 않는다.
-@MainActor
+/// 관찰되는 건 moving 하나 — 스크롤이 시작·멈출 때만 바뀌어 프레임마다 화면을 다시 계산하게 만들지 않는다.
+@MainActor @Observable
 public final class SkyScroll {
     public static let shared = SkyScroll()
     /// 이보다 빠르면(pt/초) 장면을 잠깐 멈춘다 — 카드가 한 화면을 0.5초 안에 지나간다.
     static let fast = 1600.0
     /// 마지막 보고 뒤 이만큼(초) 지나면 멈춘 것으로 본다.
     static let settle = 0.12
-    private var lastY: CGFloat = 0
-    private var lastT = -1.0
-    private(set) var speed = 0.0
+    /// 마지막 보고 뒤 이만큼(초) 조용하면 moving 을 내린다 — 그때 보이는 카드만 움직이는 하늘로.
+    static let rest = 0.25
+    /// 스크롤 중 — 카드는 구운 한 장만, MTKView 를 만들지 않는다.
+    public private(set) var moving = false
+    /// moving 이고 옛 구조 흉내(SkyDebug.liveInScroll)가 아닐 때 — 카드가 움직임을 멈춘다.
+    public var holds: Bool { moving && !SkyDebug.liveInScroll }
+    @ObservationIgnored private var lastY: CGFloat = 0
+    @ObservationIgnored private var lastT = -1.0
+    @ObservationIgnored private(set) var speed = 0.0
+    @ObservationIgnored private var timer: Timer?
+
+    public init() {}
 
     public func report(_ y: CGFloat, now: Double = CACurrentMediaTime()) {
         let dt = now - lastT
@@ -1203,8 +1216,31 @@ public final class SkyScroll {
         } else {
             speed = 0
         }
+        if lastT >= 0, y != lastY, !moving {
+            moving = true
+            watch()
+        }
         lastY = y
         lastT = now
+    }
+
+    /// 조용해졌으면 moving 을 내린다. 시계가 부르고, 시험은 직접 부른다.
+    @discardableResult
+    func settle(now: Double = CACurrentMediaTime()) -> Bool {
+        guard moving, now - lastT >= Self.rest else { return false }
+        moving = false
+        timer?.invalidate()
+        timer = nil
+        return true
+    }
+
+    private func watch() {
+        guard timer == nil else { return }
+        let t = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { _ = self?.settle() }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
 
     /// 스크롤 중 상한 fps — nil 이면 스크롤 중 아님, 0 이면 쉰다.
@@ -1212,6 +1248,62 @@ public final class SkyScroll {
         guard lastT >= 0, now - lastT < Self.settle else { return nil }
         return speed > Self.fast ? 0 : 60
     }
+}
+
+/// 움직이는 하늘(MTKView)을 돌려 쓴다 — 스크롤이 멈출 때마다 새로 만들고(CAMetalLayer·드로어블) 버리지 않게.
+@MainActor
+public enum SkyViewPool {
+    /// 쉬는 뷰 상한 — 한 화면에 움직이는 카드 수(히어로 + 줄 카드 여덟)를 넘지 않는다.
+    public static let cap = 8
+    private static var idle: [MTKView] = []
+    public static var idleCount: Int { idle.count }
+
+    static func take() -> MTKView {
+        if let v = idle.popLast() {
+            SkyStats.shared.count { $0.reused += 1 }
+            return v
+        }
+        let v = MTKView(frame: .zero, device: SkyGPU.systemDevice)
+        v.colorPixelFormat = SkyGPU.format
+        v.framebufferOnly = true
+        v.isOpaque = true
+        v.backgroundColor = .black
+        v.autoResizeDrawable = true
+        if let layer = v.layer as? CAMetalLayer {
+            layer.wantsExtendedDynamicRangeContent = true
+            layer.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
+        }
+        v.isAccessibilityElement = false
+        SkyStats.shared.count { $0.made += 1 }
+        return v
+    }
+
+    static func give(_ v: MTKView) {
+        v.isPaused = true
+        v.delegate = nil
+        v.removeFromSuperview()
+        if idle.count < cap, !idle.contains(where: { $0 === v }) { idle.append(v) }
+    }
+
+    public static func drain() { idle.removeAll() }
+}
+
+/// SkyView 의 자리 — 풀에서 빌린 MTKView 를 품는다. 새 카드의 첫 그림이 화면에 나갈 때까지 숨겨 밑의 정지 그림이 보이게.
+public final class SkyHost: UIView {
+    public let mtk: MTKView
+
+    init(_ mtk: MTKView) {
+        self.mtk = mtk
+        super.init(frame: .zero)
+        isUserInteractionEnabled = false
+        isAccessibilityElement = false
+        mtk.frame = bounds
+        mtk.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        mtk.alpha = 0
+        addSubview(mtk)
+    }
+
+    @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
 }
 
 // MARK: - 뷰
@@ -1249,25 +1341,17 @@ public struct SkyView: UIViewRepresentable {
 
     public func makeCoordinator() -> Coordinator { Coordinator(phase: phase) }
 
-    public func makeUIView(context: Context) -> MTKView {
-        let v = MTKView(frame: .zero, device: SkyGPU.systemDevice)
-        v.colorPixelFormat = SkyGPU.format
-        v.framebufferOnly = true
-        v.isOpaque = true
-        v.backgroundColor = .black
-        v.autoResizeDrawable = true
-        if let layer = v.layer as? CAMetalLayer {
-            layer.wantsExtendedDynamicRangeContent = true
-            layer.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
-        }
-        v.delegate = context.coordinator
-        v.isAccessibilityElement = false
-        context.coordinator.attach(v)
-        SkyStats.shared.count { $0.made += 1; $0.alive += 1 }
-        return v
+    public func makeUIView(context: Context) -> SkyHost {
+        let host = SkyHost(SkyViewPool.take())
+        host.mtk.delegate = context.coordinator
+        context.coordinator.attach(host.mtk)
+        let moving = SkyScroll.shared.moving
+        SkyStats.shared.count { $0.alive += 1; if moving { $0.madeInScroll += 1 } }
+        return host
     }
 
-    public func updateUIView(_ v: MTKView, context: Context) {
+    public func updateUIView(_ host: SkyHost, context: Context) {
+        let v = host.mtk
         let c = context.coordinator
         let running = animating && !context.environment.accessibilityReduceMotion
         SkyStats.shared.count { $0.updates += 1 }
@@ -1287,9 +1371,9 @@ public struct SkyView: UIViewRepresentable {
         if !running { v.setNeedsDisplay() }
     }
 
-    public static func dismantleUIView(_ v: MTKView, coordinator: Coordinator) {
-        v.isPaused = true
+    public static func dismantleUIView(_ host: SkyHost, coordinator: Coordinator) {
         coordinator.setTilt(false)
+        SkyViewPool.give(host.mtk)
         SkyStats.shared.count { $0.alive -= 1 }
     }
 
@@ -1309,6 +1393,8 @@ public struct SkyView: UIViewRepresentable {
         private var inFlight: [MTLCommandBuffer] = []
         private var detected: (maxFPS: Int, tier: SkyTier)?
         private var lastPresent = 0.0
+        /// 이 카드의 첫 온전한 그림(구운 판까지 다 보이는)이 나갔다 — 그 전엔 MTKView 를 숨겨 밑의 정지 그림을 보인다.
+        var revealed = false
 
         /// 스크롤하는 곳 — 스크롤 중엔 60fps 로, 빠르게 넘길 땐 잠깐 쉰다.
         private var inScroll: Bool { !(live ?? (quality == .full)) && !SkyDebug.liveInScroll }
@@ -1375,6 +1461,14 @@ public struct SkyView: UIViewRepresentable {
                 cb.addCompletedHandler { cb in
                     SkyStats.shared.frame(q, gpuMs: (cb.gpuEndTime - cb.gpuStartTime) * 1000)
                 }
+            }
+            if !revealed, !renderer.wantsRedraw {
+                revealed = true
+                #if targetEnvironment(simulator)
+                cb.addCompletedHandler { [weak view] _ in DispatchQueue.main.async { view?.alpha = 1 } }
+                #else
+                drawable.addPresentedHandler { [weak view] _ in DispatchQueue.main.async { view?.alpha = 1 } }
+                #endif
             }
             cb.present(drawable)
             cb.commit()

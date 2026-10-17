@@ -15,10 +15,45 @@ enum SkyScrollTest {
 
         var line: String {
             let c = counters
-            return String(format: "%@ · 프레임 %d · 놓침 %d · 끊김 %d · 최악 %.1fms · 하늘 그리기 평균 %.2f 최악 %.1fms(%d번) · 쉼 %d · 레이마칭 %d · 하늘 갱신 %d · 카드 계산 %d · MTKView 생성 %d 최대 %d · 정지 그림 %d장 %.0fms(최악 %.1f)",
+            return String(format: "%@ · 프레임 %d · 놓침 %d · 끊김 %d · 최악 %.1fms · 하늘 그리기 평균 %.2f 최악 %.1fms(%d번) · 쉼 %d · 레이마칭 %d · 하늘 갱신 %d · 카드 계산 %d · MTKView 생성 %d · 스크롤 중 생성 %d · 풀 재사용 %d · 최대 %d · 정지 그림 %d장 %.0fms(최악 %.1f)",
                           name, frames, missed, hitches, worstMs, c.draws > 0 ? c.drawMs / Double(c.draws) : 0, c.worstDrawMs, c.draws,
-                          c.rests, c.marches, c.updates, c.bodies, c.made, c.maxAlive, c.stills, c.stillMs, c.worstStillMs)
+                          c.rests, c.marches, c.updates, c.bodies, c.made, c.madeInScroll, c.reused, c.maxAlive, c.stills, c.stillMs, c.worstStillMs)
         }
+    }
+
+    /// 결과를 Documents/sky/scroll.txt 에 덧붙인다 — 기기에서 devicectl 로 꺼내 본다.
+    @discardableResult
+    static func save(_ lines: [String], to dir: URL? = nil, now: Date = Date()) -> URL? {
+        guard let dir = dir ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("sky")
+        else { return nil }
+        let url = dir.appendingPathComponent("scroll.txt")
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let stamp = f.string(from: now)
+        let text = lines.map { "\(stamp) · \(model) · \($0)\n" }.joined()
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            if let h = try? FileHandle(forWritingTo: url) {
+                defer { try? h.close() }
+                try h.seekToEnd()
+                try h.write(contentsOf: Data(text.utf8))
+            } else {
+                try Data(text.utf8).write(to: url)
+            }
+            return url
+        } catch {
+            NSLog("SKYSCROLL 저장 실패 %@", error.localizedDescription)
+            return nil
+        }
+    }
+
+    /// 기기 모델(iPhone17,1 등) — 시뮬레이터는 흉내 낸 기기.
+    static var model: String {
+        if let sim = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] { return "\(sim)(시뮬레이터)" }
+        var u = utsname()
+        uname(&u)
+        return withUnsafeBytes(of: &u.machine) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
     }
 
     /// 열세 장면을 돌아가며 — 오늘의 한 장 + 철 묶음 여섯에 여섯 장씩.
@@ -62,6 +97,7 @@ enum SkyScrollTest {
             lines.append(r.line)
             NSLog("SKYSCROLL %@", r.line)
         }
+        save(lines)
         return lines.joined(separator: "\n")
     }
 }
@@ -210,6 +246,8 @@ struct SkyScrollTestScreen: View {
                 let saved = SkyDebug.tier
                 let r = await SkyScrollTest.run(scroll, tier: t, legacy: false)
                 SkyDebug.tier = saved
+                NSLog("SKYSCROLL %@", r.line)
+                SkyScrollTest.save([r.line])
                 status = r.line
             } else {
                 status = await SkyScrollTest.runAll(scroll) { status = $0 }
