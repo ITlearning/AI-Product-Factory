@@ -142,6 +142,8 @@ struct WordSceneCard: View {
     var animating = false
     /// 오늘의 한 장 왼쪽 위 — 「오늘 저녁 · 가는 비」.
     var heroLabel: String?
+    /// 펼친 말처럼 스크롤 없는 곳 — 상·최상은 구름을 실시간으로. 「말」 칸 카드는 모든 단계 구운 판.
+    var live = false
     /// 오늘의 한 장·빈 상태 = hero, 목록 = card. 펼친 말은 hero 크기라 hero.
     var quality: SkyQuality { size == .hero ? .hero : .card }
     private var small: Color { model.scene.smallTextTone }
@@ -152,7 +154,7 @@ struct WordSceneCard: View {
             let w = geo.size.width, h = geo.size.height
             ZStack(alignment: .topLeading) {
                 SceneSky(kind: model.scene, quality: quality, animating: animating, tilts: size == .hero,
-                         seed: SceneSky.seed(model.word), tintHex: model.tintHex)
+                         seed: SceneSky.seed(model.word), tintHex: model.tintHex, live: live ? true : nil)
                 Group {
                     switch size {
                     case .hero: hero(w: w, h: h)
@@ -250,7 +252,6 @@ struct WordsView: View {
     @State private var nowWord: WordEntry?
     @State private var nowLooked = false
     @State private var picked = false
-    @State private var visible: Set<String> = []
     @State private var opened: WordCardModel?
     @State private var attribution: PhotoEnrichment.Attribution?
     @Environment(\.scenePhase) private var scenePhase
@@ -266,12 +267,13 @@ struct WordsView: View {
                     VStack(spacing: 0) {
                         Color.clear.frame(height: 0).id("top")
                         WordsPage(phase: phase, shelf: shelf, now: nowWord.map(WordShelf.now), nowLooked: nowLooked,
-                                  picked: picked, attribution: attribution, active: active, visible: visible,
-                                  lazy: true, open: open, pick: pickNow, retry: reload, seen: seen)
+                                  picked: picked, attribution: attribution, active: active,
+                                  lazy: true, open: open, pick: pickNow, retry: reload)
                     }
                 }
                 .scrollIndicators(.hidden)
                 .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { old, new in
+                    SkyScroll.shared.report(new)
                     TabBarFold.report(old: old, new: new, to: onScrollMinimize)
                 }
                 .onChange(of: scrollToTop) { _, _ in
@@ -289,10 +291,6 @@ struct WordsView: View {
         .sheet(item: $opened) { card in
             OpenedWordSheet(model: card, remove: { remove(card) })
         }
-    }
-
-    private func seen(_ id: String, _ on: Bool) {
-        if on { visible.insert(id) } else { visible.remove(id) }
     }
 
     private func open(_ card: WordCardModel) {
@@ -385,12 +383,12 @@ struct WordsPage: View {
     let picked: Bool
     let attribution: PhotoEnrichment.Attribution?
     let active: Bool
-    let visible: Set<String>
+    /// 화면 덤프용 — 보이는 카드는 카드마다 스스로 센다(WordCardSlot).
+    var visible: Set<String> = []
     var lazy = true
     var open: (WordCardModel) -> Void = { _ in }
     var pick: () -> Void = {}
     var retry: () -> Void = {}
-    var seen: (String, Bool) -> Void = { _, _ in }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -437,8 +435,7 @@ struct WordsPage: View {
         Text("지금 밖에 맞는 말이에요").font(Face.line).foregroundStyle(Tone.secondary)
             .padding(.leading, 2).padding(.bottom, 12)
         if let now {
-            WordSceneCard(model: now, size: .hero, animating: active, heroLabel: "지금 · \(now.scene.name)")
-                .onScrollVisibilityChange(threshold: 0.05) { seen(now.id, $0) }
+            WordCardSlot(model: now, size: .hero, active: active, shown: visible.contains(now.id), heroLabel: "지금 · \(now.scene.name)")
             pickRow
                 .frame(maxWidth: .infinity)
                 .padding(.top, 18)
@@ -477,13 +474,8 @@ struct WordsPage: View {
     @ViewBuilder
     private var list: some View {
         if let hero = shelf.hero {
-            Button { open(hero) } label: {
-                WordSceneCard(model: hero, size: .hero, animating: active && visible.contains(hero.id),
-                              heroLabel: "\(hero.when) · \(hero.scene.name)")
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("눌러서 펼쳐요")
-            .onScrollVisibilityChange(threshold: 0.05) { seen(hero.id, $0) }
+            WordCardSlot(model: hero, size: .hero, active: active, shown: visible.contains(hero.id),
+                         heroLabel: "\(hero.when) · \(hero.scene.name)", open: open)
             .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
             .id(hero.id)
         }
@@ -497,12 +489,7 @@ struct WordsPage: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isHeader)
                 ForEach(s.cards) { c in
-                    Button { open(c) } label: {
-                        WordSceneCard(model: c, size: .row, animating: active && visible.contains(c.id))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("눌러서 펼쳐요")
-                    .onScrollVisibilityChange(threshold: 0.05) { seen(c.id, $0) }
+                    WordCardSlot(model: c, size: .row, active: active, shown: visible.contains(c.id), open: open)
                 }
             }
             .padding(.top, 30)
@@ -523,6 +510,32 @@ struct WordsPage: View {
             .padding(.top, 28)
             .accessibilityLabel("Apple 날씨 데이터 출처")
         }
+    }
+}
+
+/// 카드 한 칸 — 화면에 보이는지는 칸이 스스로 들고 있다. 카드 하나가 들고 날 때 목록 전체가 다시 계산되지 않게.
+struct WordCardSlot: View {
+    let model: WordCardModel
+    let size: WordSceneCard.Size
+    let active: Bool
+    var shown = false
+    var heroLabel: String?
+    var open: ((WordCardModel) -> Void)?
+
+    @State private var seen = false
+
+    var body: some View {
+        let card = WordSceneCard(model: model, size: size, animating: active && (seen || shown), heroLabel: heroLabel)
+        Group {
+            if let open {
+                Button { open(model) } label: { card }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("눌러서 펼쳐요")
+            } else {
+                card
+            }
+        }
+        .onScrollVisibilityChange(threshold: 0.05) { if seen != $0 { seen = $0 } }
     }
 }
 
@@ -550,7 +563,7 @@ struct OpenedWordSheet: View {
 
     var content: some View {
         VStack(alignment: .leading, spacing: 0) {
-            WordSceneCard(model: model, size: .hero, animating: true, heroLabel: "\(model.when) · \(model.scene.name)")
+            WordSceneCard(model: model, size: .hero, animating: true, heroLabel: "\(model.when) · \(model.scene.name)", live: true)
                 .padding(.top, 24)
             Text(model.word).font(Face.word).foregroundStyle(Tone.primary)
                 .padding(.top, 22)

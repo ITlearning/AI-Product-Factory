@@ -291,14 +291,16 @@ final class SkyRenderTests: XCTestCase {
         XCTAssertFalse(p1 === p2, "판 번호가 바뀌면 새로 굽는다")
         XCTAssertFalse(p2.complete)
         XCTAssertEqual(p2.key.version, saved + 1)
-        XCTAssertLessThanOrEqual(bank.bytes, bank.capBytes + p2.bytes)
+        XCTAssertLessThanOrEqual(bank.bytes, bank.cap(.mid) + p2.bytes)
     }
 
     func testCardsNeverMarchClouds() {
         XCTAssertTrue(SkyTier.allCases.allSatisfy { SkyBudget(.card, tier: $0).bakedClouds })
         XCTAssertTrue(SkyBudget(.hero, tier: .mid).bakedClouds)
         XCTAssertTrue(SkyBudget(.full, tier: .low).bakedClouds)
-        XCTAssertFalse(SkyBudget(.hero, tier: .ultra).bakedClouds)
+        XCTAssertTrue(SkyBudget(.hero, tier: .ultra).bakedClouds, "스크롤하는 히어로는 최상도 구운 판")
+        XCTAssertFalse(SkyBudget(.hero, tier: .ultra, live: true).bakedClouds)
+        XCTAssertFalse(SkyBudget(.full, tier: .ultra).bakedClouds)
         XCTAssertNil(SkyBudget(.card, tier: .mid).upscaleTo, "구운 카드엔 MetalFX 를 쓰지 않는다")
         let frame = SkyFrame(scene: .rain, quality: .card, size: CGSize(width: 354, height: 96))
         XCTAssertEqual(SkySnapshot.cloudRenders(frame, tier: .ultra, seconds: 1).renders, 0)
@@ -683,9 +685,10 @@ final class SkyRenderTests: XCTestCase {
         let env = ProcessInfo.processInfo.environment
         let every = env["SKY8_ALL"] != nil
         let limit = Self.boxEdgeLimit
-        let sizes: [(SkyQuality, CGSize, SkyTexts?)] = [(.hero, CGSize(width: 354, height: 232), nil),
-                                                         (.card, CGSize(width: 354, height: 96), nil),
-                                                         (.full, full, SkyFullPage.texts(in: full))]
+        let sizes: [(SkyQuality, CGSize, SkyTexts?, Bool?)] = [(.hero, CGSize(width: 354, height: 232), nil, nil),
+                                                                (.hero, CGSize(width: 354, height: 232), nil, true),
+                                                                (.card, CGSize(width: 354, height: 96), nil, nil),
+                                                                (.full, full, SkyFullPage.texts(in: full), nil)]
         let tiers: [SkyTier] = every ? [.ultra, .high, .mid, .low] : [.ultra, .mid]
         let times = every ? [SceneArt.stillPhase, SceneArt.stillPhase + 40] : [SceneArt.stillPhase]
         let only = env["SKY8_ONLY"].map { o in SkyScene.allCases.filter { o.split(separator: ",").contains(Substring("\($0)")) } }
@@ -698,23 +701,23 @@ final class SkyRenderTests: XCTestCase {
             if e.sharp > limit { fails.append(String(format: "%@ %.3f %@", tag, e.sharp, e.at)) }
         }
         for scene in only ?? SkyScene.allCases {
-            for (q, size, texts) in sizes {
+            for (q, size, texts, live) in sizes {
                 for tier in tiers {
                     for t in times {
-                        var b = SkyBudget(q, tier: tier, still: true)
+                        var b = SkyBudget(q, tier: tier, still: true, live: live)
                         b.particleScale = 0
                         let f = SkyFrame(scene: scene, quality: q, size: size, texts: texts, moonAge: 14.8)
-                        try check(String(format: "%@ %@ %@ t+%.0f", scene.name, q.rawValue, tier.name, t - SceneArt.stillPhase), f, [t], b)
+                        try check(String(format: "%@ %@%@ %@ t+%.0f", scene.name, q.rawValue, live == true ? "(실시간)" : "", tier.name, t - SceneArt.stillPhase), f, [t], b)
                     }
                 }
             }
         }
         for scene in (only ?? SkyScene.allCases) where [.rain, .drizzle, .snow, .petals, .leaves].contains(scene) {
-            for (q, size, texts) in sizes {
+            for (q, size, texts, live) in sizes {
                 for tier in every ? [SkyTier.ultra, .mid] : [.ultra] {
                     let f = SkyFrame(scene: scene, quality: q, size: size, texts: texts)
-                    try check("\(scene.name) \(q.rawValue) \(tier.name) 입자", f, (0..<16).map { SceneArt.stillPhase + Double($0) * 0.53 },
-                              SkyBudget(q, tier: tier, still: true))
+                    try check("\(scene.name) \(q.rawValue)\(live == true ? "(실시간)" : "") \(tier.name) 입자", f, (0..<16).map { SceneArt.stillPhase + Double($0) * 0.53 },
+                              SkyBudget(q, tier: tier, still: true, live: live))
                 }
             }
         }

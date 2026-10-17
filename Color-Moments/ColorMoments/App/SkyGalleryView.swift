@@ -11,6 +11,7 @@ struct SkyGalleryView: View {
     @State private var animating = true
     @State private var showsOld = true
     @State private var fullScreen = false
+    @State private var scrollTest = false
     @State private var dumpStatus: String?
     @AppStorage(FrameMeterBadge.homeKey) private var meter = false
     @State private var tier = -1
@@ -45,9 +46,13 @@ struct SkyGalleryView: View {
                     .font(Face.guide)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(.white.opacity(0.08), in: Capsule())
+                Button("스크롤 시험(「말」 칸 목록 자동 스크롤)") { scrollTest = true }
+                    .font(Face.guide)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(.white.opacity(0.08), in: Capsule())
                 if let dumpStatus { Text(dumpStatus).font(.caption2.monospaced()).foregroundStyle(Tone.secondary) }
 
-                label("오늘의 한 장 — 새 하늘(hero 60fps)")
+                label("오늘의 한 장 — 새 하늘(hero · 「구름 자동」은 구운 판, 「실시간」은 펼친 말과 같다)")
                 SkyCard(scene: scene, size: .hero, new: true, animating: animating)
                 if showsOld {
                     label("지금 장면")
@@ -66,12 +71,14 @@ struct SkyGalleryView: View {
         .preferredColorScheme(.dark)
         .overlay(alignment: .bottom) { if meter { FrameMeterBadge(resetToken: meterReset).padding(.bottom, 4) } }
         .fullScreenCover(isPresented: $fullScreen) { SkyFullScreen(start: scene) }
+        .fullScreenCover(isPresented: $scrollTest) { SkyScrollTestScreen() }
         .onChange(of: scene) { resetMeters() }
         .onChange(of: tier) { resetMeters() }
         .onChange(of: baked) { resetMeters() }
         .onAppear { SkyView.prewarm() }
         .task {
             if ProcessInfo.processInfo.arguments.contains("-skyFull") { fullScreen = true }
+            if ProcessInfo.processInfo.arguments.contains("-skyScroll") { scrollTest = true }
             if ProcessInfo.processInfo.arguments.contains("-skyCycle") { await cycleScenes() }
             guard Self.dumpRequested else { return }
             dumpStatus = "그리는 중…"

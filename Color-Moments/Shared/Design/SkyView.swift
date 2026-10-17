@@ -176,15 +176,19 @@ public struct SkyBudget: Equatable, Sendable {
     public var fps: Int
     /// MetalFX 로 구름을 이 배율까지 올린다(nil = 안 씀).
     public var upscaleTo: Double?
-    /// 구름을 실시간 레이마칭하지 않고 구운 판(SkyCloudBank)을 흘린다 — 목록 카드 전부, 중·하 단계의 히어로·전체 화면.
+    /// 구름을 실시간 레이마칭하지 않고 구운 판(SkyCloudBank)을 흘린다 — 스크롤하는 곳은 모든 단계, 중·하는 어디서나.
     public var bakedClouds: Bool
+    /// 구운 판을 어느 단계 품질로 굽는가(판 촘촘함·걸음·떨림 평균). 발열로 내려가도 판은 그대로 — 다시 굽지 않게.
+    public var plateTier: SkyTier
 
+    /// live: 스크롤 없는 곳(펼친 말·전체 화면)이라 실시간 레이마칭을 써도 되는가. nil 이면 전체 화면만.
     public init(_ q: SkyQuality, tier: SkyTier, thermal: ProcessInfo.ThermalState = .nominal,
-                lowPower: Bool = false, metalFX: Bool? = nil, still: Bool = false) {
+                lowPower: Bool = false, metalFX: Bool? = nil, still: Bool = false, live: Bool? = nil) {
         let hot = thermal == .serious || thermal == .critical
         let t = hot ? tier.lower : tier
         self.tier = t
         self.hot = hot
+        plateTier = tier
         let card = q == .card
         func steps(_ n: Int, _ k: Double) -> Int { max(Int((Double(n) * k).rounded()), 3) }
         switch t {
@@ -213,7 +217,8 @@ public struct SkyBudget: Equatable, Sendable {
         haloPatches = t != .low
         if hot { fps = 30 }
         if lowPower { fps = min(fps, 60) }
-        bakedClouds = SkyDebug.bakedClouds ?? (card || t <= .mid)
+        let live = live ?? (q == .full || (SkyDebug.liveInScroll && !card))
+        bakedClouds = SkyDebug.bakedClouds ?? (card || !live || t <= .mid)
         let wantsFX = metalFX ?? (t == .mid || t == .low)
         upscaleTo = !bakedClouds && wantsFX && cloudScale < q.cloudScale ? q.cloudScale : nil
         if still { cloudEvery = 0 }
@@ -231,6 +236,8 @@ public enum SkyDebug {
     nonisolated(unsafe) public static var bakedClouds: Bool?
     /// 느린 기기 흉내 — GPU 준비와 구운 판 굽기를 이만큼(초) 늦춘다.
     nonisolated(unsafe) public static var prepareDelay: Double = 0
+    /// 8차까지의 구조 흉내(전후 비교) — 스크롤하는 히어로도 상·최상은 실시간 레이마칭, 스크롤 중에도 늦추지 않는다.
+    nonisolated(unsafe) public static var liveInScroll = false
 }
 
 /// 디버그 계측 — 그리는 쪽에서 쓰고 화면이 읽는다.
@@ -244,6 +251,9 @@ public final class SkyStats: @unchecked Sendable {
     func draw(_ q: SkyQuality, ms: Double) {
         lock.lock(); defer { lock.unlock() }
         rows[q, default: Row()].worstDraw = max(rows[q, default: Row()].worstDraw, ms)
+        c.draws += 1
+        c.drawMs += ms
+        c.worstDrawMs = max(c.worstDrawMs, ms)
     }
 
     /// GPU 가 밀려 건너뛴 프레임.
@@ -255,6 +265,42 @@ public final class SkyStats: @unchecked Sendable {
     public func reset() {
         lock.lock(); defer { lock.unlock() }
         for q in rows.keys { rows[q]?.worstDraw = 0; rows[q]?.skipped = 0 }
+    }
+
+    /// 스크롤 시험용 누적 — 리셋 사이에 센다. alive 는 지금 떠 있는 MTKView 수라 리셋하지 않는다.
+    public struct Counters: Sendable {
+        /// SkyView.updateUIView 호출(SwiftUI 갱신이 하늘까지 내려온 횟수)
+        public var updates = 0
+        /// SceneSky body 계산
+        public var bodies = 0
+        public var made = 0
+        public var alive = 0
+        public var maxAlive = 0
+        /// 구름 실시간 레이마칭
+        public var marches = 0
+        public var draws = 0
+        public var drawMs = 0.0
+        public var worstDrawMs = 0.0
+        /// 스크롤 중이라 쉰 프레임
+        public var rests = 0
+        /// 멈춘 한 장(SkyStills)을 새로 구운 횟수와 메인 스레드 시간
+        public var stills = 0
+        public var stillMs = 0.0
+        public var worstStillMs = 0.0
+    }
+    private var c = Counters()
+
+    public var counters: Counters { lock.lock(); defer { lock.unlock() }; return c }
+
+    public func resetCounters() {
+        lock.lock(); defer { lock.unlock() }
+        c = Counters(alive: c.alive, maxAlive: c.alive)
+    }
+
+    func count(_ f: (inout Counters) -> Void) {
+        lock.lock(); defer { lock.unlock() }
+        f(&c)
+        c.maxAlive = max(c.maxAlive, c.alive)
     }
 
     func frame(_ q: SkyQuality, gpuMs: Double) {
@@ -872,6 +918,7 @@ final class SkyRenderer {
         }
         #endif
         cloudRenders += 1
+        SkyStats.shared.count { $0.marches += 1 }
     }
 
     /// 구름 두 장(tA ≤ t < tB)과 섞는 값. 정지 그림(cloudEvery 0)은 t 그대로 한 장.
@@ -919,7 +966,7 @@ final class SkyRenderer {
         if b.bakedClouds {
             let bank = SkyCloudBank.shared
             let shape = SkyCloudBank.Shape.fitting(frame.size)
-            guard let plate = bank.plate(frame.scene, shape, device: gpu.device) else { return }
+            guard let plate = bank.plate(frame.scene, shape, tier: b.plateTier, device: gpu.device) else { return }
             bank.advance(plate, cb: cb, gpu: gpu, all: !progressive)
             let flow = Double(frame.scene.cloudFlow)
             let win = SkyCloudBank.window(frame.window, size: frame.size, shape: shape, flow: flow, t: t)
@@ -1034,6 +1081,11 @@ final class SkyRenderer {
 // MARK: - 정지 그림 (위젯·비교 PNG)
 
 public enum SkySnapshot {
+    /// CIContext 는 만들기가 비싸다 — 하나를 돌려 쓴다(스레드 안전).
+    private static let ciContext: CIContext? = SkyGPU.shared.flatMap { gpu in
+        CGColorSpace(name: CGColorSpace.extendedLinearSRGB).map { CIContext(mtlDevice: gpu.device, options: [.workingColorSpace: $0]) }
+    }
+
     /// SDR 로 굳힌 한 장 — 위젯은 앱이 이걸 App Group 에 PNG 로 구워 두고 띄우면 된다.
     /// gpuMilliseconds: 같은 프레임을 repeats 번 그려 잰 GPU 시간 평균(시뮬레이터는 참고만).
     public static func image(_ frame: SkyFrame, scale: CGFloat, t: Double, headroom: Float = 1,
@@ -1061,7 +1113,7 @@ public enum SkySnapshot {
         guard let linear = CGColorSpace(name: CGColorSpace.extendedLinearSRGB),
               let srgb = CGColorSpace(name: CGColorSpace.sRGB),
               let ci = CIImage(mtlTexture: target, options: [.colorSpace: linear]) else { return nil }
-        let ctx = CIContext(mtlDevice: gpu.device, options: [.workingColorSpace: linear])
+        guard let ctx = ciContext else { return nil }
         let flipped = ci.oriented(.downMirrored)
         guard let cg = ctx.createCGImage(flipped, from: flipped.extent, format: .RGBA8, colorSpace: srgb) else { return nil }
         return (cg, ms)
@@ -1128,6 +1180,40 @@ final class SkyTilt {
     }
 }
 
+// MARK: - 스크롤
+
+/// 스크롤 속도 — 스크롤 뷰가 위치를 알려 주고(onScrollGeometryChange), 하늘이 그리기 전에 읽는다.
+/// SwiftUI 상태가 아니다: 매 프레임 바뀌어도 화면을 다시 계산하게 만들지 않는다.
+@MainActor
+public final class SkyScroll {
+    public static let shared = SkyScroll()
+    /// 이보다 빠르면(pt/초) 장면을 잠깐 멈춘다 — 카드가 한 화면을 0.5초 안에 지나간다.
+    static let fast = 1600.0
+    /// 마지막 보고 뒤 이만큼(초) 지나면 멈춘 것으로 본다.
+    static let settle = 0.12
+    private var lastY: CGFloat = 0
+    private var lastT = -1.0
+    private(set) var speed = 0.0
+
+    public func report(_ y: CGFloat, now: Double = CACurrentMediaTime()) {
+        let dt = now - lastT
+        if lastT >= 0, dt > 0, dt < Self.settle {
+            let v = Double(abs(y - lastY)) / dt
+            speed = speed * 0.6 + v * 0.4
+        } else {
+            speed = 0
+        }
+        lastY = y
+        lastT = now
+    }
+
+    /// 스크롤 중 상한 fps — nil 이면 스크롤 중 아님, 0 이면 쉰다.
+    func cap(now: Double = CACurrentMediaTime()) -> Int? {
+        guard lastT >= 0, now - lastT < Self.settle else { return nil }
+        return speed > Self.fast ? 0 : 60
+    }
+}
+
 // MARK: - 뷰
 
 /// Decorative — VoiceOver 에선 숨긴다. animating 은 호출부 스위치(보이는 카드만), 동작 줄이기면 언제나 멈춘 한 장(별똥별 없음).
@@ -1140,11 +1226,14 @@ public struct SkyView: UIViewRepresentable {
     private let tilts: Bool
     private let moonAge: Double?
     private let seed: Int?
+    private let live: Bool?
 
     /// moonAge nil 이면 오늘 달 나이(Celestial). seed 는 카드마다 다른 구름 창(같은 날·같은 카드면 같은 수).
+    /// live 는 스크롤 없는 곳(펼친 말) — 상·최상에서 구름을 실시간 레이마칭한다. nil 이면 전체 화면만.
     public init(_ scene: SkyScene, quality: SkyQuality = .card, animating: Bool = false,
                 phase: Double = SceneArt.stillPhase, texts: SkyTexts? = nil, tilts: Bool = false,
-                moonAge: Double? = nil, seed: Int? = nil) {
+                moonAge: Double? = nil, seed: Int? = nil, live: Bool? = nil) {
+        self.live = live
         self.scene = scene
         self.quality = quality
         self.animating = animating
@@ -1174,29 +1263,34 @@ public struct SkyView: UIViewRepresentable {
         v.delegate = context.coordinator
         v.isAccessibilityElement = false
         context.coordinator.attach(v)
+        SkyStats.shared.count { $0.made += 1; $0.alive += 1 }
         return v
     }
 
     public func updateUIView(_ v: MTKView, context: Context) {
         let c = context.coordinator
         let running = animating && !context.environment.accessibilityReduceMotion
+        SkyStats.shared.count { $0.updates += 1 }
         c.scene = scene
         c.quality = quality
+        c.live = live
         c.texts = texts
         c.moonAge = moonAge
         c.window = seed.map(SkyFrame.window(seed:)) ?? .zero
         c.running = running
         c.setTilt(tilts && running)
         c.clock.set(running: running, at: Date())
-        v.preferredFramesPerSecond = c.budget(for: v).fps
-        v.enableSetNeedsDisplay = !running
-        v.isPaused = !running
+        let fps = c.budget(for: v).fps
+        if v.preferredFramesPerSecond != fps { v.preferredFramesPerSecond = fps }
+        if v.enableSetNeedsDisplay == running { v.enableSetNeedsDisplay = !running }
+        if v.isPaused == running { v.isPaused = !running }
         if !running { v.setNeedsDisplay() }
     }
 
     public static func dismantleUIView(_ v: MTKView, coordinator: Coordinator) {
         v.isPaused = true
         coordinator.setTilt(false)
+        SkyStats.shared.count { $0.alive -= 1 }
     }
 
     @MainActor
@@ -1208,10 +1302,16 @@ public struct SkyView: UIViewRepresentable {
         var moonAge: Double?
         var window: CGPoint = .zero
         var running = false
+        var live: Bool?
         var clock: SceneTime
         private var tilting = false
         private var lastRenders = 0
         private var inFlight: [MTLCommandBuffer] = []
+        private var detected: (maxFPS: Int, tier: SkyTier)?
+        private var lastPresent = 0.0
+
+        /// 스크롤하는 곳 — 스크롤 중엔 60fps 로, 빠르게 넘길 땐 잠깐 쉰다.
+        private var inScroll: Bool { !(live ?? (quality == .full)) && !SkyDebug.liveInScroll }
 
         init(phase: Double) { clock = SceneTime(phase: phase) }
 
@@ -1235,10 +1335,11 @@ public struct SkyView: UIViewRepresentable {
 
         func budget(for view: MTKView) -> SkyBudget {
             let maxFPS = view.window?.windowScene?.screen.maximumFramesPerSecond ?? UIScreen.main.maximumFramesPerSecond
-            let tier = SkyDebug.tier ?? renderer.map { SkyTier.detect($0.gpu.device, maxFPS: maxFPS) } ?? .mid
+            if let renderer, detected?.maxFPS != maxFPS { detected = (maxFPS, SkyTier.detect(renderer.gpu.device, maxFPS: maxFPS)) }
+            let tier = SkyDebug.tier ?? detected?.tier ?? .mid
             let info = ProcessInfo.processInfo
             return SkyBudget(quality, tier: tier, thermal: info.thermalState, lowPower: info.isLowPowerModeEnabled,
-                             metalFX: SkyDebug.metalFX, still: !running)
+                             metalFX: SkyDebug.metalFX, still: !running, live: live)
         }
 
         public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) { view.setNeedsDisplay() }
@@ -1249,6 +1350,11 @@ public struct SkyView: UIViewRepresentable {
             inFlight.removeAll { $0.status == .completed || $0.status == .error }
             if running, inFlight.count >= 2 { SkyStats.shared.skip(quality); return }
             let drawStart = CACurrentMediaTime()
+            if running, inScroll, let cap = SkyScroll.shared.cap(now: drawStart),
+               cap == 0 || drawStart - lastPresent < 1 / Double(cap) - 0.003 {
+                SkyStats.shared.count { $0.rests += 1 }
+                return
+            }
             guard let drawable = view.currentDrawable,
                   let cb = renderer.gpu.queue.makeCommandBuffer() else { return }
             let b = budget(for: view)
@@ -1273,6 +1379,7 @@ public struct SkyView: UIViewRepresentable {
             cb.present(drawable)
             cb.commit()
             inFlight.append(cb)
+            lastPresent = drawStart
             SkyStats.shared.draw(quality, ms: (CACurrentMediaTime() - drawStart) * 1000)
             // 구운 판이 막 나타나는 동안은 멈춘 화면도 몇 번 더 그린다.
             if !running, renderer.wantsRedraw { DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 30) { view.setNeedsDisplay() } }

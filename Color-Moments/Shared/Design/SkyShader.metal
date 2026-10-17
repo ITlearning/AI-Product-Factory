@@ -533,20 +533,21 @@ fragment CloudOut skyClouds(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]]
 }
 
 // 구운 판 — 세계 한 조각을 흐름 없이(모양 시각 view.z) 한 번 그린다. 오른쪽 끝은 왼쪽 끝으로 이어지게 섞어 가로로 끝없이 돈다.
-// 걸음 사이 떨림은 같은 픽셀을 두 번 엇갈려 찍어 평균(구운 판에 떨림 무늬가 덜 남게).
+// 걸음 사이 떨림은 같은 픽셀을 rays.z 번(단계별) 엇갈려 찍어 평균(구운 판에 떨림 무늬가 덜 남게).
 fragment float4 skyCloudBake(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
                              texture3d<float> nz [[texture(0)]]) {
     float2 pt = in.uv * u.view.xy;
     float W = u.view.x, margin = W * 0.22;
     float a = smoothstep(W - margin, W, pt.x);
+    int taps = clamp(int(u.rays.z), 1, 4);
     float4 acc = float4(0.0);
-    for (int k = 0; k < 2; k++) {
-        float j = fract(ign(in.pos.xy) + float(k) * 0.5);
+    for (int k = 0; k < taps; k++) {
+        float j = fract(ign(in.pos.xy) + float(k) / float(taps));
         float4 c = cloudCore(u, nz, in.uv, pt, j, 0.0, u.view.z);
         if (a > 0.001) c = mix(c, cloudCore(u, nz, in.uv, pt - float2(W, 0.0), j, 0.0, u.view.z), a);
         acc += c;
     }
-    return acc * 0.5;
+    return acc / float(taps);
 }
 
 // MARK: - 별
