@@ -12,6 +12,7 @@ enum WordWidgetSync {
         sendWidgetPicks()
         sendWidgetAdded()
         bakeSkies()
+        bakePebbles(today: nil)
         guard let store = AmbientStore() else { return }
         let finder = PlaceFinder.shared
         guard finder.isEnabled, finder.access != .denied else {
@@ -55,6 +56,22 @@ enum WordWidgetSync {
                 if baked { reloadTimelines() }
             }
         }
+    }
+
+    /// 위젯 「주웠어요」 조약돌 — 장면마다 한 장, 오늘 찍은 색이 있으면 오늘 한 장. 없거나 판·정지점이 바뀐 것만 굽는다.
+    /// today 가 nil 이면 오늘 조약돌은 그대로 둔다(가게를 모르는 자리에서 부를 때).
+    static func bakePebbles(today: WordWidgetPebble.Today?) {
+        let scale = UIScreen.main.scale
+        Task { @MainActor in
+            await Task.yield()
+            if WordWidgetPebble.bakeIfNeeded(today: today, scale: scale) { reloadTimelines() }
+        }
+    }
+
+    static func bakePebbles(store: DayStore, now: Date = Date()) {
+        let key = Moment.dayKey(for: now)
+        let stops = SoftPebbleView.floats(DayGradient.pebbleStops(for: store.pebbleMoments(on: key)))
+        bakePebbles(today: WordWidgetPebble.Today(dayKey: key, stops: stops))
     }
 
     // MARK: 계측 — 위젯 확장에는 PostHog 가 없다

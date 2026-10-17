@@ -686,6 +686,12 @@ static float4 cloudsAt(constant SkyU& u, texture2d<float> colA, texture2d<float>
     return mix(cloudTaps(colA, trA, uvA), cloudTaps(colB, trB, uvB), u.blend.x);
 }
 
+// 해 심지 — 한 함수(모팻)라 가운데 원판과 번짐 사이에 어깨가 없다. 예전 가우시안 + 지수 꼬리 두 겹과 2r·4r 밝기를 맞췄다.
+static float sunCore(float d, float r, float peak) {
+    float x = d / (r * 1.3);
+    return peak * pow(1.0 + x * x, -1.5);
+}
+
 // 해 — 장면마다 색·세기·번짐. 맑은 낮은 4차 값 그대로(햇무리 띠 포함).
 static float3 sunLight(int scene, float2 pt, float d, float r, constant SkyU& u, float3 c) {
     float R = u.sun.x, G = u.sun.y;
@@ -700,8 +706,7 @@ static float3 sunLight(int scene, float2 pt, float d, float r, constant SkyU& u,
         add += band * float3(0.055, 0.048, 0.052) * patch * (frost ? 0.4 : 1.0);
         float glow = 0.6 * exp(-d / (G * 0.04)) + 0.4 * exp(-d / (G * 0.1)) + 0.2 * exp(-d / (G * 0.18))
                    + 0.05 * exp(-d / (G * 0.5));
-        // 원판 가장자리를 부드럽게 — 가우시안을 넓히고 심지 세기는 낮춘다.
-        float core = exp(-(d * d) / (r * r * 1.8)) * 3.4 + exp(-d / (r * 2.0)) * 1.1;
+        float core = sunCore(d, r, 4.5);
         float3 tintCore = frost ? lin(float3(1.0, 0.95, 0.86)) : lin(float3(1.0, 0.975, 0.93));
         float3 tintGlow = frost ? lin(float3(0.96, 0.92, 0.9)) : lin(float3(0.93, 0.96, 1.0));
         return c + add + tintCore * core * (frost ? 0.85 : 1.0) + tintGlow * glow * (frost ? 0.7 : 1.0);
@@ -717,7 +722,7 @@ static float3 sunLight(int scene, float2 pt, float d, float r, constant SkyU& u,
         float3 bc = dusk ? lin(float3(1.0, 0.5, 0.22)) : lin(float3(1.0, 0.62, 0.5));
         c += bc * band * (dusk ? 0.24 : 0.2);
         float glow = 0.5 * exp(-d / (G * 0.05)) + 0.28 * exp(-d / (G * 0.13)) + 0.08 * exp(-d / (G * 0.4));
-        float core = exp(-(d * d) / (r * r * 1.6)) * 3.0 + exp(-d / (r * 1.8)) * 0.8;
+        float core = sunCore(d, r, 3.8);
         float3 cc = dusk ? lin(float3(1.0, 0.72, 0.42)) : lin(float3(1.0, 0.8, 0.66));
         float3 gc = dusk ? lin(float3(1.0, 0.52, 0.26)) : lin(float3(1.0, 0.6, 0.55));
         return c + cc * core + gc * glow * (dusk ? 1.0 : 0.7);
@@ -731,7 +736,7 @@ static float3 sunLight(int scene, float2 pt, float d, float r, constant SkyU& u,
     float3 cc = scene == S_LEAVES ? lin(float3(1.0, 0.9, 0.7)) : lin(float3(1.0, 0.97, 0.92));
     float3 gc = scene == S_LEAVES ? lin(float3(1.0, 0.8, 0.52)) : (scene == S_PETALS ? lin(float3(1.0, 0.93, 0.9)) : lin(float3(0.93, 0.96, 1.0)));
     float glow = 0.5 * exp(-d / (G * 0.05)) + 0.3 * exp(-d / (G * 0.11)) + 0.1 * exp(-d / (G * 0.28));
-    float core = exp(-(d * d) / (r * r * 1.8)) * 3.0 + exp(-d / (r * 2.0)) * 1.0;
+    float core = sunCore(d, r, 4.0);
     return c + (cc * core + gc * glow) * k;
 }
 
@@ -1206,11 +1211,19 @@ fragment float4 skyFinal(VOut in [[stage_in]], constant SkyU& u [[buffer(0)]],
     float k = 0.8;
     L = lum(c);
     if (L > k) {
-        float room = head - k + 0.25;
-        float Ln = k + room * (1.0 - exp(-(L - k) / room));
-        Ln = min(Ln, head);
+        // 어깨가 head 에 닿기만 하고 넘지 않는다 — 잘라 내면 해 둘레가 평평한 원판이 되고 그 테두리가 접힌다.
+        float room = head - k;
+        float x = (L - k) / room;
+        float Ln = k + room * x / (1.0 + x);
         c *= Ln / L;
-        c = mix(c, float3(Ln), saturate((Ln - 0.9) / max(head - 0.9, 0.1)) * 0.6);
+        c = mix(c, float3(Ln), smoothstep(k, head, Ln) * 0.6);
+    }
+    // 한 채널만 head 에 걸려 잘리면 노을·낙엽 해에 색 원판이 한 겹 더 생긴다 — 자르지 않고 휘도 그대로 하얗게 기운다.
+    L = lum(c);
+    float top = max(c.r, max(c.g, c.b));
+    if (top > L + 1e-5) {
+        float need = max(head - L, 0.0) / (top - L);
+        c = L + (c - L) * (need * rsqrt(sqrt(1.0 + need * need * need * need)));
     }
     c = min(c, float3(head));
 

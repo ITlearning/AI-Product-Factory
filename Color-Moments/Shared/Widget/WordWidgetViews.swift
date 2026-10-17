@@ -10,14 +10,17 @@ public struct WordWidgetSmall<PickControl: View>: View {
     let text: WordWidgetText?
     /// 위젯은 containerBackground 로 장면을 깔고, 앱(미리보기·화면 덤프)은 직접 깐다.
     let drawsBackground: Bool
+    let pebbleDirectory: URL?
     let pick: (WordWidgetModel) -> PickControl
 
     public init(model: WordWidgetModel, style: SceneStyle, text: WordWidgetText? = WordWidgetText.cached,
-                drawsBackground: Bool, @ViewBuilder pick: @escaping (WordWidgetModel) -> PickControl) {
+                drawsBackground: Bool, pebbleDirectory: URL? = WordWidgetPebble.container,
+                @ViewBuilder pick: @escaping (WordWidgetModel) -> PickControl) {
         self.model = model
         self.style = style
         self.text = text
         self.drawsBackground = drawsBackground
+        self.pebbleDirectory = pebbleDirectory
         self.pick = pick
     }
 
@@ -50,16 +53,19 @@ public struct WordWidgetSmall<PickControl: View>: View {
             pick(model)
                 .transition(.opacity)
         case .justPicked:
-            HStack(spacing: 6) {
-                WordPebbleMark()
-                Text(text?.picked ?? "").font(Face.wordMeta).foregroundStyle(Tone.primary).lineLimit(1)
-            }
-            .transition(.scale(scale: 0.6, anchor: .leading).combined(with: .opacity))
+            WordPickedLabel(text?.picked ?? "", pebble: pebble)
+                .transition(.scale(scale: 0.6, anchor: .leading).combined(with: .opacity))
         case .picked:
-            WordPebbleMark()
-                .padding(.leading, 4)
-                .transition(.opacity)
+            if let pebble {
+                WordPebbleMark(pebble, stone: 17)
+                    .padding(.leading, 6)
+                    .transition(.opacity)
+            }
         }
+    }
+
+    private var pebble: UIImage? {
+        model.pick == .open ? nil : WordWidgetPebble.image(for: model, in: pebbleDirectory)
     }
 
     // 말·문장 덩어리 — 폭 78%, 높이 50~93%.
@@ -116,21 +122,59 @@ public struct WordPickLabel: View {
     public init(_ title: String) { self.title = title }
 
     public var body: some View {
-        Text(title).font(Face.wordMeta).foregroundStyle(Tone.primary)
-            .padding(.horizontal, 12)
-            .frame(height: 30)
-            .background(.white.opacity(0.14), in: Capsule())
+        Text(title)
+            .wordPill(leading: 12)
             .frame(minHeight: 44, alignment: .leading)
             .contentShape(Rectangle())
     }
 }
 
-/// 주운 자리에 남는 작은 조약돌.
-public struct WordPebbleMark: View {
-    public init() {}
+/// 방금 주웠을 때 — 줍기와 같은 알약, 안쪽 왼쪽에 작은 조약돌.
+public struct WordPickedLabel: View {
+    let title: String
+    let pebble: UIImage?
+
+    public init(_ title: String, pebble: UIImage?) {
+        self.title = title
+        self.pebble = pebble
+    }
+
     public var body: some View {
-        Ellipse().fill(Tone.secondary).frame(width: 16, height: 11.5)
-            .rotationEffect(.degrees(-8))
+        HStack(spacing: 3) {
+            if let pebble { WordPebbleMark(pebble, stone: 13) }
+            Text(title)
+        }
+        .wordPill(leading: pebble == nil ? 12 : 5)
+        .frame(minHeight: 44, alignment: .leading)
+    }
+}
+
+extension View {
+    /// 줍기·주웠어요 알약 — 밝은 하늘에서도 읽히게 글자에 하늘 글자 그림자.
+    func wordPill(leading: CGFloat) -> some View {
+        font(Face.wordMeta).foregroundStyle(Tone.primary).lineLimit(1)
+            .skyText()
+            .padding(.leading, leading).padding(.trailing, 12)
+            .frame(height: 30)
+            .background(.white.opacity(0.14), in: Capsule())
+    }
+}
+
+/// 주운 자리에 남는 작은 조약돌 — 앱이 구운 진짜 조약돌(WordWidgetPebble). stone 은 돌 지름(pt), 둘레 그림자 자리는 겹쳐 둔다.
+public struct WordPebbleMark: View {
+    let image: UIImage
+    let stone: CGFloat
+
+    public init(_ image: UIImage, stone: CGFloat) {
+        self.image = image
+        self.stone = stone
+    }
+
+    public var body: some View {
+        let side = stone * WordWidgetPebble.canvas / WordWidgetPebble.stoneHeight
+        Image(uiImage: image).resizable().interpolation(.high)
+            .frame(width: side, height: side)
+            .padding(-(side - stone) / 2)
             .accessibilityHidden(true)
     }
 }
