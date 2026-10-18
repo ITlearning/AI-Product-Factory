@@ -88,7 +88,9 @@ public enum AmbientNow {
             let list = days[dayStart] ?? []
             let word = list.indices.contains(hour) ? list[hour] : nil
             let middle = hourMiddle(dayStart, hour, calendar)
-            return Slot(date: date, word: word, scene: word.map(SceneKind.of),
+            let cloudy = weather(middle).flatMap { PhotoEnrichment.wordWeather($0.condition) } == .cloudy
+            return Slot(date: date, word: word,
+                        scene: word.map { SceneKind.of($0, at: date, coordinate: place?.coordinate, cloudy: cloudy) },
                         moonAge: Celestial.moonAge(at: middle), knewWeather: weather(middle) != nil)
         }
     }
@@ -114,6 +116,25 @@ public enum AmbientNow {
 // MARK: - 장면 갈래 — 말 데이터의 조건에서 유도한다
 
 public extension SceneKind {
+
+    /// 말의 장면을 그 시각 하늘에 맞춘다 — 밤엔 낮 장면 대신 밤하늘, 해 뜰·질 녘 맑은 낮은 새벽·노을. 비·눈은 밤에도 그대로.
+    static func of(_ w: WordEntry, at date: Date, coordinate: (latitude: Double, longitude: Double)? = nil,
+                   cloudy: Bool = false, calendar: Calendar = PhotoContext.korea) -> SceneKind {
+        of(w).at(date, coordinate: coordinate, cloudy: cloudy, calendar: calendar)
+    }
+
+    func at(_ date: Date, coordinate: (latitude: Double, longitude: Double)? = nil, cloudy: Bool = false,
+            calendar: Calendar = PhotoContext.korea) -> SceneKind {
+        switch self {
+        case .rain, .drizzle, .snow, .moon, .stars: return self
+        default: break
+        }
+        let at = coordinate ?? Celestial.seoul
+        let sun = Celestial.sunAltitude(at: date, latitude: at.latitude, longitude: at.longitude)
+        if sun < -6 { return cloudy || self == .fog ? .moon : .stars }
+        if sun < 6, self == .sun { return calendar.component(.hour, from: date) < 12 ? .dawn : .dusk }
+        return self
+    }
 
     static func of(_ w: WordEntry) -> SceneKind {
         if let fall = fromConditions(w.conditions) { return fall }

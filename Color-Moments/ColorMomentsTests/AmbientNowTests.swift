@@ -93,6 +93,29 @@ final class AmbientNowTests: XCTestCase {
         XCTAssertEqual(try kind("kkotsaemchuwi"), .frost)
     }
 
+    func testSceneFollowsTheHourOfTheSky() throws {
+        let byeot = try XCTUnwrap(words.first { $0.id == "gaeulbyeot" })
+        let rain = try XCTUnwrap(words.first { $0.id == "jakdalbi" })
+        XCTAssertEqual(SceneKind.of(byeot, at: date(2026, 10, 15, 13)), .sun, "낮엔 말 그대로")
+        XCTAssertEqual(SceneKind.of(byeot, at: date(2026, 10, 15, 23)), .stars, "밤엔 해 대신 별밤")
+        XCTAssertEqual(SceneKind.of(byeot, at: date(2026, 10, 15, 23), cloudy: true), .moon, "흐린 밤은 달밤")
+        XCTAssertEqual(SceneKind.of(byeot, at: date(2026, 10, 15, 6, 40)), .dawn, "해 뜰 녘 맑은 낮은 새벽")
+        XCTAssertEqual(SceneKind.of(byeot, at: date(2026, 10, 15, 17, 50)), .dusk, "해 질 녘 맑은 낮은 노을")
+        XCTAssertEqual(SceneKind.of(rain, at: date(2026, 10, 15, 23)), .rain, "비는 밤에도 비")
+        XCTAssertEqual(SceneKind.leaves.at(date(2026, 10, 15, 2)), .stars)
+        XCTAssertEqual(SceneKind.leaves.at(date(2026, 10, 15, 14)), .leaves)
+    }
+
+    func testNightSlotsNeverShowTheSun() {
+        let night = AmbientNow.slots(from: date(2026, 10, 15, 21, 10), forecast: nil, place: nil, in: words)
+        let day: Set<SceneKind> = [.sun, .petals, .leaves, .wind, .frost, .fog]
+        for slot in night {
+            let h = PhotoContext.korea.component(.hour, from: slot.date)
+            guard h >= 20 || h < 5, let scene = slot.scene else { continue }
+            XCTAssertFalse(day.contains(scene), "\(h)시 \(slot.word?.word ?? "")  → \(scene)")
+        }
+    }
+
     // MARK: 예보 캐시 — 3시간 재조회, 6시간 신선도, 실패하면 캐시 유지
 
     private struct FakeForecast: ForecastSource {
@@ -267,7 +290,7 @@ final class AmbientNowTests: XCTestCase {
                 guard let w = slot.word else { continue }
                 XCTAssertTrue(AmbientNow.isCandidate(w), "\(w.word) — 장면 말")
                 XCTAssertTrue(w.subjects.isEmpty, w.word)
-                XCTAssertEqual(slot.scene, SceneKind.of(w))
+                XCTAssertEqual(slot.scene, SceneKind.of(w, at: slot.date, coordinate: seoulPlace.coordinate), "말 장면을 그 시각 하늘에 맞춘 것")
             }
         }
     }

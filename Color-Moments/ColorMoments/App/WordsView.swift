@@ -57,7 +57,8 @@ struct WordShelf: Equatable {
     }
 
     static func card(_ w: PickedWord, entry: WordEntry?, tint: (String) -> String?, now: Date) -> WordCardModel {
-        let scene = entry.map(SceneKind.of) ?? SceneKind.of(PhotoContext.season(month: month(of: w.lastPickedAt)))
+        let scene = (entry.map(SceneKind.of) ?? SceneKind.of(PhotoContext.season(month: month(of: w.lastPickedAt))))
+            .at(w.lastPickedAt)
         let photo = w.picks.reversed().lazy.compactMap(\.photoID).compactMap(tint).first
         return WordCardModel(word: w.word, meaning: w.meaning, scene: scene, tintHex: photo,
                              when: when(w.lastPickedAt, now: now), mark: mark(w), picked: w)
@@ -65,7 +66,7 @@ struct WordShelf: Equatable {
 
     /// 지금의 말 카드(빈 상태) — 주운 적 없는 말.
     static func now(_ entry: WordEntry) -> WordCardModel {
-        WordCardModel(word: entry.word, meaning: entry.meaning, scene: .of(entry), tintHex: nil,
+        WordCardModel(word: entry.word, meaning: entry.meaning, scene: .of(entry, at: Date()), tintHex: nil,
                       when: "지금", mark: nil, picked: nil)
     }
 
