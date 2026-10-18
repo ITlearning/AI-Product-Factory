@@ -17,6 +17,8 @@ public enum PhotoEnrichment {
     public nonisolated(unsafe) static var wordRejected: ((String) -> Void)?
     /// 사진에 단어가 처음 붙었을 때 그 id.
     public nonisolated(unsafe) static var wordShown: ((String) -> Void)?
+    /// 사진에 붙은 때·날씨 말을 주운 말에 넣었을 때 — 계측은 앱 타깃만.
+    public nonisolated(unsafe) static var wordPicked: ((PickLine) -> Void)?
 
     /// WeatherCondition.rawValue → 짧은 우리말. 모르는 값이면 보이지 않는다.
     public static func label(_ condition: String) -> String? { look(condition)?.label }
@@ -359,7 +361,9 @@ struct DayPhotoView: View {
         guard !Task.isCancelled, current?.standingWord() == nil,
               let pick = await pickWord(for: m, labels: labels, banned: rejections.rejected(m.id)), !Task.isCancelled else { return }
         let word = PhotoWord(pick.word)
-        if store.stampWord(m.id, word, labels: labels, replacing: stale), stale == nil { PhotoEnrichment.wordShown?(word.wordID) }
+        guard store.stampWord(m.id, word, labels: labels, replacing: stale) else { return }
+        if stale == nil { PhotoEnrichment.wordShown?(word.wordID) }
+        PickedWords.photoWordChanged(m, to: word)
     }
 
     private func pickWord(for m: Moment, labels: [String], banned: Set<String> = [], skip: WordEntry? = nil) async -> (word: WordEntry, pool: [WordEntry])? {
@@ -405,6 +409,7 @@ struct DayPhotoView: View {
         guard let pick = await pickWord(for: m, labels: labels, banned: [old.wordID], skip: oldEntry) else { return }
         // 고르는 사이 다른 기기의 단어가 왔으면 바꾸지 않았으니 ↻ 도 쓰지 않은 것으로 둔다.
         guard store.stampWord(m.id, PhotoWord(pick.word), labels: labels, replacing: old) else { return }
+        PickedWords.photoWordChanged(m, to: PhotoWord(pick.word))
         let info = Bundle.main.infoDictionary
         rejections.record(.init(momentID: m.id, wordID: old.wordID, replacedBy: pick.word.id, labels: labels,
                                 candidates: pick.pool.prefix(20).map(\.id), partOfDay: PhotoEnrichment.partOfDay(m.capturedAt),

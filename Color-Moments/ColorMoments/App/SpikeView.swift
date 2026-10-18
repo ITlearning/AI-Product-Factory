@@ -36,6 +36,7 @@ struct SpikeView: View {
             List {
                 #if DEBUG
                 Section {
+                    NavigationLink("하늘 비교 (Metal 스파이크)") { SkyGalleryView() }
                     NavigationLink("조약돌 비교 (셰이더)") { PebbleLabView(store: store, gifts: gifts, closures: closures) }
                     NavigationLink("단어 다시 뽑아 보기 (저장 안 함)") { WordRelabelReport(store: store) }
                     NavigationLink("학생 모델 재기 (시간·맥 일치)") { WordModelProbe(store: store) }
@@ -163,12 +164,19 @@ struct SpikeView: View {
                         Label("온보딩 다시 보기", systemImage: "arrow.counterclockwise")
                     }
                     Button {
+                        UserDefaults.standard.removeObject(forKey: UpdateNotice.birthdayKey)
+                        UserDefaults.standard.removeObject(forKey: UpdateNotice.widgetKey)
+                        dismiss()
+                    } label: {
+                        Label("업데이트 안내 다시 보기", systemImage: "gift")
+                    }
+                    Button {
                         showingEmptyHome = true
                     } label: {
                         Label("빈 홈 미리 보기", systemImage: "square.dashed")
                     }
                 } footer: {
-                    Text("기록은 그대로 두고 첫 화면부터 다시 봅니다. 권한 창은 이미 답했으면 다시 뜨지 않아요. 빈 홈은 실제 기록과 떨어진 빈 저장소로 그립니다.")
+                    Text("기록은 그대로 두고 첫 화면부터 다시 봅니다. 권한 창은 이미 답했으면 다시 뜨지 않아요. 업데이트 안내는 1.1에서 올라온 사람이 보는 생일 말·위젯 장을 다시 띄웁니다. 빈 홈은 실제 기록과 떨어진 빈 저장소로 그립니다.")
                 }
                 #endif
 

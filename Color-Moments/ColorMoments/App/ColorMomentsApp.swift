@@ -20,12 +20,15 @@ struct ColorMomentsApp: App {
         // 첫 화면이 그려지기 전에 꽂아야 첫 프레임부터 에셋 사진이 보인다 — .task 는 첫 렌더 뒤에 돈다.
         ShotImage.assetSource = PhotoAssetSource()
         PhotoEnrichment.weather = WeatherLookup.weather(for:)
+        // 셰이더·노이즈 준비를 첫 하늘이 뜨기 전에 메인 밖에서 — 안 하면 처음 「말」 칸에서 0.5초 멈춘다.
+        SkyView.prewarm()
         PhotoEnrichment.attribution = WeatherLookup.attribution
         WordModel.install()
         BackgroundHold.install()
         Telemetry.apply()
         PhotoEnrichment.wordRejected = { Telemetry.send(.wordRejected($0)) }
         PhotoEnrichment.wordShown = { Telemetry.send(.wordShown($0)) }
+        PhotoEnrichment.wordPicked = { line in Telemetry.WordPick(line).map { Telemetry.send(.wordPicked($0)) } }
         // 인텐트는 첫 화면보다 먼저 올 수 있다 — 홈이 뜨면 이 표시를 보고 카메라를 연다.
         let cameraRequest = CameraRequest()
         _cameraRequest = State(initialValue: cameraRequest)
@@ -56,10 +59,29 @@ struct ColorMomentsApp: App {
 
     var body: some Scene {
         WindowGroup {
+            #if DEBUG
+            if SkyGalleryView.launchRequested {
+                NavigationStack { SkyGalleryView() }
+            } else {
+                home
+            }
+            #else
+            home
+            #endif
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            handle(newPhase)
+        }
+    }
+
+    private var home: some View {
             HomeShell(store: store, inbox: inbox, gifts: gifts, closures: closures, cameraRequest: cameraRequest,
                       prepare: { [catchUp] in await catchUp.run() })
                 .onOpenURL { url in
-                    if url.scheme == "mongdol", url.host == "widget" { EntryPath.shared.mark(.widget) }
+                    if url.scheme == "mongdol", url.host == "widget" {
+                        EntryPath.shared.mark(.widget)
+                        if url.path == WordWidgetTimeline.url.path { cameraRequest.wordsPending = true }
+                    }
                 }
                 .task {
                     Task(priority: .userInitiated) { await SoftPebbleView.precompile() }
@@ -90,8 +112,9 @@ struct ColorMomentsApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: .photoAccessRequested)) { _ in
                     reconcilerObserver?.activateIfAllowed()
                 }
-        }
-        .onChange(of: scenePhase) { _, newPhase in
+    }
+
+    private func handle(_ newPhase: ScenePhase) {
             // 사진이 담기는 경로는 여러 곳이라(잠금화면·라이브러리 입양 등) active/background 전환마다
             // 다시 맞춰 둔다 — active 는 입양·정리가 끝난 뒤에 계산해야 방금 들어온 사진이 반영된다.
             switch newPhase {
@@ -99,6 +122,7 @@ struct ColorMomentsApp: App {
                 // 설정 앱에서 사진 권한을 켜고 돌아온 경우.
                 reconcilerObserver?.activateIfAllowed()
                 if entryGate.didBecomeActive() { EntryPath.shared.sendAfterGrace() }
+                Task { await WordWidgetSync.appBecameActive() }
                 Task {
                     await store.retryLoadIfNeeded()
                     await store.waitUntilLoaded()
@@ -119,7 +143,6 @@ struct ColorMomentsApp: App {
             default:
                 break
             }
-        }
     }
 }
 
@@ -127,6 +150,14 @@ struct ColorMomentsApp: App {
 @Observable
 final class CameraRequest {
     var pending = false
+    /// 「밀려온 말」 위젯을 눌러 들어왔을 때 — 홈이 「말」 칸을 연다.
+    var wordsPending = false
+
+    func takeWords() -> Bool {
+        guard wordsPending else { return false }
+        wordsPending = false
+        return true
+    }
 
     /// 한 번만 연다 — 온보딩 단계와 상관없이(카메라가 안내 위에 뜬다).
     func take() -> Bool {

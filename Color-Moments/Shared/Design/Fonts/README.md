@@ -7,8 +7,8 @@
 |---|---|
 | 원본 | Nanum Myeongjo Regular (Google Fonts) |
 | 라이선스 | SIL Open Font License 1.1 — [`NanumMyeongjo-OFL.txt`](NanumMyeongjo-OFL.txt) |
-| 서브셋 | 590자 (`subset-chars.txt`, v6 단어 약 1,800개) |
-| 크기 | 2,987KB → **207.6KB** (상한 255KB, `FontSubsetTests.testSubsetStaysSmall`) |
+| 서브셋 | 655자 (`subset-chars.txt`, v6 단어 약 1,800개 + 생일 말 + 「말」 칸 철 머리) |
+| 크기 | 2,987KB → **230.6KB** (상한 255KB, `FontSubsetTests.testSubsetStaysSmall`) |
 
 ## 다시 만들 때
 
@@ -24,6 +24,8 @@ words = json.loads(pathlib.Path("Shared/Word/words.json").read_text())["words"]
 # 목록에서 뺀 단어(먼동·곁두리)도 이미 붙은 사진엔 남는다 — 지금 서브셋의 글자는 지우지 않고 더하기만 한다.
 keep = set(pathlib.Path("Shared/Design/Fonts/subset-chars.txt").read_text())
 chars = keep | set("".join(re.findall(r'name: "([^"]+)"', src))) | set("몽돌") | set("".join(w["word"] for w in words))
+birthday = json.loads(pathlib.Path("Shared/Word/birthday-words.json").read_text())
+chars |= set("".join(b["w"] for b in birthday)) | set(" ·0123456789")
 pathlib.Path("Shared/Design/Fonts/subset-chars.txt").write_text("".join(sorted(chars)))
 PY
 
@@ -43,13 +45,15 @@ pyftsubset /tmp/nm.ttf --text-file=Shared/Design/Fonts/subset-chars.txt \
 | 원본 | Gowun Dodum Regular (Google Fonts) | | 7,229KB(7.2MB) | |
 | 라이선스 | SIL OFL 1.1 — [`GowunDodum-OFL.txt`](GowunDodum-OFL.txt) | | | 모두 |
 | 앱 | `GowunDodum-Hangul.ttf` | 한글 KS X 1001 2,350자(`gowun-ksx1001.txt`) + 호환 자모 + 라틴·숫자·구두점·기호 | 1,201KB | ColorMoments |
-| 확장 | `GowunDodum-Mini.ttf` | 확장 소스에 나오는 한글(`gowun-mini-chars.txt`) + ASCII | 68KB | Capture·Control |
+| 확장 | `GowunDodum-Mini.ttf` | 확장 소스·위젯 문구(`widget-words.json`)·위젯 후보 말(moment·ambient)의 뜻풀이에 나오는 한글 408자(`gowun-mini-chars.txt`) + ASCII | 185KB | Capture·Control |
 
 전체 11,172자는 6.8MB 라 2,350자만 담는다(2026-09-28 Tabber). 목록에 없는 드문 글자(똠·뷁 등)는 iOS 가 **그 글자만** 시스템 서체로 대신 그린다 — 깨지지 않는다. 앱 소스·`words.json` 의 한글은 전부 목록 안에 있다(새 문구에 드문 글자를 쓰면 확인).
 둘은 PostScript 이름(`GowunDodum-Regular`)이 같다 — `Face` 는 타깃에 있는 쪽을 등록한다. 어느 타깃에 무엇이 가는지는 `project.yml` 의 `excludes`.
 
 **`tnum`·`kern` 을 layout-features 에서 빼지 말 것** — `monospacedDigit()` 가 tnum 으로 간다.
-캡처·위젯 화면(`CaptureScreen`·`ShotViewer`·`CaptureEngine`·`PebbleWidget`·`WidgetSnapshot`)에 한글 문구를 더하면 확장용 판을 다시 굽는다.
+캡처·위젯 화면(`CaptureScreen`·`ShotViewer`·`CaptureEngine`·`PebbleWidget`·`WidgetSnapshot`·`WordWidget`)에 한글 문구를 더하거나,
+`widget-words.json`(「밀려온 말」 위젯 문구·장면 문장 틀)을 고치거나, `words.json` 에 `moment`·`ambient` 말을 더하면(잠금화면 네모 칸이 뜻풀이를 고딕으로 그린다) 확장용 판을 다시 굽는다.
+위젯 문장 속 말 자체는 명조로 그려서 고딕 판엔 넣지 않는다.
 `FontSubsetTests.testExtensionSansCoversExtensionText` 가 빠진 글자를 잡는다.
 
 ```bash
@@ -65,12 +69,15 @@ python3 -m fontTools.subset /tmp/gd.ttf --text-file=Shared/Design/Fonts/gowun-ks
   --name-IDs='0,1,2,3,4,5,6,13,14' --drop-tables+=DSIG,vhea,vmtx \
   --output-file=Shared/Design/Fonts/GowunDodum-Hangul.ttf
 
-python3 - <<'PY'   # 확장 소스의 한글만
-import re, pathlib
+python3 - <<'PY'   # 확장 소스·위젯 문구·위젯 후보 말 뜻풀이의 한글만
+import re, json, pathlib
 files = ["Shared/Capture/CaptureScreen.swift", "Shared/Capture/ShotViewer.swift", "Shared/Capture/CaptureEngine.swift",
-         "ColorMomentsControl/PebbleWidget.swift", "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift", "Shared/Capture/ZoomLadder.swift"]
+         "ColorMomentsControl/PebbleWidget.swift", "Shared/Widget/WidgetSnapshot.swift", "ColorMomentsCapture/ViewFinder.swift", "Shared/Capture/ZoomLadder.swift",
+         "ColorMomentsControl/WordWidget.swift", "Shared/Widget/widget-words.json"]
 chars = set()
 for f in files: chars |= set(re.findall(r'[가-힣]', pathlib.Path(f).read_text()))
+for w in json.loads(pathlib.Path("Shared/Word/words.json").read_text())["words"]:
+    if (w.get("moment") or w.get("ambient")) and not w.get("rest"): chars |= set(re.findall(r'[가-힣]', w["meaning"]))
 pathlib.Path("Shared/Design/Fonts/gowun-mini-chars.txt").write_text("".join(sorted(chars)))
 PY
 python3 -m fontTools.subset /tmp/gd.ttf --text-file=Shared/Design/Fonts/gowun-mini-chars.txt \
@@ -89,7 +96,7 @@ IBM Plex Sans KR SemiBold(Google Fonts, SIL OFL)를 골랐다 — 고운돋움�
 |---|---|---|---|---|
 | 원본 | IBM Plex Sans KR SemiBold (Google Fonts) | | 2,787KB(2.7MB) | |
 | 라이선스 | SIL OFL 1.1 — [`IBMPlexSansKR-OFL.txt`](IBMPlexSansKR-OFL.txt) | | | ColorMoments |
-| 앱 | `IBMPlexSansKR-SemiBold-Subset.ttf` | 버튼 문구 글자만(`button-chars.txt`, 숫자·라틴·기본 구두점 포함) | 16KB | ColorMoments |
+| 앱 | `IBMPlexSansKR-SemiBold-Subset.ttf` | 버튼 문구 글자만(`button-chars.txt`, 숫자·라틴·기본 구두점 포함) | 17KB | ColorMoments |
 
 **버튼 문구는 소스에 고정돼 있다** — 새 버튼을 추가하거나 문구를 바꾸면 `button-chars.txt`를 다시 뽑고 서브셋을 다시 굽는다.
 빠뜨리면 그 버튼만 SF로 떨어진다. `FontSubsetTests.testActionBoldCoversOnboardingButtonText`(온보딩 `PrimaryAction`/`SecondaryAction`/`CloudStep(actionTitle:)`를 소스에서 정적으로 추출)와
@@ -101,7 +108,7 @@ python3 - <<'PY'   # 버튼 스타일(Face.action·PrimaryAction·SecondaryActio
 strings = [
     "닫기", "담기 ", "설정 열기", "다음", "사진 보기", "이 사진으로 받기",
     "직접 고르기", "알려 주세요", "적어 주세요", "괜찮아요", "이어서 보기", "지금 한 장 남겨보기", "시작하기",
-    "내 조약돌 보러 가기",
+    "내 조약돌 보러 가기", "말 받기", "건너뛰기", "주운 말에 담기", "줍기", "다시",
 ]
 chars = set()
 for s in strings: chars |= set(s)

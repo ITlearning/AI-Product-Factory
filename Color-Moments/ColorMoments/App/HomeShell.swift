@@ -50,6 +50,9 @@ struct HomeShell: View {
     @State private var tabBarFolded = false
     @State private var homeToTop = 0
     @State private var collectionToTop = 0
+    @State private var wordsToTop = 0
+    /// 「말」 칸도 처음 갈 때 만든다.
+    @State private var wordsLoaded = false
 
     private enum SwipeSide { case camera }
     @State private var camera: CaptureEngine?
@@ -70,6 +73,8 @@ struct HomeShell: View {
     @AppStorage("didAskArrivalNotice") private var didAskArrivalNotice = false
     // 기록 0개에서 사진첩으로 처음 담았을 때 고른 하루 — 증정 뒤 이 값을 지운다.
     @AppStorage("onboardingGiftDay") private var onboardingGiftDay: String?
+    @AppStorage(UpdateNotice.birthdayKey) private var offeredBirthdayWord = false
+    @AppStorage(UpdateNotice.widgetKey) private var offeredWordWidget = false
     // 온보딩 도중 사진을 담으면 기록이 생겨 판정이 바뀐다 — 한 번 띄웠으면 끝낼 때까지 붙잡는다.
     @State private var onboardingLatched = false
     @State private var noticePermission: ArrivalAsk.Permission?
@@ -132,8 +137,11 @@ struct HomeShell: View {
                         .offset(x: w + progress * w)
                 }
 
-                if Self.pages.words {
-                    Tone.pure.ignoresSafeArea()
+                if Self.pages.words, wordsLoaded {
+                    WordsView(store: store, active: progress == ShellPage.words.progress,
+                              onScrollMinimize: foldTabBar,
+                              acceptsTaps: ShellPages.acceptsTaps(.words, progress: progress, swiping: collectionDragging),
+                              scrollToTop: wordsToTop)
                         .offset(x: 2 * w + progress * w)
                 }
             }
@@ -147,6 +155,7 @@ struct HomeShell: View {
                                 onEnded: { _, vx in endCollectionSwipe(velocity: vx) })
             )
             .onChange(of: progress) { old, p in
+                if p < ShellPage.collection.progress, !wordsLoaded { wordsLoaded = true }
                 if p <= 0.001 { camera?.stop() } else if !dragging { camera?.start(); PlaceFinder.shared.warm() }
                 if old < 0.999, p >= 0.999, cameraOpenedAt == nil { cameraOpenedAt = Date(); shotsSinceOpen = 0 }
                 if p <= 0.001, let at = cameraOpenedAt {
@@ -174,6 +183,9 @@ struct HomeShell: View {
             makeCamera()
             progress = 1
         }
+        // 위젯을 눌러 들어오면 「말」 칸 — 안내가 깔려 있으면 끝난 뒤에.
+        .onChange(of: cameraRequest.wordsPending, initial: true) { _, _ in openWordsIfAsked() }
+        .onChange(of: onboarding == .none) { _, _ in openWordsIfAsked() }
         // progress > 0 이면 카메라 쪽이 조금이라도 보인다 — 애니메이션 중에도 값이 바로 바뀌므로
         // 완전히 닫혀 정확히 0 이 될 때만 증정 가드가 풀린다.
         .dayGift(store: store, gifts: gifts, dismissedTick: daySheetDismissedTick,
@@ -230,7 +242,9 @@ struct HomeShell: View {
 
     private var rawOnboarding: OnboardingGate.Presentation {
         OnboardingGate.presentation(isLoaded: store.isLoaded, didFinishOnboarding: didFinishOnboarding,
-                                    hasRecords: !store.dayKeys.isEmpty, didAskArrivalNotice: didAskArrivalNotice)
+                                    hasRecords: !store.dayKeys.isEmpty, didAskArrivalNotice: didAskArrivalNotice,
+                                    updatePending: !UpdateNotice.pages(offeredBirthday: offeredBirthdayWord,
+                                                                       offeredWidget: offeredWordWidget).isEmpty)
     }
 
     private var liveOnboarding: OnboardingGate.Presentation {
@@ -264,6 +278,9 @@ struct HomeShell: View {
         case .arrivalAskOnly:
             ArrivalAskOverlay(store: store, closures: closures, gifts: gifts)
                 .transition(.opacity)
+        case .update:
+            UpdateNoticeOverlay(store: store, gifts: gifts)
+                .transition(.opacity)
         case .undecided, .none:
             EmptyView()
         }
@@ -272,6 +289,7 @@ struct HomeShell: View {
     private func finishOnboarding(_ exit: OnboardingExit) {
         Telemetry.send(.onboardingFinished(Telemetry.Exit(exit)))
         didFinishOnboarding = true
+        UpdateNotice.markOnboardingFinished()
         // 첫 화면에서 고른 모양 — 고르는 순간 바꾸면 iOS 알림이 온보딩 위에 뜬다.
         AppIconStyle.apply(PebbleStyle.current)
         #if DEBUG
@@ -404,6 +422,12 @@ struct HomeShell: View {
         #endif
     }
 
+    private func openWordsIfAsked() {
+        guard onboarding == .none, cameraRequest.takeWords() else { return }
+        PresentedScreens.dismissAll()
+        selectPage(.words)
+    }
+
     private func foldTabBar(_ folded: Bool) {
         guard tabBarFolded != folded else { return }
         tabBarFolded = folded
@@ -417,12 +441,14 @@ struct HomeShell: View {
             switch page {
             case .home: homeToTop += 1
             case .collection: collectionToTop += 1
-            case .camera, .words: break
+            case .words: wordsToTop += 1
+            case .camera: break
             }
             return
         }
         // 말로 갈 때도 조약돌을 지나간다 — 빈자리가 스치지 않게 만든다.
         if page.progress <= ShellPage.collection.progress { collectionLoaded = true }
+        if page == .words { wordsLoaded = true }
         Haptics.snapped()
         progress = page.progress
     }

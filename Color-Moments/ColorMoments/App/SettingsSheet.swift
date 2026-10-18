@@ -9,6 +9,8 @@ struct SettingsSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage(PebbleStyle.key, store: PebbleStyle.store) private var style: PebbleStyle = .round
+    @AppStorage(WordWidgetLook.key, store: WordWidgetLook.store) private var look: SceneStyle = .wash
+    @State private var weatherAttribution: PhotoEnrichment.Attribution?
     @AppStorage(FavoriteAdopter.enabledKey) private var adoptsFavorites = true
     @AppStorage(PlaceFinder.enabledKey) private var recordsPlace = true
     /// 스위치는 설정값만이 아니라 실제 권한까지 — 켜진 채로 보이면 이미 허용한 줄 안다(2026-10-01 Tabber).
@@ -36,6 +38,7 @@ struct SettingsSheet: View {
         .presentationBackground(Tone.base)
         .preferredColorScheme(.dark)
         .task { hasUpdate = await UpdateCheck.live.newerVersion(than: AppVersion.current.short) != nil }
+        .task { weatherAttribution = await PhotoEnrichment.attribution?() }
     }
 
     private var content: some View {
@@ -62,6 +65,19 @@ struct SettingsSheet: View {
                 option(.classic, "반듯한 돌")
             }
             .padding(.top, 12)
+
+            Text("위젯 모양").font(Face.caption).foregroundStyle(Tone.tertiary)
+                .padding(.top, 28)
+            HStack(spacing: 12) {
+                lookOption(.wash, "물빛")
+                lookOption(.print, "판화")
+            }
+            .padding(.top, 12)
+            Text("새로 붙이는 「밀려온 말」 위젯에 써요. 붙인 위젯은 길게 눌러 위젯 편집에서 바꿔요.")
+                .font(Face.caption).foregroundStyle(Tone.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+            weatherMark
 
             Text("사진 앱").font(Face.caption).foregroundStyle(Tone.tertiary)
                 .padding(.top, 28)
@@ -197,6 +213,46 @@ struct SettingsSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint(hint)
+    }
+
+    private func lookOption(_ s: SceneStyle, _ title: String) -> some View {
+        let on = look == s
+        return Button {
+            guard look != s else { return }
+            Haptics.tickPassed()
+            look = s
+            WordWidgetSync.reloadWidgets()
+        } label: {
+            VStack(spacing: 10) {
+                SceneView(.rain, style: s)
+                    .frame(width: 72, height: 72)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                Text(title).font(Face.guide).foregroundStyle(on ? Tone.primary : Tone.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(RoundedRectangle(cornerRadius: Shape2.cardFront, style: .continuous)
+                .fill(.white.opacity(on ? 0.08 : 0.03)))
+            .overlay(RoundedRectangle(cornerRadius: Shape2.cardFront, style: .continuous)
+                .strokeBorder(on ? Tone.secondary : Tone.hairline, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: Shape2.cardFront, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+    }
+
+    // R2 — 위젯의 날씨 말은 Apple 날씨 데이터라 「위젯 모양」 옆에 표기와 법적 링크를 둔다.
+    @ViewBuilder
+    private var weatherMark: some View {
+        if let a = weatherAttribution {
+            Link(destination: a.legalURL) {
+                AsyncImage(url: a.markURL) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
+                    .frame(height: 10)
+                    .opacity(0.6)
+                    .frame(maxWidth: .infinity, minHeight: Shape2.minTouch, alignment: .leading)
+            }
+            .accessibilityLabel("Apple 날씨 데이터 출처")
+        }
     }
 
     private func option(_ s: PebbleStyle, _ title: String) -> some View {

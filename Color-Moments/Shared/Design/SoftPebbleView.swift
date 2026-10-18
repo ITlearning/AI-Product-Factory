@@ -180,17 +180,18 @@ private enum SoftPebbleCache {
 
 public struct SoftPebbleView: View {
     /// grid 격자·여러 개(은은하게), hero 하나를 크게, photo 사진 위(바닥이 없어 번짐·접지 그림자 없이 그림자만),
-    /// bare 뒤에 이미 빛이 깔린 장면(온보딩 첫 화면) — 후광·바닥 번짐 없이 접지 그림자만
+    /// bare 뒤에 이미 빛이 깔린 장면(온보딩 첫 화면) — 후광·바닥 번짐 없이 접지 그림자만,
+    /// silhouette 윤곽만(위젯이 알파를 모양으로 쓴다) — 후광·번짐·그림자 모두 없음
     public enum Glow {
-        case grid, hero, photo, bare
+        case grid, hero, photo, bare, silhouette
 
         var halo: Float {
-            switch self { case .grid: 0.18; case .hero: 0.4; case .photo: 0.15; case .bare: 0 }
+            switch self { case .grid: 0.18; case .hero: 0.4; case .photo: 0.15; case .bare, .silhouette: 0 }
         }
         var floor: Float {
-            switch self { case .grid: 0.35; case .hero: 0.5; case .photo, .bare: 0 }
+            switch self { case .grid: 0.35; case .hero: 0.5; case .photo, .bare, .silhouette: 0 }
         }
-        var contact: Float { self == .photo ? 0 : 1 }
+        var contact: Float { self == .photo || self == .silhouette ? 0 : 1 }
         /// 돌 지름 대비 캔버스(후광이 번질 자리) 배율
         var canvas: CGFloat { self == .hero ? 1 / 0.54 : 1 / 0.66 }
     }

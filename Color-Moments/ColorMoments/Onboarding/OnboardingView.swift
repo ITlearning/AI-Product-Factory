@@ -36,6 +36,7 @@ struct OnboardingView: View {
     /// 이번 온보딩에서 증정까지 받은 하루 — 마지막 장이 「내 조약돌 보러 가기」로 바뀐다.
     @State private var receivedDay: String?
     @State private var firstPebble = FirstPebbleModel()
+    @State private var birthday = BirthdayWordModel()
     @State private var ceremonyDay: CeremonyDay?
     @State private var pickingLibrary = false
     @State private var pickerOutcome: OnboardingFlow.ImportOutcome?
@@ -118,7 +119,11 @@ struct OnboardingView: View {
             }
         }
         .onDisappear { firstPebble.stop() }
-        .onChange(of: step, initial: true) { _, s in Telemetry.send(.onboardingStep(s)) }
+        .onChange(of: step, initial: true) { _, s in
+            Telemetry.send(.onboardingStep(s))
+            if s == .birthday { UpdateNotice.markOffered(.birthday) }
+            if s == .widget { UpdateNotice.markOffered(.widget) }
+        }
     }
 
     @State private var pickerStartedEmpty = true
@@ -277,8 +282,10 @@ struct OnboardingView: View {
             HowToStep(next: next)
         case .cameraButton:
             CameraButtonStep(next: next)
-        case .collection:
-            CollectionStep(next: next)
+        case .birthday:
+            BirthdayStep(model: birthday, next: next)
+        case .widget:
+            WidgetStep(next: next)
         case .start:
             StartStep(pebble: startPebble, receivedDay: receivedDay.flatMap { gifts.isGifted($0) ? $0 : nil },
                       ready: ready,

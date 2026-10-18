@@ -62,10 +62,10 @@ final class OnboardingRulesTests: XCTestCase {
 
     func testFullFlow() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true),
-                       [.intro, .firstPebble, .arrival, .reminder, .cloud, .howTo, .collection, .start])
+                       [.intro, .firstPebble, .birthday, .arrival, .reminder, .cloud, .howTo, .widget, .start])
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true, asksPlace: true),
-                       [.intro, .firstPebble, .place, .arrival, .reminder, .cloud, .howTo, .collection, .start],
-                       "찍은 곳은 첫 조약돌을 본 바로 뒤 — 사진 옆에 무엇이 붙는지 이어서 보여 준다")
+                       [.intro, .firstPebble, .birthday, .place, .arrival, .reminder, .cloud, .howTo, .widget, .start],
+                       "생일 말은 첫 조약돌 선물 바로 다음, 찍은 곳은 그 뒤")
     }
 
     func testDeniedOrEmptyLibrarySkipsFirstPebble() {
@@ -75,12 +75,12 @@ final class OnboardingRulesTests: XCTestCase {
         XCTAssertFalse(OnboardingFlow.skipsFirstPebble(access: .notDetermined, recentCount: nil),
                        "아직 묻지 않았으면 그 단계에서 묻는다")
         XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: true, asksArrival: true),
-                       [.intro, .arrival, .reminder, .cloud, .howTo, .collection, .start])
+                       [.intro, .birthday, .arrival, .reminder, .cloud, .howTo, .widget, .start])
     }
 
     func testCloudRecordsReplaceFirstPebbleWithContinuing() {
         XCTAssertEqual(OnboardingFlow.steps(continuing: true, skipsFirstPebble: false, asksArrival: true),
-                       [.intro, .continuing, .arrival, .reminder, .howTo, .collection, .start])
+                       [.intro, .continuing, .birthday, .arrival, .reminder, .howTo, .widget, .start])
     }
 
     func testArrivalStepOnlyWhenNotAsked() {
@@ -88,17 +88,214 @@ final class OnboardingRulesTests: XCTestCase {
             .contains(.arrival))
     }
 
-    func testEveryFlowEndsWithHowToThenCollectionThenStart() {
+    func testEveryFlowEndsWithHowToWidgetThenStart() {
         for continuing in [false, true] {
             for skips in [false, true] {
                 for asks in [false, true] {
                     let steps = OnboardingFlow.steps(continuing: continuing, skipsFirstPebble: skips, asksArrival: asks)
-                    XCTAssertEqual(Array(steps.suffix(3)), [.howTo, .collection, .start],
+                    XCTAssertEqual(Array(steps.suffix(3)), [.howTo, .widget, .start],
                                    "continuing: \(continuing) skips: \(skips) asks: \(asks)")
-                    XCTAssertEqual(steps.filter { $0 == .collection }.count, 1)
+                    XCTAssertEqual(steps.filter { $0 == .birthday }.count, 1, "생일 장은 어느 길로 와도 한 번")
+                    XCTAssertEqual(steps.filter { $0 == .widget }.count, 1, "위젯 붙이기 장도 어느 길로 와도 한 번")
                 }
             }
         }
+    }
+
+    // MARK: 1.2 — 여덟 장
+
+    func testDocumentedOrderWithWidgetStepOn() {
+        let steps = OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true, showsWidget: true)
+        XCTAssertEqual(steps, [.intro, .firstPebble, .birthday, .arrival, .reminder, .cloud, .howTo, .widget, .start])
+        let core = steps.filter { $0 != .reminder }
+        XCTAssertEqual(core.count, 8, "몽돌이란 → 첫 조약돌 → 생일 말 → 아침 소식 → iCloud → 찍는 법 → 위젯 → 시작")
+    }
+
+    func testWidgetStepIsOnAndCanStillBeTurnedOff() {
+        XCTAssertTrue(OnboardingFlow.showsWidgetStep, "「밀려온 말」 위젯(T5)과 함께 켰다")
+        XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true).filter { $0 != .reminder },
+                       [.intro, .firstPebble, .birthday, .arrival, .cloud, .howTo, .widget, .start], "기본 흐름이 문서의 여덟 장")
+        let steps = OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true, showsWidget: false)
+        XCTAssertEqual(steps.filter { $0 != .reminder }.count, 7)
+        XCTAssertEqual(Array(steps.suffix(2)), [.howTo, .start], "찍는 법에서 바로 시작하기로")
+        XCTAssertEqual(OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true,
+                                            hasCameraButton: true, showsWidget: true).suffix(3),
+                       [.cameraButton, .widget, .start])
+    }
+
+    func testWidgetAttachNeedsKnownKind() {
+        XCTAssertFalse(WidgetAttach.attached(kinds: ["com.itlearning.colormoments.pebble-widget"]),
+                       "조약돌 위젯을 「붙었어요」로 치지 않는다")
+        XCTAssertTrue(WidgetAttach.attached(kinds: ["com.itlearning.colormoments.pebble-widget", WordWidgetTimeline.kind]))
+        XCTAssertTrue(WidgetAttach.attached(kinds: [WordWidgetTimeline.lockKind]), "잠금화면에만 붙여도 붙은 것")
+        XCTAssertTrue(WidgetAttach.attached(kinds: ["a", "word"], wanted: ["word"]))
+        XCTAssertFalse(WidgetAttach.attached(kinds: [], wanted: ["word"]))
+    }
+
+    // MARK: 생일 말
+
+    @MainActor
+    private func birthdayModel(dir: URL?) -> BirthdayWordModel {
+        let words = [BirthdayWord(w: "윤슬", m: "햇빛이나 달빛에 비쳐 반짝이는 잔물결", months: []),
+                     BirthdayWord(w: "꽃샘", m: "봄꽃이 필 무렵의 추위", months: [3])]
+        let model = BirthdayWordModel(now: Date(timeIntervalSince1970: 1_760_000_000),
+                                      picks: { dir.map { PickedWords(writer: .app, directory: $0) } },
+                                      seed: { "fixed" }, words: { words })
+        model.setMonth(3)
+        return model
+    }
+
+    private func tempDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("birthday-\(UUID())")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    @MainActor
+    func testBirthdayKeepWritesFirstPickedWord() throws {
+        let dir = try tempDir()
+        let model = birthdayModel(dir: dir)
+        model.setMonth(3)
+        model.day = 14
+        XCTAssertTrue(model.reveal())
+        guard case .shown(let pick) = model.phase else { return XCTFail("말이 보여야 한다") }
+        XCTAssertEqual(pick.word, "꽃샘")
+        XCTAssertTrue(model.keep())
+        XCTAssertEqual(model.phase, .kept(pick))
+        let lines = PickedWords(writer: .app, directory: dir).livePicks()
+        XCTAssertEqual(lines.count, 1)
+        XCTAssertEqual(lines.first?.source, .birthday)
+        XCTAssertEqual(lines.first?.meaning, pick.meaning)
+        XCTAssertNil(lines.first?.wordID)
+        XCTAssertFalse(model.keep(), "두 번 담지 않는다")
+        XCTAssertEqual(PickedWords(writer: .app, directory: dir).livePicks().count, 1)
+    }
+
+    @MainActor
+    func testBirthdayKeepFailureShowsNoPick() throws {
+        let file = try tempDir().appendingPathComponent("not-a-dir")
+        try Data().write(to: file)
+        let model = birthdayModel(dir: file)
+        XCTAssertTrue(model.reveal())
+        XCTAssertFalse(model.keep(), "쓰기 실패면 받았다고 하지 않는다")
+        if case .kept = model.phase { XCTFail("「주웠어요」 상태로 가면 안 된다") }
+
+        let noContainer = birthdayModel(dir: nil)
+        XCTAssertTrue(noContainer.reveal())
+        XCTAssertFalse(noContainer.keep())
+    }
+
+    @MainActor
+    func testBirthdaySkipWritesNothingAndMovesOn() throws {
+        let dir = try tempDir()
+        let model = birthdayModel(dir: dir)
+        XCTAssertEqual(model.phase, .ask)
+        XCTAssertTrue(PickedWords(writer: .app, directory: dir).livePicks().isEmpty, "건너뛰면 아무것도 쓰지 않는다")
+        let steps = OnboardingFlow.steps(continuing: false, skipsFirstPebble: false, asksArrival: true)
+        let at = try XCTUnwrap(steps.firstIndex(of: .birthday))
+        XCTAssertEqual(steps[at + 1], .arrival, "건너뛰기 → 아침 소식")
+    }
+
+    @MainActor
+    func testBirthdayDayClampsToMonth() {
+        let model = birthdayModel(dir: nil)
+        model.setMonth(1)
+        model.day = 31
+        model.setMonth(2)
+        XCTAssertEqual(model.day, 29)
+        model.setMonth(4)
+        XCTAssertEqual(model.day, 29)
+        XCTAssertEqual(BirthdayWordModel.days(in: 4), 30)
+    }
+
+    @MainActor
+    func testBirthdayWithoutListMovesOn() {
+        let model = BirthdayWordModel(picks: { nil }, seed: { "x" }, words: { nil })
+        XCTAssertFalse(model.reveal(), "목록을 못 읽으면 조용히 다음 장")
+        XCTAssertEqual(model.phase, .ask)
+    }
+
+    @MainActor
+    func testBirthdayPassingWordsSkipThePick() throws {
+        let model = birthdayModel(dir: nil)
+        model.day = 14
+        XCTAssertTrue(model.reveal())
+        XCTAssertFalse(model.passing.isEmpty, "굴림 동안 스쳐 갈 말이 있어야 한다")
+        XCTAssertFalse(model.passing.contains("꽃샘"), "고른 말은 스쳐 가지 않는다")
+        XCTAssertLessThanOrEqual(model.passing.count, BirthdayReveal.ticks.count)
+    }
+
+    func testBirthdayRevealBeats() {
+        XCTAssertEqual(BirthdayReveal.land, 1.95, accuracy: 0.001, "웹처럼 0.25초에 굴리기 시작해 1.7초 굴린다")
+        let ticks = BirthdayReveal.ticks
+        XCTAssertEqual(ticks.first, 0)
+        XCTAssertLessThan(ticks.last ?? 9, BirthdayReveal.rollSpan)
+        let gaps = zip(ticks.dropFirst(), ticks).map { $0 - $1 }
+        XCTAssertEqual(gaps, gaps.sorted(), "갈수록 느려진다")
+        XCTAssertNil(BirthdayReveal.tick(at: 0.1, land: BirthdayReveal.land), "카드가 뜨는 동안은 아직 안 굴린다")
+        XCTAssertEqual(BirthdayReveal.tick(at: 0.26, land: BirthdayReveal.land), 0)
+        XCTAssertNil(BirthdayReveal.tick(at: 1.0, land: 0.9), "눌러서 멈추면 그때 내려앉는다")
+        XCTAssertEqual(BirthdayReveal.curve(0), 0, accuracy: 0.001)
+        XCTAssertEqual(BirthdayReveal.curve(1), 1, accuracy: 0.001)
+        XCTAssertGreaterThan(BirthdayReveal.curve(0.3), 0.6, "앞이 빠른 웹 곡선(0.2, 0.8, 0.2, 1)")
+        XCTAssertEqual(BirthdayRevealFollow.shown(t: 0.5, land: BirthdayReveal.land, still: false), 0, "버튼은 내려앉은 뒤에")
+        XCTAssertEqual(BirthdayRevealFollow.shown(t: 5, land: BirthdayReveal.land, still: false), 1, accuracy: 0.001)
+    }
+
+    func testBirthdayCardSkyFollowsBirthMonth() {
+        XCTAssertEqual(BirthdayCardSky.kind(month: 4), .petals)
+        XCTAssertEqual(BirthdayCardSky.kind(month: 7), .sun)
+        XCTAssertEqual(BirthdayCardSky.kind(month: 10), .leaves)
+        XCTAssertEqual(BirthdayCardSky.kind(month: 1), .frost)
+    }
+
+    // MARK: 업데이트 안내
+
+    func testUpdatingUserSeesNoticeOnce() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "update-\(UUID())"))
+        XCTAssertEqual(UpdateNotice.pages(defaults, showsWidget: true), [.birthday, .widget], "두 장, 생일이 먼저")
+        XCTAssertEqual(UpdateNotice.pages(defaults, showsWidget: false), [.birthday], "위젯 장은 플래그 뒤")
+        XCTAssertEqual(OnboardingGate.presentation(isLoaded: true, didFinishOnboarding: true, hasRecords: true,
+                                                   didAskArrivalNotice: true,
+                                                   updatePending: !UpdateNotice.pages(defaults).isEmpty), .update)
+        UpdateNotice.markOffered(.birthday, defaults)
+        XCTAssertEqual(UpdateNotice.pages(defaults, showsWidget: true), [.widget])
+        UpdateNotice.markOffered(.widget, defaults)
+        XCTAssertTrue(UpdateNotice.pages(defaults, showsWidget: true).isEmpty, "다시 뜨지 않는다")
+        XCTAssertEqual(OnboardingGate.presentation(isLoaded: true, didFinishOnboarding: true, hasRecords: true,
+                                                   didAskArrivalNotice: true,
+                                                   updatePending: !UpdateNotice.pages(defaults).isEmpty), .none)
+    }
+
+    func testUpdatingUserGetsWidgetPageWithFlagOn() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "update-on-\(UUID())"))
+        XCTAssertEqual(UpdateNotice.pages(defaults), [.birthday, .widget], "플래그가 켜져 기본값으로 두 번째 장(위젯)이 붙는다")
+        UpdateNotice.markOnboardingFinished(defaults)
+        XCTAssertTrue(UpdateNotice.pages(defaults).isEmpty, "새로 깐 사람은 온보딩에서 위젯 장을 봤다")
+    }
+
+    func testUpdateNoticeComesBeforeArrivalAsk() {
+        XCTAssertEqual(OnboardingGate.presentation(isLoaded: true, didFinishOnboarding: false, hasRecords: true,
+                                                   didAskArrivalNotice: false, updatePending: true), .update)
+        XCTAssertEqual(OnboardingGate.presentation(isLoaded: true, didFinishOnboarding: false, hasRecords: true,
+                                                   didAskArrivalNotice: false, updatePending: false), .arrivalAskOnly)
+        XCTAssertEqual(OnboardingGate.resolve(.update, noticePermission: nil), .update, "알림 권한과 상관없다")
+        XCTAssertFalse(OnboardingGate.swipeOpensCamera(.update))
+    }
+
+    func testNewUserNeverSeesUpdateNotice() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "new-\(UUID())"))
+        XCTAssertEqual(OnboardingGate.presentation(isLoaded: true, didFinishOnboarding: false, hasRecords: false,
+                                                   didAskArrivalNotice: false,
+                                                   updatePending: !UpdateNotice.pages(defaults).isEmpty), .full,
+                       "새 사용자는 온보딩 안에서 생일 장을 본다")
+        UpdateNotice.markOnboardingFinished(defaults, showsWidget: false)
+        XCTAssertTrue(UpdateNotice.pages(defaults, showsWidget: false).isEmpty, "온보딩을 마치면 업데이트 장은 뜨지 않는다")
+        XCTAssertEqual(UpdateNotice.pages(defaults, showsWidget: true), [.widget],
+                       "위젯 장을 못 본 채 마쳤으면 위젯이 켜진 뒤 그 장만 한 번")
+        let shown = try XCTUnwrap(UserDefaults(suiteName: "new-w-\(UUID())"))
+        UpdateNotice.markOnboardingFinished(shown, showsWidget: true)
+        XCTAssertTrue(UpdateNotice.pages(shown, showsWidget: true).isEmpty)
     }
 
     func testRemoteDayCountExcludesImported() {
@@ -199,3 +396,4 @@ final class OnboardingRulesTests: XCTestCase {
         XCTAssertEqual(Set(slots.map(\.x)).count, slots.count, "좌우로 엇갈린다")
     }
 }
+

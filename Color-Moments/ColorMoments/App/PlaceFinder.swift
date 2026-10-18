@@ -102,6 +102,8 @@ final class PlaceFinder: NSObject, CLLocationManagerDelegate {
         guard let last = locations.last else { return }
         Task { @MainActor in
             recent = last
+            // 「밀려온 말」 위젯의 날씨 — 약 1km 로 깎아 App Group 에만.
+            if isEnabled { WordWidgetSync.share(Self.place(last), at: last.timestamp) }
             resumeFix()
         }
     }

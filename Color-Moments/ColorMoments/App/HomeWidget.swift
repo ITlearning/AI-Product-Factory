@@ -5,6 +5,7 @@ enum HomeWidget {
     @MainActor
     static func refresh(store: DayStore, gifts: GiftLog) {
         WidgetSnapshot.make(store: store, gifts: gifts).write()
+        WordWidgetSync.bakePebbles(store: store)
         WidgetCenter.shared.reloadAllTimelines()
     }
 

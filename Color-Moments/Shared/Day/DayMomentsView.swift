@@ -101,6 +101,7 @@ public struct DayMomentsView: View {
             return
         }
         store.takeOut(id)
+        PickedWords.photoTakenOut(id)
         withAnimation(.easeOut(duration: 0.3)) { showing = next }
         lastViewed = next
     }
@@ -111,6 +112,7 @@ public struct DayMomentsView: View {
         takingOut = nil
         if lastViewed == id { lastViewed = nil }
         withAnimation(.easeOut(duration: 0.35)) { _ = store.takeOut(id) }
+        PickedWords.photoTakenOut(id)
     }
 
     /// 뺀 다음 보일 사진 — 뒤 사진, 맨 끝이면 앞 사진. 혼자였으면 nil(보기를 닫는다).

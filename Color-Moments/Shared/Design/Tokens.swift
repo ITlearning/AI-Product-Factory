@@ -95,6 +95,13 @@ public enum Face {
     public static let nameHome = serif(23)
     public static let nameCompact = serif(17)
     public static let word = serif(30)
+    /// 「말」 칸 — 오늘의 한 장 48, 장면 카드 28, 철 머리 18.
+    public static let wordHero = serif(48)
+    public static let wordCard = serif(28)
+    public static let wordSeason = serif(18)
+    /// 위젯 — 장면 문장 속 말(고운돋움 12 옆에 서도 같은 높이로 보이게), 잠금화면 네모 칸의 말.
+    public static let wordSentence = serif(12.5)
+    public static let wordLock = serif(20)
 
     public static let wordMeaning = sans(13)
     public static let wordMeta = sans(12)
